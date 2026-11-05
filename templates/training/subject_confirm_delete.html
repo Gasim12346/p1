@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}تأكيد حذف مادة | {{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'training:courses_catalog' %}" class="text-decoration-none">واجهة الدورات</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تأكيد حذف مادة</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 border-top border-danger border-4">
+            <div class="card-body p-4 text-center">
+                <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px;">
+                    <i class="bi bi-trash-fill fs-1"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">هل أنت متأكد من حذف هذه المادة؟</h4>
+                <p class="text-muted mb-4">
+                    سيتم إزالة المادة الدراسية من مقرر الدورة بشكل نهائي.
+                </p>
+
+                <div class="bg-light p-3 rounded-3 text-start mb-4 border">
+                    <div class="row g-2 small">
+                        <div class="col-4 text-muted">اسم المادة:</div>
+                        <div class="col-8 fw-bold text-dark">{{ subject.name }}</div>
+                        <div class="col-4 text-muted">رقم/كود المادة:</div>
+                        <div class="col-8 text-dark font-monospace">{{ subject.code }}</div>
+                        <div class="col-4 text-muted">الدورة التابعة لها:</div>
+                        <div class="col-8 text-primary fw-bold">{{ course.name }}</div>
+                        <div class="col-4 text-muted">عدد الساعات:</div>
+                        <div class="col-8 text-dark">{{ subject.credit_hours }} ساعة</div>
+                        <div class="col-4 text-muted">الدرجة العظمى:</div>
+                        <div class="col-8 text-success fw-bold">{{ subject.max_grade }}</div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{% url 'training:courses_catalog' %}?category_id={{ course.category_id }}&course_id={{ course.id }}" class="btn btn-outline-secondary rounded-3 px-4">
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-danger rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-trash-fill"></i>
+                            <span>نعم، حذف المادة</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

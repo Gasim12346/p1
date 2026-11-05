@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}رصد درجات الدورة | {{ session.course.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grade-input {
+        width: 85px;
+        text-align: center;
+        font-weight: 700;
+        font-family: monospace;
+        font-size: 1rem;
+        border-radius: 8px;
+    }
+    .grade-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">واجهة النتيجة والشهادات</a></li>
+        <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }}</li>
+    </ol>
+</nav>
+
+<!-- Course Info Banner -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+    <div class="card-header bg-primary text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-white bg-opacity-20 p-2 rounded-3 fs-3">
+                <i class="bi bi-award-fill text-warning"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0">{{ session.course.name }}</h4>
+                <div class="small opacity-90 mt-1">
+                    <span>دفعة: <strong>{{ session.session_code }}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>تصنيف: <strong>{{ session.course.category.name }}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>الفترة: <strong>{{ session.start_date|date:"Y-m-d" }} إلى {{ session.end_date|date:"Y-m-d" }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-printer-fill"></i>
+                <span>طباعة كشف النتيجة العام</span>
+            </a>
+            <a href="{% url 'training:course_session_manage' session.id %}" class="btn btn-outline-light rounded-3 px-3 d-inline-flex align-items-center gap-1">
+                <i class="bi bi-people"></i>
+                <span>إدارة الدارسين</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary of scores rules -->
+    <div class="card-body bg-light p-3 border-bottom">
+        <div class="row g-3 text-center align-items-center">
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">إجمالي درجات المواد</small>
+                <strong class="text-dark fs-5">{{ session.course.total_max_marks }}</strong>
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">درجة المواظبة والسلوك العظمى</small>
+                <strong class="text-primary fs-5">{{ session.attendance_max_grade }}</strong>
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">المجموع الكلي الممكن للدورة</small>
+                <strong class="text-success fs-5" id="totalPossibleScore">{{ total_possible_score }}</strong> درجة
+            </div>
+            <div class="col-6 col-md-3">
+                <small class="text-muted d-block">قاعدة احتساب النسبة التلقائية</small>
+                <span class="badge bg-secondary bg-opacity-10 text-dark border px-2 py-1 font-monospace" style="font-size: 0.85rem;">
+                    (مجموع الطالب × 100) ÷ {{ total_possible_score }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Entry Table Card -->
+<form method="post" id="gradesForm">
+    {% csrf_token %}
+    <input type="hidden" name="save_grades" value="1">
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-table text-primary"></i>
+                    جدول رصد درجات الدارسين واحتساب النسب والتقديرات
+                </h5>
+                <small class="text-muted">يقوم النظام بحساب المجموع والنسبة والتقدير تلقائياً ولحظياً بمجرد إدخال الدرجات</small>
+            </div>
+            <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">
+                {{ enrollments|length }} دارس بالدورة
+            </span>
+        </div>
+
+        <!-- Quick Search inside grades sheet -->
+        <div class="bg-light p-3 border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="gradeSearchInput" class="form-control border-start-0" placeholder="بحث سريع في كشف الدورة بالاسم أو النمرة..." onkeyup="filterGradesTable()">
+                    </div>
+                </div>
+                <div class="col-md-7 text-md-end">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-dark active" onclick="filterGradesCategory('all', this)">الكل</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterGradesCategory('officer', this)">ضباط</button>
+                        <button type="button" class="btn btn-outline-warning text-dark" onclick="filterGradesCategory('nco', this)">ضباط صف</button>
+                        <button type="button" class="btn btn-outline-purple" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterGradesCategory('civilian', this)">مدنيين</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0" id="gradesTable">
+                <thead class="bg-light text-center small align-middle">
+                    <tr>
+                        <th rowspan="2" style="width: 5%;">#</th>
+                        <th rowspan="2" style="width: 10%;">النمرة</th>
+                        <th rowspan="2" style="width: 18%;">الدارس (الرتبة والاسم والوحدة)</th>
+                        
+                        <!-- رؤوس أعمدة المواد الدراسية -->
+                        {% for sub in subjects %}
+                            <th style="min-width: 110px;">
+                                <div class="text-dark fw-bold">{{ sub.name }}</div>
+                                <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace">
+                                    العظمى: {{ sub.max_grade }}
+                                </span>
+                            </th>
+                        {% empty %}
+                            <th>لا توجد مواد</th>
+                        {% endfor %}
+
+                        <!-- عمود المواظبة والسلوك -->
+                        <th style="min-width: 110px;">
+                            <div class="text-primary fw-bold">المواظبة والسلوك</div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace">
+                                العظمى: {{ session.attendance_max_grade }}
+                            </span>
+                        </th>
+
+                        <!-- النتائج التلقائية المحسوبة -->
+                        <th rowspan="2" style="min-width: 95px;" class="bg-info bg-opacity-10 text-dark">
+                            المجموع المكتسب
+                        </th>
+                        <th rowspan="2" style="min-width: 95px;" class="bg-warning bg-opacity-10 text-dark">
+                            النسبة (%)
+                        </th>
+                        <th rowspan="2" style="min-width: 110px;" class="bg-success bg-opacity-10 text-dark">
+                            التقدير
+                        </th>
+                        <th rowspan="2" style="width: 10%;">الشهادة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for en in enrollments %}
+                        <tr class="student-row" data-trainee-num="{{ en.trainee.military_number }}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}" data-enrollment-id="{{ en.id }}">
+                            <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
+                            
+                            <!-- النمرة -->
+                            <td class="text-center">
+                                <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
+                                    {{ en.trainee.military_number }}
+                                </span>
+                            </td>
+
+                            <!-- الاسم والرتبة -->
+                            <td>
+                                <strong class="text-dark d-block">
+                                    {% if en.current_rank %}{{ en.current_rank }}{% else %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle small me-1">الرتبة ناقصة</span>{% endif %} / {{ en.trainee.name }}
+                                </strong>
+                                <small class="text-muted">
+                                    {% if en.current_unit %}{{ en.current_unit }}{% else %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle small">الوحدة ناقصة</span>{% endif %}
+                                </small>
+                            </td>
+
+                            <!-- درجات المواد -->
+                            {% for item in en.subjects_data %}
+                                <td class="text-center p-2">
+                                    <input type="number" 
+                                           name="grade_{{ en.trainee.military_number }}_{{ item.subject.id }}"
+                                           class="form-control grade-input subject-grade mx-auto"
+                                           min="0" 
+                                           max="{{ item.subject.max_grade|unlocalize }}" 
+                                           step="0.5"
+                                           data-max="{{ item.subject.max_grade|unlocalize }}"
+                                           placeholder="-"
+                                           {% if item.score is not None %}value="{{ item.score|unlocalize }}"{% endif %}
+                                           oninput="calculateRow(this, true)">
+                                </td>
+                            {% endfor %}
+
+                            <!-- درجة المواظبة -->
+                            <td class="text-center p-2">
+                                <input type="number" 
+                                       name="att_{{ en.trainee.military_number }}"
+                                       class="form-control grade-input attendance-grade mx-auto border-primary"
+                                       min="0" 
+                                       max="{{ session.attendance_max_grade|unlocalize }}" 
+                                       step="0.5"
+                                       data-max="{{ session.attendance_max_grade|unlocalize }}"
+                                       placeholder="-"
+                                       {% if en.is_graded %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
+                                       oninput="calculateRow(this, true)">
+                            </td>
+
+                            <!-- المجموع المكتسب التلقائي -->
+                            <td class="text-center fw-bold fs-6 total-cell bg-light">
+                                {% if en.is_graded %}
+                                    {{ en.total_score }}
+                                {% else %}
+                                    <span class="text-muted small">قيد الرصد</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- النسبة التلقائية -->
+                            <td class="text-center fw-bold percentage-cell bg-light font-monospace">
+                                {% if en.is_graded %}
+                                    {{ en.percentage }}%
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- التقدير التلقائي -->
+                            <td class="text-center fw-bold grade-cell bg-light">
+                                {% if en.is_graded %}
+                                    <span class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% elif en.percentage >= 50 %}badge-grade-d{% else %}bg-danger text-white{% endif %} px-2 py-1">
+                                        {{ en.grade_label }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-secondary border px-2 py-1">
+                                        <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- زر الشهادة الفردية -->
+                            <td class="text-center cert-cell">
+                                {% if en.has_complete_data_and_grades %}
+                                    <a href="{% url 'training:certificate' en.id %}" target="_blank" class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="استخراج شهادة التقدير الرسمية للدارس">
+                                        <i class="bi bi-award-fill text-dark"></i>
+                                        <span>الشهادة</span>
+                                    </a>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
+                                        <i class="bi bi-lock-fill text-secondary"></i>
+                                        <span>غير مكتمل</span>
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{{ subjects|length|add:7 }}" class="text-center py-5 text-muted">
+                                لا يوجد دارسون مسجلون في هذه الدورة.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Action Submit Bar -->
+        <div class="card-footer bg-light py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <span class="text-muted small">
+                    <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم تطبيق التقديرات المعتمدة تلقائياً: 
+                    <strong>ممتاز (85-100)</strong> • 
+                    <strong>جيد جداً (75-84)</strong> • 
+                    <strong>جيد (65-74)</strong> • 
+                    <strong>مقبول (50-64)</strong>
+                </span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-patch-check-fill"></i>
+                    <span>حفظ واعتماد النتيجة كـ دورة مكتملة</span>
+                </button>
+
+                <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-save2-fill"></i>
+                    <span>حفظ ورصد جميع الدرجات</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const TOTAL_POSSIBLE_SCORE = parseFloat("{{ total_possible_score|unlocalize }}") || 100.0;
+
+    // حساب درجات الصف لحظياً عند الكتابة
+    function calculateRow(inputElement, isUserEdit = false) {
+        const row = inputElement.closest('tr');
+        if (!row) return;
+
+        const subjectInputs = row.querySelectorAll('.subject-grade');
+        let subjectsTotal = 0;
+        let allSubjectsFilled = true;
+        let anyInputHasValue = false;
+
+        subjectInputs.forEach(input => {
+            const valStr = input.value.trim();
+            if (valStr === '') {
+                allSubjectsFilled = false;
+            } else {
+                anyInputHasValue = true;
+                const val = parseFloat(valStr);
+                if (!isNaN(val) && val >= 0) {
+                    subjectsTotal += val;
+                } else {
+                    allSubjectsFilled = false;
+                }
+            }
+        });
+
+        // درجة المواظبة
+        const attInput = row.querySelector('.attendance-grade');
+        const attValStr = attInput ? attInput.value.trim() : '';
+        let attVal = 0;
+        if (attValStr !== '') {
+            anyInputHasValue = true;
+            attVal = parseFloat(attValStr) || 0;
+        }
+
+        const totalCell = row.querySelector('.total-cell');
+        const percentageCell = row.querySelector('.percentage-cell');
+        const gradeCell = row.querySelector('.grade-cell');
+        const certCell = row.querySelector('.cert-cell');
+
+        // إذا لم تكتمل درجات جميع المواد، لا نعطي أي درجة افتراضية، ونقفل الشهادة فوراً!
+        if (!allSubjectsFilled || subjectInputs.length === 0) {
+            if (totalCell) totalCell.innerHTML = `<span class="text-muted small">قيد الرصد</span>`;
+            if (percentageCell) percentageCell.innerHTML = `<span class="text-muted small">-</span>`;
+            if (gradeCell) {
+                gradeCell.innerHTML = `<span class="badge bg-light text-secondary border px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>غير مكتمل</span>`;
+            }
+            if (certCell) {
+                certCell.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد إكمال جميع درجات المواد وحفظها"><i class="bi bi-lock-fill text-secondary"></i><span>غير مكتمل</span></span>`;
+            }
+            return;
+        }
+
+        // إذا تم تعديل الدرجات من قبل المستخدم، يجب التنبيه بضرورة الحفظ أولاً
+        if (isUserEdit && certCell) {
+            certCell.innerHTML = `<span class="badge bg-warning bg-opacity-25 text-dark border px-2 py-1 d-inline-flex align-items-center gap-1" title="يرجى الضغط على زر حفظ ورصد الدرجات بالأسفل لاعتماد النتيجة أولاً"><i class="bi bi-clock-history text-warning me-1"></i><span>يرجى الحفظ</span></span>`;
+        }
+
+        // المجموع الكلي المكتسب
+        const totalObtained = subjectsTotal + attVal;
+
+        // حساب النسبة المئوية بمعادلة المستخدم:
+        // النسبة = (مجموع درجات الطالب * 100) / المجموع الكلي لمواد الدورة
+        let percentage = 0;
+        if (TOTAL_POSSIBLE_SCORE > 0) {
+            percentage = (totalObtained * 100.0) / TOTAL_POSSIBLE_SCORE;
+            percentage = Math.round(percentage * 100) / 100; // تقريب لمنزلتين
+        }
+
+        // تحديد التقدير حسب القواعد المحددة بالنص
+        let gradeLabel = '';
+        let badgeClass = '';
+
+        if (percentage >= 85) {
+            gradeLabel = 'ممتاز (أ)';
+            badgeClass = 'badge-grade-a';
+        } else if (percentage >= 75) {
+            gradeLabel = 'جيد جداً (ب)';
+            badgeClass = 'badge-grade-b';
+        } else if (percentage >= 65) {
+            gradeLabel = 'جيد (ج)';
+            badgeClass = 'badge-grade-c';
+        } else if (percentage >= 50) {
+            gradeLabel = 'مقبول (د)';
+            badgeClass = 'badge-grade-d';
+        } else {
+            gradeLabel = 'دون المستوى / راسب';
+            badgeClass = 'bg-danger text-white';
+        }
+
+        // تحديث الخلايا في الجدول لحظياً
+        if (totalCell) totalCell.textContent = totalObtained.toFixed(1);
+        if (percentageCell) percentageCell.textContent = percentage.toFixed(2) + '%';
+        if (gradeCell) {
+            gradeCell.innerHTML = `<span class="badge ${badgeClass} px-2 py-1">${gradeLabel}</span>`;
+        }
+    }
+
+    // تشغيل الحساب فقط للصفوف المكتملة أو عند التعديل
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            const firstInput = row.querySelector('.grade-input');
+            if (firstInput) calculateRow(firstInput, false);
+        });
+    });
+
+    // بحث سريع في كشف رصد الدورة بالاسم أو النمرة
+    function filterGradesTable() {
+        const query = document.getElementById('gradeSearchInput').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.student-row');
+
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-search').toLowerCase();
+            const rowCat = row.getAttribute('data-category');
+            const matchSearch = searchData.includes(query);
+            const matchCat = (currentGradeCat === 'all' || rowCat === currentGradeCat);
+
+            if (matchSearch && matchCat) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    let currentGradeCat = 'all';
+    function filterGradesCategory(cat, btn) {
+        currentGradeCat = cat;
+        const buttons = btn.parentElement.querySelectorAll('button');
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterGradesTable();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,324 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التقرير التحليلي الإحصائي التنفيذي - إدارة نظم المعلومات والإحصاء</title>
+    
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px 0;
+            font-family: 'Calibri', 'Segoe UI', Tahoma, Arial, sans-serif;
+            color: #000000;
+        }
+
+        .report-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 15mm 20mm;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .report-header img {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .report-title-box {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .report-title-box h3 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+
+        .report-title-box h5 {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #333333;
+            margin: 0;
+        }
+
+        .section-header {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+
+        .report-table th, .report-table td {
+            border: 1px solid #94a3b8;
+            padding: 6px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .report-table th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+
+        .sig-box {
+            margin-top: 35px;
+            display: flex;
+            justify-content: space-between;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10.5pt;
+        }
+
+        @media print {
+            body {
+                background: none !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .report-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+                min-height: 100% !important;
+                padding: 12mm 15mm !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <button onclick="window.print()" class="btn btn-primary btn-lg rounded-pill px-4 fw-bold shadow">
+            <i class="bi bi-printer-fill me-1"></i> طباعة التقرير الرسمي (Print / PDF)
+        </button>
+        <button onclick="window.close()" class="btn btn-outline-secondary btn-lg rounded-pill px-4 ms-2">
+            إغلاق
+        </button>
+    </div>
+
+    <div class="report-page">
+        
+        <!-- Header -->
+        <div class="report-header">
+            <div>
+                {% if cert_settings.right_logo_url %}
+                    <img src="{{ cert_settings.right_logo_url }}" alt="شعار السودان">
+                {% else %}
+                    <img src="{% static 'img/sudan_crest.png' %}" alt="شعار السودان">
+                {% endif %}
+            </div>
+            <div class="report-title-box">
+                <div style="font-size: 11pt; font-weight: bold;">{{ cert_settings.bismillah_text|default:"بسم الله الرحمن الرحيم" }}</div>
+                <h3>{{ cert_settings.header_line_1 }}</h3>
+                <h5>{{ cert_settings.header_line_2 }}</h5>
+                <div class="mt-2 fw-bold text-decoration-underline" style="font-size: 13pt;">
+                    التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج
+                </div>
+            </div>
+            <div>
+                {% if cert_settings.left_logo_url %}
+                    <img src="{{ cert_settings.left_logo_url }}" alt="شعار النظم">
+                {% elif system_settings.main_logo_url %}
+                    <img src="{{ system_settings.main_logo_url }}" alt="شعار النظم">
+                {% else %}
+                    <img src="{% static 'img/military_info_logo.png' %}" alt="شعار النظم">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3" style="font-size: 9.5pt; font-weight: bold;">
+            <div>المحطة: {{ cert_settings.station_text }}</div>
+            <div>تاريخ الاستخراج: {% now "Y/m/d" %}م</div>
+            <div>سري وللاستخدام الإداري فقط</div>
+        </div>
+
+        <!-- 1. Executive Summary KPIs -->
+        <div class="section-header">
+            <span>أولاً: ملخص المؤشرات العامة ومخرجات التأهيل (KPIs)</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الدارسين</th>
+                    <th>ضباط</th>
+                    <th>ضباط صف / رتب أخرى</th>
+                    <th>مدنيين</th>
+                    <th>المناهج والدورات</th>
+                    <th>الانعقادات التدريبية</th>
+                    <th>المعتمد نجاحهم</th>
+                    <th>متوسط التحصيل العام</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold">{{ trainees_total }}</td>
+                    <td>{{ trainees_officers }}</td>
+                    <td>{{ trainees_ncos }}</td>
+                    <td>{{ trainees_civilians }}</td>
+                    <td>{{ courses_total }}</td>
+                    <td>{{ sessions|length }}</td>
+                    <td class="fw-bold">{{ enrollments_graded }}</td>
+                    <td class="fw-bold">{{ avg_score }}%</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 2. Grade Distribution -->
+        <div class="section-header">
+            <span>ثانياً: التوزيع التكراري للتقديرات والنتائج المعتمدة</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>التقدير الأكاديمي</th>
+                    <th>الشريحة المئوية</th>
+                    <th>عدد الدارسين</th>
+                    <th>النسبة المئوية (%)</th>
+                    <th>الملاحظات الإدارية</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold text-success">ممتاز (أ)</td>
+                    <td>85% فأعلى</td>
+                    <td class="fw-bold">{{ grade_a }}</td>
+                    <td>{{ grade_a_pct }}%</td>
+                    <td>أداء استثنائي متقدم</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-primary">جيد جداً (ب)</td>
+                    <td>75% إلى أقل من 85%</td>
+                    <td class="fw-bold">{{ grade_b }}</td>
+                    <td>{{ grade_b_pct }}%</td>
+                    <td>أداء متميز عالي الكفاءة</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-warning">جيد (ج)</td>
+                    <td>65% إلى أقل من 75%</td>
+                    <td class="fw-bold">{{ grade_c }}</td>
+                    <td>{{ grade_c_pct }}%</td>
+                    <td>مستوى جيد محقق للمتطلبات</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">مقبول (د)</td>
+                    <td>50% إلى أقل من 65%</td>
+                    <td class="fw-bold">{{ grade_d }}</td>
+                    <td>{{ grade_d_pct }}%</td>
+                    <td>محقق للحد الأدنى المطلوب</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-danger">دون المستوى</td>
+                    <td>أقل من 50%</td>
+                    <td class="fw-bold">{{ grade_f }}</td>
+                    <td>{{ grade_f_pct }}%</td>
+                    <td>لم يستوفِ شروط التخرج</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 3. Forces Distribution -->
+        <div class="section-header">
+            <span>ثالثاً: توزيع الدارسين بحسب القوات والتشكيلات</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم القوة / التشكيل</th>
+                    <th>عدد الدارسين المنتسبين</th>
+                    <th>النسبة من إجمالي القوة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in forces_stats %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="fw-bold text-start ps-3">{{ f.force|default:"غير محدد" }}</td>
+                        <td>{{ f.count }}</td>
+                        <td>{% widthratio f.count trainees_total 100 %}%</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">لا توجد بيانات قوات مسجلة.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Signatures Block -->
+        <div class="sig-box">
+            <div style="width: 32%;">
+                <div>إعداد وضبط الإحصاء</div>
+                <div style="height: 35px;"></div>
+                <div>رئيس فرع الإحصاء والنتائج</div>
+            </div>
+            <div style="width: 32%;">
+                <div>{{ cert_settings.right_signer_rank }}</div>
+                <div>{{ cert_settings.right_signer_name }}</div>
+                <div>{{ cert_settings.right_signer_title }}</div>
+            </div>
+            <div style="width: 32%;">
+                <div>{{ cert_settings.left_signer_rank }}</div>
+                <div>{{ cert_settings.left_signer_name }}</div>
+                <div>{{ cert_settings.left_signer_title }}</div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4 pt-3 border-top" style="font-size: 8pt; color: #64748b;">
+            تم استخراج هذا التقرير آلياً عبر نظام تسجيل واستخراج النتائج والشهادات • معتمد من قيادة إدارة نظم المعلومات والإحصاء
+        </div>
+
+    </div>
+
+</body>
+</html>

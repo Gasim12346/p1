@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل مادة دراسية | {{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'training:courses_catalog' %}" class="text-decoration-none">واجهة الدورات</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تعديل مادة</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-primary text-white py-3 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square fs-5"></i>
+                    <h5 class="fw-bold mb-0">تعديل المادة: {{ subject.name }}</h5>
+                </div>
+                <span class="badge bg-white text-primary font-monospace px-3 py-2 rounded-pill">
+                    {{ course.name }}
+                </span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">رقم / كود المادة <span class="text-danger">*</span></label>
+                            {{ form.code }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">عدد الساعات <span class="text-danger">*</span></label>
+                            {{ form.credit_hours }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark">اسم المادة الدراسية <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark">الدرجة العظمى <span class="text-danger">*</span></label>
+                            {{ form.max_grade }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light py-3 px-4 d-flex justify-content-between">
+                    <a href="{% url 'training:courses_catalog' %}?category_id={{ course.category_id }}&course_id={{ course.id }}" class="btn btn-outline-secondary rounded-3 px-4">
+                        <i class="bi bi-arrow-right me-1"></i> إلغاء ورجوع
+                    </a>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>حفظ تعديلات المادة</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كشف النتيجة النهائي المعتمد - {{ session.course.name }}</title>
+    
+    <!-- Bootstrap RTL CSS (Local) -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <style>
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+        }
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            padding: 2rem 1rem;
+        }
+        .sheet-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 14px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+        @media print {
+            body {
+                background: none !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .sheet-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 1cm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Print Control Bar -->
+    <div class="no-print text-center mb-4 d-flex justify-content-center gap-2">
+        <button onclick="window.print()" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="bi bi-printer-fill fs-5"></i>
+            <span>طباعة كشف النتيجة النهائي</span>
+        </button>
+        <button onclick="window.close()" class="btn btn-outline-secondary rounded-pill px-4">
+            إغلاق
+        </button>
+    </div>
+
+    <!-- Official Results Sheet Container -->
+    <div class="sheet-container">
+        
+        <!-- Header -->
+        <div class="row align-items-center pb-3 mb-3 border-bottom border-2 border-dark">
+            <div class="col-4 text-start">
+                <h6 class="fw-bold mb-1">منظومة التعليم والتدريب</h6>
+                <div class="small text-muted">معهد التدريب التخصصي</div>
+                <div class="small text-muted">شعبة شؤون الدارسين والامتحانات</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border p-3 mb-1">
+                    <i class="bi bi-shield-check text-primary fs-3"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-0">كشف النتيجة والدرجات النهائي</h5>
+            </div>
+            <div class="col-4 text-end">
+                <small class="text-muted d-block font-monospace">رقم الكشف: RES-{{ session.id }}-2026</small>
+                <small class="text-muted d-block">التاريخ: {% now "Y-m-d" %}</small>
+                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 mt-1">كشف معتمد ورسمي</span>
+            </div>
+        </div>
+
+        <!-- Course Meta Info -->
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            <div class="row g-2 text-center small">
+                <div class="col-md-3 text-md-start">
+                    <span class="text-muted">اسم الدورة:</span>
+                    <strong class="text-dark d-block fs-6">{{ session.course.name }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted">تصنيف الدورة:</span>
+                    <strong class="text-primary d-block">{{ session.course.category.name }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted">رمز الدفعة:</span>
+                    <strong class="text-dark d-block">{{ session.session_code }}</strong>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <span class="text-muted">فترة الانعقاد:</span>
+                    <strong class="text-dark d-block">{{ session.start_date|date:"Y-m-d" }} إلى {{ session.end_date|date:"Y-m-d" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered table-sm text-center align-middle mb-0 font-monospace" style="font-size: 0.88rem;">
+                <thead class="bg-light align-middle text-dark">
+                    <tr>
+                        <th rowspan="2" style="width: 4%;">#</th>
+                        <th rowspan="2" style="width: 10%;">النمرة</th>
+                        <th rowspan="2" style="width: 22%;">الرتبة والاسم والوحدة</th>
+                        {% for sub in subjects %}
+                            <th>
+                                <div>{{ sub.name }}</div>
+                                <small class="text-muted">({{ sub.max_grade }})</small>
+                            </th>
+                        {% endfor %}
+                        <th>
+                            <div>المواظبة</div>
+                            <small class="text-muted">({{ session.attendance_max_grade }})</small>
+                        </th>
+                        <th rowspan="2" class="bg-light">المجموع ({{ session.total_possible_score }})</th>
+                        <th rowspan="2" class="bg-light">النسبة (%)</th>
+                        <th rowspan="2" class="bg-light">التقدير العام</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for en in enrollments %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ en.trainee.military_number }}</strong></td>
+                            <td class="text-start">
+                                <strong>{{ en.current_rank }} / {{ en.trainee.name }}</strong>
+                                <small class="text-muted d-block font-sans-serif">{{ en.current_unit }}</small>
+                            </td>
+                            {% for sub in subjects %}
+                                <td>
+                                    {% for gid, score in grades_map.items %}
+                                        {% if gid == en.id %}
+                                            {% for sid, sc in score.items %}
+                                                {% if sid == sub.id %}{{ sc }}{% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            {% endfor %}
+                            <td>{% if en.is_graded %}{{ en.attendance_score }}{% else %}-{% endif %}</td>
+                            <td><strong class="text-dark">{% if en.is_graded %}{{ en.total_score }}{% else %}-{% endif %}</strong></td>
+                            <td><strong class="text-primary">{% if en.is_graded %}{{ en.percentage }}%{% else %}-{% endif %}</strong></td>
+                            <td>
+                                <strong>{% if en.is_graded %}{{ en.grade_label }}{% else %}<span class="text-muted small">غير مكتمل</span>{% endif %}</strong>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{{ subjects|length|add:6 }}" class="py-4 text-muted">
+                                لا توجد درجات مرصودة حتى الآن.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Official Signatures Footer -->
+        <div class="row pt-4 mt-4 border-top text-center">
+            <div class="col-4">
+                <p class="fw-bold mb-1">ضابط شؤون الامتحانات والرصد</p>
+                <div style="height: 45px;"></div>
+                <small class="text-muted">التوقيع: ............................</small>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-1">رئيس جناح التعليم والتدريب</p>
+                <div style="height: 45px;"></div>
+                <small class="text-muted">التوقيع: ............................</small>
+            </div>
+            <div class="col-4">
+                <p class="fw-bold mb-1">قائد معهد التدريب التخصصي</p>
+                <div style="height: 45px;"></div>
+                <small class="text-muted">التوقيع والاعتماد: ............................</small>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

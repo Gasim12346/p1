@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل بيانات دارس | {{ trainee.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'training:trainees_list' %}" class="text-decoration-none">واجهة الدارسين</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تعديل بيانات الدارس</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-primary text-white py-3 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square fs-5"></i>
+                    <h5 class="fw-bold mb-0">تعديل بيانات الدارس: {{ trainee.name }}</h5>
+                </div>
+                <span class="badge bg-white text-primary font-monospace px-3 py-2 rounded-pill">
+                    النمرة: {{ trainee.military_number }}
+                </span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <!-- النمرة (غير قابلة للتغيير لأنها المفتاح الأساسي) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">النمرة (مفتاح أساسي)</label>
+                            <input type="text" class="form-control form-control-lg bg-light font-monospace" value="{{ trainee.military_number }}" disabled>
+                            <div class="form-text small text-muted">النمرة هي المفتاح الأساسي للدارس ولا يتم تعديلها.</div>
+                        </div>
+
+                        <!-- التصنيف -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
+                            <select name="category" id="editCategorySelect" class="form-select form-select-lg" required onchange="updateRanksList('editCategorySelect', 'editRankSelect', 'editCustomRankDiv', 'editRankInput')">
+                                <option value="officer" {% if trainee.category == 'officer' %}selected{% endif %}>ضباط</option>
+                                <option value="nco" {% if trainee.category == 'nco' %}selected{% endif %}>ضباط صف</option>
+                                <option value="civilian" {% if trainee.category == 'civilian' %}selected{% endif %}>مدنيين</option>
+                            </select>
+                            <div class="form-text small text-muted">اختر: ضباط، ضباط صف، مدنيين</div>
+                        </div>
+
+                        <!-- الرتبة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الرتبة / المسمى <span class="text-danger">*</span></label>
+                            <select id="editRankSelect" class="form-select form-select-lg mb-2" required onchange="handleRankChange('editRankSelect', 'editCustomRankDiv', 'editRankInput')">
+                                <!-- تملأ ديناميكياً -->
+                            </select>
+                            
+                            <!-- حقل الإدخال النهائي المخفي أو اليدوي -->
+                            <div id="editCustomRankDiv" style="display: none;">
+                                <input type="text" id="editRankInput" name="rank" value="{{ trainee.rank }}" class="form-control form-control-lg" placeholder="اكتب الرتبة أو المسمى هنا">
+                            </div>
+                        </div>
+
+                        <!-- الاسم الكامل -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                        </div>
+
+                        <!-- الوحدة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الوحدة <span class="text-danger">*</span></label>
+                            {{ form.unit }}
+                        </div>
+
+                        <!-- القوة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">القوة <span class="text-danger">*</span></label>
+                            {{ form.force }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light py-3 px-4 d-flex justify-content-between">
+                    <a href="{% url 'training:trainees_list' %}" class="btn btn-outline-secondary rounded-3 px-4">
+                        <i class="bi bi-arrow-right me-1"></i> إلغاء ورجوع
+                    </a>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>حفظ التعديلات</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const RANKS_DATA = {
+        'officer': [
+            'ملازم',
+            'ملازم أول',
+            'نقيب',
+            'رائد',
+            'مقدم',
+            'عقيد',
+            'عميد',
+            'لواء'
+        ],
+        'nco': [
+            'جندي',
+            'وكيل عريف',
+            'عريف',
+            'رقيب',
+            'رقيب أول',
+            'مساعد'
+        ],
+        'civilian': [
+            'موظف مدني',
+            'أخصائي',
+            'باحث',
+            'مهندس',
+            'فني',
+            'إداري'
+        ]
+    };
+
+    function updateRanksList(catSelectId, rankSelectId, customDivId, rankInputId, initialVal = null) {
+        const catSelect = document.getElementById(catSelectId);
+        const rankSelect = document.getElementById(rankSelectId);
+        const customDiv = document.getElementById(customDivId);
+        const rankInput = document.getElementById(rankInputId);
+
+        if (!catSelect || !rankSelect) return;
+
+        const selectedCat = catSelect.value;
+        const ranks = RANKS_DATA[selectedCat] || [];
+
+        rankSelect.innerHTML = '';
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '--- اختر الرتبة من القائمة ---';
+        defaultOpt.disabled = true;
+        rankSelect.appendChild(defaultOpt);
+
+        let matchFound = false;
+
+        ranks.forEach(rank => {
+            const opt = document.createElement('option');
+            opt.value = rank;
+            opt.textContent = rank;
+            if (initialVal && initialVal === rank) {
+                opt.selected = true;
+                matchFound = true;
+            }
+            rankSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ رتبة أخرى / كتابة يدوية...';
+        rankSelect.appendChild(customOpt);
+
+        if (initialVal) {
+            if (!matchFound) {
+                customOpt.selected = true;
+                customDiv.style.display = 'block';
+                rankInput.value = initialVal;
+            } else {
+                customDiv.style.display = 'none';
+                rankInput.value = initialVal;
+            }
+        } else {
+            if (ranks.length > 0) {
+                rankSelect.selectedIndex = 1;
+                rankInput.value = ranks[0];
+            }
+            customDiv.style.display = 'none';
+        }
+    }
+
+    function handleRankChange(rankSelectId, customDivId, rankInputId) {
+        const rankSelect = document.getElementById(rankSelectId);
+        const customDiv = document.getElementById(customDivId);
+        const rankInput = document.getElementById(rankInputId);
+
+        if (rankSelect.value === '__custom__') {
+            customDiv.style.display = 'block';
+            rankInput.value = '';
+            rankInput.focus();
+            rankInput.required = true;
+        } else {
+            customDiv.style.display = 'none';
+            rankInput.value = rankSelect.value;
+            rankInput.required = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const currentRank = "{{ trainee.rank|escapejs }}";
+        updateRanksList('editCategorySelect', 'editRankSelect', 'editCustomRankDiv', 'editRankInput', currentRank);
+    });
+</script>
+{% endblock %}

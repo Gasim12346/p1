@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة تحكم الأدمن والقيادة المنفصلة{% endblock %}</title>
+    
+    <!-- Local Bootstrap RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-navy: {{ system_settings.primary_navy|default:"#0f172a" }};
+            --primary-accent: {{ system_settings.primary_accent|default:"#1e3a8a" }};
+            --brand-blue: {{ system_settings.brand_blue|default:"#2563eb" }};
+            --brand-cyan: {{ system_settings.brand_cyan|default:"#0284c7" }};
+            --gold-accent: {{ system_settings.gold_accent|default:"#d97706" }};
+            --bg-light: {{ system_settings.bg_light|default:"#f8fafc" }};
+            --admin-dark-bar: #070c18;
+            --admin-header-gradient: linear-gradient(135deg, #070c18 0%, #0f172a 100%);
+        }
+
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dedicated Admin Executive Topbar */
+        .admin-topbar {
+            background: var(--admin-header-gradient);
+            border-bottom: 2px solid var(--gold-accent);
+            padding: 0.85rem 1.5rem;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+        }
+
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .admin-badge-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            flex-shrink: 0;
+        }
+
+        .btn-switch-main {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #cbd5e1;
+            font-weight: 600;
+            padding: 0.45rem 1rem;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88rem;
+        }
+
+        .btn-switch-main:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border-color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .admin-user-chip {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.35rem 0.85rem;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            font-size: 0.85rem;
+        }
+
+        .live-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .admin-footer {
+            background: #070c18;
+            border-top: 1px solid #1e293b;
+            color: #94a3b8;
+            padding: 1.25rem 0;
+            margin-top: auto;
+            font-size: 0.85rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Dedicated Admin Executive Topbar -->
+    <header class="admin-topbar">
+        <div class="container-fluid d-flex align-items-center justify-content-between flex-wrap gap-2">
+            
+            <!-- Admin Brand -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'training:admin_dashboard' %}" class="admin-brand">
+                    {% if system_settings.main_logo_url %}
+                        <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام" class="admin-badge-icon p-1 bg-white" style="object-fit: contain;">
+                    {% else %}
+                        <div class="admin-badge-icon">
+                            <i class="bi bi-shield-lock-fill text-warning"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <div class="fw-bold fs-6 text-white" style="line-height: 1.2;">{{ system_settings.system_name|default:"لوحة تحكم الأدمن والقيادة" }}</div>
+                        <small class="text-warning" style="font-size: 0.72rem; font-weight: 700;">
+                            <i class="bi bi-lock-fill me-1"></i> بيئة إدارية منفصلة ومعزولة • صلاحية الأدمن
+                        </small>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                
+                <!-- Switch to Main Training Portal Button -->
+                <a href="{% url 'training:home' %}" class="btn-switch-main" title="الانتقال إلى الواجهة الرئيسية لنظام التدريب">
+                    <i class="bi bi-box-arrow-up-right text-warning"></i>
+                    <span>الذهاب للواجهة الرئيسية (نظام التدريب)</span>
+                </a>
+
+                <!-- Admin User Indicator -->
+                <div class="admin-user-chip">
+                    <span class="live-dot"></span>
+                    <span class="fw-bold">{{ user.username }}</span>
+                    <span class="badge bg-warning text-dark px-2 py-0" style="font-size: 0.65rem;">مدير نظام</span>
+                </div>
+
+                <!-- Logout -->
+                <a href="{% url 'training:logout' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm" title="تسجيل الخروج من النظام">
+                    <i class="bi bi-power"></i>
+                    <span>تسجيل خروج</span>
+                </a>
+
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Admin Container -->
+    <main class="flex-grow-1 py-4">
+        <div class="container-fluid px-3 px-lg-4">
+            
+            <!-- Global Messages / Alerts -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div>{{ message }}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Admin Content -->
+            {% block admin_content %}{% endblock %}
+
+        </div>
+    </main>
+
+    <!-- Admin Footer -->
+    <footer class="admin-footer text-center">
+        <div class="container-fluid">
+            <span>لوحة تحكم الأدمن والقيادة المنفصلة • نظام تسجيل واستخراج النتائج والشهادات • جميع الحقوق محفوظة &copy; 2026</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper JS -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

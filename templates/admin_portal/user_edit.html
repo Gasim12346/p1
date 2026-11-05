@@ -1,0 +1,94 @@
+{% extends 'admin_portal/base_admin.html' %}
+
+{% block title %}تعديل بيانات المستخدم والصلاحيات - {{ target_user.username }}{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 48px; height: 48px;">
+                            {{ target_user.username|slice:":1"|upper }}
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">تعديل بيانات وصلاحيات المستخدم</h5>
+                            <small class="text-muted">اسم المستخدم: <strong>{{ target_user.username }}</strong></small>
+                        </div>
+                    </div>
+                    <a href="{% url 'training:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للوحة القيادة
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">الاسم الأول</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">اسم العائلة</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">البريد الإلكتروني</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">نوع وصلاحية الحساب <span class="text-danger">*</span></label>
+                            {{ form.role }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">النمرة العسكرية</label>
+                            {{ form.military_number }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">الرتبة</label>
+                            {{ form.rank }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">الوحدة</label>
+                            {{ form.unit }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">رقم الهاتف</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center mt-4">
+                            <div class="form-check form-switch fs-6">
+                                {{ form.is_active }}
+                                <label class="form-check-label fw-bold" for="{{ form.is_active.id_for_label }}">حساب نشط ومفعل</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password Reset Section -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <h6 class="fw-bold text-dark mb-2">
+                            <i class="bi bi-key-fill text-warning me-1"></i>
+                            إعادة تعيين كلمة المرور
+                        </h6>
+                        <label class="form-label small text-muted">اترك هذا الحقل فارغاً إذا كنت لا ترغب في تغيير كلمة المرور الحالية.</label>
+                        {{ form.new_password }}
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold">
+                            <i class="bi bi-check-lg me-1"></i> حفظ التعديلات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'admin_portal/base_admin.html' %}
+
+{% block title %}تأكيد حذف تصنيف الدورات - {{ category.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-danger text-white p-4">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                    <div>
+                        <h5 class="fw-bold mb-0">تأكيد حذف تصنيف الدورات</h5>
+                        <small class="text-white-50">إجراء إداري لا يمكن التراجع عنه</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                {% if linked_courses_count > 0 %}
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+                        <i class="bi bi-shield-lock-fill fs-4 text-warning"></i>
+                        <div>
+                            <strong>لا يمكن حذف هذا التصنيف حالياً!</strong>
+                            <p class="mb-0 small">يوجد حالياً ({{ linked_courses_count }}) دورات تدريبية مرتبطة بهذا التصنيف. لحماية سلامة البيانات، يجب نقل الدورات أو حذفها أولاً قبل حذف التصنيف.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-primary px-4 rounded-pill">
+                            <i class="bi bi-arrow-right me-1"></i> العودة للوحة الإدارة
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="fs-6 text-dark mb-3">
+                        هل أنت متأكد من رغبتك في حذف التصنيف التدريبي: <br>
+                        <strong class="text-danger fs-5">"{{ category.name }}"</strong> ؟
+                    </p>
+                    <p class="text-muted small mb-4">
+                        عند تأكيد الحذف، ستتم إزالة التصنيف نهائياً من النظام.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                                إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold">
+                                <i class="bi bi-trash-fill me-1"></i> نعم، تأكيد الحذف
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

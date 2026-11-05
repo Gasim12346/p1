@@ -1,0 +1,224 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - {{ system_settings.system_name|default:"نظام تسجيل واستخراج النتائج والشهادات" }}</title>
+    
+    <!-- Local Bootstrap RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-navy: {{ system_settings.primary_navy|default:"#0f172a" }};
+            --primary-accent: {{ system_settings.primary_accent|default:"#1e3a8a" }};
+            --brand-blue: {{ system_settings.brand_blue|default:"#2563eb" }};
+            --gold-accent: {{ system_settings.gold_accent|default:"#d97706" }};
+        }
+
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 20%, #172554 0%, #0b1329 60%, #030712 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            max-width: 440px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #1e293b;
+        }
+
+        .login-header-banner {
+            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-accent) 100%);
+            padding: 2.25rem 1.5rem 1.75rem 1.5rem;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .login-badge-icon {
+            width: 72px;
+            height: 72px;
+            background: #ffffff;
+            border: 2px solid #fbbf24;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1rem;
+            padding: 8px;
+        }
+
+        .login-badge-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .btn-login-submit {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            border: none;
+            font-weight: 700;
+            padding: 0.85rem;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-login-submit:hover {
+            background: linear-gradient(135deg, #1e40af, #1d4ed8);
+            transform: translateY(-2px);
+            color: #ffffff;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Standalone Login Card (No Navbar, No Sidebar, No Main System Links) -->
+    <div class="login-card">
+        
+        <!-- Header Banner -->
+        <div class="login-header-banner">
+            <div class="login-badge-icon">
+                {% if system_settings.main_logo_url %}
+                    <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام">
+                {% else %}
+                    <img src="{% static 'img/sudan_crest.png' %}" alt="شعار السودان">
+                {% endif %}
+            </div>
+            <h4 class="fw-bold mb-1 text-white">{{ system_settings.system_name|default:"نظام تسجيل واستخراج النتائج والشهادات" }}</h4>
+            <p class="text-white-50 small mb-0">{{ system_settings.system_subheading|default:"بوابة رصد الدرجات والشهادات المعتمدة" }}</p>
+        </div>
+
+        <!-- Card Body -->
+        <div class="p-4 p-md-4">
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} py-2 px-3 rounded-3 small mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger py-2 px-3 rounded-3 small mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div>يرجى التأكد من صحة اسم المستخدم وكلمة المرور.</div>
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'training:login' %}" autocomplete="off">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <!-- Username -->
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-bold text-dark small">
+                        <i class="bi bi-person-badge-fill text-primary me-1"></i>
+                        اسم المستخدم
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="bi bi-person"></i>
+                        </span>
+                        {{ form.username }}
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-4">
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-bold text-dark small">
+                        <i class="bi bi-shield-lock-fill text-primary me-1"></i>
+                        كلمة المرور
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="bi bi-key"></i>
+                        </span>
+                        {{ form.password }}
+                        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility()" title="إظهار / إخفاء كلمة المرور">
+                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 mb-3">
+                    <button type="submit" class="btn btn-login-submit btn-lg fw-bold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-box-arrow-in-left fs-5"></i>
+                        <span>دخول إلى النظام</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Default Credentials Note -->
+            <div class="bg-light p-3 rounded-3 border border-dashed text-muted small">
+                <div class="d-flex align-items-center gap-2 fw-bold text-secondary mb-2">
+                    <i class="bi bi-info-circle-fill text-primary"></i>
+                    <span>بيانات الدخول التجريبية:</span>
+                </div>
+                <div class="d-flex flex-column gap-1 px-1">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-shield-lock-fill text-warning me-1"></i>مدير نظام (أدمن):</span>
+                        <span><code class="fw-bold text-dark">admin</code> / <code class="fw-bold text-dark">admin123</code></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-person-fill text-primary me-1"></i>مستخدم عادي:</span>
+                        <span><code class="fw-bold text-dark">user</code> / <code class="fw-bold text-dark">user123</code></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center py-3 bg-light border-top text-muted small">
+            <i class="bi bi-shield-check text-success me-1"></i>
+            نظام محمي ومشفر وفق المعايير الإدارية المعتمدة
+        </div>
+
+    </div>
+
+    <script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+    </script>
+</body>
+</html>

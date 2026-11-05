@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول الإدارة العليا - بوابة القيادة والأدمن</title>
+    
+    <!-- Local Bootstrap RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <style>
+        :root {
+            --admin-dark: #070c18;
+            --admin-card: #0e172a;
+            --admin-border: #1e293b;
+            --admin-accent: #2563eb;
+            --admin-gold: #d97706;
+        }
+
+        body {
+            background: radial-gradient(circle at top center, #111e3b 0%, #060a14 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            color: #f8fafc;
+            padding: 20px;
+        }
+
+        .admin-login-card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(37, 99, 235, 0.15);
+            backdrop-filter: blur(12px);
+            max-width: 460px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            border: 2px solid #fbbf24;
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            margin-bottom: 1.25rem;
+        }
+
+        .form-control-admin {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff !important;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+        }
+
+        .form-control-admin:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+        }
+
+        .form-control-admin::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-admin-submit {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: 1px solid #60a5fa;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 0.9rem;
+            border-radius: 14px;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-admin-submit:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.5);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-login-card">
+        <!-- Card Header -->
+        <div class="p-4 p-md-5 text-center pb-3">
+            <div class="admin-badge">
+                <i class="bi bi-shield-lock-fill fs-1 text-warning"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-white">لوحة القيادة والأدمن</h3>
+            <p class="text-white-50 small mb-0">بوابة الإدارة العليا والتحليلات وتخصيص النظام</p>
+            <div class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill mt-3 small">
+                <i class="bi bi-lock-fill me-1"></i> منطقة مخصصة لحسابات مسؤولي النظام فقط
+            </div>
+        </div>
+
+        <!-- Messages / Alerts -->
+        {% if messages %}
+            <div class="px-4 px-md-5">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'danger' }} small py-2 px-3 rounded-3 border-0 d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-6"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <div class="p-4 p-md-5 pt-2">
+            <form method="post" action="{% url 'training:admin_login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <!-- Username -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-white-50">
+                        <i class="bi bi-person-badge-fill text-warning me-1"></i>
+                        اسم مستخدم الأدمن
+                    </label>
+                    <input type="text" name="username" class="form-control form-control-admin" placeholder="اسم المستخدم (مثال: admin)" required autofocus autocomplete="username">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-white-50">
+                        <i class="bi bi-key-fill text-warning me-1"></i>
+                        كلمة المرور السرية
+                    </label>
+                    <div class="input-group">
+                        <input type="password" name="password" id="adminPasswordInput" class="form-control form-control-admin border-end-0" placeholder="••••••••" required autocomplete="current-password">
+                        <button class="btn btn-outline-secondary border-start-0 text-white-50" type="button" onclick="toggleAdminPassword()" style="background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.15);">
+                            <i class="bi bi-eye" id="adminPasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-admin-submit d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-door-open-fill fs-5"></i>
+                        <span>دخول إلى لوحة القيادة</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Default Credentials Note -->
+            <div class="p-3 rounded-3 mt-3 border border-secondary border-opacity-25" style="background: rgba(255, 255, 255, 0.03);">
+                <div class="d-flex align-items-center gap-2 text-warning small fw-bold mb-1">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>حساب المسؤول الافتراضي للنظام:</span>
+                </div>
+                <div class="d-flex justify-content-between text-white-50 small mt-1">
+                    <span>المستخدم: <code class="text-white fw-bold">admin</code></span>
+                    <span>كلمة المرور: <code class="text-white fw-bold">admin123</code></span>
+                </div>
+            </div>
+
+            <!-- Back to Public System Link -->
+            <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-25">
+                <a href="{% url 'training:home' %}" class="text-decoration-none text-white-50 small hover-text-white d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-right"></i>
+                    <span>العودة إلى بوابة التدريب العامة</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function toggleAdminPassword() {
+        const inp = document.getElementById('adminPasswordInput');
+        const icon = document.getElementById('adminPasswordIcon');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            inp.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+    </script>
+</body>
+</html>

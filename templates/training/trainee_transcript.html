@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}السجل الأكاديمي التاريخي | {{ trainee.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">واجهة النتيجة والشهادات</a></li>
+        <li class="breadcrumb-item active" aria-current="page">السجل التاريخي للدارس</li>
+    </ol>
+</nav>
+
+<!-- Trainee Profile Card -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+    <div class="card-header bg-primary text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-white bg-opacity-20 text-white d-flex align-items-center justify-content-center" style="width: 58px; height: 58px; font-size: 1.6rem;">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0">{{ trainee.rank }} / {{ trainee.name }}</h4>
+                <div class="small opacity-90 mt-1">
+                    <span>النمرة: <strong class="font-monospace">{{ trainee.military_number }}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>الوحدة: <strong>{{ trainee.unit }}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>القوة: <strong>{{ trainee.force }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            {% if trainee.category == 'officer' %}
+                <span class="badge badge-officer fs-6 px-3 py-2 rounded-pill">ضباط</span>
+            {% elif trainee.category == 'nco' %}
+                <span class="badge badge-nco fs-6 px-3 py-2 rounded-pill">ضباط صف</span>
+            {% else %}
+                <span class="badge badge-civilian fs-6 px-3 py-2 rounded-pill">مدنيين</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Historical Courses & Results Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <div>
+            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-journal-check text-success"></i>
+                الدورات التدريبية المنجزة وسجل النتائج
+            </h5>
+            <small class="text-muted">كشف شامل بجميع الدورات التي درسها الدارس وتواريخها ودرجاته وشهاداته</small>
+        </div>
+        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-2 rounded-pill border">
+            إجمالي الدورات: {{ enrollments|length }}
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">الدورة والتصنيف</th>
+                    <th style="width: 15%;">رمز الدفعة</th>
+                    <th style="width: 18%;">فترة الانعقاد</th>
+                    <th style="width: 12%; text-align: center;">المجموع</th>
+                    <th style="width: 10%; text-align: center;">النسبة (%)</th>
+                    <th style="width: 10%; text-align: center;">التقدير</th>
+                    <th style="width: 10%; text-align: center;">الشهادة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for en in enrollments %}
+                    <tr>
+                        <td>
+                            <strong class="text-dark d-block fs-6">{{ en.session.course.name }}</strong>
+                            <span class="badge bg-light text-dark border">{{ en.session.course.category.name }}</span>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-primary">{{ en.session.session_code }}</span>
+                        </td>
+                        <td>
+                            <small class="d-block text-muted">من: {{ en.session.start_date|date:"Y-m-d" }}</small>
+                            <small class="d-block text-muted">إلى: {{ en.session.end_date|date:"Y-m-d" }}</small>
+                        </td>
+                        <td class="text-center">
+                            <strong class="text-dark">{{ en.total_score }}</strong>
+                            <small class="text-muted d-block font-monospace">/ {{ en.session.total_possible_score }}</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% else %}badge-grade-d{% endif %} fs-6 px-3 py-1">
+                                {{ en.percentage }}%
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <strong>{{ en.grade_label }}</strong>
+                        </td>
+                        <td class="text-center">
+                            {% if en.has_complete_data_and_grades %}
+                                <a href="{% url 'training:certificate' en.id %}" target="_blank" class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-award-fill"></i>
+                                    <span>الشهادة</span>
+                                </a>
+                            {% else %}
+                                <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
+                                    <i class="bi bi-lock-fill text-secondary"></i>
+                                    <span>غير مكتمل</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            لم يسجل هذا الدارس في أي دورة بعد.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

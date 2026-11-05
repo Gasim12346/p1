@@ -1,0 +1,1010 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام تسجيل واستخراج النتائج والشهادات{% endblock %}</title>
+    
+    <!-- Local Bootstrap 5 RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    
+    <!-- Local Bootstrap Icons -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <!-- Google Fonts - Cairo (Optional Online) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Custom System Styles -->
+    <style>
+        :root {
+            --primary-navy: {{ system_settings.primary_navy|default:"#0f172a" }};
+            --primary-accent: {{ system_settings.primary_accent|default:"#1e3a8a" }};
+            --brand-blue: {{ system_settings.brand_blue|default:"#2563eb" }};
+            --brand-cyan: {{ system_settings.brand_cyan|default:"#0284c7" }};
+            --gold-accent: {{ system_settings.gold_accent|default:"#d97706" }};
+            --gold-soft: #fef3c7;
+            --bg-light: {{ system_settings.bg_light|default:"#f8fafc" }};
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --sidebar-width: 270px;
+            --sidebar-collapsed-width: 78px;
+            --sidebar-gradient: linear-gradient(180deg, {{ system_settings.sidebar_bg_start|default:"#0b1329" }} 0%, {{ system_settings.sidebar_bg_end|default:"#0f172a" }} 100%);
+        }
+
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ========================================================
+           1. Top Navbar (Active on Homepage)
+           ======================================================== */
+        .navbar-custom {
+            background: linear-gradient(135deg, #0b1329 0%, #1e293b 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            padding: 0.85rem 0;
+            border-bottom: 2px solid rgba(217, 119, 6, 0.4);
+        }
+
+        .navbar-brand-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.25rem;
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-badge-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.35rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            flex-shrink: 0;
+        }
+
+        .nav-link-custom {
+            color: #cbd5e1 !important;
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 7px 13px !important;
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 7px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            text-decoration: none;
+        }
+
+        .nav-link-custom i {
+            font-size: 1.1rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-link-custom span {
+            white-space: nowrap !important;
+            line-height: 1;
+        }
+
+        .nav-link-custom:hover {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .nav-link-custom.active {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* زر تسجيل خروج متناسق وأنيق ينسجم تماماً مع هوية الواجهة */
+        .btn-nav-logout {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(248, 113, 113, 0.35);
+            color: #fca5a5 !important;
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 6px 14px;
+            border-radius: 30px;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 7px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-nav-logout i {
+            font-size: 1.05rem;
+            color: #f87171;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .btn-nav-logout:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border-color: #ef4444;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-nav-logout:hover i {
+            color: #ffffff;
+            transform: translateX(-2px);
+        }
+
+        /* زر تسجيل الخروج في السايد بار */
+        .btn-sidebar-logout {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5 !important;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 8px 14px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            white-space: nowrap !important;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            box-sizing: border-box;
+        }
+
+        .btn-sidebar-logout i {
+            font-size: 1.15rem;
+            color: #f87171;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-sidebar-logout:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border-color: #ef4444;
+            color: #ffffff !important;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.35);
+        }
+
+        .btn-sidebar-logout:hover i {
+            color: #ffffff;
+            transform: translateX(-2px);
+        }
+
+        /* ========================================================
+           2. Sidebar Layout (Active on All Inner Pages)
+           ======================================================== */
+        .sidebar-page-layout {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
+        .app-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-gradient);
+            color: #cbd5e1;
+            z-index: 1040;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.15);
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1.15rem 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .sidebar-brand:hover {
+            color: #ffffff;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-grow: 1;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.75rem 0.85rem 0.35rem 0.85rem;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-nav-link i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(-3px);
+        }
+
+        .sidebar-nav-link:hover i {
+            color: #60a5fa;
+        }
+
+        .sidebar-nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+        }
+
+        .sidebar-nav-link.active i {
+            color: #ffffff;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Inner App Topbar */
+        .app-inner-topbar {
+            height: 64px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+
+        .app-main-wrapper {
+            flex-grow: 1;
+            margin-right: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-light);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: calc(100% - var(--sidebar-width));
+        }
+
+        /* Desktop Collapsed Sidebar State */
+        body.sidebar-collapsed .app-sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+        body.sidebar-collapsed .app-sidebar .sidebar-brand-text,
+        body.sidebar-collapsed .app-sidebar .sidebar-nav-link span,
+        body.sidebar-collapsed .app-sidebar .sidebar-section-title,
+        body.sidebar-collapsed .app-sidebar .sidebar-footer-text,
+        body.sidebar-collapsed .app-sidebar .btn-sidebar-logout span {
+            display: none !important;
+        }
+        body.sidebar-collapsed .app-sidebar .btn-sidebar-logout {
+            width: 44px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            border-radius: 12px !important;
+            margin: 0 auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        body.sidebar-collapsed .app-sidebar .sidebar-nav-link {
+            justify-content: center;
+            padding: 0.75rem 0;
+        }
+        body.sidebar-collapsed .app-sidebar .sidebar-header {
+            justify-content: center;
+            padding: 1rem 0;
+        }
+        body.sidebar-collapsed .app-main-wrapper {
+            margin-right: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+
+        /* Mobile & Tablet Responsive */
+        @media (max-width: 991.98px) {
+            .app-main-wrapper {
+                margin-right: 0 !important;
+                width: 100% !important;
+            }
+            .app-sidebar {
+                transform: translateX(100%);
+            }
+            .app-sidebar.show {
+                transform: translateX(0);
+            }
+            .sidebar-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(15, 23, 42, 0.5);
+                backdrop-filter: blur(4px);
+                z-index: 1035;
+                display: none;
+            }
+            .sidebar-backdrop.show {
+                display: block;
+            }
+        }
+
+        /* ========================================================
+           3. Shared Components (Hero, Cards, Badges, Tables)
+           ======================================================== */
+        .hero-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 2.5rem 2.2rem;
+            margin-bottom: 2.2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -10%;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.3) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 1.5rem;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .stat-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .icon-blue { background: #eff6ff; color: #2563eb; }
+        .icon-gold { background: #fffbeb; color: #d97706; }
+        .icon-green { background: #ecfdf5; color: #059669; }
+        .icon-purple { background: #faf5ff; color: #9333ea; }
+
+        .module-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 2rem 1.75rem;
+            transition: all 0.35s ease;
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        .module-card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+        }
+
+        .module-card .badge-step {
+            position: absolute;
+            top: 1.25rem;
+            left: 1.25rem;
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 30px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .module-card-icon-box {
+            width: 68px;
+            height: 68px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .btn-modern-primary {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            border: none;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-modern-primary:hover {
+            background: linear-gradient(135deg, #1e40af, #1d4ed8);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-modern-outline {
+            background: transparent;
+            color: #1e3a8a;
+            border: 1.5px solid #cbd5e1;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-modern-outline:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+        }
+
+        .table-custom {
+            margin-bottom: 0;
+        }
+        .table-custom thead th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 1rem;
+        }
+        .table-custom tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+        }
+
+        .badge-officer { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-weight: 700; }
+        .badge-nco { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; }
+        .badge-civilian { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; font-weight: 700; }
+
+        .badge-grade-a { background: #dcfce7; color: #15803d; font-weight: 800; border: 1px solid #bbf7d0; }
+        .badge-grade-b { background: #dbeafe; color: #1d4ed8; font-weight: 800; border: 1px solid #bfdbfe; }
+        .badge-grade-c { background: #fef9c3; color: #a16207; font-weight: 800; border: 1px solid #fef08a; }
+        .badge-grade-d { background: #ffedd5; color: #c2410c; font-weight: 800; border: 1px solid #fed7aa; }
+
+        footer {
+            margin-top: auto;
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 1.5rem 0;
+            border-top: 1px solid #1e293b;
+            font-size: 0.9rem;
+        }
+
+        .live-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {% if request.resolver_match.url_name == 'home' %}
+        <!-- =========================================================
+             A. الواجهة الرئيسية: إبقاء النافبار العلوي الأصلي (Top Navbar)
+             ========================================================= -->
+        <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+            <div class="container-fluid px-xl-5 px-lg-4 px-3">
+                <a class="navbar-brand-custom flex-shrink-0" href="{% url 'training:home' %}">
+                    {% if system_settings.main_logo_url %}
+                        <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام" class="brand-badge-icon p-1 bg-white" style="object-fit: contain;">
+                    {% else %}
+                        <div class="brand-badge-icon">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <div style="line-height: 1.1;">{{ system_settings.system_name|default:"نظام تسجيل واستخراج النتائج" }}</div>
+                        <small style="font-size: 0.72rem; color: #94a3b8; font-weight: 500;">{{ system_settings.system_subheading|default:"بوابة رصد الدرجات والشهادات المعتمدة" }}</small>
+                    </div>
+                </a>
+
+                <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="تبديل القائمة">
+                    <i class="bi bi-list fs-1 text-white"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 gap-xl-2 mt-3 mt-lg-0 align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link-custom active" href="{% url 'training:home' %}">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>الرئيسية</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
+                                <i class="bi bi-people-fill"></i>
+                                <span>واجهة الدارسين</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                                <span>واجهة الدورات</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
+                                <i class="bi bi-diagram-3-fill"></i>
+                                <span>الدورة التي تدرس</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:results_center' %}">
+                                <i class="bi bi-award-fill"></i>
+                                <span>واجهة النتيجة والشهادات</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0 flex-nowrap">
+                        <div class="bg-dark bg-opacity-50 px-3 py-1 rounded-pill border border-secondary border-opacity-25 d-flex align-items-center gap-2 text-white-50 text-nowrap">
+                            <span class="live-dot"></span>
+                            <span class="text-white small fw-bold" id="liveClock">التاريخ: 2026</span>
+                        </div>
+                        
+                        {% if user.is_authenticated %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 text-nowrap" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle text-warning"></i>
+                                    <span>{{ user.username }}</span>
+                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                        <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">أدمن</span>
+                                    {% endif %}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                    <li class="px-3 py-2 border-bottom bg-light">
+                                        <div class="fw-bold small text-dark">{{ user.get_full_name|default:user.username }}</div>
+                                        <small class="text-muted" style="font-size: 0.72rem;">{{ user.profile.get_role_display|default:"مستخدم عادي" }}</small>
+                                    </li>
+                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-primary py-2" href="{% url 'training:admin_dashboard' %}">
+                                                <i class="bi bi-shield-lock-fill text-warning"></i>
+                                                لوحة تحكم الأدمن (منفصلة)
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="dropdown-item text-danger d-flex align-items-center gap-2 py-2" href="{% url 'training:logout' %}">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            تسجيل الخروج
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- زر تسجيل خروج متناسق وأنيق ينسجم مع ألوان وهوية الواجهة -->
+                            <a href="{% url 'training:logout' %}" class="btn-nav-logout" title="تسجيل الخروج من النظام">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>تسجيل خروج</span>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'training:login' %}" class="btn btn-sm btn-warning rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1 shadow-sm text-nowrap">
+                                <i class="bi bi-box-arrow-in-left"></i>
+                                <span>تسجيل الدخول</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Wrapper for Home -->
+        <main class="flex-grow-1 py-4">
+            <div class="container">
+    {% else %}
+        <!-- =========================================================
+             B. باقي الواجهات والصفحات: تحويل النافبار إلى قائمة جانبية (Sidebar)
+             ========================================================= -->
+        <div class="sidebar-page-layout">
+            
+            <!-- Mobile Backdrop Overlay -->
+            <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+            <!-- Sleek App Sidebar -->
+            <aside class="app-sidebar" id="appSidebar">
+                <!-- Sidebar Header -->
+                <div class="sidebar-header d-flex align-items-center justify-content-between">
+                    <a href="{% url 'training:home' %}" class="sidebar-brand">
+                        {% if system_settings.main_logo_url %}
+                            <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام" class="brand-badge-icon p-1 bg-white" style="width: 38px; height: 38px; border-radius: 10px; object-fit: contain;">
+                        {% else %}
+                            <div class="brand-badge-icon" style="width: 38px; height: 38px; font-size: 1.15rem; border-radius: 10px;">
+                                <i class="bi bi-mortarboard-fill"></i>
+                            </div>
+                        {% endif %}
+                        <div class="sidebar-brand-text">
+                            <div class="fw-bold fs-6 text-white text-nowrap" style="line-height: 1.2;">{{ system_settings.system_name|default:"نظام النتائج والشهادات" }}</div>
+                            <small class="text-white-50" style="font-size: 0.7rem;">{{ system_settings.system_subheading|default:"بوابة التعليم والتدريب" }}</small>
+                        </div>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-link text-white-50 d-lg-none p-0 text-decoration-none" onclick="toggleSidebar()" aria-label="إغلاق القائمة">
+                        <i class="bi bi-x-lg fs-5"></i>
+                    </button>
+                </div>
+
+                <!-- Sidebar Nav Menu -->
+                <div class="sidebar-nav">
+                    <div class="sidebar-section-title">بوابات النظام</div>
+
+                    <!-- 1. الرئيسية -->
+                    <a href="{% url 'training:home' %}" class="sidebar-nav-link" title="الرئيسية (لوحة التحكم)">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>الرئيسية</span>
+                    </a>
+
+                    <!-- 2. واجهة الدارسين -->
+                    <a href="{% url 'training:trainees_list' %}" class="sidebar-nav-link {% if 'trainee' in request.resolver_match.url_name %}active{% endif %}" title="واجهة الدارسين وسجلاتهم">
+                        <i class="bi bi-people-fill"></i>
+                        <span>واجهة الدارسين</span>
+                    </a>
+
+                    <!-- 3. واجهة الدورات ومفردات المواد -->
+                    <a href="{% url 'training:courses_catalog' %}" class="sidebar-nav-link {% if 'course' in request.resolver_match.url_name and 'session' not in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}active{% endif %}" title="واجهة الدورات ومفردات المواد">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                        <span>واجهة الدورات ومفرداتها</span>
+                    </a>
+
+                    <!-- 4. الدورة التي تدرس -->
+                    <a href="{% url 'training:course_sessions' %}" class="sidebar-nav-link {% if 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}active{% endif %}" title="الدورة التي تدرس (الانعقاد والدارسون)">
+                        <i class="bi bi-diagram-3-fill"></i>
+                        <span>الدورة التي تدرس</span>
+                    </a>
+
+                    <!-- 5. واجهة النتيجة والشهادات -->
+                    <a href="{% url 'training:results_center' %}" class="sidebar-nav-link {% if 'result' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name or 'certificate' in request.resolver_match.url_name %}active{% endif %}" title="واجهة النتيجة ورصد الدرجات والشهادات">
+                        <i class="bi bi-award-fill"></i>
+                        <span>النتيجة والشهادات</span>
+                    </a>
+                </div>
+
+                <!-- Sidebar Footer -->
+                <div class="sidebar-footer">
+                    <div class="d-flex align-items-center gap-2 mb-2 sidebar-footer-text">
+                        <span class="live-dot"></span>
+                        <small class="text-white-50" id="sidebarLiveClock">التاريخ: 2026</small>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between sidebar-footer-text mb-2">
+                        <span class="text-white-50" style="font-size: 0.72rem;">إصدار 2026 • معتمد</span>
+                        <a href="{% url 'training:home' %}" class="badge bg-secondary bg-opacity-25 text-white text-decoration-none px-2 py-1" title="العودة للواجهة الرئيسية">
+                            <i class="bi bi-house-door me-1"></i>الرئيسية
+                        </a>
+                    </div>
+                    <a href="{% url 'training:logout' %}" class="btn-sidebar-logout" title="تسجيل الخروج من النظام">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>تسجيل الخروج</span>
+                    </a>
+                </div>
+            </aside>
+
+            <!-- App Main Content Area -->
+            <div class="app-main-wrapper" id="appMainWrapper">
+                <!-- Inner Topbar Header -->
+                <header class="app-inner-topbar">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-light border shadow-sm px-2 py-1 rounded-2" onclick="toggleSidebar()" id="sidebarToggleBtn" title="تبديل القائمة الجانبية (تصغير/تكبير)">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold text-dark fs-6 d-none d-sm-inline">
+                                {% if 'trainee' in request.resolver_match.url_name %}
+                                    <i class="bi bi-people-fill text-primary me-1"></i> واجهة الدارسين
+                                {% elif 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}
+                                    <i class="bi bi-diagram-3-fill text-primary me-1"></i> واجهة الدورة التي تدرس
+                                {% elif 'course' in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}
+                                    <i class="bi bi-journal-bookmark-fill text-primary me-1"></i> واجهة الدورات ومفردات المواد
+                                {% elif 'result' in request.resolver_match.url_name or 'grade' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name %}
+                                    <i class="bi bi-award-fill text-warning me-1"></i> واجهة النتيجة والشهادات
+                                {% elif 'admin' in request.resolver_match.url_name or 'category' in request.resolver_match.url_name %}
+                                    <i class="bi bi-shield-shaded text-warning me-1"></i> لوحة الإدارة والتحليلات
+                                {% else %}
+                                    <i class="bi bi-layers-fill text-primary me-1"></i> بوابة النظام
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-light px-3 py-1 rounded-pill border d-none d-md-flex align-items-center gap-2">
+                            <span class="live-dot"></span>
+                            <span class="text-secondary small fw-bold" id="topbarLiveClock">التاريخ: 2026</span>
+                        </div>
+
+                        {% if user.is_authenticated %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 shadow-sm" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle text-primary"></i>
+                                    <span class="small fw-bold">{{ user.username }}</span>
+                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                        <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">أدمن</span>
+                                    {% endif %}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                    <li class="px-3 py-2 border-bottom bg-light">
+                                        <div class="fw-bold small text-dark">{{ user.get_full_name|default:user.username }}</div>
+                                        <small class="text-muted" style="font-size: 0.72rem;">{{ user.profile.get_role_display|default:"مستخدم عادي" }}</small>
+                                    </li>
+                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-primary py-2" href="{% url 'training:admin_dashboard' %}">
+                                                <i class="bi bi-shield-lock-fill text-warning"></i>
+                                                لوحة تحكم الأدمن (منفصلة)
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="dropdown-item text-danger d-flex align-items-center gap-2 py-2" href="{% url 'training:logout' %}">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            تسجيل الخروج
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- زر تسجيل خروج متناسق وأنيق في الشريط العلوي الداخلي -->
+                            <a href="{% url 'training:logout' %}" class="btn-nav-logout" title="تسجيل الخروج من النظام">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>تسجيل خروج</span>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'training:login' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1 shadow-sm">
+                                <i class="bi bi-box-arrow-in-left"></i>
+                                <span>تسجيل الدخول</span>
+                            </a>
+                        {% endif %}
+
+                        <a href="{% url 'training:home' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-house-door-fill"></i>
+                            <span>الرئيسية</span>
+                        </a>
+                    </div>
+                </header>
+
+                <!-- Inner Main Content Container -->
+                <main class="flex-grow-1 p-3 p-lg-4">
+                    <div class="container-fluid p-0">
+    {% endif %}
+
+                        <!-- Messages / Alerts (Rendered once) -->
+                        {% if messages %}
+                            <div class="mb-4">
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                                        <i class="bi bi-check-circle-fill fs-5"></i>
+                                        <div>{{ message }}</div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Content Block (EXACTLY ONCE IN TEMPLATE!) -->
+                        {% block content %}{% endblock %}
+
+    {% if request.resolver_match.url_name == 'home' %}
+            </div>
+        </main>
+
+        <!-- Global Footer for Home -->
+        <footer>
+            <div class="container">
+                <div class="row align-items-center gy-2">
+                    <div class="col-md-6 text-center text-md-start">
+                        <span class="fw-bold text-white">نظام إدارة الدورات ودرجات الدارسين واستخراج الشهادات</span>
+                        <span class="mx-2">•</span>
+                        <span>جميع الحقوق محفوظة &copy; 2026</span>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <span class="badge bg-secondary bg-opacity-25 text-light px-3 py-2 rounded-pill">
+                            <i class="bi bi-shield-check text-warning me-1"></i> مصمم بأعلى معايير الدقة والسرية
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    {% else %}
+                    </div>
+                </main>
+
+                <!-- Inner Compact Footer -->
+                <footer class="bg-white border-top py-3 px-4 text-muted small mt-auto">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <span class="fw-bold text-dark">نظام إدارة الدورات والشهادات</span>
+                            <span class="mx-2">•</span>
+                            <span>جميع الحقوق محفوظة &copy; 2026</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill">
+                                <i class="bi bi-shield-check text-success me-1"></i> نظام مشفر ومعتمد
+                            </span>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Local Bootstrap 5 JS Bundle -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <!-- Fallback CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Update live time across clocks
+        function updateLiveDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('ar-EG', options);
+            
+            const clocks = ['liveClock', 'sidebarLiveClock', 'topbarLiveClock'];
+            clocks.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = dateStr;
+            });
+        }
+        updateLiveDate();
+
+        // Toggle Sidebar function (Mobile offcanvas drawer + Desktop collapse)
+        function toggleSidebar() {
+            const isMobile = window.innerWidth < 992;
+            const sidebar = document.getElementById('appSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            
+            if (isMobile) {
+                if (sidebar) sidebar.classList.toggle('show');
+                if (backdrop) backdrop.classList.toggle('show');
+            } else {
+                document.body.classList.toggle('sidebar-collapsed');
+                const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                try {
+                    localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                } catch(e) {}
+            }
+        }
+
+        // Restore desktop sidebar collapse preference
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.innerWidth >= 992) {
+                try {
+                    if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                        document.body.classList.add('sidebar-collapsed');
+                    }
+                } catch(e) {}
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

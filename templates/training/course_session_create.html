@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}فتح دورة جديدة وربط الطلبة | نظام تسجيل واستخراج النتائج{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trainee-row-selected {
+        background-color: #f0fdf4 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">واجهة الدورة التي تدرس</a></li>
+        <li class="breadcrumb-item active" aria-current="page">فتح دورة جديدة وربط الطلبة</li>
+    </ol>
+</nav>
+
+<form method="post" id="sessionCreateForm">
+    {% csrf_token %}
+
+    <!-- 1. بيانات الدورة والانعقاد -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-success text-white py-3 px-4 rounded-top-4 d-flex align-items-center gap-2">
+            <i class="bi bi-calendar-plus-fill fs-5"></i>
+            <h5 class="fw-bold mb-0">الخطوة 1: اختيار الدورة وبيانات الانعقاد والتواريخ</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <!-- اختيار تصنيف الدورة -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
+                    <select id="categorySelector" class="form-select form-select-lg" required onchange="filterCoursesByCategory()">
+                        <option value="" disabled selected>--- اختر تصنيف الدورة ---</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small text-muted">دورات مرشد، دورات خاصة، أو دورات مشتركة</div>
+                </div>
+
+                <!-- اختيار اسم الدورة -->
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span class="text-danger">*</span></label>
+                    <select name="course" id="courseSelector" class="form-select form-select-lg" required>
+                        <option value="" disabled selected>--- اختر تصنيف الدورة أولاً ---</option>
+                        {% for cat in categories %}
+                            {% for c in cat.courses.all %}
+                                <option value="{{ c.id }}" data-category="{{ cat.id }}" style="display: none;">
+                                    {{ c.name }} ({{ c.course_number|default:"بدون رمز" }})
+                                </option>
+                            {% endfor %}
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small text-muted">يتم تصفية أسماء الدورات حسب التصنيف المختار</div>
+                </div>
+
+                <!-- رمز الدفعة -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">رمز الدفعة / الانعقاد <span class="text-danger">*</span></label>
+                    <input type="text" name="session_code" class="form-control form-control-lg" placeholder="مثال: الدفعة 21 - 2026" required>
+                </div>
+
+                <!-- تاريخ البداية -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span class="text-danger">*</span></label>
+                    <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required>
+                </div>
+
+                <!-- تاريخ النهاية -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span class="text-danger">*</span></label>
+                    <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required>
+                </div>
+
+                <!-- درجة المواظبة -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">درجة المواظبة والسلوك العظمى</label>
+                    <input type="number" name="attendance_max_grade" class="form-control form-control-lg" value="20" step="0.5" min="0">
+                    <div class="form-text small text-muted">تضاف للدرجة الكلية لحساب النسبة</div>
+                </div>
+
+                <!-- حالة الدورة -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">حالة الدورة</label>
+                    <select name="status" class="form-select form-select-lg">
+                        <option value="active" selected>جارية حالياً</option>
+                        <option value="planned">مخطط لها</option>
+                        <option value="completed">مكتملة</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ربط الطلبة وتعديل رتبهم ووحداتهم -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-people-fill text-primary"></i>
+                    الخطوة 2: اختيار الطلبة الدارسين وإمكانية تعديل الرتبة والوحدة وقت الدورة
+                </h5>
+                <span class="text-muted small">حدد الطلبة الملتحقين، ويمكنك تعديل رتبة أو وحدة أي طالب مباشرة في الخانة المخصصة</span>
+            </div>
+
+            <!-- زر التحديد السريع -->
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill" id="selectedCountBadge">
+                    تم تحديد: 0 دارس
+                </span>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="toggleSelectAll(true)">
+                    تحديد الكل
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="toggleSelectAll(false)">
+                    إلغاء التحديد
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter & Search toolbar -->
+        <div class="bg-light p-3 border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="traineeFilterInput" class="form-control border-start-0" placeholder="تصفية بالاسم، النمرة، الرتبة، أو الوحدة..." onkeyup="filterTraineesTable()">
+                    </div>
+                </div>
+                <div class="col-md-7 text-md-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-dark active" onclick="filterByCategoryTab('all', this)">الكل</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterByCategoryTab('officer', this)">ضباط</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="filterByCategoryTab('nco', this)">ضباط صف</button>
+                        <button type="button" class="btn btn-sm btn-outline-purple" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterByCategoryTab('civilian', this)">مدنيين</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="traineesTable">
+                <thead class="bg-light text-muted sticky-top">
+                    <tr>
+                        <th style="width: 5%; text-align: center;">اختيار</th>
+                        <th style="width: 14%;">النمرة (أرقام فقط)</th>
+                        <th style="width: 22%;">اسم الدارس</th>
+                        <th style="width: 12%;">التصنيف</th>
+                        <th style="width: 23%;">الرتبة أثناء الدورة (قابلة للتعديل)</th>
+                        <th style="width: 24%;">الوحدة أثناء الدورة (قابلة للتعديل)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trainees %}
+                        <tr class="trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}">
+                            <td class="text-center">
+                                <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}" class="form-check-input trainee-checkbox" style="width: 20px; height: 20px; cursor: pointer;" onchange="updateSelectedCount(); highlightRow(this);">
+                            </td>
+                            <td>
+                                <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
+                                    {{ t.military_number }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong class="text-dark d-block">{{ t.name }}</strong>
+                                <small class="text-muted">{{ t.force }}</small>
+                            </td>
+                            <td>
+                                {% if t.category == 'officer' %}
+                                    <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
+                                {% elif t.category == 'nco' %}
+                                    <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
+                                {% else %}
+                                    <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
+                                {% endif %}
+                            </td>
+                            <!-- حقل الرتبة وقت الدورة (قابل للتعديل) -->
+                            <td>
+                                <input type="text" name="rank_{{ t.military_number }}" value="{{ t.rank }}" class="form-control form-control-sm" placeholder="الرتبة أثناء الدورة">
+                            </td>
+                            <!-- حقل الوحدة وقت الدورة (قابل للتعديل) -->
+                            <td>
+                                <input type="text" name="unit_{{ t.military_number }}" value="{{ t.unit }}" class="form-control form-control-sm" placeholder="الوحدة أثناء الدورة">
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من واجهة الدارسين أولاً.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-5 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <a href="{% url 'training:course_sessions' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3">
+                <i class="bi bi-arrow-right me-1"></i> إلغاء والرجوع للقائمة
+            </a>
+
+            <button type="submit" class="btn btn-success btn-lg px-5 py-2 rounded-3 fw-bold shadow d-inline-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill fs-5"></i>
+                <span>حفظ الدورة وتسجيل الدارسين</span>
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // تصفية الدورات حسب التصنيف المختار
+    function filterCoursesByCategory() {
+        const catSelect = document.getElementById('categorySelector');
+        const courseSelect = document.getElementById('courseSelector');
+        const selectedCat = catSelect.value;
+
+        let firstMatch = null;
+        let visibleCount = 0;
+
+        for (let i = 0; i < courseSelect.options.length; i++) {
+            const opt = courseSelect.options[i];
+            const optCat = opt.getAttribute('data-category');
+
+            if (!optCat) continue; // Skip default option
+
+            if (optCat === selectedCat) {
+                opt.style.display = '';
+                visibleCount++;
+                if (!firstMatch) firstMatch = opt;
+            } else {
+                opt.style.display = 'none';
+            }
+        }
+
+        if (firstMatch) {
+            courseSelect.value = firstMatch.value;
+        } else {
+            courseSelect.selectedIndex = 0;
+        }
+    }
+
+    // تحديث عدد الطلبة المحددين
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.trainee-checkbox:checked');
+        const badge = document.getElementById('selectedCountBadge');
+        if (badge) {
+            badge.textContent = `تم تحديد: ${checked.length} دارس`;
+        }
+    }
+
+    function highlightRow(checkbox) {
+        const row = checkbox.closest('tr');
+        if (checkbox.checked) {
+            row.classList.add('trainee-row-selected');
+        } else {
+            row.classList.remove('trainee-row-selected');
+        }
+    }
+
+    function toggleSelectAll(selectAll) {
+        const rows = document.querySelectorAll('.trainee-row');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const cb = row.querySelector('.trainee-checkbox');
+                if (cb) {
+                    cb.checked = selectAll;
+                    highlightRow(cb);
+                }
+            }
+        });
+        updateSelectedCount();
+    }
+
+    // بحث وتصفية جدول الدارسين
+    function filterTraineesTable() {
+        const query = document.getElementById('traineeFilterInput').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.trainee-row');
+
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-search').toLowerCase();
+            if (searchData.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    let currentCategoryTab = 'all';
+    function filterByCategoryTab(cat, btn) {
+        currentCategoryTab = cat;
+        // Update active class
+        const buttons = btn.parentElement.querySelectorAll('button');
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const rows = document.querySelectorAll('.trainee-row');
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-category');
+            if (cat === 'all' || rowCat === cat) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        filterTraineesTable();
+    }
+</script>
+{% endblock %}

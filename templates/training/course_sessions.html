@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}واجهة الدورة التي يتم دراستها | نظام تسجيل واستخراج النتائج{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item active" aria-current="page">واجهة الدورة التي يتم دراستها</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3-fill text-success"></i>
+            واجهة الدورة التي يتم دراستها
+        </h2>
+        <p class="text-muted small mb-0">ربط الطلبة والدارسين بالدورات، تحديد التواريخ، وتعديل الرتب والوحدات وقت انعقاد الدورة وحفظها</p>
+    </div>
+
+    <div>
+        <a href="{% url 'training:course_session_create' %}" class="btn btn-success btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="bi bi-plus-circle-fill fs-5"></i>
+            <span>فتح دورة جديدة وربط الطلبة</span>
+        </a>
+    </div>
+</div>
+
+<!-- Sessions Table / Cards -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-calendar2-range-fill text-success"></i>
+            سجل الدورات المنعقدة والجارية
+        </h5>
+        <span class="text-muted small">
+            إجمالي الدورات المنعقدة: <strong class="text-dark">{{ sessions|length }}</strong>
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">اسم الدورة والتصنيف</th>
+                    <th style="width: 15%;">رمز الدفعة / الانعقاد</th>
+                    <th style="width: 18%;">فترة الانعقاد</th>
+                    <th style="width: 12%; text-align: center;">الدارسون</th>
+                    <th style="width: 10%; text-align: center;">الحالة</th>
+                    <th style="width: 20%; text-align: center;">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                    <tr>
+                        <!-- اسم الدورة والتصنيف -->
+                        <td>
+                            <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge bg-light text-dark border">
+                                    {{ session.course.category.name }}
+                                </span>
+                                <small class="text-muted font-monospace">{{ session.course.course_number }}</small>
+                            </div>
+                        </td>
+
+                        <!-- رمز الدفعة -->
+                        <td>
+                            <span class="fw-bold text-primary">
+                                {{ session.session_code }}
+                            </span>
+                        </td>
+
+                        <!-- التواريخ -->
+                        <td>
+                            <div class="small text-muted">
+                                <div><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></div>
+                                <div><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></div>
+                            </div>
+                        </td>
+
+                        <!-- عدد الدارسين -->
+                        <td class="text-center">
+                            <a href="{% url 'training:course_session_manage' session.id %}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none px-3 py-2 rounded-pill fs-6 fw-bold border border-primary border-opacity-25" title="عرض وإدارة الطلبة">
+                                <i class="bi bi-people-fill me-1"></i> {{ session.enrollments.count }} دارس
+                            </a>
+                        </td>
+
+                        <!-- الحالة -->
+                        <td class="text-center">
+                            {% if session.status == 'active' %}
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                                    <i class="bi bi-record-circle-fill me-1"></i> جارية حالياً
+                                </span>
+                            {% elif session.status == 'completed' %}
+                                <span class="badge bg-secondary bg-opacity-15 text-secondary px-3 py-2 rounded-pill">
+                                    مكتملة
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info bg-opacity-15 text-info px-3 py-2 rounded-pill">
+                                    مخطط لها
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- الإجراءات -->
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'training:course_session_manage' session.id %}" class="btn btn-sm btn-outline-success fw-bold px-2 py-1" title="إدارة الطلبة وتعديل الرتب والوحدات">
+                                    <i class="bi bi-person-gear"></i> إدارة الطلبة
+                                </a>
+                                <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" title="رصد الدرجات">
+                                    <i class="bi bi-pencil-square"></i> الدرجات
+                                </a>
+                                <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-outline-secondary px-2 py-1" title="تعديل تواريخ الدورة">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-outline-danger px-2 py-1" title="حذف الانعقاد">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-calendar-x text-muted" style="font-size: 3.5rem;"></i>
+                                <h5 class="fw-bold text-dark mt-3">لا توجد دورات منعقدة حالياً</h5>
+                                <p class="text-muted mb-3">يمكنك فتح انعقاد دورة جديدة وربط الطلبة وتعديل بياناتهم بكل سهولة.</p>
+                                <a href="{% url 'training:course_session_create' %}" class="btn btn-success rounded-3 px-4 fw-bold">
+                                    <i class="bi bi-plus-circle-fill me-1"></i> فتح أول دورة الآن
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

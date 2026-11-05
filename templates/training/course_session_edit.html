@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل دورة منعقدة | {{ session.course.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">واجهة الدورة التي تدرس</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تعديل بيانات الانعقاد</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-success text-white py-3 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square fs-5"></i>
+                    <h5 class="fw-bold mb-0">تعديل بيانات الدورة: {{ session.course.name }}</h5>
+                </div>
+                <span class="badge bg-white text-success px-3 py-2 rounded-pill font-monospace">
+                    {{ session.session_code }}
+                </span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الدورة التدريبية <span class="text-danger">*</span></label>
+                            {{ form.course }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">رمز الدفعة / الانعقاد <span class="text-danger">*</span></label>
+                            {{ form.session_code }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">تاريخ البداية <span class="text-danger">*</span></label>
+                            {{ form.start_date }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">تاريخ النهاية <span class="text-danger">*</span></label>
+                            {{ form.end_date }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">حالة الدورة</label>
+                            {{ form.status }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">درجة المواظبة والسلوك العظمى</label>
+                            {{ form.attendance_max_grade }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark">ملاحظات الانعقاد</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light py-3 px-4 d-flex justify-content-between">
+                    <a href="{% url 'training:course_sessions' %}" class="btn btn-outline-secondary rounded-3 px-4">
+                        <i class="bi bi-arrow-right me-1"></i> إلغاء ورجوع
+                    </a>
+                    <button type="submit" class="btn btn-success rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>حفظ التعديلات</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

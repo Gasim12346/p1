@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+
+{% block title %}واجهة الدارسين | نظام تسجيل واستخراج النتائج{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+                <li class="breadcrumb-item active" aria-current="page">واجهة الدارسين</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-people-fill text-primary"></i>
+            واجهة الدارسين
+        </h2>
+        <p class="text-muted small mb-0">إدخال وإدارة بيانات الطلبة والدارسين وحفظ سجلاتهم مصنفة إلى: ضباط، ضباط صف، ومدنيين</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addTraineeModal">
+            <i class="bi bi-person-plus-fill fs-5"></i>
+            <span>إضافة دارس جديد</span>
+        </button>
+    </div>
+</div>
+
+<!-- Tabs & Category Filters -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-3">
+        <div class="row align-items-center g-3">
+            <!-- Categories Pills -->
+            <div class="col-lg-7">
+                <ul class="nav nav-pills gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill fw-bold px-3 py-2 {% if not category_filter %}active bg-primary{% else %}bg-light text-dark border{% endif %}" href="{% url 'training:trainees_list' %}{% if search_query %}?q={{ search_query }}{% endif %}">
+                            جميع الدارسين
+                            <span class="badge bg-white text-primary ms-1 rounded-pill">{{ counts.all }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill fw-bold px-3 py-2 {% if category_filter == 'officer' %}active bg-primary{% else %}bg-light text-dark border{% endif %}" href="?category=officer{% if search_query %}&q={{ search_query }}{% endif %}">
+                            <i class="bi bi-shield-shaded me-1 text-primary"></i>
+                            ضباط
+                            <span class="badge bg-primary text-white ms-1 rounded-pill">{{ counts.officer }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill fw-bold px-3 py-2 {% if category_filter == 'nco' %}active bg-warning text-dark{% else %}bg-light text-dark border{% endif %}" href="?category=nco{% if search_query %}&q={{ search_query }}{% endif %}">
+                            <i class="bi bi-award me-1 text-warning"></i>
+                            ضباط صف
+                            <span class="badge bg-warning text-dark ms-1 rounded-pill">{{ counts.nco }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill fw-bold px-3 py-2 {% if category_filter == 'civilian' %}active bg-purple text-white{% else %}bg-light text-dark border{% endif %}" style="{% if category_filter == 'civilian' %}background-color: #7e22ce !important; color: white !important;{% endif %}" href="?category=civilian{% if search_query %}&q={{ search_query }}{% endif %}">
+                            <i class="bi bi-person-badge me-1" style="color: #7e22ce;"></i>
+                            مدنيين
+                            <span class="badge ms-1 rounded-pill" style="background-color: #f3e8ff; color: #7e22ce;">{{ counts.civilian }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Search Form -->
+            <div class="col-lg-5">
+                <form method="get" class="d-flex gap-2">
+                    {% if category_filter %}
+                        <input type="hidden" name="category" value="{{ category_filter }}">
+                    {% endif %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0" placeholder="بحث بالاسم، النمرة، الرتبة، الوحدة..." aria-label="بحث">
+                        <button class="btn btn-outline-secondary px-3" type="submit">بحث</button>
+                        {% if search_query %}
+                            <a href="{% url 'training:trainees_list' %}{% if category_filter %}?category={{ category_filter }}{% endif %}" class="btn btn-light border text-danger" title="إلغاء البحث">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trainees Table Card -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-card-checklist text-primary"></i>
+            قائمة بيانات الدارسين المسجلين
+        </h5>
+        <span class="text-muted small">
+            العدد الإجمالي المعروض: <strong class="text-dark">{{ trainees|length }}</strong> دارس
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-custom table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">النمرة (مفتاح أساسي)</th>
+                    <th style="width: 12%;">التصنيف</th>
+                    <th style="width: 14%;">الرتبة</th>
+                    <th style="width: 24%;">الاسم الكامل</th>
+                    <th style="width: 15%;">الوحدة</th>
+                    <th style="width: 10%;">القوة</th>
+                    <th style="width: 10%; text-align: center;">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trainee in trainees %}
+                    <tr>
+                        <!-- النمرة -->
+                        <td>
+                            <span class="badge bg-dark bg-opacity-10 text-dark fw-bold font-monospace px-3 py-2 rounded-3 border">
+                                <i class="bi bi-hash text-muted"></i>{{ trainee.military_number }}
+                            </span>
+                        </td>
+
+                        <!-- التصنيف -->
+                        <td>
+                            {% if trainee.category == 'officer' %}
+                                <span class="badge badge-officer px-3 py-2 rounded-pill">
+                                    <i class="bi bi-shield-shaded me-1"></i> ضباط
+                                </span>
+                            {% elif trainee.category == 'nco' %}
+                                <span class="badge badge-nco px-3 py-2 rounded-pill">
+                                    <i class="bi bi-award me-1"></i> ضباط صف
+                                </span>
+                            {% else %}
+                                <span class="badge badge-civilian px-3 py-2 rounded-pill">
+                                    <i class="bi bi-person-badge me-1"></i> مدنيين
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- الرتبة -->
+                        <td>
+                            <strong class="text-dark">{{ trainee.rank }}</strong>
+                        </td>
+
+                        <!-- الاسم -->
+                        <td>
+                            <div class="fw-bold text-navy" style="font-size: 1rem;">
+                                {{ trainee.name }}
+                            </div>
+                            <small class="text-muted">تاريخ التسجيل: {{ trainee.created_at|date:"Y-m-d" }}</small>
+                        </td>
+
+                        <!-- الوحدة -->
+                        <td>
+                            <span class="text-secondary fw-semibold">
+                                <i class="bi bi-geo-alt text-muted me-1"></i>{{ trainee.unit }}
+                            </span>
+                        </td>
+
+                        <!-- القوة -->
+                        <td>
+                            <span class="badge bg-light text-dark border px-2 py-1">
+                                {{ trainee.force }}
+                            </span>
+                        </td>
+
+                        <!-- الإجراءات -->
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1 me-1" title="تعديل بيانات الدارس">
+                                    <i class="bi bi-pencil-fill"></i> تعديل
+                                </a>
+                                <a href="{% url 'training:trainee_delete' trainee.military_number %}" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" title="حذف الدارس">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-inbox text-muted" style="font-size: 3.5rem;"></i>
+                                <h5 class="fw-bold text-dark mt-3">لا توجد بيانات مطابقة</h5>
+                                <p class="text-muted mb-3">لم يتم العثور على أي دارس بناءً على معايير البحث أو التصفية الحالية.</p>
+                                <button type="button" class="btn btn-primary rounded-3 px-4" data-bs-toggle="modal" data-bs-target="#addTraineeModal">
+                                    <i class="bi bi-person-plus-fill me-1"></i> تسجيل أول دارس الآن
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add New Trainee -->
+<div class="modal fade" id="addTraineeModal" tabindex="-1" aria-labelledby="addTraineeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                        <i class="bi bi-person-plus-fill fs-5 text-white"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold" id="addTraineeModalLabel">إدخال وحفظ بيانات دارس جديد</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            
+            <form method="post" action="{% url 'training:trainees_list' %}">
+                {% csrf_token %}
+                <input type="hidden" name="add_trainee" value="1">
+                
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 border-0 bg-info bg-opacity-10 text-primary">
+                        <i class="bi bi-info-circle-fill fs-5"></i>
+                        <span>النمرة تعتبر المفتاح الأساسي للدارس ويجب أن تتكون من أرقام فقط (0-9) وغير مكررة.</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- النمرة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
+                            {{ form.military_number }}
+                            <div class="form-text small text-muted">أرقام فقط (لا تقبل أحرف أو رموز)</div>
+                        </div>
+
+                        <!-- التصنيف -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
+                            <select name="category" id="categorySelect" class="form-select form-select-lg" required onchange="updateRanksList('categorySelect', 'rankSelect', 'customRankDiv', 'rankInput')">
+                                <option value="officer" selected>ضباط</option>
+                                <option value="nco">ضباط صف</option>
+                                <option value="civilian">مدنيين</option>
+                            </select>
+                            <div class="form-text small text-muted">اختر: ضباط، ضباط صف، مدنيين</div>
+                        </div>
+
+                        <!-- الرتبة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الرتبة / المسمى <span class="text-danger">*</span></label>
+                            <select id="rankSelect" class="form-select form-select-lg mb-2" required onchange="handleRankChange('rankSelect', 'customRankDiv', 'rankInput')">
+                                <!-- سيتم ملؤها ديناميكياً بواسطة JavaScript -->
+                            </select>
+                            
+                            <!-- حقل الإدخال النهائي المخفي أو اليدوي -->
+                            <div id="customRankDiv" style="display: none;">
+                                <input type="text" id="rankInput" name="rank" class="form-control form-control-lg" placeholder="اكتب الرتبة أو المسمى الوظيفي هنا">
+                            </div>
+                        </div>
+
+                        <!-- الاسم الكامل -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                        </div>
+
+                        <!-- الوحدة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الوحدة <span class="text-danger">*</span></label>
+                            {{ form.unit }}
+                        </div>
+
+                        <!-- القوة -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">القوة <span class="text-danger">*</span></label>
+                            {{ form.force }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4">
+                    <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-save2-fill"></i>
+                        <span>حفظ بيانات الدارس</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // قوائم الرتب المحددة بدقة
+    const RANKS_DATA = {
+        'officer': [
+            'ملازم',
+            'ملازم أول',
+            'نقيب',
+            'رائد',
+            'مقدم',
+            'عقيد',
+            'عميد',
+            'لواء'
+        ],
+        'nco': [
+            'جندي',
+            'وكيل عريف',
+            'عريف',
+            'رقيب',
+            'رقيب أول',
+            'مساعد'
+        ],
+        'civilian': [
+            'موظف مدني',
+            'أخصائي',
+            'باحث',
+            'مهندس',
+            'فني',
+            'إداري'
+        ]
+    };
+
+    function updateRanksList(catSelectId, rankSelectId, customDivId, rankInputId, initialVal = null) {
+        const catSelect = document.getElementById(catSelectId);
+        const rankSelect = document.getElementById(rankSelectId);
+        const customDiv = document.getElementById(customDivId);
+        const rankInput = document.getElementById(rankInputId);
+
+        if (!catSelect || !rankSelect) return;
+
+        const selectedCat = catSelect.value;
+        const ranks = RANKS_DATA[selectedCat] || [];
+
+        // مسح الخيارات السابقة
+        rankSelect.innerHTML = '';
+
+        // خيار إرشادي أول
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '--- اختر الرتبة من القائمة ---';
+        defaultOpt.disabled = true;
+        rankSelect.appendChild(defaultOpt);
+
+        let matchFound = false;
+
+        // إضافة الرتب الخاصة بالتصنيف
+        ranks.forEach(rank => {
+            const opt = document.createElement('option');
+            opt.value = rank;
+            opt.textContent = rank;
+            if (initialVal && initialVal === rank) {
+                opt.selected = true;
+                matchFound = true;
+            }
+            rankSelect.appendChild(opt);
+        });
+
+        // إضافة خيار كتابة يدوية
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ رتبة أخرى / كتابة يدوية...';
+        rankSelect.appendChild(customOpt);
+
+        // إذا كانت هناك قيمة أولية غير موجودة بالقائمة أو لم يتم تحديد شيء
+        if (initialVal) {
+            if (!matchFound) {
+                customOpt.selected = true;
+                customDiv.style.display = 'block';
+                rankInput.value = initialVal;
+            } else {
+                customDiv.style.display = 'none';
+                rankInput.value = initialVal;
+            }
+        } else {
+            // اختيار أول رتبة افتراضياً
+            if (ranks.length > 0) {
+                rankSelect.selectedIndex = 1;
+                rankInput.value = ranks[0];
+            }
+            customDiv.style.display = 'none';
+        }
+    }
+
+    function handleRankChange(rankSelectId, customDivId, rankInputId) {
+        const rankSelect = document.getElementById(rankSelectId);
+        const customDiv = document.getElementById(customDivId);
+        const rankInput = document.getElementById(rankInputId);
+
+        if (rankSelect.value === '__custom__') {
+            customDiv.style.display = 'block';
+            rankInput.value = '';
+            rankInput.focus();
+            rankInput.required = true;
+        } else {
+            customDiv.style.display = 'none';
+            rankInput.value = rankSelect.value;
+            rankInput.required = false;
+        }
+    }
+
+    // تهيئة القوائم عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function () {
+        updateRanksList('categorySelect', 'rankSelect', 'customRankDiv', 'rankInput');
+    });
+</script>
+{% endblock %}
