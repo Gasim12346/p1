@@ -251,5 +251,81 @@ class AuthenticationAndSecurityTests(TestCase):
         target.refresh_from_db()
         self.assertFalse(target.is_active, 'يجب أن يتم تعديل حالة المستخدم عبر طلب POST بنجاح')
 
+    def test_results_entry_rejects_negative_or_exceeding_grades(self):
+        """التحقق من رفض الدرجات السالبة والدرجات التي تتجاوز الحد الأقصى للمادة أو المواظبة"""
+        self.client.login(username='user_test', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession, Trainee, CourseEnrollment, Subject, TraineeSubjectGrade
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف فحص الدرجات')
+        course = Course.objects.create(name='دورة أمن المعلومات', category=cat)
+        sub1 = Subject.objects.create(course=course, name='التشفير', max_grade=50.00)
+        
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-SEC-01',
+            start_date=datetime.date(2026, 7, 1),
+            end_date=datetime.date(2026, 8, 1),
+            attendance_max_grade=20.00
+        )
+        trainee = Trainee.objects.create(
+            military_number='777711',
+            name='دارس فحص الحدود',
+            rank='نقيب',
+            unit='سلاح الإشارة'
+        )
+        en = CourseEnrollment.objects.create(
+            session=session,
+            trainee=trainee,
+            current_rank='نقيب',
+            current_unit='سلاح الإشارة'
+        )
+
+        url = reverse('training:results_entry', kwargs={'session_id': session.id})
+
+        # 1. محاولة إدخال درجة مادة تتجاوز الحد الأقصى (75 من 50)
+        res_exceed = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub1.id}': '75.0',
+            f'att_{trainee.military_number}': '15.0',
+        })
+        self.assertEqual(res_exceed.status_code, 200)
+        en.refresh_from_db()
+        self.assertFalse(en.is_graded, 'يجب ألا يتم اعتماد الرصد عند تجاوز الدرجة العظمى')
+        self.assertEqual(TraineeSubjectGrade.objects.filter(enrollment=en).count(), 0)
+
+        # 2. محاولة إدخال درجة مادة سالبة (-10)
+        res_neg = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub1.id}': '-10.0',
+            f'att_{trainee.military_number}': '15.0',
+        })
+        self.assertEqual(res_neg.status_code, 200)
+        en.refresh_from_db()
+        self.assertFalse(en.is_graded, 'يجب ألا يتم اعتماد الرصد عند إدخال درجة سالبة')
+
+        # 3. محاولة إدخال مواظبة تتجاوز الحد الأقصى (30 من 20)
+        res_att = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub1.id}': '40.0',
+            f'att_{trainee.military_number}': '30.0',
+        })
+        self.assertEqual(res_att.status_code, 200)
+        en.refresh_from_db()
+        self.assertFalse(en.is_graded)
+
+        # 4. إدخال درجات نظامية صحيحة (40 من 50 و مواظبة 18 من 20)
+        res_valid = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub1.id}': '40.0',
+            f'att_{trainee.military_number}': '18.0',
+        })
+        self.assertEqual(res_valid.status_code, 302)
+        en.refresh_from_db()
+        self.assertTrue(en.is_graded, 'يجب اعتماد الرصد بنجاح للدرجات الصحيحة')
+        self.assertEqual(float(en.attendance_score), 18.0)
+        self.assertEqual(float(en.total_score), 58.0)
+
+
 
 

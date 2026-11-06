@@ -669,11 +669,32 @@ def results_entry_view(request, session_id):
 
     # معالجة حفظ الدرجات
     if request.method == 'POST' and 'save_grades' in request.POST:
+        validation_errors = []
+        parsed_data = {}
+
         for en in enrollments:
             num = en.trainee.military_number
             att_raw = request.POST.get(f'att_{num}', '').strip()
 
-            # فحص درجات المواد هل تم إدخالها
+            # 1. التحقق الصارم من درجة المواظبة والسلوك
+            att_val = 0.0
+            if att_raw != '':
+                try:
+                    att_val = float(att_raw)
+                    if att_val < 0:
+                        validation_errors.append(
+                            f'درجة المواظبة للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر ({att_val}).'
+                        )
+                    elif att_val > float(session.attendance_max_grade):
+                        validation_errors.append(
+                            f'درجة المواظبة للدارس "{en.trainee.name}" ({att_val}) تتجاوز الحد الأقصى للمواظبة بالدورة ({session.attendance_max_grade}).'
+                        )
+                except ValueError:
+                    validation_errors.append(
+                        f'درجة المواظبة المدخلة للدارس "{en.trainee.name}" غير صالحة ({att_raw}).'
+                    )
+
+            # 2. التحقق الصارم من درجات المواد الدراسية والحدود العظمى
             all_subjects_filled = True
             subject_grades_to_save = []
 
@@ -681,68 +702,96 @@ def results_entry_view(request, session_id):
                 grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
                 if grade_raw == '':
                     all_subjects_filled = False
-                    # حذف أي درجة مسجلة مسبقاً لهذه المادة لأن الحقل أصبح فارغاً
-                    TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
                 else:
                     try:
                         score = float(grade_raw)
-                        subject_grades_to_save.append((sub, score))
+                        if score < 0:
+                            validation_errors.append(
+                                f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر ({score}).'
+                            )
+                        elif score > float(sub.max_grade):
+                            validation_errors.append(
+                                f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" ({score}) تتجاوز الدرجة العظمى المحددة للمادة ({sub.max_grade}).'
+                            )
+                        else:
+                            subject_grades_to_save.append((sub, score))
                     except ValueError:
                         all_subjects_filled = False
-                        TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
+                        validation_errors.append(
+                            f'درجة مادة "{sub.name}" المدخلة للدارس "{en.trainee.name}" غير صالحة ({grade_raw}).'
+                        )
 
-            # إذا كانت درجات جميع المواد مدخلة بالفعل
-            if all_subjects_filled and len(subject_grades_to_save) == len(subjects) and len(subjects) > 0:
-                # حفظ درجة المواظبة
-                try:
-                    en.attendance_score = float(att_raw) if att_raw != '' else 0.0
-                except ValueError:
-                    en.attendance_score = 0.0
+            parsed_data[en.id] = {
+                'attendance': att_val,
+                'subjects': subject_grades_to_save,
+                'all_filled': all_subjects_filled and len(subject_grades_to_save) == len(subjects) and len(subjects) > 0
+            }
 
-                # حفظ درجات المواد
-                for sub, score in subject_grades_to_save:
+        # في حال وجود أي أخطاء في الحدود، نمنع الحفظ وننبه المستخدم
+        if validation_errors:
+            for err in validation_errors[:10]:
+                messages.error(request, err)
+            if len(validation_errors) > 10:
+                messages.error(request, f'وهناك {len(validation_errors) - 10} أخطاء أخرى في حدود الدرجات...')
+        else:
+            for en in enrollments:
+                data = parsed_data[en.id]
+                sub_grades = data['subjects']
+                all_filled = data['all_filled']
+                att_score = data['attendance']
+
+                # حذف درجات المواد المفرغة
+                saved_sub_ids = [s.id for s, _ in sub_grades]
+                TraineeSubjectGrade.objects.filter(enrollment=en).exclude(subject_id__in=saved_sub_ids).delete()
+
+                # حفظ وتحديث درجات المواد
+                for sub, score in sub_grades:
                     TraineeSubjectGrade.objects.update_or_create(
                         enrollment=en,
                         subject=sub,
                         defaults={'score': score}
                     )
 
-                # احتساب النسبة والتقدير واعتماد الرصد
-                en.calculate_results()
-            else:
-                # إذا كانت الدرجات ناقصة أو غير مدخلة، لا يتم اعتماد النتيجة له ولا تصدر له شهادة
-                if len(subject_grades_to_save) > 0:
-                    for sub, score in subject_grades_to_save:
-                        TraineeSubjectGrade.objects.update_or_create(
-                            enrollment=en,
-                            subject=sub,
-                            defaults={'score': score}
-                        )
-                en.attendance_score = 0.0
-                en.total_score = 0.0
-                en.percentage = 0.0
-                en.grade_label = ''
-                en.is_graded = False
-                en.save()
+                if all_filled:
+                    en.attendance_score = att_score
+                    en.calculate_results()
+                else:
+                    en.attendance_score = 0.0
+                    en.total_score = 0.0
+                    en.percentage = 0.0
+                    en.grade_label = ''
+                    en.is_graded = False
+                    en.save()
 
-        # تحديث حالة الدورة
-        if 'mark_completed' in request.POST:
-            session.status = 'completed'
-            session.save()
+            # تحديث حالة الدورة
+            if 'mark_completed' in request.POST:
+                session.status = 'completed'
+                session.save()
 
-        messages.success(request, f'تم حفظ وتحديث درجات الدارسين في دورة "{session.course.name}" بنجاح.')
-        return redirect('training:results_entry', session_id=session.id)
+            messages.success(request, f'تم حفظ وتحديث درجات الدارسين في دورة "{session.course.name}" بنجاح.')
+            return redirect('training:results_entry', session_id=session.id)
 
     # تجهيز بيانات درجات المواد لكل دارس بشكل مباشر ومتقن للعرض
     for en in enrollments:
         en_grades = {g.subject_id: g.score for g in en.grades.all()}
         en.subjects_data = []
         for sub in subjects:
-            score = en_grades.get(sub.id, None)
+            if request.method == 'POST' and f'grade_{en.trainee.military_number}_{sub.id}' in request.POST:
+                posted_val = request.POST.get(f'grade_{en.trainee.military_number}_{sub.id}', '').strip()
+                score = posted_val if posted_val != '' else None
+            else:
+                score = en_grades.get(sub.id, None)
             en.subjects_data.append({
                 'subject': sub,
                 'score': score
             })
+        if request.method == 'POST' and f'att_{en.trainee.military_number}' in request.POST:
+            posted_att = request.POST.get(f'att_{en.trainee.military_number}', '').strip()
+            if posted_att != '':
+                try:
+                    en.attendance_score = float(posted_att)
+                except ValueError:
+                    pass
 
     context = {
         'session': session,

@@ -318,7 +318,7 @@
 <script>
     const TOTAL_POSSIBLE_SCORE = parseFloat("{{ total_possible_score|unlocalize }}") || 100.0;
 
-    // حساب درجات الصف لحظياً عند الكتابة
+    // حساب درجات الصف لحظياً عند الكتابة مع التحقق الصارم من الحدود
     function calculateRow(inputElement, isUserEdit = false) {
         const row = inputElement.closest('tr');
         if (!row) return;
@@ -326,19 +326,26 @@
         const subjectInputs = row.querySelectorAll('.subject-grade');
         let subjectsTotal = 0;
         let allSubjectsFilled = true;
-        let anyInputHasValue = false;
+        let hasInvalidInput = false;
 
         subjectInputs.forEach(input => {
             const valStr = input.value.trim();
+            const maxVal = parseFloat(input.getAttribute('data-max')) || 0;
             if (valStr === '') {
                 allSubjectsFilled = false;
+                input.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
+                input.removeAttribute('title');
             } else {
-                anyInputHasValue = true;
                 const val = parseFloat(valStr);
-                if (!isNaN(val) && val >= 0) {
-                    subjectsTotal += val;
-                } else {
+                if (isNaN(val) || val < 0 || val > maxVal) {
                     allSubjectsFilled = false;
+                    hasInvalidInput = true;
+                    input.classList.add('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    input.title = `تنبيه: الدرجة يجب أن تكون بين 0 و ${maxVal}`;
+                } else {
+                    input.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    input.removeAttribute('title');
+                    subjectsTotal += val;
                 }
             }
         });
@@ -346,16 +353,47 @@
         // درجة المواظبة
         const attInput = row.querySelector('.attendance-grade');
         const attValStr = attInput ? attInput.value.trim() : '';
+        const attMaxVal = attInput ? (parseFloat(attInput.getAttribute('data-max')) || 0) : 0;
         let attVal = 0;
         if (attValStr !== '') {
-            anyInputHasValue = true;
-            attVal = parseFloat(attValStr) || 0;
+            attVal = parseFloat(attValStr);
+            if (isNaN(attVal) || attVal < 0 || attVal > attMaxVal) {
+                hasInvalidInput = true;
+                allSubjectsFilled = false;
+                if (attInput) {
+                    attInput.classList.add('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    attInput.title = `تنبيه: درجة المواظبة يجب أن تكون بين 0 و ${attMaxVal}`;
+                }
+            } else {
+                if (attInput) {
+                    attInput.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    attInput.removeAttribute('title');
+                }
+            }
+        } else {
+            if (attInput) {
+                attInput.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
+                attInput.removeAttribute('title');
+            }
         }
 
         const totalCell = row.querySelector('.total-cell');
         const percentageCell = row.querySelector('.percentage-cell');
         const gradeCell = row.querySelector('.grade-cell');
         const certCell = row.querySelector('.cert-cell');
+
+        // إذا وُجدت أي درجة غير صحيحة (أقل من صفر أو أكبر من العظمى)
+        if (hasInvalidInput) {
+            if (totalCell) totalCell.innerHTML = `<span class="text-danger small fw-bold">درجة غير صحيحة</span>`;
+            if (percentageCell) percentageCell.innerHTML = `<span class="text-danger small fw-bold">خطأ</span>`;
+            if (gradeCell) {
+                gradeCell.innerHTML = `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>تجاوز الحد</span>`;
+            }
+            if (certCell) {
+                certCell.innerHTML = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="bi bi-x-circle me-1"></i>درجات خاطئة</span>`;
+            }
+            return;
+        }
 
         // إذا لم تكتمل درجات جميع المواد، لا نعطي أي درجة افتراضية، ونقفل الشهادة فوراً!
         if (!allSubjectsFilled || subjectInputs.length === 0) {
@@ -415,8 +453,34 @@
         }
     }
 
-    // تشغيل الحساب فقط للصفوف المكتملة أو عند التعديل
+    // التحقق الشامل قبل إرسال النموذج لمنع حفظ درجات غير صالحة
     document.addEventListener('DOMContentLoaded', function() {
+        const gradesForm = document.getElementById('gradesForm');
+        if (gradesForm) {
+            gradesForm.addEventListener('submit', function(e) {
+                let firstInvalid = null;
+                const allInputs = gradesForm.querySelectorAll('.grade-input');
+
+                allInputs.forEach(input => {
+                    const valStr = input.value.trim();
+                    if (valStr !== '') {
+                        const val = parseFloat(valStr);
+                        const maxVal = parseFloat(input.getAttribute('data-max')) || 0;
+                        if (isNaN(val) || val < 0 || val > maxVal) {
+                            input.classList.add('is-invalid', 'border-danger', 'bg-danger-subtle');
+                            if (!firstInvalid) firstInvalid = input;
+                        }
+                    }
+                });
+
+                if (firstInvalid) {
+                    e.preventDefault();
+                    firstInvalid.focus();
+                    alert('تنبيه: توجد درجات غير صحيحة (أقل من صفر أو تتجاوز الدرجة العظمى المحددة). يرجى تصحيح الدرجات المحددة باللون الأحمر قبل الحفظ.');
+                }
+            });
+        }
+
         const rows = document.querySelectorAll('.student-row');
         rows.forEach(row => {
             const firstInput = row.querySelector('.grade-input');

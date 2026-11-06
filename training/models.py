@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -164,6 +165,11 @@ class Subject(models.Model):
         verbose_name_plural = 'المواد الدراسية'
         ordering = ['id']
 
+    def clean(self):
+        super().clean()
+        if self.max_grade is not None and self.max_grade <= 0:
+            raise ValidationError({'max_grade': 'الدرجة العظمى للمادة يجب أن تكون أكبر من صفر.'})
+
     def __str__(self):
         return f"{self.name} ({self.code})"
 
@@ -219,6 +225,11 @@ class CourseSession(models.Model):
         verbose_name = 'انعقاد دورة'
         verbose_name_plural = 'الدورات المنعقدة'
         ordering = ['-start_date']
+
+    def clean(self):
+        super().clean()
+        if self.attendance_max_grade is not None and self.attendance_max_grade < 0:
+            raise ValidationError({'attendance_max_grade': 'الدرجة العظمى للمواظبة لا يمكن أن تكون سالبة.'})
 
     def __str__(self):
         return f"{self.course.name} - {self.session_code} ({self.start_date})"
@@ -344,6 +355,15 @@ class CourseEnrollment(models.Model):
 
         return True
 
+    def clean(self):
+        super().clean()
+        if self.attendance_score is not None:
+            if self.attendance_score < 0:
+                raise ValidationError({'attendance_score': 'لا يمكن أن تكون درجة المواظبة أقل من صفر.'})
+            if hasattr(self, 'session') and self.session and self.session.attendance_max_grade is not None:
+                if self.attendance_score > self.session.attendance_max_grade:
+                    raise ValidationError({'attendance_score': f'درجة المواظبة ({self.attendance_score}) تتجاوز الحد الأقصى للمواظبة بالدورة ({self.session.attendance_max_grade}).'})
+
     def calculate_results(self):
         """
         حساب المجموع الكلي، النسبة المئوية، والتقدير
@@ -426,6 +446,15 @@ class TraineeSubjectGrade(models.Model):
         verbose_name = 'درجة مادة'
         verbose_name_plural = 'درجات المواد'
         unique_together = ('enrollment', 'subject')
+
+    def clean(self):
+        super().clean()
+        if self.score is not None:
+            if self.score < 0:
+                raise ValidationError({'score': 'لا يمكن أن تكون الدرجة أقل من صفر.'})
+            if hasattr(self, 'subject') and self.subject and self.subject.max_grade is not None:
+                if self.score > self.subject.max_grade:
+                    raise ValidationError({'score': f'الدرجة المكتسبة ({self.score}) تتجاوز الدرجة العظمى للمادة ({self.subject.max_grade}).'})
 
     def __str__(self):
         return f"{self.enrollment.trainee.name} - {self.subject.name}: {self.score}"

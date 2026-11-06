@@ -161,6 +161,12 @@ class SubjectForm(forms.ModelForm):
             'max_grade': 'الدرجة العظمى *',
         }
 
+    def clean_max_grade(self):
+        mg = self.cleaned_data.get('max_grade')
+        if mg is not None and mg <= 0:
+            raise forms.ValidationError('الدرجة العظمى للمادة يجب أن تكون أكبر من صفر.')
+        return mg
+
 
 class CourseSessionForm(forms.ModelForm):
     class Meta:
@@ -210,6 +216,12 @@ class CourseSessionForm(forms.ModelForm):
             'attendance_max_grade': 'درجة المواظبة والسلوك العظمى',
             'notes': 'ملاحظات الانعقاد',
         }
+
+    def clean_attendance_max_grade(self):
+        amg = self.cleaned_data.get('attendance_max_grade')
+        if amg is not None and amg < 0:
+            raise forms.ValidationError('الدرجة العظمى للمواظبة لا يمكن أن تكون أقل من صفر.')
+        return amg
 
 
 class UserLoginForm(forms.Form):
