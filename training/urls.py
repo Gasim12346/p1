@@ -4,40 +4,40 @@ from . import views
 app_name = 'training'
 
 urlpatterns = [
-    # الواجهة 1: الواجهة الرئيسية
+    # القسم 1: الصفحة الرئيسية
     path('', views.home_view, name='home'),
 
-    # الواجهة 2: واجهة الدارسين
+    # القسم 2: سجل الدارسين
     path('trainees/', views.trainees_list_view, name='trainees_list'),
     path('trainees/<str:military_number>/edit/', views.trainee_edit_view, name='trainee_edit'),
     path('trainees/<str:military_number>/delete/', views.trainee_delete_view, name='trainee_delete'),
     path('trainees/<str:military_number>/transcript/', views.trainee_transcript_view, name='trainee_transcript'),
 
-    # الواجهة 3: واجهة الدورات ومفرداتها
+    # القسم 3: الدورات ومفرداتها
     path('courses/', views.courses_catalog_view, name='courses_catalog'),
     path('courses/<int:course_id>/edit/', views.course_edit_view, name='course_edit'),
     path('courses/<int:course_id>/delete/', views.course_delete_view, name='course_delete'),
     path('subjects/<int:subject_id>/edit/', views.subject_edit_view, name='subject_edit'),
     path('subjects/<int:subject_id>/delete/', views.subject_delete_view, name='subject_delete'),
 
-    # الواجهة 4: واجهة الدورة التي يتم دراستها (انعقاد الدورات وربط الدارسين)
+    # القسم 4: الدورات المنعقدة (انعقاد الدورات وربط الدارسين)
     path('sessions/', views.course_sessions_view, name='course_sessions'),
     path('sessions/create/', views.course_session_create_view, name='course_session_create'),
     path('sessions/<int:session_id>/manage/', views.course_session_manage_view, name='course_session_manage'),
     path('sessions/<int:session_id>/edit/', views.course_session_edit_view, name='course_session_edit'),
     path('sessions/<int:session_id>/delete/', views.course_session_delete_view, name='course_session_delete'),
 
-    # الواجهة 5: واجهة النتيجة ورصد الدرجات والشهادات والسجل التاريخي
+    # القسم 5: النتائج ورصد الدرجات والشهادات والسجل التاريخي
     path('results/', views.results_center_view, name='results_center'),
     path('results/session/<int:session_id>/', views.results_entry_view, name='results_entry'),
     path('results/session/<int:session_id>/sheet/', views.session_results_sheet_view, name='session_results_sheet'),
     path('results/certificate/<int:enrollment_id>/', views.certificate_view, name='certificate'),
 
-    # الواجهة 6: المصادقة وتسجيل الدخول والخروج
+    # القسم 6: المصادقة وتسجيل الدخول والخروج
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
-    # الواجهة 7: بوابة القيادة والأدمن المنفصلة (Dedicated Admin Portal)
+    # القسم 7: بوابة القيادة والأدمن المنفصلة (Dedicated Admin Portal)
     path('admin-portal/login/', views.admin_login_view, name='admin_login'),
     path('admin-portal/logout/', views.admin_logout_view, name='admin_logout'),
     path('admin-portal/dashboard/', views.admin_dashboard_view, name='admin_dashboard'),

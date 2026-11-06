@@ -21,12 +21,12 @@ from .forms import (
 
 @login_required
 def home_view(request):
-    """الواجهة الرئيسية (لوحة التحكم الشاملة)"""
+    """الصفحة الرئيسية (لوحة التحكم الشاملة)"""
     return render(request, 'training/home.html')
 
 
 # ==========================================
-# الواجهة 2: واجهة الدارسين (الضباط، ضباط الصف، المدنيين)
+# القسم 2: سجل الدارسين (الضباط، ضباط الصف، المدنيين)
 # ==========================================
 @login_required
 def trainees_list_view(request):
@@ -137,11 +137,11 @@ def trainee_delete_view(request, military_number):
 
 
 # ==========================================
-# الواجهة 3: واجهة الدورات ومفرداتها وموادها
+# القسم 3: الدورات ومفرداتها وموادها
 # ==========================================
 @login_required
 def courses_catalog_view(request):
-    """واجهة الدورات ومفرداتها والمواد"""
+    """دليل الدورات ومفرداتها والمواد"""
     categories = CourseCategory.objects.annotate(courses_count=Count('courses')).all()
 
     cat_id = request.GET.get('category_id')
@@ -311,16 +311,26 @@ def subject_delete_view(request, subject_id):
 
 
 # ==========================================
-# الواجهة 4: واجهة الدورة التي يتم دراستها (انعقاد الدورات وربط الطلبة)
+# القسم 4: الدورات المنعقدة (انعقاد الدورات وربط الطلبة)
 # ==========================================
 @login_required
 def course_sessions_view(request):
-    """عرض قائمة الدورات المنعقدة حالياً مع إحصائيات وروابط الإدارة"""
+    """عرض قائمة الدورات المنعقدة حالياً مع إحصائيات وروابط الإدارة وفلتر السنوات"""
+    from datetime import datetime
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
     categories = CourseCategory.objects.all()
+
+    db_years = set(d.year for d in CourseSession.objects.dates('start_date', 'year'))
+    db_years.update(d.year for d in CourseSession.objects.dates('end_date', 'year'))
+    current_year = datetime.now().year
+    for y in range(current_year - 5, current_year + 2):
+        db_years.add(y)
+    available_years = sorted(list(db_years), reverse=True)
+
     return render(request, 'training/course_sessions.html', {
         'sessions': sessions,
         'categories': categories,
+        'available_years': available_years,
     })
 
 
@@ -526,7 +536,7 @@ def course_session_delete_view(request, session_id):
 
 
 # ==========================================
-# الواجهة 5: واجهة النتيجة ورصد الدرجات والشهادات والسجل التاريخي
+# القسم 5: النتائج ورصد الدرجات والشهادات والسجل التاريخي
 # ==========================================
 @login_required
 def results_center_view(request):
@@ -541,6 +551,7 @@ def results_center_view(request):
     session_q = request.GET.get('session_q', '').strip()
     session_cat = request.GET.get('session_cat', '').strip()
     session_status = request.GET.get('session_status', '').strip()
+    session_year = request.GET.get('session_year', '').strip()
 
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
 
@@ -553,12 +564,15 @@ def results_center_view(request):
         sessions = sessions.filter(course__category_id=session_cat)
     if session_status:
         sessions = sessions.filter(status=session_status)
+    if session_year and session_year.isdigit():
+        sessions = sessions.filter(start_date__year=int(session_year))
 
     # فلاتر تبويب السجل التاريخي للنتائج والشهادات
     search_query = request.GET.get('q', '').strip()
     grade_filter = request.GET.get('grade', '').strip()
     trainee_cat_filter = request.GET.get('trainee_category', '').strip()
     selected_session_filter = request.GET.get('session_filter', '').strip()
+    year_filter = request.GET.get('year', '').strip()
 
     historical_enrollments = CourseEnrollment.objects.filter(is_graded=True).select_related(
         'trainee', 'session', 'session__course', 'session__course__category'
@@ -583,6 +597,18 @@ def results_center_view(request):
     if selected_session_filter:
         historical_enrollments = historical_enrollments.filter(session_id=selected_session_filter)
 
+    if year_filter and year_filter.isdigit():
+        historical_enrollments = historical_enrollments.filter(session__start_date__year=int(year_filter))
+
+    # قائمة السنوات الميلادية المتاحة للفلترة
+    from datetime import datetime
+    db_years = set(d.year for d in CourseSession.objects.dates('start_date', 'year'))
+    db_years.update(d.year for d in CourseSession.objects.dates('end_date', 'year'))
+    current_year = datetime.now().year
+    for y in range(current_year - 5, current_year + 2):
+        db_years.add(y)
+    available_years = sorted(list(db_years), reverse=True)
+
     # إحصائيات عامة للنتائج
     total_graded = CourseEnrollment.objects.filter(is_graded=True).count()
     excellent_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=85).count()
@@ -591,20 +617,23 @@ def results_center_view(request):
     pass_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
 
     # تحديد التبويب النشط بناءً على المعاملات
-    active_tab = 'archive' if (search_query or grade_filter or trainee_cat_filter or selected_session_filter or request.GET.get('tab') == 'archive') else 'sessions'
+    active_tab = 'archive' if (search_query or grade_filter or trainee_cat_filter or selected_session_filter or year_filter or request.GET.get('tab') == 'archive') else 'sessions'
 
     context = {
         'sessions': sessions,
         'all_sessions': CourseSession.objects.select_related('course').all(),
         'categories': categories,
         'historical_enrollments': historical_enrollments,
+        'available_years': available_years,
         'session_q': session_q,
         'session_cat': session_cat,
         'session_status': session_status,
+        'session_year': session_year,
         'search_query': search_query,
         'grade_filter': grade_filter,
         'trainee_cat_filter': trainee_cat_filter,
         'session_filter': selected_session_filter,
+        'year_filter': year_filter,
         'active_tab': active_tab,
         'stats': {
             'total': total_graded,
@@ -620,7 +649,7 @@ def results_center_view(request):
 @login_required
 def results_entry_view(request, session_id):
     """
-    واجهة رصد درجات دورة معينة:
+    صفحة رصد درجات دورة معينة:
     - تظهر جميع الطلبة في هذه الدورة.
     - إدخال درجات المواد + درجة المواظبة.
     - حساب المجموع التلقائي والنسبة ومعادلة: (مجموع الطالب * 100) / المجموع الكلي.
@@ -842,10 +871,10 @@ def trainee_transcript_view(request, military_number):
 
 
 # =====================================================================
-# الواجهة 6: تسجيل الدخول والخروج (Authentication)
+# القسم 6: تسجيل الدخول والخروج (Authentication)
 # =====================================================================
 def login_view(request):
-    """صفحة تسجيل الدخول الموحدة للنظام - تحويل الأدمن مباشرة لواجهة الأدمن المنفصلة"""
+    """صفحة تسجيل الدخول الموحدة للنظام - تحويل الأدمن مباشرة لبوابة الأدمن المنفصلة"""
     if request.user.is_authenticated:
         is_admin = (
             request.user.is_superuser or 
@@ -906,10 +935,10 @@ def logout_view(request):
 
 
 # =====================================================================
-# الواجهة 7: بوابة القيادة والأدمن المنفصلة (Dedicated Admin Portal)
+# القسم 7: بوابة القيادة والأدمن المنفصلة (Dedicated Admin Portal)
 # =====================================================================
 def admin_access_required(view_func):
-    """حصر الوصول لواجهة الأدمن المنفصلة فقط على المستخدمين الذين يملكون رتبة مدير نظام أو superuser/staff"""
+    """حصر الوصول لبوابة الأدمن المنفصلة فقط على المستخدمين الذين يملكون رتبة مدير نظام أو superuser/staff"""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:

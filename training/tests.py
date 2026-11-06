@@ -69,7 +69,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertIn('name="password"', content)
 
     def test_admin_login_redirects_directly_to_admin_portal(self):
-        """تسجيل دخول الأدمن يحوله مباشرة وبشكل منعزل إلى واجهة الأدمن المنفصلة"""
+        """تسجيل دخول الأدمن يحوله مباشرة وبشكل منعزل إلى بوابة الأدمن المنفصلة"""
         response = self.client.post(reverse('training:login'), {
             'username': 'admin_test',
             'password': 'Password123!',
@@ -77,7 +77,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('training:admin_dashboard'))
 
-        # الدخول إلى واجهة الأدمن بنجاح
+        # الدخول إلى بوابة الأدمن بنجاح
         admin_page_response = self.client.get(reverse('training:admin_dashboard'))
         self.assertEqual(admin_page_response.status_code, 200)
         self.assertIn('لوحة القيادة والأدمن المنفصلة', admin_page_response.content.decode('utf-8'))
@@ -96,7 +96,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(home_page_response.status_code, 200)
 
     def test_regular_user_strictly_forbidden_from_admin_portal(self):
-        """حظر المستخدم العادي بشكل صارم وتام من الدخول إلى واجهة الأدمن المنفصلة"""
+        """حظر المستخدم العادي بشكل صارم وتام من الدخول إلى بوابة الأدمن المنفصلة"""
         self.client.login(username='user_test', password='Password123!')
         response = self.client.get(reverse('training:admin_dashboard'))
         # يتم تحويله إلى الرئيسية
@@ -104,7 +104,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertRedirects(response, reverse('training:home'))
 
     def test_home_page_does_not_contain_admin_banner(self):
-        """التحقق من إزالة أي بنر أو عناصر تحكم خاصة بالأدمن من الواجهة الرئيسية"""
+        """التحقق من إزالة أي بنر أو عناصر تحكم خاصة بالأدمن من الصفحة الرئيسية"""
         self.client.login(username='admin_test', password='Password123!')
         response = self.client.get(reverse('training:home'))
         self.assertEqual(response.status_code, 200)
@@ -114,7 +114,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertNotIn('دخول لوحة تحكم الأدمن المنفصلة', content)
 
     def test_home_page_contains_logout_button(self):
-        """التحقق من وجود زر تسجيل الخروج في الواجهة الرئيسية للمستخدم"""
+        """التحقق من وجود زر تسجيل الخروج في الصفحة الرئيسية للمستخدم"""
         self.client.login(username='user_test', password='Password123!')
         response = self.client.get(reverse('training:home'))
         self.assertEqual(response.status_code, 200)
@@ -158,4 +158,59 @@ class AuthenticationAndSecurityTests(TestCase):
         # يجب أن يحظر الشهادة ويعيد التوجيه لصفحة الرصد
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('training:results_entry', kwargs={'session_id': session.id}))
+
+    def test_results_center_gregorian_year_filter(self):
+        """التحقق من عمل فلتر السنة الميلادية في مركز النتائج والسجل التاريخي"""
+        self.client.login(username='user_test', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession, Trainee, CourseEnrollment
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف فحص السنوات')
+        course = Course.objects.create(name='دورة تحليل البيانات', category=cat)
+        
+        session_2024 = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-2024',
+            start_date=datetime.date(2024, 3, 1),
+            end_date=datetime.date(2024, 4, 1)
+        )
+        session_2025 = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-2025',
+            start_date=datetime.date(2025, 5, 1),
+            end_date=datetime.date(2025, 6, 1)
+        )
+
+        trainee = Trainee.objects.create(
+            military_number='8888',
+            name='دارس السنوات',
+            rank='نقيب',
+            unit='سلاح المدرعات'
+        )
+        CourseEnrollment.objects.create(
+            session=session_2024,
+            trainee=trainee,
+            current_rank='نقيب',
+            current_unit='سلاح المدرعات',
+            is_graded=True,
+            percentage=90.0,
+            grade_label='ممتاز'
+        )
+
+        # 1. فحص فلترة الدورات حسب سنة 2024
+        res_2024 = self.client.get(reverse('training:results_center'), {'tab': 'sessions', 'session_year': '2024'})
+        self.assertEqual(res_2024.status_code, 200)
+        self.assertIn(session_2024, res_2024.context['sessions'])
+        self.assertNotIn(session_2025, res_2024.context['sessions'])
+
+        # 2. فحص فلترة السجل التاريخي حسب سنة 2024
+        res_arch_2024 = self.client.get(reverse('training:results_center'), {'tab': 'archive', 'year': '2024'})
+        self.assertEqual(res_arch_2024.status_code, 200)
+        self.assertEqual(len(res_arch_2024.context['historical_enrollments']), 1)
+
+        # 3. فحص فلترة السجل التاريخي حسب سنة 2025 (لا يوجد فيها نتائج مرصودة)
+        res_arch_2025 = self.client.get(reverse('training:results_center'), {'tab': 'archive', 'year': '2025'})
+        self.assertEqual(res_arch_2025.status_code, 200)
+        self.assertEqual(len(res_arch_2025.context['historical_enrollments']), 0)
+
 
