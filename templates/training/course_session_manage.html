@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-3">
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">واجهة الدورة التي تدرس</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">الدورة التي تدرس</a></li>
         <li class="breadcrumb-item active" aria-current="page">إدارة دارسي الدورة</li>
     </ol>
 </nav>
@@ -71,26 +71,55 @@
         </div>
     </div>
 
+    <!-- Filter toolbar for enrolled trainees -->
+    <div class="bg-light p-3 border-bottom">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="manageSearchInput" class="form-control border-start-0" placeholder="بحث بالاسم، النمرة، الرتبة، أو الوحدة..." oninput="applyManageFilters()">
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-1">
+                    <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-success"></i> تصنيف الدارسين:</span>
+                    <button type="button" class="btn btn-sm btn-dark active rounded-pill px-3" id="btn-manage-all" onclick="filterManageByCat('all', this)">
+                        مشتركة (جميع الدارسين)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btn-manage-officer" onclick="filterManageByCat('officer', this)">
+                        ضباط
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3" id="btn-manage-nco" onclick="filterManageByCat('nco', this)">
+                        ضباط صف
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-purple rounded-pill px-3" style="color: #7e22ce; border-color: #7e22ce;" id="btn-manage-civilian" onclick="filterManageByCat('civilian', this)">
+                        مدنيين
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="update_enrollments" value="1">
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
                 <thead class="bg-light text-muted small">
                     <tr>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 15%;">النمرة (أرقام فقط)</th>
-                        <th style="width: 25%;">اسم الدارس</th>
-                        <th style="width: 12%;">التصنيف</th>
-                        <th style="width: 20%;">الرتبة في الدورة (قابلة للتعديل)</th>
-                        <th style="width: 20%;">الوحدة في الدورة (قابلة للتعديل)</th>
-                        <th style="width: 5%; text-align: center;">إجراء</th>
+                        <th style="min-width: 45px;">#</th>
+                        <th style="min-width: 120px;">النمرة (أرقام فقط)</th>
+                        <th style="min-width: 180px;">اسم الدارس</th>
+                        <th style="min-width: 90px;">التصنيف</th>
+                        <th style="min-width: 150px;">الرتبة في الدورة (قابلة للتعديل)</th>
+                        <th style="min-width: 150px;">الوحدة في الدورة (قابلة للتعديل)</th>
+                        <th style="min-width: 80px; text-align: center;">إجراء</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for en in enrollments %}
-                        <tr>
+                        <tr class="manage-row" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}">
                             <td>{{ forloop.counter }}</td>
                             <td>
                                 <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
@@ -132,6 +161,12 @@
                             </td>
                         </tr>
                     {% endfor %}
+                    <tr id="manageNoMatchRow" style="display: none;">
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-funnel text-secondary d-block fs-3 mb-1"></i>
+                            لا يوجد دارسون مطابقون للتصنيف أو البحث المختار في هذه الدورة.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -168,7 +203,25 @@
 
                 <div class="modal-body p-4">
                     {% if available_trainees %}
-                        <p class="text-muted small mb-3">حدد الدارسين الراغب في إضافتهم لهذه الدورة المنعقدة:</p>
+                        <p class="text-muted small mb-2">حدد الدارسين الراغب في إضافتهم لهذه الدورة المنعقدة:</p>
+
+                        <!-- Filter toolbar inside modal -->
+                        <div class="bg-light p-2 rounded-3 mb-3 border">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-5">
+                                    <input type="text" id="modalSearchInput" class="form-control form-control-sm" placeholder="بحث بالاسم أو النمرة..." oninput="applyModalFilters()">
+                                </div>
+                                <div class="col-sm-7">
+                                    <div class="d-flex flex-wrap justify-content-sm-end gap-1">
+                                        <button type="button" class="btn btn-sm btn-dark active py-0 px-2" id="btn-modal-all" onclick="filterModalByCat('all', this)">مشتركة</button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" id="btn-modal-officer" onclick="filterModalByCat('officer', this)">ضباط</button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" id="btn-modal-nco" onclick="filterModalByCat('nco', this)">ضباط صف</button>
+                                        <button type="button" class="btn btn-sm btn-outline-purple py-0 px-2" style="color: #7e22ce; border-color: #7e22ce;" id="btn-modal-civilian" onclick="filterModalByCat('civilian', this)">مدنيين</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light text-muted small">
@@ -182,7 +235,7 @@
                                 </thead>
                                 <tbody>
                                     {% for t in available_trainees %}
-                                        <tr>
+                                        <tr class="modal-trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}">
                                             <td>
                                                 <input type="checkbox" name="extra_trainees" value="{{ t.military_number }}" class="form-check-input" style="width: 18px; height: 18px;">
                                             </td>
@@ -192,10 +245,21 @@
                                                 <input type="text" name="extra_rank_{{ t.military_number }}" value="{{ t.rank }}" class="form-control form-control-sm">
                                             </td>
                                             <td>
-                                                <span class="badge bg-light text-dark border">{{ t.get_category_display }}</span>
+                                                {% if t.category == 'officer' %}
+                                                    <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
+                                                {% elif t.category == 'nco' %}
+                                                    <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
+                                                {% else %}
+                                                    <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
+                                    <tr id="modalNoMatchRow" style="display: none;">
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            لا توجد نتائج مطابقة للتصنيف أو البحث.
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -233,6 +297,124 @@
             document.getElementById('removeTraineeInput').value = enrollmentId;
             document.getElementById('removeTraineeForm').submit();
         }
+    }
+
+    // تصفية جدول دارسي الدورة المسجلين
+    let currentManageCat = 'all';
+
+    function applyManageFilters() {
+        const query = (document.getElementById('manageSearchInput')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('.manage-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowCat = (row.getAttribute('data-category') || '').trim();
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+
+            const matchesCat = (currentManageCat === 'all' || rowCat === currentManageCat);
+            const matchesSearch = (!query || searchData.includes(query));
+
+            if (matchesCat && matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const noMatch = document.getElementById('manageNoMatchRow');
+        if (noMatch) {
+            noMatch.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+    }
+
+    function filterManageByCat(cat, btn) {
+        currentManageCat = cat;
+        const allBtn = document.getElementById('btn-manage-all');
+        const offBtn = document.getElementById('btn-manage-officer');
+        const ncoBtn = document.getElementById('btn-manage-nco');
+        const civBtn = document.getElementById('btn-manage-civilian');
+
+        if (allBtn) allBtn.className = 'btn btn-sm btn-outline-dark rounded-pill px-3';
+        if (offBtn) offBtn.className = 'btn btn-sm btn-outline-primary rounded-pill px-3';
+        if (ncoBtn) ncoBtn.className = 'btn btn-sm btn-outline-warning text-dark rounded-pill px-3';
+        if (civBtn) {
+            civBtn.className = 'btn btn-sm btn-outline-purple rounded-pill px-3';
+            civBtn.style.color = '#7e22ce';
+            civBtn.style.borderColor = '#7e22ce';
+            civBtn.style.backgroundColor = '';
+        }
+
+        if (cat === 'all' && allBtn) allBtn.className = 'btn btn-sm btn-dark active rounded-pill px-3';
+        else if (cat === 'officer' && offBtn) offBtn.className = 'btn btn-sm btn-primary active rounded-pill px-3';
+        else if (cat === 'nco' && ncoBtn) ncoBtn.className = 'btn btn-sm btn-warning active text-dark rounded-pill px-3 fw-bold';
+        else if (cat === 'civilian' && civBtn) {
+            civBtn.className = 'btn btn-sm btn-purple active rounded-pill px-3 text-white';
+            civBtn.style.backgroundColor = '#7e22ce';
+            civBtn.style.borderColor = '#7e22ce';
+            civBtn.style.color = '#fff';
+        }
+
+        applyManageFilters();
+    }
+
+    // تصفية دارسي النافذة المنبثقة (إلحاق دارسين إضافيين)
+    let currentModalCat = 'all';
+
+    function applyModalFilters() {
+        const query = (document.getElementById('modalSearchInput')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('.modal-trainee-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowCat = (row.getAttribute('data-category') || '').trim();
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+
+            const matchesCat = (currentModalCat === 'all' || rowCat === currentModalCat);
+            const matchesSearch = (!query || searchData.includes(query));
+
+            if (matchesCat && matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const noMatch = document.getElementById('modalNoMatchRow');
+        if (noMatch) {
+            noMatch.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+    }
+
+    function filterModalByCat(cat, btn) {
+        currentModalCat = cat;
+        const allBtn = document.getElementById('btn-modal-all');
+        const offBtn = document.getElementById('btn-modal-officer');
+        const ncoBtn = document.getElementById('btn-modal-nco');
+        const civBtn = document.getElementById('btn-modal-civilian');
+
+        if (allBtn) allBtn.className = 'btn btn-sm btn-outline-dark py-0 px-2';
+        if (offBtn) offBtn.className = 'btn btn-sm btn-outline-primary py-0 px-2';
+        if (ncoBtn) ncoBtn.className = 'btn btn-sm btn-outline-warning text-dark py-0 px-2';
+        if (civBtn) {
+            civBtn.className = 'btn btn-sm btn-outline-purple py-0 px-2';
+            civBtn.style.color = '#7e22ce';
+            civBtn.style.borderColor = '#7e22ce';
+            civBtn.style.backgroundColor = '';
+        }
+
+        if (cat === 'all' && allBtn) allBtn.className = 'btn btn-sm btn-dark active py-0 px-2';
+        else if (cat === 'officer' && offBtn) offBtn.className = 'btn btn-sm btn-primary active py-0 px-2 text-white';
+        else if (cat === 'nco' && ncoBtn) ncoBtn.className = 'btn btn-sm btn-warning active py-0 px-2 text-dark fw-bold';
+        else if (cat === 'civilian' && civBtn) {
+            civBtn.className = 'btn btn-sm btn-purple active py-0 px-2 text-white';
+            civBtn.style.backgroundColor = '#7e22ce';
+            civBtn.style.borderColor = '#7e22ce';
+            civBtn.style.color = '#fff';
+        }
+
+        applyModalFilters();
     }
 </script>
 {% endblock %}

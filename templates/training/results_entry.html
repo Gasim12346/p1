@@ -25,7 +25,7 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-2">
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">واجهة النتيجة والشهادات</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a></li>
         <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }}</li>
     </ol>
 </nav>
@@ -92,7 +92,7 @@
     <input type="hidden" name="save_grades" value="1">
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="bi bi-table text-primary"></i>
@@ -100,9 +100,12 @@
                 </h5>
                 <small class="text-muted">يقوم النظام بحساب المجموع والنسبة والتقدير تلقائياً ولحظياً بمجرد إدخال الدرجات</small>
             </div>
-            <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">
-                {{ enrollments|length }} دارس بالدورة
-            </span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لرصد باقي المواد</span>
+                <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">
+                    {{ enrollments|length }} دارس بالدورة
+                </span>
+            </div>
         </div>
 
         <!-- Quick Search inside grades sheet -->
@@ -126,12 +129,12 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle mb-0" id="gradesTable">
+            <table class="table table-bordered table-hover align-middle mb-0 text-nowrap" id="gradesTable">
                 <thead class="bg-light text-center small align-middle">
                     <tr>
-                        <th rowspan="2" style="width: 5%;">#</th>
-                        <th rowspan="2" style="width: 10%;">النمرة</th>
-                        <th rowspan="2" style="width: 18%;">الدارس (الرتبة والاسم والوحدة)</th>
+                        <th rowspan="2" style="min-width: 45px;">#</th>
+                        <th rowspan="2" style="min-width: 110px;">النمرة</th>
+                        <th rowspan="2" style="min-width: 180px;">الدارس (الرتبة والاسم والوحدة)</th>
                         
                         <!-- رؤوس أعمدة المواد الدراسية -->
                         {% for sub in subjects %}
@@ -287,18 +290,26 @@
                 </span>
             </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2">
+            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
+                <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-patch-check-fill"></i>
                     <span>حفظ واعتماد النتيجة كـ دورة مكتملة</span>
                 </button>
 
-                <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center gap-2">
+                <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-save2-fill"></i>
                     <span>حفظ ورصد جميع الدرجات</span>
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile Sticky Save Bar -->
+    <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
+        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-save2-fill"></i>
+            <span>حفظ ورصد جميع الدرجات</span>
+        </button>
     </div>
 </form>
 {% endblock %}

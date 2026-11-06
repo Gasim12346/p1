@@ -125,7 +125,7 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
-        /* زر تسجيل خروج متناسق وأنيق ينسجم تماماً مع هوية الواجهة */
+        /* زر تسجيل خروج متناسق وأنيق ينسجم تماماً مع هوية النظام */
         .btn-nav-logout {
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(248, 113, 113, 0.35);
@@ -315,19 +315,43 @@
             border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Inner App Topbar */
+        /* Inner App Topbar - Fully Responsive so all contents appear on small screens */
         .app-inner-topbar {
-            height: 64px;
+            min-height: 60px;
+            height: auto;
             background: #ffffff;
             border-bottom: 1px solid var(--card-border);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-            padding: 0 1.5rem;
+            padding: 0.5rem 1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
             position: sticky;
             top: 0;
             z-index: 1020;
+        }
+
+        .topbar-page-title {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .topbar-live-clock-badge {
+            background: #f8fafc;
+            padding: 0.35rem 0.85rem;
+            border-radius: 30px;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
         }
 
         .app-main-wrapper {
@@ -382,10 +406,20 @@
                 width: 100% !important;
             }
             .app-sidebar {
-                transform: translateX(100%);
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                max-width: 85vw !important;
+                width: 280px !important;
+                transform: translateX(105%) !important;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                z-index: 1050 !important;
+                box-shadow: -8px 0 30px rgba(0, 0, 0, 0.35) !important;
             }
             .app-sidebar.show {
-                transform: translateX(0);
+                transform: translateX(0) !important;
             }
             .sidebar-backdrop {
                 position: fixed;
@@ -393,13 +427,197 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(15, 23, 42, 0.5);
+                background: rgba(15, 23, 42, 0.65);
                 backdrop-filter: blur(4px);
-                z-index: 1035;
+                -webkit-backdrop-filter: blur(4px);
+                z-index: 1045;
                 display: none;
+                opacity: 0;
+                transition: opacity 0.25s ease;
             }
             .sidebar-backdrop.show {
                 display: block;
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Topbars - Ensure ALL content is visible when screen shrinks */
+        .navbar-links-scroll-wrapper {
+            width: 100%;
+        }
+
+        .navbar-nav-responsive {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-nav-responsive {
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                padding: 4px 2px 6px 2px;
+                scrollbar-width: thin;
+            }
+            .navbar-nav-responsive::-webkit-scrollbar {
+                height: 4px;
+            }
+            .navbar-nav-responsive::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+            }
+            .navbar-nav-responsive .nav-item {
+                flex-shrink: 0 !important;
+            }
+            .navbar-nav-responsive .nav-link-custom {
+                padding: 6px 12px !important;
+                font-size: 0.85rem !important;
+                background: rgba(255, 255, 255, 0.08);
+            }
+            .navbar-nav-responsive .nav-link-custom.active {
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            }
+            .navbar-brand-custom {
+                font-size: 1.05rem !important;
+                gap: 8px !important;
+            }
+            .brand-badge-icon {
+                width: 38px !important;
+                height: 38px !important;
+                font-size: 1.15rem !important;
+            }
+        }
+
+        /* Screen sizes below 576px (Phones) - Keep all contents visible with compact touch targets */
+        @media (max-width: 575.98px) {
+            .app-inner-topbar {
+                padding: 0.45rem 0.65rem !important;
+                gap: 6px !important;
+            }
+            .topbar-page-title {
+                font-size: 0.84rem !important;
+            }
+            .topbar-live-clock-badge {
+                font-size: 0.72rem !important;
+                padding: 0.2rem 0.5rem !important;
+            }
+            .btn-nav-logout,
+            .btn-topbar-home {
+                font-size: 0.78rem !important;
+                padding: 5px 9px !important;
+                gap: 4px !important;
+            }
+            .btn-nav-logout i,
+            .btn-topbar-home i {
+                font-size: 0.9rem !important;
+            }
+            .app-inner-topbar .dropdown .btn {
+                padding: 4px 8px !important;
+                font-size: 0.78rem !important;
+            }
+        }
+
+        /* Global Responsive Utilities & Custom Scrollbars */
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+        }
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .scroll-hint {
+            display: none;
+        }
+        @media (max-width: 991.98px) {
+            .scroll-hint {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 0.78rem;
+                color: #64748b;
+            }
+            .table-custom thead th,
+            .table-custom tbody td {
+                padding: 0.75rem 0.65rem;
+                font-size: 0.88rem;
+            }
+        }
+
+        /* Responsive Mobile Horizontal Scroll for Navigation Pills */
+        .pills-scroll-mobile {
+            display: flex;
+        }
+        @media (max-width: 767.98px) {
+            .pills-scroll-mobile {
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 6px;
+                margin-bottom: 0;
+            }
+            .pills-scroll-mobile::-webkit-scrollbar {
+                height: 4px;
+            }
+            .pills-scroll-mobile::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .pills-scroll-mobile .nav-item {
+                flex-shrink: 0 !important;
+            }
+            .pills-scroll-mobile .nav-link {
+                white-space: nowrap !important;
+                padding: 0.45rem 0.85rem !important;
+                font-size: 0.85rem !important;
+            }
+            .hero-banner {
+                padding: 1.75rem 1.25rem !important;
+                border-radius: 16px !important;
+                margin-bottom: 1.5rem !important;
+            }
+            .hero-banner h1 {
+                font-size: 1.5rem !important;
+                line-height: 1.3 !important;
+            }
+            .hero-banner p.lead {
+                font-size: 0.95rem !important;
+            }
+            .module-card {
+                padding: 1.5rem 1.25rem !important;
+            }
+            .module-card-icon-box {
+                width: 56px !important;
+                height: 56px !important;
+                font-size: 1.6rem !important;
+                margin-bottom: 1rem !important;
+            }
+            .module-card .badge-step {
+                top: 1rem !important;
+                left: 1rem !important;
+                font-size: 0.75rem !important;
+                padding: 0.25rem 0.65rem !important;
             }
         }
 
@@ -608,63 +826,26 @@
 
     {% if request.resolver_match.url_name == 'home' %}
         <!-- =========================================================
-             A. الواجهة الرئيسية: إبقاء النافبار العلوي الأصلي (Top Navbar)
+             A. الصفحة الرئيسية: إبقاء النافبار العلوي الأصلي (Top Navbar)
              ========================================================= -->
-        <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <nav class="navbar navbar-custom sticky-top">
             <div class="container-fluid px-xl-5 px-lg-4 px-3">
-                <a class="navbar-brand-custom flex-shrink-0" href="{% url 'training:home' %}">
-                    {% if system_settings.main_logo_url %}
-                        <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام" class="brand-badge-icon p-1 bg-white" style="object-fit: contain;">
-                    {% else %}
-                        <div class="brand-badge-icon">
-                            <i class="bi bi-mortarboard-fill"></i>
+                <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-2 py-1">
+                    <a class="navbar-brand-custom flex-shrink-0" href="{% url 'training:home' %}">
+                        {% if system_settings.main_logo_url %}
+                            <img src="{{ system_settings.main_logo_url }}" alt="شعار النظام" class="brand-badge-icon p-1 bg-white" style="object-fit: contain;">
+                        {% else %}
+                            <div class="brand-badge-icon">
+                                <i class="bi bi-mortarboard-fill"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div style="line-height: 1.1;">{{ system_settings.system_name|default:"نظام تسجيل واستخراج النتائج" }}</div>
+                            <small style="font-size: 0.72rem; color: #94a3b8; font-weight: 500;">{{ system_settings.system_subheading|default:"بوابة رصد الدرجات والشهادات المعتمدة" }}</small>
                         </div>
-                    {% endif %}
-                    <div>
-                        <div style="line-height: 1.1;">{{ system_settings.system_name|default:"نظام تسجيل واستخراج النتائج" }}</div>
-                        <small style="font-size: 0.72rem; color: #94a3b8; font-weight: 500;">{{ system_settings.system_subheading|default:"بوابة رصد الدرجات والشهادات المعتمدة" }}</small>
-                    </div>
-                </a>
+                    </a>
 
-                <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="تبديل القائمة">
-                    <i class="bi bi-list fs-1 text-white"></i>
-                </button>
-
-                <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 gap-xl-2 mt-3 mt-lg-0 align-items-center">
-                        <li class="nav-item">
-                            <a class="nav-link-custom active" href="{% url 'training:home' %}">
-                                <i class="bi bi-speedometer2"></i>
-                                <span>الرئيسية</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
-                                <i class="bi bi-people-fill"></i>
-                                <span>واجهة الدارسين</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
-                                <i class="bi bi-journal-bookmark-fill"></i>
-                                <span>واجهة الدورات</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
-                                <i class="bi bi-diagram-3-fill"></i>
-                                <span>الدورة التي تدرس</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:results_center' %}">
-                                <i class="bi bi-award-fill"></i>
-                                <span>واجهة النتيجة والشهادات</span>
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0 flex-nowrap">
+                    <div class="d-flex align-items-center gap-2 mt-2 mt-md-0 flex-wrap ms-auto">
                         <div class="bg-dark bg-opacity-50 px-3 py-1 rounded-pill border border-secondary border-opacity-25 d-flex align-items-center gap-2 text-white-50 text-nowrap">
                             <span class="live-dot"></span>
                             <span class="text-white small fw-bold" id="liveClock">التاريخ: 2026</span>
@@ -702,7 +883,7 @@
                                 </ul>
                             </div>
 
-                            <!-- زر تسجيل خروج متناسق وأنيق ينسجم مع ألوان وهوية الواجهة -->
+                            <!-- زر تسجيل خروج متناسق وأنيق ينسجم مع ألوان وهوية النظام -->
                             <a href="{% url 'training:logout' %}" class="btn-nav-logout" title="تسجيل الخروج من النظام">
                                 <i class="bi bi-box-arrow-right"></i>
                                 <span>تسجيل خروج</span>
@@ -714,6 +895,42 @@
                             </a>
                         {% endif %}
                     </div>
+                </div>
+
+                <!-- شريط روابط التنقل المتجاوب: تظهر جميع محتوياته دائماً حتى عند تصغير الشاشة -->
+                <div class="navbar-links-scroll-wrapper w-100 mt-2 pt-2 border-top border-secondary border-opacity-25">
+                    <ul class="navbar-nav-responsive">
+                        <li class="nav-item">
+                            <a class="nav-link-custom active" href="{% url 'training:home' %}">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>الرئيسية</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
+                                <i class="bi bi-people-fill"></i>
+                                <span>الدارسين</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                                <span>الدورات ومفرداتها</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
+                                <i class="bi bi-diagram-3-fill"></i>
+                                <span>الدورة التي تدرس</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link-custom" href="{% url 'training:results_center' %}">
+                                <i class="bi bi-award-fill"></i>
+                                <span>النتيجة والشهادات</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </nav>
@@ -762,16 +979,16 @@
                         <span>الرئيسية</span>
                     </a>
 
-                    <!-- 2. واجهة الدارسين -->
-                    <a href="{% url 'training:trainees_list' %}" class="sidebar-nav-link {% if 'trainee' in request.resolver_match.url_name %}active{% endif %}" title="واجهة الدارسين وسجلاتهم">
+                    <!-- 2. الدارسين -->
+                    <a href="{% url 'training:trainees_list' %}" class="sidebar-nav-link {% if 'trainee' in request.resolver_match.url_name %}active{% endif %}" title="سجل الدارسين وبياناتهم">
                         <i class="bi bi-people-fill"></i>
-                        <span>واجهة الدارسين</span>
+                        <span>الدارسين</span>
                     </a>
 
-                    <!-- 3. واجهة الدورات ومفردات المواد -->
-                    <a href="{% url 'training:courses_catalog' %}" class="sidebar-nav-link {% if 'course' in request.resolver_match.url_name and 'session' not in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}active{% endif %}" title="واجهة الدورات ومفردات المواد">
+                    <!-- 3. الدورات ومفردات المواد -->
+                    <a href="{% url 'training:courses_catalog' %}" class="sidebar-nav-link {% if 'course' in request.resolver_match.url_name and 'session' not in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}active{% endif %}" title="الدورات ومفردات المواد">
                         <i class="bi bi-journal-bookmark-fill"></i>
-                        <span>واجهة الدورات ومفرداتها</span>
+                        <span>الدورات ومفرداتها</span>
                     </a>
 
                     <!-- 4. الدورة التي تدرس -->
@@ -780,8 +997,8 @@
                         <span>الدورة التي تدرس</span>
                     </a>
 
-                    <!-- 5. واجهة النتيجة والشهادات -->
-                    <a href="{% url 'training:results_center' %}" class="sidebar-nav-link {% if 'result' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name or 'certificate' in request.resolver_match.url_name %}active{% endif %}" title="واجهة النتيجة ورصد الدرجات والشهادات">
+                    <!-- 5. النتيجة والشهادات -->
+                    <a href="{% url 'training:results_center' %}" class="sidebar-nav-link {% if 'result' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name or 'certificate' in request.resolver_match.url_name %}active{% endif %}" title="النتيجة ورصد الدرجات والشهادات">
                         <i class="bi bi-award-fill"></i>
                         <span>النتيجة والشهادات</span>
                     </a>
@@ -795,7 +1012,7 @@
                     </div>
                     <div class="d-flex align-items-center justify-content-between sidebar-footer-text mb-2">
                         <span class="text-white-50" style="font-size: 0.72rem;">إصدار 2026 • معتمد</span>
-                        <a href="{% url 'training:home' %}" class="badge bg-secondary bg-opacity-25 text-white text-decoration-none px-2 py-1" title="العودة للواجهة الرئيسية">
+                        <a href="{% url 'training:home' %}" class="badge bg-secondary bg-opacity-25 text-white text-decoration-none px-2 py-1" title="العودة للرئيسية">
                             <i class="bi bi-house-door me-1"></i>الرئيسية
                         </a>
                     </div>
@@ -810,20 +1027,20 @@
             <div class="app-main-wrapper" id="appMainWrapper">
                 <!-- Inner Topbar Header -->
                 <header class="app-inner-topbar">
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 gap-sm-3">
                         <button type="button" class="btn btn-light border shadow-sm px-2 py-1 rounded-2" onclick="toggleSidebar()" id="sidebarToggleBtn" title="تبديل القائمة الجانبية (تصغير/تكبير)">
                             <i class="bi bi-list fs-5"></i>
                         </button>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="fw-bold text-dark fs-6 d-none d-sm-inline">
+                            <span class="topbar-page-title">
                                 {% if 'trainee' in request.resolver_match.url_name %}
-                                    <i class="bi bi-people-fill text-primary me-1"></i> واجهة الدارسين
+                                    <i class="bi bi-people-fill text-primary me-1"></i> الدارسين
                                 {% elif 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}
-                                    <i class="bi bi-diagram-3-fill text-primary me-1"></i> واجهة الدورة التي تدرس
+                                    <i class="bi bi-diagram-3-fill text-primary me-1"></i> الدورة التي تدرس
                                 {% elif 'course' in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}
-                                    <i class="bi bi-journal-bookmark-fill text-primary me-1"></i> واجهة الدورات ومفردات المواد
+                                    <i class="bi bi-journal-bookmark-fill text-primary me-1"></i> الدورات ومفردات المواد
                                 {% elif 'result' in request.resolver_match.url_name or 'grade' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name %}
-                                    <i class="bi bi-award-fill text-warning me-1"></i> واجهة النتيجة والشهادات
+                                    <i class="bi bi-award-fill text-warning me-1"></i> النتيجة والشهادات
                                 {% elif 'admin' in request.resolver_match.url_name or 'category' in request.resolver_match.url_name %}
                                     <i class="bi bi-shield-shaded text-warning me-1"></i> لوحة الإدارة والتحليلات
                                 {% else %}
@@ -833,17 +1050,17 @@
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="bg-light px-3 py-1 rounded-pill border d-none d-md-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-1 gap-sm-2 flex-wrap ms-auto">
+                        <div class="topbar-live-clock-badge">
                             <span class="live-dot"></span>
-                            <span class="text-secondary small fw-bold" id="topbarLiveClock">التاريخ: 2026</span>
+                            <span id="topbarLiveClock">التاريخ: 2026</span>
                         </div>
 
                         {% if user.is_authenticated %}
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 shadow-sm" type="button" data-bs-toggle="dropdown">
+                                <button class="btn btn-sm btn-light border rounded-pill px-2 px-sm-3 py-1 dropdown-toggle d-flex align-items-center gap-1 gap-sm-2 shadow-sm" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-person-circle text-primary"></i>
-                                    <span class="small fw-bold">{{ user.username }}</span>
+                                    <span class="fw-bold">{{ user.username }}</span>
                                     {% if user.is_superuser or user.profile.role == 'admin' %}
                                         <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">أدمن</span>
                                     {% endif %}
@@ -883,9 +1100,9 @@
                             </a>
                         {% endif %}
 
-                        <a href="{% url 'training:home' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                        <a href="{% url 'training:home' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2 px-sm-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm btn-topbar-home" title="الرئيسية">
                             <i class="bi bi-house-door-fill"></i>
-                            <span>الرئيسية</span>
+                            <span class="btn-topbar-home-text">الرئيسية</span>
                         </a>
                     </div>
                 </header>
@@ -983,8 +1200,11 @@
             const backdrop = document.getElementById('sidebarBackdrop');
             
             if (isMobile) {
-                if (sidebar) sidebar.classList.toggle('show');
-                if (backdrop) backdrop.classList.toggle('show');
+                if (sidebar) {
+                    const isOpen = sidebar.classList.toggle('show');
+                    if (backdrop) backdrop.classList.toggle('show', isOpen);
+                    document.body.style.overflow = isOpen ? 'hidden' : '';
+                }
             } else {
                 document.body.classList.toggle('sidebar-collapsed');
                 const isCollapsed = document.body.classList.contains('sidebar-collapsed');
@@ -993,6 +1213,17 @@
                 } catch(e) {}
             }
         }
+
+        // Close mobile sidebar on resize if expanded to desktop
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 992) {
+                const sidebar = document.getElementById('appSidebar');
+                const backdrop = document.getElementById('sidebarBackdrop');
+                if (sidebar) sidebar.classList.remove('show');
+                if (backdrop) backdrop.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
 
         // Restore desktop sidebar collapse preference
         document.addEventListener('DOMContentLoaded', function() {

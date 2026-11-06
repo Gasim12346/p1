@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}واجهة النتيجة والشهادات والسجل التاريخي | نظام تسجيل واستخراج النتائج{% endblock %}
+{% block title %}النتيجة والشهادات والسجل التاريخي | نظام تسجيل واستخراج النتائج{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -9,12 +9,12 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1">
                 <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-                <li class="breadcrumb-item active" aria-current="page">واجهة النتيجة والشهادات</li>
+                <li class="breadcrumb-item active" aria-current="page">النتيجة والشهادات</li>
             </ol>
         </nav>
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
             <i class="bi bi-award-fill text-purple" style="color: #9333ea;"></i>
-            واجهة النتيجة والشهادات والسجل التاريخي
+            النتيجة والشهادات والسجل التاريخي
         </h2>
         <p class="text-muted small mb-0">اختيار الدورة وتاريخها لرصد الدرجات، واحتساب النسب والتقديرات آلياً، واستخراج شهادات التقدير مع ميزات البحث والفلترة الشاملة</p>
     </div>
@@ -23,16 +23,18 @@
 <!-- Tabs: 1. رصد درجات الدورات | 2. السجل التاريخي الشامل -->
 <ul class="nav nav-tabs nav-fill mb-4 border-bottom-2" id="resultsTab" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'sessions' %}active{% endif %} fw-bold py-3 fs-6 d-flex align-items-center justify-content-center gap-2" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessionsTabContent" type="button" role="tab">
+        <button class="nav-link {% if active_tab == 'sessions' %}active{% endif %} fw-bold py-2 py-md-3 fs-6 d-flex align-items-center justify-content-center gap-2" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessionsTabContent" type="button" role="tab">
             <i class="bi bi-pencil-square fs-5 text-primary"></i>
-            <span>اختيار الدورة وتاريخها لرصد الدرجات</span>
+            <span class="d-none d-sm-inline">اختيار الدورة وتاريخها لرصد الدرجات</span>
+            <span class="d-sm-none">رصد درجات الدورات</span>
             <span class="badge bg-primary rounded-pill">{{ sessions|length }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'archive' %}active{% endif %} fw-bold py-3 fs-6 d-flex align-items-center justify-content-center gap-2" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archiveTabContent" type="button" role="tab">
+        <button class="nav-link {% if active_tab == 'archive' %}active{% endif %} fw-bold py-2 py-md-3 fs-6 d-flex align-items-center justify-content-center gap-2" id="archive-tab" data-bs-toggle="tab" data-bs-target="#archiveTabContent" type="button" role="tab">
             <i class="bi bi-clock-history fs-5 text-warning"></i>
-            <span>السجل التاريخي الشامل لجميع نتائج الدارسين والشهادات</span>
+            <span class="d-none d-sm-inline">السجل التاريخي الشامل لجميع نتائج الدارسين والشهادات</span>
+            <span class="d-sm-none">السجل التاريخي والشهادات</span>
             <span class="badge bg-warning text-dark rounded-pill">{{ historical_enrollments|length }}</span>
         </button>
     </li>
@@ -92,7 +94,7 @@
 
         <!-- Sessions List Table -->
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-            <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div>
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="bi bi-card-checklist text-primary"></i>
@@ -100,19 +102,22 @@
                     </h5>
                     <small class="text-muted">اختر الدورة وتاريخها واضغط على "رصد الدرجات" لعرض طلبتها وإدخال الدرجات</small>
                 </div>
-                <span class="text-muted small">العدد المعروض: <strong class="text-dark">{{ sessions|length }}</strong> دورة</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
+                    <span class="text-muted small">العدد: <strong class="text-dark">{{ sessions|length }}</strong> دورة</span>
+                </div>
             </div>
 
             <div class="table-responsive">
-                <table class="table table-custom table-hover align-middle mb-0">
+                <table class="table table-custom table-hover align-middle mb-0 text-nowrap">
                     <thead>
                         <tr>
-                            <th style="width: 25%;">اسم الدورة والتصنيف</th>
-                            <th style="width: 15%;">رمز الدفعة</th>
-                            <th style="width: 20%;">فترة الدورة وتاريخها</th>
-                            <th style="width: 12%; text-align: center;">الدارسون</th>
-                            <th style="width: 13%; text-align: center;">حالة الرصد</th>
-                            <th style="width: 15%; text-align: center;">الإجراء</th>
+                            <th style="min-width: 180px;">اسم الدورة والتصنيف</th>
+                            <th style="min-width: 120px;">رمز الدفعة</th>
+                            <th style="min-width: 160px;">فترة الدورة وتاريخها</th>
+                            <th style="min-width: 100px; text-align: center;">الدارسون</th>
+                            <th style="min-width: 110px; text-align: center;">حالة الرصد</th>
+                            <th style="min-width: 150px; text-align: center;">الإجراء</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -243,7 +248,7 @@
 
         <!-- Historical Results Table -->
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-            <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div>
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="bi bi-archive-fill text-warning"></i>
@@ -251,12 +256,13 @@
                     </h5>
                     <small class="text-muted">أرشيف تاريخي كامل لجميع النتائج والشهادات الصادرة عبر تاريخ الدورات</small>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب</span>
                     <span class="badge bg-warning bg-opacity-25 text-dark fw-bold px-3 py-2 rounded-pill">
                         المطابقة: {{ historical_enrollments|length }} دارس
                     </span>
                     {% if search_query or grade_filter or trainee_cat_filter or session_filter %}
-                        <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-outline-danger ms-2 rounded-pill px-3">
+                        <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-outline-danger rounded-pill px-3">
                             <i class="bi bi-x-circle me-1"></i> إلغاء التصفية
                         </a>
                     {% endif %}
@@ -264,16 +270,16 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-custom table-hover align-middle mb-0" id="historicalTable">
+                <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="historicalTable">
                     <thead>
                         <tr>
-                            <th style="width: 12%;">النمرة</th>
-                            <th style="width: 23%;">الدارس (الرتبة والاسم والوحدة)</th>
-                            <th style="width: 22%;">الدورة وتاريخها</th>
-                            <th style="width: 11%; text-align: center;">المجموع</th>
-                            <th style="width: 10%; text-align: center;">النسبة</th>
-                            <th style="width: 11%; text-align: center;">التقدير</th>
-                            <th style="width: 11%; text-align: center;">شهادة التقدير</th>
+                            <th style="min-width: 120px;">النمرة</th>
+                            <th style="min-width: 190px;">الدارس (الرتبة والاسم والوحدة)</th>
+                            <th style="min-width: 180px;">الدورة وتاريخها</th>
+                            <th style="min-width: 90px; text-align: center;">المجموع</th>
+                            <th style="min-width: 85px; text-align: center;">النسبة</th>
+                            <th style="min-width: 100px; text-align: center;">التقدير</th>
+                            <th style="min-width: 120px; text-align: center;">شهادة التقدير</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}واجهة الدورات ومفردات المواد | نظام تسجيل واستخراج النتائج{% endblock %}
+{% block title %}الدورات ومفردات المواد | نظام تسجيل واستخراج النتائج{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -68,29 +68,42 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1">
                 <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-                <li class="breadcrumb-item active" aria-current="page">واجهة الدورات ومفردات المواد</li>
+                <li class="breadcrumb-item active" aria-current="page">الدورات ومفردات المواد</li>
             </ol>
         </nav>
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
             <i class="bi bi-journal-bookmark-fill text-warning"></i>
-            واجهة الدورات ومفردات المواد
+            الدورات ومفردات المواد
         </h2>
         <p class="text-muted small mb-0">استعراض تصنيفات الدورات الثلاثة، الدورات التابعة لكل تصنيف، والمواد وساعاتها وأرقامها مع إمكانية الإضافة والتعديل</p>
     </div>
 
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+    <div class="d-flex gap-2 w-100 w-sm-auto">
+        <button type="button" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100" data-bs-toggle="modal" data-bs-target="#addCourseModal">
             <i class="bi bi-plus-circle-fill"></i>
             <span>إضافة دورة جديدة</span>
         </button>
     </div>
 </div>
 
+<!-- Mobile Quick Navigation Bar (Visible only on screens < 992px) -->
+<div class="d-flex d-lg-none gap-2 mb-3 overflow-x-auto pb-1 pills-scroll-mobile">
+    <a href="#categoriesSection" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold text-nowrap">
+        <i class="bi bi-layers-fill me-1"></i> 1. التصنيفات
+    </a>
+    <a href="#coursesSection" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-bold text-dark text-nowrap">
+        <i class="bi bi-journal-bookmark-fill me-1"></i> 2. الدورات ({{ selected_category.name }})
+    </a>
+    <a href="#subjectsSection" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold text-nowrap">
+        <i class="bi bi-card-checklist me-1"></i> 3. مفردات المواد
+    </a>
+</div>
+
 <!-- 3-Columns Layout: [1. التصنيفات] -> [2. الدورات] -> [3. المواد الدراسية] -->
 <div class="row g-4">
     
     <!-- 1. عمود تصنيفات الدورات (دورات مرشد، دورات خاصة، دورات مشتركة) -->
-    <div class="col-lg-3">
+    <div class="col-lg-3" id="categoriesSection">
         <div class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -137,7 +150,7 @@
     </div>
 
     <!-- 2. عمود الدورات الخاصة بالتصنيف المختار -->
-    <div class="col-lg-4">
+    <div class="col-lg-4" id="coursesSection">
         <div class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
                 <div>
@@ -194,9 +207,9 @@
     </div>
 
     <!-- 3. عمود المواد الدراسية التابعة للدورة المختارة (رقم المادة، اسمها، ساعاتها) -->
-    <div class="col-lg-5">
+    <div class="col-lg-5" id="subjectsSection">
         <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-            <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div>
                     {% if selected_course %}
                         <span class="badge bg-warning bg-opacity-20 text-dark mb-1 small">{{ selected_course.course_number }}</span>
@@ -216,17 +229,17 @@
             <div class="card-body p-0">
                 {% if selected_course %}
                     <!-- Course Summary Bar -->
-                    <div class="bg-light p-3 border-bottom d-flex justify-content-around text-center">
+                    <div class="bg-light p-3 border-bottom d-flex justify-content-around text-center flex-wrap gap-2">
                         <div>
                             <span class="text-muted small d-block">إجمالي الساعات</span>
                             <strong class="text-primary fs-5">{{ selected_course.total_hours }}</strong> ساعة
                         </div>
-                        <div class="border-start"></div>
+                        <div class="border-start d-none d-sm-block"></div>
                         <div>
                             <span class="text-muted small d-block">إجمالي الدرجات العظمى</span>
                             <strong class="text-success fs-5">{{ selected_course.total_max_marks }}</strong> درجة
                         </div>
-                        <div class="border-start"></div>
+                        <div class="border-start d-none d-sm-block"></div>
                         <div>
                             <span class="text-muted small d-block">عدد المواد</span>
                             <strong class="text-dark fs-5">{{ subjects|length }}</strong>
@@ -235,14 +248,14 @@
 
                     <!-- Subjects Table -->
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead class="bg-light text-muted small">
                                 <tr>
-                                    <th style="width: 20%;">رقم/كود المادة</th>
-                                    <th style="width: 35%;">اسم المادة الدراسية</th>
-                                    <th style="width: 15%; text-align: center;">الساعات</th>
-                                    <th style="width: 15%; text-align: center;">الدرجة العظمى</th>
-                                    <th style="width: 15%; text-align: center;">إجراءات</th>
+                                    <th style="min-width: 110px;">رقم/كود المادة</th>
+                                    <th style="min-width: 160px;">اسم المادة الدراسية</th>
+                                    <th style="min-width: 80px; text-align: center;">الساعات</th>
+                                    <th style="min-width: 90px; text-align: center;">الدرجة العظمى</th>
+                                    <th style="min-width: 100px; text-align: center;">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -420,4 +433,30 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Smooth auto-scroll for mobile devices when category or course is selected
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.innerWidth < 992) {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('course_id')) {
+                const subjectsSec = document.getElementById('subjectsSection');
+                if (subjectsSec) {
+                    setTimeout(() => {
+                        subjectsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 250);
+                }
+            } else if (urlParams.has('category_id')) {
+                const coursesSec = document.getElementById('coursesSection');
+                if (coursesSec) {
+                    setTimeout(() => {
+                        coursesSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 250);
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

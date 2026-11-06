@@ -15,16 +15,16 @@
             <p class="lead text-light mb-4" style="opacity: 0.9; font-size: 1.1rem; max-width: 750px;">
                 منظومة شاملة لإدارة سجلات الدارسين، وتصنيفات الدورات وموادها، ومتابعة الانعقاد الفعلي، ورصد الدرجات وحساب النسب والتقديرات وإصدار شهادات التقدير الرسمية بدقة وسرعة.
             </p>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <a href="{% url 'training:trainees_list' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm text-dark d-inline-flex align-items-center gap-2">
+            <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2">
+                <a href="{% url 'training:trainees_list' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm text-dark d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-person-plus-fill"></i>
-                    دخول واجهة الدارسين
+                    <span>دخول سجل الدارسين</span>
                 </a>
-                <a href="{% url 'training:results_center' %}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2">
+                <a href="{% url 'training:results_center' %}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-award"></i>
-                    رصد النتائج واستخراج الشهادات
+                    <span>رصد النتائج واستخراج الشهادات</span>
                 </a>
-                <a href="{% url 'training:logout' %}" class="btn fw-bold px-3 py-2 rounded-3 text-white d-inline-flex align-items-center gap-2 ms-auto" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(248, 113, 113, 0.45); color: #fecaca; text-decoration: none; backdrop-filter: blur(8px); transition: all 0.25s ease;" onmouseover="this.style.background='#dc2626'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.color='#fecaca';" title="تسجيل الخروج من النظام">
+                <a href="{% url 'training:logout' %}" class="btn fw-bold px-3 py-2 rounded-3 text-white d-inline-flex align-items-center justify-content-center gap-2 ms-sm-auto" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(248, 113, 113, 0.45); color: #fecaca; text-decoration: none; backdrop-filter: blur(8px); transition: all 0.25s ease;" onmouseover="this.style.background='#dc2626'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.color='#fecaca';" title="تسجيل الخروج من النظام">
                     <i class="bi bi-box-arrow-right"></i>
                     <span>تسجيل الخروج</span>
                 </a>
@@ -40,22 +40,22 @@
             <i class="bi bi-grid-1x2-fill text-primary"></i>
             بوابات النظام الأساسية
         </h3>
-        <p class="text-muted small mb-0">الواجهات الرئيسية الأربعة لإدارة منظومة التدريب واستخراج النتائج</p>
+        <p class="text-muted small mb-0">الأقسام الرئيسية الأربعة لإدارة منظومة التدريب واستخراج النتائج</p>
     </div>
 </div>
 
-<!-- 4 Core Modules Cards (طلب المستخدم: واجهة الدارسين، واجهة الدورات، واجهة الدورة التي يتم دراستها، واجهة النتيجة) -->
+<!-- 4 Core Modules Cards -->
 <div class="row g-4 mb-5">
     
-    <!-- Module 1: واجهة الدارسين -->
+    <!-- Module 1: الدارسين -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
             <div>
-                <span class="badge-step">الواجهة 1</span>
+                <span class="badge-step">القسم 1</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff;">
                     <i class="bi bi-person-lines-fill"></i>
                 </div>
-                <h4 class="fw-bold text-dark mb-2">واجهة الدارسين</h4>
+                <h4 class="fw-bold text-dark mb-2">سجل الدارسين</h4>
                 <p class="text-muted small mb-4" style="line-height: 1.6;">
                     إدخال بيانات الطلبة والدارسين وحفظها، مصنفة بدقة إلى:
                     <span class="badge badge-officer me-1">ضباط</span>
@@ -67,22 +67,22 @@
             <div>
                 <hr class="border-slate-200 my-3">
                 <a href="{% url 'training:trainees_list' %}" class="btn btn-modern-primary w-100">
-                    <span>فتح واجهة الدارسين</span>
+                    <span>فتح سجل الدارسين</span>
                     <i class="bi bi-arrow-left"></i>
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Module 2: واجهة الدورات ومفرداتها -->
+    <!-- Module 2: الدورات ومفرداتها -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
             <div>
-                <span class="badge-step">الواجهة 2</span>
+                <span class="badge-step">القسم 2</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #b45309, #f59e0b); color: #fff;">
                     <i class="bi bi-book-half"></i>
                 </div>
-                <h4 class="fw-bold text-dark mb-2">واجهة الدورات</h4>
+                <h4 class="fw-bold text-dark mb-2">الدورات ومفرداتها</h4>
                 <p class="text-muted small mb-4" style="line-height: 1.6;">
                     قائمة تصنيفات الدورات (دورات مرشد، دورات خاصة، دورات مشتركة) في شكل قائمة تفاعلية؛ الضغط على أي تصنيف يعرض الدورات، واختيار دورة يعرض موادها وساعاتها ورقمها وإمكانية التعديل والإضافة.
                 </p>
@@ -97,11 +97,11 @@
         </div>
     </div>
 
-    <!-- Module 3: واجهة الدورة التي يتم دراستها -->
+    <!-- Module 3: الدورة التي يتم دراستها -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
             <div>
-                <span class="badge-step">الواجهة 3</span>
+                <span class="badge-step">القسم 3</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #047857, #10b981); color: #fff;">
                     <i class="bi bi-diagram-3-fill"></i>
                 </div>
@@ -120,15 +120,15 @@
         </div>
     </div>
 
-    <!-- Module 4: واجهة النتيجة والشهادات -->
+    <!-- Module 4: النتيجة والشهادات -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
             <div>
-                <span class="badge-step">الواجهة 4</span>
+                <span class="badge-step">القسم 4</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #6b21a8, #9333ea); color: #fff;">
                     <i class="bi bi-award-fill"></i>
                 </div>
-                <h4 class="fw-bold text-dark mb-2">واجهة النتيجة والشهادة</h4>
+                <h4 class="fw-bold text-dark mb-2">النتيجة والشهادات</h4>
                 <p class="text-muted small mb-4" style="line-height: 1.6;">
                     رصد درجات المواد والمواظبة، حساب تلقائي للمجموع والنسبة المئوية:
                     <span class="d-block small text-primary fw-bold mt-1">النسبة = (المجموع × 100) ÷ الدرجة الكلية</span>

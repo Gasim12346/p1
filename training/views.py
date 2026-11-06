@@ -274,8 +274,10 @@ def subject_delete_view(request, subject_id):
 def course_sessions_view(request):
     """عرض قائمة الدورات المنعقدة حالياً مع إحصائيات وروابط الإدارة"""
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
+    categories = CourseCategory.objects.all()
     return render(request, 'training/course_sessions.html', {
-        'sessions': sessions
+        'sessions': sessions,
+        'categories': categories,
     })
 
 
@@ -339,9 +341,16 @@ def course_session_create_view(request):
             messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتسجيل {enrolled_count} دارس بها.')
             return redirect('training:course_session_manage', session_id=session.id)
 
+    officer_count = trainees.filter(category=TraineeCategory.OFFICER).count()
+    nco_count = trainees.filter(category=TraineeCategory.NCO).count()
+    civilian_count = trainees.filter(category=TraineeCategory.CIVILIAN).count()
+
     return render(request, 'training/course_session_create.html', {
         'categories': categories,
         'trainees': trainees,
+        'officer_count': officer_count,
+        'nco_count': nco_count,
+        'civilian_count': civilian_count,
     })
 
 
@@ -763,9 +772,9 @@ def login_view(request):
                     (hasattr(user, 'profile') and user.profile.role == UserRole.ADMIN)
                 )
                 
-                # توجيه فوري: إذا كان المستخدم أدمن، يتم توجيهه مباشرة إلى واجهة الأدمن المنفصلة!
+                # توجيه فوري: إذا كان المستخدم أدمن، يتم توجيهه مباشرة إلى لوحة الأدمن المنفصلة!
                 if is_admin:
-                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح ونقلك إلى واجهة الأدمن المنفصلة.')
+                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح ونقلك إلى لوحة الأدمن المنفصلة.')
                     if redirect_to and redirect_to.startswith('/admin-portal/'):
                         return redirect(redirect_to)
                     return redirect('training:admin_dashboard')
@@ -803,7 +812,7 @@ def admin_access_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            messages.warning(request, 'يرجى تسجيل الدخول بحساب مدير النظام للوصول إلى واجهة الأدمن.')
+            messages.warning(request, 'يرجى تسجيل الدخول بحساب مدير النظام للوصول إلى لوحة الأدمن.')
             return redirect(f"{reverse('training:login')}?next={request.path}")
         
         is_admin = (
@@ -812,7 +821,7 @@ def admin_access_required(view_func):
             (hasattr(request.user, 'profile') and request.user.profile.role == UserRole.ADMIN)
         )
         if not is_admin:
-            messages.error(request, 'عفواً، هذه الواجهة مخصصة لمدير النظام (الأدمن) فقط. حسابك يملك صلاحيات الواجهة الرئيسية.')
+            messages.error(request, 'عفواً، هذه اللوحة مخصصة لمدير النظام (الأدمن) فقط. حسابك يملك صلاحيات النظام الرئيسي.')
             return redirect('training:home')
 
         return view_func(request, *args, **kwargs)

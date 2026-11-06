@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}واجهة الدارسين | نظام تسجيل واستخراج النتائج{% endblock %}
+{% block title %}الدارسين | نظام تسجيل واستخراج النتائج{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -9,18 +9,18 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1">
                 <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-                <li class="breadcrumb-item active" aria-current="page">واجهة الدارسين</li>
+                <li class="breadcrumb-item active" aria-current="page">الدارسين</li>
             </ol>
         </nav>
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
             <i class="bi bi-people-fill text-primary"></i>
-            واجهة الدارسين
+            سجل وبيانات الدارسين
         </h2>
         <p class="text-muted small mb-0">إدخال وإدارة بيانات الطلبة والدارسين وحفظ سجلاتهم مصنفة إلى: ضباط، ضباط صف، ومدنيين</p>
     </div>
     
-    <div>
-        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addTraineeModal">
+    <div class="w-100 w-sm-auto">
+        <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100" data-bs-toggle="modal" data-bs-target="#addTraineeModal">
             <i class="bi bi-person-plus-fill fs-5"></i>
             <span>إضافة دارس جديد</span>
         </button>
@@ -33,7 +33,7 @@
         <div class="row align-items-center g-3">
             <!-- Categories Pills -->
             <div class="col-lg-7">
-                <ul class="nav nav-pills gap-2">
+                <ul class="nav nav-pills gap-2 pills-scroll-mobile">
                     <li class="nav-item">
                         <a class="nav-link rounded-pill fw-bold px-3 py-2 {% if not category_filter %}active bg-primary{% else %}bg-light text-dark border{% endif %}" href="{% url 'training:trainees_list' %}{% if search_query %}?q={{ search_query }}{% endif %}">
                             جميع الدارسين
@@ -90,27 +90,30 @@
 
 <!-- Trainees Table Card -->
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-card-checklist text-primary"></i>
             قائمة بيانات الدارسين المسجلين
         </h5>
-        <span class="text-muted small">
-            العدد الإجمالي المعروض: <strong class="text-dark">{{ trainees|length }}</strong> دارس
-        </span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
+            <span class="text-muted small">
+                العدد الإجمالي: <strong class="text-dark">{{ trainees|length }}</strong> دارس
+            </span>
+        </div>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-custom table-hover align-middle mb-0">
+        <table class="table table-custom table-hover align-middle mb-0 text-nowrap">
             <thead>
                 <tr>
-                    <th style="width: 15%;">النمرة (مفتاح أساسي)</th>
-                    <th style="width: 12%;">التصنيف</th>
-                    <th style="width: 14%;">الرتبة</th>
-                    <th style="width: 24%;">الاسم الكامل</th>
-                    <th style="width: 15%;">الوحدة</th>
-                    <th style="width: 10%;">القوة</th>
-                    <th style="width: 10%; text-align: center;">الإجراءات</th>
+                    <th style="min-width: 140px;">النمرة (مفتاح أساسي)</th>
+                    <th style="min-width: 110px;">التصنيف</th>
+                    <th style="min-width: 110px;">الرتبة</th>
+                    <th style="min-width: 190px;">الاسم الكامل</th>
+                    <th style="min-width: 140px;">الوحدة</th>
+                    <th style="min-width: 90px;">القوة</th>
+                    <th style="min-width: 140px; text-align: center;">الإجراءات</th>
                 </tr>
             </thead>
             <tbody>

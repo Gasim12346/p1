@@ -7,6 +7,19 @@
     .trainee-row-selected {
         background-color: #f0fdf4 !important;
     }
+    .btn-cat-filter {
+        border-radius: 50rem;
+        padding: 0.35rem 0.95rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s ease-in-out;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .btn-cat-filter:hover {
+        transform: translateY(-1px);
+    }
 </style>
 {% endblock %}
 
@@ -14,7 +27,7 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-3">
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">واجهة الدورة التي تدرس</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">الدورة التي تدرس</a></li>
         <li class="breadcrumb-item active" aria-current="page">فتح دورة جديدة وربط الطلبة</li>
     </ol>
 </nav>
@@ -123,39 +136,100 @@
 
         <!-- Filter & Search toolbar -->
         <div class="bg-light p-3 border-bottom">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-5">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-5 col-md-12">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" id="traineeFilterInput" class="form-control border-start-0" placeholder="تصفية بالاسم، النمرة، الرتبة، أو الوحدة..." onkeyup="filterTraineesTable()">
+                        <input type="text" id="traineeFilterInput" class="form-control border-start-0" placeholder="تصفية بالاسم، النمرة، الرتبة، أو الوحدة..." oninput="filterTraineesTable()">
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearTraineeSearch()" title="مسح البحث">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-7 text-md-end">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-dark active" onclick="filterByCategoryTab('all', this)">الكل</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterByCategoryTab('officer', this)">ضباط</button>
-                        <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="filterByCategoryTab('nco', this)">ضباط صف</button>
-                        <button type="button" class="btn btn-sm btn-outline-purple" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterByCategoryTab('civilian', this)">مدنيين</button>
+                <div class="col-lg-7 col-md-12">
+                    <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-1">
+                        <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-success"></i> تصنيف الدارسين:</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-cat-filter" id="btn-cat-officer" onclick="filterByCategoryTab('officer', this)" title="عرض الدارسين الضباط فقط">
+                            <i class="bi bi-star-fill"></i>
+                            <span>ضباط</span>
+                            <span class="badge bg-primary text-white ms-1">{{ officer_count }}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning text-dark btn-cat-filter" id="btn-cat-nco" onclick="filterByCategoryTab('nco', this)" title="عرض الدارسين ضباط الصف فقط">
+                            <i class="bi bi-shield-shaded"></i>
+                            <span>ضباط صف</span>
+                            <span class="badge bg-warning text-dark ms-1">{{ nco_count }}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark btn-cat-filter" id="btn-cat-all" onclick="filterByCategoryTab('all', this)" title="عرض جميع الدارسين (مشتركة)">
+                            <i class="bi bi-people-fill"></i>
+                            <span>مشتركة (جميع الدارسين)</span>
+                            <span class="badge bg-dark text-white ms-1">{{ trainees|length }}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-purple btn-cat-filter" id="btn-cat-civilian" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterByCategoryTab('civilian', this)" title="عرض الدارسين المدنيين فقط">
+                            <i class="bi bi-person-badge-fill"></i>
+                            <span>مدنيين</span>
+                            <span class="badge ms-1" style="background-color: #7e22ce; color: #fff;">{{ civilian_count }}</span>
+                        </button>
                     </div>
                 </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top border-secondary-subtle">
+                <span class="small text-muted" id="filterStatusText">
+                    <i class="bi bi-exclamation-circle text-warning me-1"></i> لم يتم اختيار التصنيف بعد — <strong>اختر تصنيف الدارسين من الأزرار أعلاه لعرض بياناتهم</strong>
+                </span>
+                <span class="small text-muted fw-bold" id="visibleTraineesCount">
+                    المعروض: 0 دارس
+                </span>
             </div>
         </div>
 
         <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
-            <table class="table table-hover align-middle mb-0" id="traineesTable">
+            <table class="table table-hover align-middle mb-0 text-nowrap" id="traineesTable">
                 <thead class="bg-light text-muted sticky-top">
                     <tr>
-                        <th style="width: 5%; text-align: center;">اختيار</th>
-                        <th style="width: 14%;">النمرة (أرقام فقط)</th>
-                        <th style="width: 22%;">اسم الدارس</th>
-                        <th style="width: 12%;">التصنيف</th>
-                        <th style="width: 23%;">الرتبة أثناء الدورة (قابلة للتعديل)</th>
-                        <th style="width: 24%;">الوحدة أثناء الدورة (قابلة للتعديل)</th>
+                        <th style="min-width: 50px; text-align: center;">اختيار</th>
+                        <th style="min-width: 130px;">النمرة (أرقام فقط)</th>
+                        <th style="min-width: 180px;">اسم الدارس</th>
+                        <th style="min-width: 100px;">التصنيف</th>
+                        <th style="min-width: 160px;">الرتبة أثناء الدورة (قابلة للتعديل)</th>
+                        <th style="min-width: 160px;">الوحدة أثناء الدورة (قابلة للتعديل)</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- رسالة التوجيه قبل اختيار التصنيف -->
+                    <tr id="selectCategoryFirstRow">
+                        <td colspan="6" class="text-center py-5 bg-white">
+                            <div class="py-4">
+                                <div class="mb-3">
+                                    <span class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-funnel-fill fs-2"></i>
+                                    </span>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-2">يرجى اختيار تصنيف الدارسين أولاً لعرض بياناتهم</h5>
+                                <p class="text-muted small mb-4">لن تظهر بيانات الدارسين إلا بعد تحديد تصنيفهم. انقر على التصنيف المطلوب:</p>
+                                <div class="d-flex flex-wrap justify-content-center gap-2">
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('officer', document.getElementById('btn-cat-officer'))">
+                                        <i class="bi bi-star-fill me-1"></i> ضباط
+                                        <span class="badge bg-white text-primary ms-1">{{ officer_count }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-warning text-dark rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('nco', document.getElementById('btn-cat-nco'))">
+                                        <i class="bi bi-shield-shaded me-1"></i> ضباط صف
+                                        <span class="badge bg-dark text-white ms-1">{{ nco_count }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('all', document.getElementById('btn-cat-all'))">
+                                        <i class="bi bi-people-fill me-1"></i> مشتركة (جميع الدارسين)
+                                        <span class="badge bg-white text-dark ms-1">{{ trainees|length }}</span>
+                                    </button>
+                                    <button type="button" class="btn rounded-pill px-4 py-2 fw-bold text-white shadow-sm" style="background-color: #7e22ce;" onclick="filterByCategoryTab('civilian', document.getElementById('btn-cat-civilian'))">
+                                        <i class="bi bi-person-badge-fill me-1"></i> مدنيين
+                                        <span class="badge bg-white ms-1" style="color: #7e22ce;">{{ civilian_count }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
                     {% for t in trainees %}
-                        <tr class="trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}">
+                        <tr class="trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}" style="display: none;">
                             <td class="text-center">
                                 <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}" class="form-check-input trainee-checkbox" style="width: 20px; height: 20px; cursor: pointer;" onchange="updateSelectedCount(); highlightRow(this);">
                             </td>
@@ -189,10 +263,17 @@
                     {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-5 text-muted">
-                                لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من واجهة الدارسين أولاً.
+                                لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
                             </td>
                         </tr>
                     {% endfor %}
+                    <tr id="noFilterMatchRow" style="display: none;">
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
+                            <span class="fw-bold fs-6">لا يوجد دارسون يطابقون خيار التصنيف أو البحث المختار!</span>
+                            <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو مسح عبارة البحث لإظهار النتائج.</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -266,6 +347,10 @@
     }
 
     function toggleSelectAll(selectAll) {
+        if (!currentCategoryTab) {
+            alert('يرجى اختيار تصنيف الدارسين أولاً (ضباط، ضباط صف، أو مشتركة).');
+            return;
+        }
         const rows = document.querySelectorAll('.trainee-row');
         rows.forEach(row => {
             if (row.style.display !== 'none') {
@@ -279,39 +364,153 @@
         updateSelectedCount();
     }
 
-    // بحث وتصفية جدول الدارسين
-    function filterTraineesTable() {
-        const query = document.getElementById('traineeFilterInput').value.toLowerCase().trim();
-        const rows = document.querySelectorAll('.trainee-row');
+    // تطبيق تصفية الدارسين (لا تظهر بيانات الدارسين إلا بعد اختيار تصنيفهم)
+    let currentCategoryTab = null;
 
+    function applyTraineeFilters() {
+        const query = (document.getElementById('traineeFilterInput')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('.trainee-row');
+        const selectPrompt = document.getElementById('selectCategoryFirstRow');
+        const noMatchRow = document.getElementById('noFilterMatchRow');
+        const countBadge = document.getElementById('visibleTraineesCount');
+
+        // إذا لم يختر المستخدم تصنيفاً بعد: إبقاء الدارسين مخفيين بالكامل وإظهار رسالة التوجيه
+        if (!currentCategoryTab) {
+            rows.forEach(row => row.style.display = 'none');
+            if (selectPrompt) selectPrompt.style.display = '';
+            if (noMatchRow) noMatchRow.style.display = 'none';
+            if (countBadge) countBadge.textContent = 'المعروض: 0 دارس';
+            return;
+        }
+
+        // تم اختيار تصنيف: إخفاء رسالة التوجيه
+        if (selectPrompt) selectPrompt.style.display = 'none';
+
+        let visibleCount = 0;
         rows.forEach(row => {
-            const searchData = row.getAttribute('data-search').toLowerCase();
-            if (searchData.includes(query)) {
+            const rowCat = (row.getAttribute('data-category') || '').trim();
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+
+            // مطابقة التصنيف: 'all' يطابق الكل، وغير ذلك يطابق تصنيف الصف بدقة
+            const matchesCat = (currentCategoryTab === 'all' || rowCat === currentCategoryTab);
+            // مطابقة البحث: إذا لم يوجد نص بحث يطابق، وإلا يبحث في محتوى الحقول
+            const matchesSearch = (!query || searchData.includes(query));
+
+            if (matchesCat && matchesSearch) {
                 row.style.display = '';
+                visibleCount++;
             } else {
                 row.style.display = 'none';
             }
         });
+
+        // تحديث عداد الدارسين المعروضين
+        const totalRows = rows.length;
+        if (countBadge) {
+            countBadge.textContent = `المعروض: ${visibleCount} من إجمالي ${totalRows} دارس`;
+        }
+
+        // إظهار أو إخفاء رسالة لا توجد نتائج
+        if (noMatchRow) {
+            noMatchRow.style.display = (visibleCount === 0 && totalRows > 0) ? '' : 'none';
+        }
     }
 
-    let currentCategoryTab = 'all';
+    // التصفية بأزرار التصنيف (مشتركة، ضباط، ضباط صف، مدنيين)
     function filterByCategoryTab(cat, btn) {
         currentCategoryTab = cat;
-        // Update active class
-        const buttons = btn.parentElement.querySelectorAll('button');
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
 
-        const rows = document.querySelectorAll('.trainee-row');
-        rows.forEach(row => {
-            const rowCat = row.getAttribute('data-category');
-            if (cat === 'all' || rowCat === cat) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+        const allBtn = document.getElementById('btn-cat-all');
+        const officerBtn = document.getElementById('btn-cat-officer');
+        const ncoBtn = document.getElementById('btn-cat-nco');
+        const civilianBtn = document.getElementById('btn-cat-civilian');
+        const statusText = document.getElementById('filterStatusText');
+
+        // إعادة جميع الأزرار لحالة غير مفعّلة
+        if (allBtn) {
+            allBtn.className = 'btn btn-sm btn-outline-dark btn-cat-filter';
+            const b = allBtn.querySelector('.badge');
+            if (b) b.className = 'badge bg-dark text-white ms-1';
+        }
+        if (officerBtn) {
+            officerBtn.className = 'btn btn-sm btn-outline-primary btn-cat-filter';
+            const b = officerBtn.querySelector('.badge');
+            if (b) b.className = 'badge bg-primary text-white ms-1';
+        }
+        if (ncoBtn) {
+            ncoBtn.className = 'btn btn-sm btn-outline-warning text-dark btn-cat-filter';
+            const b = ncoBtn.querySelector('.badge');
+            if (b) b.className = 'badge bg-warning text-dark ms-1';
+        }
+        if (civilianBtn) {
+            civilianBtn.className = 'btn btn-sm btn-outline-purple btn-cat-filter';
+            civilianBtn.style.color = '#7e22ce';
+            civilianBtn.style.borderColor = '#7e22ce';
+            civilianBtn.style.backgroundColor = '';
+            const b = civilianBtn.querySelector('.badge');
+            if (b) {
+                b.style.backgroundColor = '#7e22ce';
+                b.style.color = '#fff';
             }
-        });
-        filterTraineesTable();
+        }
+
+        // تفعيل الزر المختار وتحديث نص الحالة
+        if (cat === 'all') {
+            if (allBtn) {
+                allBtn.className = 'btn btn-sm btn-dark btn-cat-filter active';
+                const b = allBtn.querySelector('.badge');
+                if (b) b.className = 'badge bg-white text-dark ms-1';
+            }
+            if (statusText) statusText.innerHTML = '<i class="bi bi-people-fill me-1"></i> يتم حالياً عرض: <strong>مشتركة (جميع الدارسين)</strong>';
+        } else if (cat === 'officer') {
+            if (officerBtn) {
+                officerBtn.className = 'btn btn-sm btn-primary btn-cat-filter active text-white';
+                const b = officerBtn.querySelector('.badge');
+                if (b) b.className = 'badge bg-white text-primary ms-1';
+            }
+            if (statusText) statusText.innerHTML = '<i class="bi bi-star-fill me-1 text-primary"></i> يتم حالياً عرض: <strong>الدارسين الضباط فقط</strong>';
+        } else if (cat === 'nco') {
+            if (ncoBtn) {
+                ncoBtn.className = 'btn btn-sm btn-warning text-dark btn-cat-filter active fw-bold';
+                const b = ncoBtn.querySelector('.badge');
+                if (b) b.className = 'badge bg-dark text-white ms-1';
+            }
+            if (statusText) statusText.innerHTML = '<i class="bi bi-shield-shaded me-1 text-warning"></i> يتم حالياً عرض: <strong>دارسي ضباط الصف فقط</strong>';
+        } else if (cat === 'civilian') {
+            if (civilianBtn) {
+                civilianBtn.className = 'btn btn-sm btn-purple btn-cat-filter active text-white';
+                civilianBtn.style.backgroundColor = '#7e22ce';
+                civilianBtn.style.borderColor = '#7e22ce';
+                civilianBtn.style.color = '#fff';
+                const b = civilianBtn.querySelector('.badge');
+                if (b) {
+                    b.style.backgroundColor = '#fff';
+                    b.style.color = '#7e22ce';
+                }
+            }
+            if (statusText) statusText.innerHTML = '<i class="bi bi-person-badge-fill me-1" style="color: #7e22ce;"></i> يتم حالياً عرض: <strong>الدارسين المدنيين فقط</strong>';
+        }
+
+        applyTraineeFilters();
+    }
+
+    // دالة البحث من خانة الإدخال
+    function filterTraineesTable() {
+        if (!currentCategoryTab) {
+            filterByCategoryTab('all', document.getElementById('btn-cat-all'));
+            return;
+        }
+        applyTraineeFilters();
+    }
+
+    // مسح حقل البحث
+    function clearTraineeSearch() {
+        const input = document.getElementById('traineeFilterInput');
+        if (input) {
+            input.value = '';
+            applyTraineeFilters();
+            input.focus();
+        }
     }
 </script>
 {% endblock %}

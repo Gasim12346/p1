@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}واجهة الدورة التي يتم دراستها | نظام تسجيل واستخراج النتائج{% endblock %}
+{% block title %}الدورة التي يتم دراستها | نظام تسجيل واستخراج النتائج{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -9,18 +9,18 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1">
                 <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-                <li class="breadcrumb-item active" aria-current="page">واجهة الدورة التي يتم دراستها</li>
+                <li class="breadcrumb-item active" aria-current="page">الدورة التي يتم دراستها</li>
             </ol>
         </nav>
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
             <i class="bi bi-diagram-3-fill text-success"></i>
-            واجهة الدورة التي يتم دراستها
+            الدورة التي يتم دراستها
         </h2>
         <p class="text-muted small mb-0">ربط الطلبة والدارسين بالدورات، تحديد التواريخ، وتعديل الرتب والوحدات وقت انعقاد الدورة وحفظها</p>
     </div>
 
-    <div>
-        <a href="{% url 'training:course_session_create' %}" class="btn btn-success btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2">
+    <div class="w-100 w-sm-auto">
+        <a href="{% url 'training:course_session_create' %}" class="btn btn-success btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100">
             <i class="bi bi-plus-circle-fill fs-5"></i>
             <span>فتح دورة جديدة وربط الطلبة</span>
         </a>
@@ -29,31 +29,54 @@
 
 <!-- Sessions Table / Cards -->
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-calendar2-range-fill text-success"></i>
             سجل الدورات المنعقدة والجارية
         </h5>
-        <span class="text-muted small">
-            إجمالي الدورات المنعقدة: <strong class="text-dark">{{ sessions|length }}</strong>
-        </span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
+            <span class="text-muted small">
+                إجمالي الدورات المنعقدة: <strong class="text-dark">{{ sessions|length }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Filter toolbar -->
+    <div class="bg-light p-3 border-bottom">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="sessionSearchInput" class="form-control border-start-0" placeholder="بحث باسم الدورة، رمز الدفعة، أو التصنيف..." oninput="applySessionFilters()">
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="d-flex flex-wrap justify-content-md-end gap-1">
+                    <button type="button" class="btn btn-sm btn-dark active rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('all', this)">جميع الدورات</button>
+                    {% for cat in categories %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('{{ cat.id }}', this)">{{ cat.name }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-custom table-hover align-middle mb-0">
+        <table class="table table-custom table-hover align-middle mb-0 text-nowrap">
             <thead>
                 <tr>
-                    <th style="width: 25%;">اسم الدورة والتصنيف</th>
-                    <th style="width: 15%;">رمز الدفعة / الانعقاد</th>
-                    <th style="width: 18%;">فترة الانعقاد</th>
-                    <th style="width: 12%; text-align: center;">الدارسون</th>
-                    <th style="width: 10%; text-align: center;">الحالة</th>
-                    <th style="width: 20%; text-align: center;">الإجراءات</th>
+                    <th style="min-width: 180px;">اسم الدورة والتصنيف</th>
+                    <th style="min-width: 130px;">رمز الدفعة / الانعقاد</th>
+                    <th style="min-width: 160px;">فترة الانعقاد</th>
+                    <th style="min-width: 100px; text-align: center;">الدارسون</th>
+                    <th style="min-width: 110px; text-align: center;">الحالة</th>
+                    <th style="min-width: 160px; text-align: center;">الإجراءات</th>
                 </tr>
             </thead>
             <tbody>
                 {% for session in sessions %}
-                    <tr>
+                    <tr class="session-row" data-category="{{ session.course.category_id }}" data-search="{{ session.course.name }} {{ session.session_code }} {{ session.course.course_number }} {{ session.course.category.name }}">
                         <!-- اسم الدورة والتصنيف -->
                         <td>
                             <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
@@ -136,8 +159,60 @@
                         </td>
                     </tr>
                 {% endfor %}
+                <tr id="sessionNoMatchRow" style="display: none;">
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
+                        <h6 class="fw-bold mb-1">لا توجد دورات مطابقة للتصنيف أو البحث المختار</h6>
+                        <small class="text-muted">جرب اختيار "جميع الدورات" أو مسح كلمة البحث.</small>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentSessionCat = 'all';
+
+    function applySessionFilters() {
+        const query = (document.getElementById('sessionSearchInput')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('.session-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowCat = (row.getAttribute('data-category') || '').trim();
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+
+            const matchesCat = (currentSessionCat === 'all' || rowCat === currentSessionCat);
+            const matchesSearch = (!query || searchData.includes(query));
+
+            if (matchesCat && matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const noMatch = document.getElementById('sessionNoMatchRow');
+        if (noMatch) {
+            noMatch.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+    }
+
+    function filterSessionByCat(cat, btn) {
+        currentSessionCat = cat;
+        document.querySelectorAll('.session-cat-btn').forEach(b => {
+            b.classList.remove('active', 'btn-dark');
+            b.classList.add('btn-outline-secondary');
+        });
+        if (btn) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-dark', 'active');
+        }
+        applySessionFilters();
+    }
+</script>
 {% endblock %}
