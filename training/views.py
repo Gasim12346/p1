@@ -2,6 +2,7 @@ from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -885,7 +886,18 @@ def login_view(request):
             return redirect('training:admin_dashboard')
         return redirect('training:home')
 
-    redirect_to = request.GET.get('next', request.POST.get('next', ''))
+    redirect_to = request.GET.get('next', request.POST.get('next', '')).strip()
+
+    # فحص أمان الرابط لمنع ثغرة التوجيه المفتوح (Open Redirect - CWE-601)
+    is_safe_redirect = bool(
+        redirect_to and url_has_allowed_host_and_scheme(
+            url=redirect_to,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        )
+    )
+    if not is_safe_redirect:
+        redirect_to = ''
 
     if request.method == 'POST':
         form = UserLoginForm(request.POST)
@@ -1255,7 +1267,11 @@ def user_delete_view(request, user_id):
 
 @admin_access_required
 def user_toggle_active_view(request, user_id):
-    """تفعيل أو تعطيل حساب مستخدم بنقرة واحدة"""
+    """تفعيل أو تعطيل حساب مستخدم بنقرة واحدة - محمي بطلب POST و CSRF لمنع هجمات CSRF عبر GET"""
+    if request.method != 'POST':
+        messages.warning(request, 'إجراء غير مسموح: تعديل حالة الحساب يتطلب إرسال نموذج آمن.')
+        return redirect('training:admin_dashboard')
+
     target_user = get_object_or_404(User, pk=user_id)
     if target_user.id == request.user.id:
         messages.error(request, 'إجراء محظور: لا يمكنك تعطيل حسابك الحالي!')

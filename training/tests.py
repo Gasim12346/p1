@@ -213,4 +213,43 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(res_arch_2025.status_code, 200)
         self.assertEqual(len(res_arch_2025.context['historical_enrollments']), 0)
 
+    def test_login_open_redirect_protection(self):
+        """التحقق من حظر التوجيه المفتوح Open Redirect ومنع التوجيه لروابط خارجية خبيثة"""
+        # 1. محاولة تسجيل دخول بتوجيه خارجي احتيالي //evil.com
+        res_evil = self.client.post(f"{reverse('training:login')}?next=//evil.com", {
+            'username': 'user_test',
+            'password': 'Password123!',
+        })
+        self.assertEqual(res_evil.status_code, 302)
+        # يجب عدم التوجيه لـ evil.com والتوجيه للرئيسية بأمان
+        self.assertRedirects(res_evil, reverse('training:home'))
+
+        # 2. تسجيل خروج والمحاولة برابط داخلي سليم /results/
+        self.client.logout()
+        res_safe = self.client.post(f"{reverse('training:login')}?next=/results/", {
+            'username': 'user_test',
+            'password': 'Password123!',
+        })
+        self.assertEqual(res_safe.status_code, 302)
+        self.assertRedirects(res_safe, '/results/')
+
+    def test_user_toggle_active_requires_post(self):
+        """التحقق من رفض طلبات GET لمنع ثغرة CSRF وحصر تعديل حالة الحساب على POST"""
+        self.client.login(username='admin_test', password='Password123!')
+        target = User.objects.get(username='user_test')
+        self.assertTrue(target.is_active)
+
+        # 1. طلب GET يجب أن يتم رفضه ولا يعدل حالة الحساب
+        get_res = self.client.get(reverse('training:user_toggle_active', kwargs={'user_id': target.id}))
+        self.assertEqual(get_res.status_code, 302)
+        target.refresh_from_db()
+        self.assertTrue(target.is_active, 'يجب ألا يتم تعديل حالة المستخدم عبر طلب GET')
+
+        # 2. طلب POST آمن يقوم بتعطيل الحساب
+        post_res = self.client.post(reverse('training:user_toggle_active', kwargs={'user_id': target.id}))
+        self.assertEqual(post_res.status_code, 302)
+        target.refresh_from_db()
+        self.assertFalse(target.is_active, 'يجب أن يتم تعديل حالة المستخدم عبر طلب POST بنجاح')
+
+
 
