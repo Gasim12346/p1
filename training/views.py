@@ -1,11 +1,12 @@
 from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Count, Avg, Sum, Max, Min
+from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 from .models import (
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade,
@@ -108,16 +109,30 @@ def trainee_edit_view(request, military_number):
 
 @login_required
 def trainee_delete_view(request, military_number):
-    """حذف دارس"""
+    """حذف دارس مع الحماية الصارمة من حذف الدارسين المسجلين بدورات أو شهادات"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
+    has_enrollments = trainee.enrollments.exists()
+    enrollments_count = trainee.enrollments.count()
+
     if request.method == 'POST':
-        name = trainee.name
-        trainee.delete()
-        messages.success(request, f'تم حذف الدارس "{name}" بنجاح.')
+        if has_enrollments:
+            messages.error(
+                request,
+                f'إجراء محظور: لا يمكن حذف الدارس "{trainee.name}" نظراً لوجود دورات تدريبية وسجلات نتائج وشهادات معتمدة مسجلة له ({enrollments_count} دورة)! لحماية السجلات التاريخية، يمكنك تعديل بياناته فقط.'
+            )
+            return redirect('training:trainees_list')
+        try:
+            name = trainee.name
+            trainee.delete()
+            messages.success(request, f'تم حذف الدارس "{name}" بنجاح.')
+        except ProtectedError:
+            messages.error(request, f'تعذر حذف الدارس "{trainee.name}" لوجود سجلات أكاديمية مرتبطة به في النظام.')
         return redirect('training:trainees_list')
 
     return render(request, 'training/trainee_confirm_delete.html', {
         'trainee': trainee,
+        'has_enrollments': has_enrollments,
+        'enrollments_count': enrollments_count,
     })
 
 
@@ -213,17 +228,31 @@ def course_edit_view(request, course_id):
 
 @login_required
 def course_delete_view(request, course_id):
-    """حذف دورة"""
+    """حذف دورة مع حماية الانعقادات والشهادات التاريخية"""
     course = get_object_or_404(Course, pk=course_id)
     category_id = course.category_id
+    has_sessions = course.sessions.exists()
+    sessions_count = course.sessions.count()
+
     if request.method == 'POST':
-        name = course.name
-        course.delete()
-        messages.success(request, f'تم حذف الدورة "{name}" وجميع موادها بنجاح.')
+        if has_sessions:
+            messages.error(
+                request,
+                f'إجراء محظور: لا يمكن حذف الدورة "{course.name}" لوجود {sessions_count} انعقاد تدريبي مسجل لها في النظام! لحماية السجل الأكاديمي للدورات والشهادات، لا يمكن حذف الدورة.'
+            )
+            return redirect(f"/courses/?category_id={category_id}")
+        try:
+            name = course.name
+            course.delete()
+            messages.success(request, f'تم حذف الدورة "{name}" وجميع موادها بنجاح.')
+        except ProtectedError:
+            messages.error(request, f'تعذر حذف الدورة "{course.name}" لوجود سجلات أكاديمية مرتبطة بها.')
         return redirect(f"/courses/?category_id={category_id}")
 
     return render(request, 'training/course_confirm_delete.html', {
         'course': course,
+        'has_sessions': has_sessions,
+        'sessions_count': sessions_count,
     })
 
 
@@ -252,18 +281,32 @@ def subject_edit_view(request, subject_id):
 
 @login_required
 def subject_delete_view(request, subject_id):
-    """حذف مادة دراسية"""
+    """حذف مادة دراسية مع حماية درجات الدارسين المرصودة"""
     subject = get_object_or_404(Subject, pk=subject_id)
     course = subject.course
+    has_grades = subject.trainee_grades.exists()
+    grades_count = subject.trainee_grades.count()
+
     if request.method == 'POST':
-        name = subject.name
-        subject.delete()
-        messages.success(request, f'تم حذف المادة "{name}" بنجاح.')
+        if has_grades:
+            messages.error(
+                request,
+                f'إجراء محظور: لا يمكن حذف المادة "{subject.name}" لوجود {grades_count} درجة مرصودة لها مسبقاً في دورات منعقدة! لحماية السجل الأكاديمي للدارسين، لا يمكن حذف المواد التي تم رصد درجاتها.'
+            )
+            return redirect(f"/courses/?category_id={course.category_id}&course_id={course.id}")
+        try:
+            name = subject.name
+            subject.delete()
+            messages.success(request, f'تم حذف المادة "{name}" بنجاح.')
+        except ProtectedError:
+            messages.error(request, f'تعذر حذف المادة "{subject.name}" لوجود درجات مسجلة لها.')
         return redirect(f"/courses/?category_id={course.category_id}&course_id={course.id}")
 
     return render(request, 'training/subject_confirm_delete.html', {
         'subject': subject,
         'course': course,
+        'has_grades': has_grades,
+        'grades_count': grades_count,
     })
 
 
@@ -447,16 +490,38 @@ def course_session_edit_view(request, session_id):
 
 @login_required
 def course_session_delete_view(request, session_id):
-    """حذف انعقاد دورة"""
+    """حذف انعقاد دورة مع حماية تسجيلات ونتائج الدارسين"""
     session = get_object_or_404(CourseSession, pk=session_id)
+    has_enrollments = session.enrollments.exists()
+    enrollments_count = session.enrollments.count()
+    has_graded = session.enrollments.filter(is_graded=True).exists()
+
     if request.method == 'POST':
-        code = session.session_code
-        session.delete()
-        messages.success(request, f'تم حذف انعقاد الدورة "{code}" بنجاح.')
+        if has_graded:
+            messages.error(
+                request,
+                f'إجراء محظور: لا يمكن حذف انعقاد الدورة "{session.session_code}" لوجود درجات معتمدة وشهادات رسمية مسجلة للدارسين! يمكنك تغيير حالة الدورة إلى مكتملة بدلاً من حذفها.'
+            )
+            return redirect('training:course_sessions')
+        elif has_enrollments:
+            messages.error(
+                request,
+                f'إجراء محظور: لا يمكن حذف انعقاد الدورة "{session.session_code}" لوجود {enrollments_count} دارس مسجل بها! يرجى إزالة الدارسين من إدارة الدورة أولاً إن كان الانعقاد تجريبياً وغير مرصود.'
+            )
+            return redirect('training:course_sessions')
+        try:
+            code = session.session_code
+            session.delete()
+            messages.success(request, f'تم حذف انعقاد الدورة "{code}" بنجاح.')
+        except ProtectedError:
+            messages.error(request, f'تعذر حذف انعقاد الدورة "{session.session_code}" لوجود سجلات أكاديمية مرتبطة به.')
         return redirect('training:course_sessions')
 
     return render(request, 'training/course_session_confirm_delete.html', {
         'session': session,
+        'has_enrollments': has_enrollments,
+        'enrollments_count': enrollments_count,
+        'has_graded': has_graded,
     })
 
 
@@ -730,9 +795,45 @@ def session_results_sheet_view(request, session_id):
 
 @login_required
 def trainee_transcript_view(request, military_number):
-    """السجل الأكاديمي التاريخي الكامل لدارس محدد"""
+    """السجل الأكاديمي التاريخي الكامل لدارس محدد مع دعم الاسترجاع كـ JSON للنوافذ المنبثقة"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
-    enrollments = trainee.enrollments.select_related('session', 'session__course', 'session__course__category').prefetch_related('grades__subject').order_by('-session__start_date')
+    enrollments = trainee.enrollments.select_related(
+        'session', 'session__course', 'session__course__category'
+    ).prefetch_related('grades__subject').order_by('-session__start_date')
+
+    # دعم طلب البيانات عبر JSON لفتح سجل دورات الدارس مباشرة في نافذة منبثقة
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        courses_data = []
+        for en in enrollments:
+            courses_data.append({
+                'id': en.id,
+                'course_name': en.session.course.name,
+                'category_name': en.session.course.category.name,
+                'session_code': en.session.session_code,
+                'start_date': en.session.start_date.strftime('%Y-%m-%d') if en.session.start_date else '',
+                'end_date': en.session.end_date.strftime('%Y-%m-%d') if en.session.end_date else '',
+                'current_rank': en.current_rank,
+                'current_unit': en.current_unit,
+                'total_score': float(en.total_score or 0.0),
+                'total_possible': float(en.session.total_possible_score or 0.0),
+                'percentage': float(en.percentage or 0.0),
+                'grade_label': en.grade_label or '',
+                'is_graded': en.is_graded,
+                'has_complete_data': en.has_complete_data_and_grades,
+                'cert_url': reverse('training:certificate', args=[en.id]),
+            })
+        return JsonResponse({
+            'success': True,
+            'name': trainee.name,
+            'military_number': trainee.military_number,
+            'rank': trainee.rank,
+            'unit': trainee.unit,
+            'force': trainee.force,
+            'category_display': trainee.get_category_display(),
+            'total_courses': len(courses_data),
+            'full_transcript_url': reverse('training:trainee_transcript', args=[trainee.military_number]),
+            'courses': courses_data,
+        })
 
     return render(request, 'training/trainee_transcript.html', {
         'trainee': trainee,

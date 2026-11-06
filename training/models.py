@@ -178,7 +178,7 @@ class CourseSession(models.Model):
 
     course = models.ForeignKey(
         Course,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='sessions',
         verbose_name='الدورة التدريبية'
     )
@@ -233,13 +233,13 @@ class CourseEnrollment(models.Model):
     """ربط الطالب بالدورة المنعقدة مع حفظ الرتبة والوحدة وقت الدورة"""
     session = models.ForeignKey(
         CourseSession,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='enrollments',
         verbose_name='انعقاد الدورة'
     )
     trainee = models.ForeignKey(
         Trainee,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='enrollments',
         verbose_name='الدارس'
     )
@@ -411,7 +411,7 @@ class TraineeSubjectGrade(models.Model):
     )
     subject = models.ForeignKey(
         Subject,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='trainee_grades',
         verbose_name='المادة'
     )

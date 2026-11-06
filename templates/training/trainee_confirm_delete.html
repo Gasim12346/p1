@@ -13,15 +13,26 @@
             </ol>
         </nav>
 
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 border-top border-danger border-4">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 border-top {% if has_enrollments %}border-warning{% else %}border-danger{% endif %} border-4">
             <div class="card-body p-4 text-center">
-                <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px;">
-                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
-                </div>
-                <h4 class="fw-bold text-dark mb-2">هل أنت متأكد من حذف هذا الدارس؟</h4>
-                <p class="text-muted mb-4">
-                    سيتم حذف سجل الدارس وجميع الدورات والدرجات المرتبطة به بشكل نهائي.
-                </p>
+                {% if has_enrollments %}
+                    <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px;">
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">الحذف محظور لحماية السجل الأكاديمي</h4>
+                    <div class="alert alert-warning text-start rounded-3 mb-4">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                        لا يمكن حذف الدارس <strong>{{ trainee.name }}</strong> لوجود <strong>{{ enrollments_count }}</strong> دورة تدريبية مسجلة له مع نتائج أو شهادات في النظام. لحماية السجل التاريخي، تم تعطيل أمر الحذف.
+                    </div>
+                {% else %}
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px;">
+                        <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">هل أنت متأكد من حذف هذا الدارس؟</h4>
+                    <p class="text-muted mb-4">
+                        هذا الدارس غير ملتحق بأي دورة حالياً، وسيتم حذفه من قاعدة البيانات.
+                    </p>
+                {% endif %}
 
                 <div class="bg-light p-3 rounded-3 text-start mb-4 border">
                     <div class="row g-2 small">
@@ -33,21 +44,36 @@
                         <div class="col-8 text-dark">{{ trainee.unit }}</div>
                         <div class="col-4 text-muted">القوة:</div>
                         <div class="col-8 text-dark">{{ trainee.force }}</div>
+                        {% if has_enrollments %}
+                            <div class="col-4 text-muted">الدورات المسجلة:</div>
+                            <div class="col-8 text-danger fw-bold">{{ enrollments_count }} دورة تدريبية</div>
+                        {% endif %}
                     </div>
                 </div>
 
-                <form method="post">
-                    {% csrf_token %}
+                {% if has_enrollments %}
                     <div class="d-flex justify-content-center gap-2">
                         <a href="{% url 'training:trainees_list' %}" class="btn btn-outline-secondary rounded-3 px-4">
-                            إلغاء
+                            <i class="bi bi-arrow-right me-1"></i> الرجوع لقائمة الدارسين
                         </a>
-                        <button type="submit" class="btn btn-danger rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-                            <i class="bi bi-trash-fill"></i>
-                            <span>نعم، تأكيد الحذف</span>
-                        </button>
+                        <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-primary rounded-3 px-4 fw-bold">
+                            <i class="bi bi-pencil-fill me-1"></i> تعديل بيانات الدارس
+                        </a>
                     </div>
-                </form>
+                {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{% url 'training:trainees_list' %}" class="btn btn-outline-secondary rounded-3 px-4">
+                                إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-danger rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-trash-fill"></i>
+                                <span>نعم، تأكيد الحذف</span>
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
             </div>
         </div>
     </div>

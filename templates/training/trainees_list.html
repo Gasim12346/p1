@@ -150,8 +150,15 @@
 
                         <!-- الاسم -->
                         <td>
-                            <div class="fw-bold text-navy" style="font-size: 1rem;">
-                                {{ trainee.name }}
+                            <div class="fw-bold" style="font-size: 1rem;">
+                                <a href="{% url 'training:trainee_transcript' trainee.military_number %}" class="text-decoration-none text-primary" title="عرض السجل التاريخي وجميع دورات وشهادات هذا الدارس">
+                                    {{ trainee.name }}
+                                    {% if trainee.enrollments.count > 0 %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0 ms-1 small">
+                                            <i class="bi bi-mortarboard-fill me-1"></i>{{ trainee.enrollments.count }} دورات
+                                        </span>
+                                    {% endif %}
+                                </a>
                             </div>
                             <small class="text-muted">تاريخ التسجيل: {{ trainee.created_at|date:"Y-m-d" }}</small>
                         </td>
@@ -173,6 +180,9 @@
                         <!-- الإجراءات -->
                         <td class="text-center">
                             <div class="btn-group" role="group">
+                                <a href="{% url 'training:trainee_transcript' trainee.military_number %}" class="btn btn-sm btn-outline-info rounded-2 px-2 py-1 me-1 text-dark" title="السجل التدريبي وشهادات الدارس">
+                                    <i class="bi bi-mortarboard-fill text-primary"></i> الدورات
+                                </a>
                                 <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1 me-1" title="تعديل بيانات الدارس">
                                     <i class="bi bi-pencil-fill"></i> تعديل
                                 </a>
