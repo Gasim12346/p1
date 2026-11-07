@@ -7,6 +7,7 @@
     .trainee-row-selected {
         background-color: #f0fdf4 !important;
     }
+
     .btn-cat-filter {
         border-radius: 50rem;
         padding: 0.35rem 0.95rem;
@@ -17,6 +18,7 @@
         align-items: center;
         gap: 0.35rem;
     }
+
     .btn-cat-filter:hover {
         transform: translateY(-1px);
     }
@@ -27,7 +29,8 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-3">
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">الدورة التي تدرس</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:course_sessions' %}" class="text-decoration-none">الدورة
+                التي تدرس</a></li>
         <li class="breadcrumb-item active" aria-current="page">فتح دورة جديدة وربط الطلبة</li>
     </ol>
 </nav>
@@ -46,54 +49,57 @@
                 <!-- اختيار تصنيف الدورة -->
                 <div class="col-md-4">
                     <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
-                    <select id="categorySelector" class="form-select form-select-lg" required onchange="filterCoursesByCategory()">
+                    <select id="categorySelector" class="form-select form-select-lg" required
+                        onchange="filterCoursesByCategory()">
                         <option value="" disabled selected>--- اختر تصنيف الدورة ---</option>
                         {% for cat in categories %}
-                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
                         {% endfor %}
                     </select>
-                    <div class="form-text small text-muted">دورات مرشد، دورات خاصة، أو دورات مشتركة</div>
                 </div>
 
                 <!-- اختيار اسم الدورة -->
                 <div class="col-md-5">
-                    <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span class="text-danger">*</span></label>
+                    <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span
+                            class="text-danger">*</span></label>
                     <select name="course" id="courseSelector" class="form-select form-select-lg" required>
                         <option value="" disabled selected>--- اختر تصنيف الدورة أولاً ---</option>
                         {% for cat in categories %}
-                            {% for c in cat.courses.all %}
-                                <option value="{{ c.id }}" data-category="{{ cat.id }}" style="display: none;">
-                                    {{ c.name }} ({{ c.course_number|default:"بدون رمز" }})
-                                </option>
-                            {% endfor %}
+                        {% for c in cat.courses.all %}
+                        <option value="{{ c.id }}" data-category="{{ cat.id }}" style="display: none;">
+                            {{ c.name }} ({{ c.course_number|default:"بدون رمز" }})
+                        </option>
+                        {% endfor %}
                         {% endfor %}
                     </select>
-                    <div class="form-text small text-muted">يتم تصفية أسماء الدورات حسب التصنيف المختار</div>
                 </div>
 
                 <!-- رمز الدفعة -->
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">رمز الدفعة / الانعقاد <span class="text-danger">*</span></label>
-                    <input type="text" name="session_code" class="form-control form-control-lg" placeholder="مثال: الدفعة 21 - 2026" required>
+                    <label class="form-label fw-bold text-dark">رمز الدفعة <span class="text-danger">*</span></label>
+                    <input type="text" name="session_code" class="form-control form-control-lg"
+                        placeholder="مثال: الدفعة 21 - 2026" required>
                 </div>
 
                 <!-- تاريخ البداية -->
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span class="text-danger">*</span></label>
+                    <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span
+                            class="text-danger">*</span></label>
                     <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required>
                 </div>
 
                 <!-- تاريخ النهاية -->
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span class="text-danger">*</span></label>
+                    <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span
+                            class="text-danger">*</span></label>
                     <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required>
                 </div>
 
                 <!-- درجة المواظبة -->
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">درجة المواظبة والسلوك العظمى</label>
-                    <input type="number" name="attendance_max_grade" class="form-control form-control-lg" value="20" step="0.5" min="0">
-                    <div class="form-text small text-muted">تضاف للدرجة الكلية لحساب النسبة</div>
+                    <label class="form-label fw-bold text-dark">درجة المواظبة</label>
+                    <input type="number" name="attendance_max_grade" class="form-control form-control-lg" value="20"
+                        step="0.5" min="0">
                 </div>
 
                 <!-- حالة الدورة -->
@@ -111,13 +117,13 @@
 
     <!-- 2. ربط الطلبة وتعديل رتبهم ووحداتهم -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div
+            class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div>
-                <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="bi bi-people-fill text-primary"></i>
                     الخطوة 2: اختيار الطلبة الدارسين وإمكانية تعديل الرتبة والوحدة وقت الدورة
                 </h5>
-                <span class="text-muted small">حدد الطلبة الملتحقين، ويمكنك تعديل رتبة أو وحدة أي طالب مباشرة في الخانة المخصصة</span>
             </div>
 
             <!-- زر التحديد السريع -->
@@ -125,10 +131,12 @@
                 <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill" id="selectedCountBadge">
                     تم تحديد: 0 دارس
                 </span>
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="toggleSelectAll(true)">
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                    onclick="toggleSelectAll(true)">
                     تحديد الكل
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="toggleSelectAll(false)">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                    onclick="toggleSelectAll(false)">
                     إلغاء التحديد
                 </button>
             </div>
@@ -139,42 +147,55 @@
             <div class="row g-3 align-items-center">
                 <div class="col-lg-5 col-md-12">
                     <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" id="traineeFilterInput" class="form-control border-start-0" placeholder="تصفية بالاسم، النمرة، الرتبة، أو الوحدة..." oninput="filterTraineesTable()">
-                        <button type="button" class="btn btn-outline-secondary" onclick="clearTraineeSearch()" title="مسح البحث">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                class="bi bi-search"></i></span>
+                        <input type="text" id="traineeFilterInput" class="form-control border-start-0"
+                            placeholder="تصفية بالاسم، النمرة، الرتبة، أو الوحدة..." oninput="filterTraineesTable()">
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearTraineeSearch()"
+                            title="مسح البحث">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                 </div>
                 <div class="col-lg-7 col-md-12">
                     <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-1">
-                        <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-success"></i> تصنيف الدارسين:</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-cat-filter" id="btn-cat-officer" onclick="filterByCategoryTab('officer', this)" title="عرض الدارسين الضباط فقط">
+                        <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-success"></i> تصنيف
+                            الدارسين:</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-cat-filter" id="btn-cat-officer"
+                            onclick="filterByCategoryTab('officer', this)" title="عرض الدارسين الضباط فقط">
                             <i class="bi bi-star-fill"></i>
                             <span>ضباط</span>
                             <span class="badge bg-primary text-white ms-1">{{ officer_count }}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-warning text-dark btn-cat-filter" id="btn-cat-nco" onclick="filterByCategoryTab('nco', this)" title="عرض الدارسين ضباط الصف فقط">
+                        <button type="button" class="btn btn-sm btn-outline-warning text-dark btn-cat-filter"
+                            id="btn-cat-nco" onclick="filterByCategoryTab('nco', this)"
+                            title="عرض الدارسين ضباط الصف فقط">
                             <i class="bi bi-shield-shaded"></i>
                             <span>ضباط صف</span>
                             <span class="badge bg-warning text-dark ms-1">{{ nco_count }}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-dark btn-cat-filter" id="btn-cat-all" onclick="filterByCategoryTab('all', this)" title="عرض جميع الدارسين (مشتركة)">
+                        <button type="button" class="btn btn-sm btn-outline-dark btn-cat-filter" id="btn-cat-all"
+                            onclick="filterByCategoryTab('all', this)" title="عرض جميع الدارسين (مشتركة)">
                             <i class="bi bi-people-fill"></i>
                             <span>مشتركة (جميع الدارسين)</span>
                             <span class="badge bg-dark text-white ms-1">{{ trainees|length }}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-purple btn-cat-filter" id="btn-cat-civilian" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterByCategoryTab('civilian', this)" title="عرض الدارسين المدنيين فقط">
+                        <button type="button" class="btn btn-sm btn-outline-purple btn-cat-filter" id="btn-cat-civilian"
+                            style="color: #7e22ce; border-color: #7e22ce;"
+                            onclick="filterByCategoryTab('civilian', this)" title="عرض الدارسين المدنيين فقط">
                             <i class="bi bi-person-badge-fill"></i>
                             <span>مدنيين</span>
-                            <span class="badge ms-1" style="background-color: #7e22ce; color: #fff;">{{ civilian_count }}</span>
+                            <span class="badge ms-1" style="background-color: #7e22ce; color: #fff;">{{ civilian_count
+                                }}</span>
                         </button>
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top border-secondary-subtle">
+            <div
+                class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top border-secondary-subtle">
                 <span class="small text-muted" id="filterStatusText">
-                    <i class="bi bi-exclamation-circle text-warning me-1"></i> لم يتم اختيار التصنيف بعد — <strong>اختر تصنيف الدارسين من الأزرار أعلاه لعرض بياناتهم</strong>
+                    <i class="bi bi-exclamation-circle text-warning me-1"></i> لم يتم اختيار التصنيف بعد — <strong>اختر
+                        تصنيف الدارسين من الأزرار أعلاه لعرض بياناتهم</strong>
                 </span>
                 <span class="small text-muted fw-bold" id="visibleTraineesCount">
                     المعروض: 0 دارس
@@ -200,28 +221,37 @@
                         <td colspan="6" class="text-center py-5 bg-white">
                             <div class="py-4">
                                 <div class="mb-3">
-                                    <span class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
+                                    <span
+                                        class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
                                         <i class="bi bi-funnel-fill fs-2"></i>
                                     </span>
                                 </div>
-                                <h5 class="fw-bold text-dark mb-2">يرجى اختيار تصنيف الدارسين أولاً لعرض بياناتهم</h5>
-                                <p class="text-muted small mb-4">لن تظهر بيانات الدارسين إلا بعد تحديد تصنيفهم. انقر على التصنيف المطلوب:</p>
+                                <h5 class="fw-bold text-dark mb-4">يرجى اختيار تصنيف الدارسين أولاً لعرض بياناتهم</h5>
                                 <div class="d-flex flex-wrap justify-content-center gap-2">
-                                    <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('officer', document.getElementById('btn-cat-officer'))">
+                                    <button type="button"
+                                        class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm"
+                                        onclick="filterByCategoryTab('officer', document.getElementById('btn-cat-officer'))">
                                         <i class="bi bi-star-fill me-1"></i> ضباط
                                         <span class="badge bg-white text-primary ms-1">{{ officer_count }}</span>
                                     </button>
-                                    <button type="button" class="btn btn-warning text-dark rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('nco', document.getElementById('btn-cat-nco'))">
+                                    <button type="button"
+                                        class="btn btn-warning text-dark rounded-pill px-4 py-2 fw-bold shadow-sm"
+                                        onclick="filterByCategoryTab('nco', document.getElementById('btn-cat-nco'))">
                                         <i class="bi bi-shield-shaded me-1"></i> ضباط صف
                                         <span class="badge bg-dark text-white ms-1">{{ nco_count }}</span>
                                     </button>
-                                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="filterByCategoryTab('all', document.getElementById('btn-cat-all'))">
+                                    <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-bold shadow-sm"
+                                        onclick="filterByCategoryTab('all', document.getElementById('btn-cat-all'))">
                                         <i class="bi bi-people-fill me-1"></i> مشتركة (جميع الدارسين)
                                         <span class="badge bg-white text-dark ms-1">{{ trainees|length }}</span>
                                     </button>
-                                    <button type="button" class="btn rounded-pill px-4 py-2 fw-bold text-white shadow-sm" style="background-color: #7e22ce;" onclick="filterByCategoryTab('civilian', document.getElementById('btn-cat-civilian'))">
+                                    <button type="button"
+                                        class="btn rounded-pill px-4 py-2 fw-bold text-white shadow-sm"
+                                        style="background-color: #7e22ce;"
+                                        onclick="filterByCategoryTab('civilian', document.getElementById('btn-cat-civilian'))">
                                         <i class="bi bi-person-badge-fill me-1"></i> مدنيين
-                                        <span class="badge bg-white ms-1" style="color: #7e22ce;">{{ civilian_count }}</span>
+                                        <span class="badge bg-white ms-1" style="color: #7e22ce;">{{ civilian_count
+                                            }}</span>
                                     </button>
                                 </div>
                             </div>
@@ -229,49 +259,57 @@
                     </tr>
 
                     {% for t in trainees %}
-                        <tr class="trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}" style="display: none;">
-                            <td class="text-center">
-                                <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}" class="form-check-input trainee-checkbox" style="width: 20px; height: 20px; cursor: pointer;" onchange="updateSelectedCount(); highlightRow(this);">
-                            </td>
-                            <td>
-                                <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
-                                    {{ t.military_number }}
-                                </span>
-                            </td>
-                            <td>
-                                <strong class="text-dark d-block">{{ t.name }}</strong>
-                                <small class="text-muted">{{ t.force }}</small>
-                            </td>
-                            <td>
-                                {% if t.category == 'officer' %}
-                                    <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
-                                {% elif t.category == 'nco' %}
-                                    <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
-                                {% else %}
-                                    <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
-                                {% endif %}
-                            </td>
-                            <!-- حقل الرتبة وقت الدورة (قابل للتعديل) -->
-                            <td>
-                                <input type="text" name="rank_{{ t.military_number }}" value="{{ t.rank }}" class="form-control form-control-sm" placeholder="الرتبة أثناء الدورة">
-                            </td>
-                            <!-- حقل الوحدة وقت الدورة (قابل للتعديل) -->
-                            <td>
-                                <input type="text" name="unit_{{ t.military_number }}" value="{{ t.unit }}" class="form-control form-control-sm" placeholder="الوحدة أثناء الدورة">
-                            </td>
-                        </tr>
+                    <tr class="trainee-row" data-category="{{ t.category }}"
+                        data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}"
+                        style="display: none;">
+                        <td class="text-center">
+                            <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}"
+                                class="form-check-input trainee-checkbox"
+                                style="width: 20px; height: 20px; cursor: pointer;"
+                                onchange="updateSelectedCount(); highlightRow(this);">
+                        </td>
+                        <td>
+                            <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
+                                {{ t.military_number }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong class="text-dark d-block">{{ t.name }}</strong>
+                            <small class="text-muted">{{ t.force }}</small>
+                        </td>
+                        <td>
+                            {% if t.category == 'officer' %}
+                            <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
+                            {% elif t.category == 'nco' %}
+                            <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
+                            {% else %}
+                            <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
+                            {% endif %}
+                        </td>
+                        <!-- حقل الرتبة وقت الدورة (قابل للتعديل) -->
+                        <td>
+                            <input type="text" name="rank_{{ t.military_number }}" value="{{ t.rank }}"
+                                class="form-control form-control-sm" placeholder="الرتبة أثناء الدورة">
+                        </td>
+                        <!-- حقل الوحدة وقت الدورة (قابل للتعديل) -->
+                        <td>
+                            <input type="text" name="unit_{{ t.military_number }}" value="{{ t.unit }}"
+                                class="form-control form-control-sm" placeholder="الوحدة أثناء الدورة">
+                        </td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
+                        </td>
+                    </tr>
                     {% endfor %}
                     <tr id="noFilterMatchRow" style="display: none;">
                         <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
                             <span class="fw-bold fs-6">لا يوجد دارسون يطابقون خيار التصنيف أو البحث المختار!</span>
-                            <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو مسح عبارة البحث لإظهار النتائج.</p>
+                            <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
+                                مسح عبارة البحث لإظهار النتائج.</p>
                         </td>
                     </tr>
                 </tbody>
@@ -286,7 +324,8 @@
                 <i class="bi bi-arrow-right me-1"></i> إلغاء والرجوع للقائمة
             </a>
 
-            <button type="submit" class="btn btn-success btn-lg px-5 py-2 rounded-3 fw-bold shadow d-inline-flex align-items-center gap-2">
+            <button type="submit"
+                class="btn btn-success btn-lg px-5 py-2 rounded-3 fw-bold shadow d-inline-flex align-items-center gap-2">
                 <i class="bi bi-check-circle-fill fs-5"></i>
                 <span>حفظ الدورة وتسجيل الدارسين</span>
             </button>

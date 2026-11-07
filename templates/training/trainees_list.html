@@ -12,11 +12,10 @@
                 <li class="breadcrumb-item active" aria-current="page">الدارسين</li>
             </ol>
         </nav>
-        <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-people-fill text-primary"></i>
             سجل وبيانات الدارسين
         </h2>
-        <p class="text-muted small mb-0">إدخال وإدارة بيانات الطلبة والدارسين وحفظ سجلاتهم مصنفة إلى: ضباط، ضباط صف، ومدنيين</p>
     </div>
     
     <div class="w-100 w-sm-auto">
@@ -232,17 +231,11 @@
                 <input type="hidden" name="add_trainee" value="1">
                 
                 <div class="modal-body p-4">
-                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 border-0 bg-info bg-opacity-10 text-primary">
-                        <i class="bi bi-info-circle-fill fs-5"></i>
-                        <span>النمرة تعتبر المفتاح الأساسي للدارس ويجب أن تتكون من أرقام فقط (0-9) وغير مكررة.</span>
-                    </div>
-
                     <div class="row g-3">
                         <!-- النمرة -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
                             {{ form.military_number }}
-                            <div class="form-text small text-muted">أرقام فقط (لا تقبل أحرف أو رموز)</div>
                         </div>
 
                         <!-- التصنيف -->
@@ -253,7 +246,6 @@
                                 <option value="nco">ضباط صف</option>
                                 <option value="civilian">مدنيين</option>
                             </select>
-                            <div class="form-text small text-muted">اختر: ضباط، ضباط صف، مدنيين</div>
                         </div>
 
                         <!-- الرتبة -->

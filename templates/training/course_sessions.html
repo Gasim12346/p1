@@ -12,11 +12,10 @@
                 <li class="breadcrumb-item active" aria-current="page">الدورة التي يتم دراستها</li>
             </ol>
         </nav>
-        <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-diagram-3-fill text-success"></i>
             الدورة التي يتم دراستها
         </h2>
-        <p class="text-muted small mb-0">ربط الطلبة والدارسين بالدورات، تحديد التواريخ، وتعديل الرتب والوحدات وقت انعقاد الدورة وحفظها</p>
     </div>
 
     <div class="w-100 w-sm-auto">
@@ -163,10 +162,9 @@
                         <td colspan="6" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-calendar-x text-muted" style="font-size: 3.5rem;"></i>
-                                <h5 class="fw-bold text-dark mt-3">لا توجد دورات منعقدة حالياً</h5>
-                                <p class="text-muted mb-3">يمكنك فتح انعقاد دورة جديدة وربط الطلبة وتعديل بياناتهم بكل سهولة.</p>
+                                <h5 class="fw-bold text-dark mt-3 mb-3">لا توجد دورات منعقدة حالياً</h5>
                                 <a href="{% url 'training:course_session_create' %}" class="btn btn-success rounded-3 px-4 fw-bold">
-                                    <i class="bi bi-plus-circle-fill me-1"></i> فتح أول دورة الآن
+                                    <i class="bi bi-plus-circle-fill me-1"></i> فتح دورة جديدة
                                 </a>
                             </div>
                         </td>
@@ -175,8 +173,7 @@
                 <tr id="sessionNoMatchRow" style="display: none;">
                     <td colspan="6" class="text-center py-5 text-muted">
                         <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
-                        <h6 class="fw-bold mb-1">لا توجد دورات مطابقة للتصنيف أو البحث المختار</h6>
-                        <small class="text-muted">جرب اختيار "جميع الدورات" أو مسح كلمة البحث.</small>
+                        <h6 class="fw-bold mb-0">لا توجد دورات مطابقة للتصنيف أو البحث المختار</h6>
                     </td>
                 </tr>
             </tbody>

@@ -81,7 +81,6 @@
                 <span class="text-muted small">• تحديث البيانات فوري</span>
             </div>
             <h3 class="fw-bold text-dark mt-2 mb-0">لوحة تحكم الأدمن والتحليلات والتقارير الشاملة</h3>
-            <p class="text-muted small mb-0">مراقبة مؤشرات الأداء، استخراج الإحصائيات، إدارة تصنيفات الدورات، وتخصيص قوالب الشهادات الرسمية.</p>
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -367,7 +366,6 @@
                             <i class="bi bi-tags-fill text-primary me-2"></i>
                             تصنيفات الدورات التدريبية المعتمدة
                         </h5>
-                        <small class="text-muted">إضافة وتعديل وحذف تصنيفات الدورات لتنظيم المناهج والانعقادات</small>
                     </div>
                     <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                         <i class="bi bi-plus-lg me-1"></i> إضافة تصنيف جديد
@@ -657,9 +655,6 @@
                                 <i class="bi bi-file-earmark-text-fill"></i>
                             </div>
                             <h5 class="fw-bold text-dark">التقرير التحليلي الإحصائي التنفيذي</h5>
-                            <p class="text-muted small">
-                                تقرير رسمي شامل مصمم للطباعة على ورق A4، يوضح إحصائيات الدارسين، القوات، توزيع التقديرات، ومؤشرات الأداء الأكاديمي مع خانات التوقيع والاعتماد.
-                            </p>
                         </div>
                         <div class="mt-3">
                             <a href="{% url 'training:admin_report_print' %}" target="_blank" class="btn btn-primary w-100 rounded-pill fw-bold">
@@ -677,9 +672,6 @@
                                 <i class="bi bi-people-fill"></i>
                             </div>
                             <h5 class="fw-bold text-dark">دليل وسجلات الدارسين الشامل</h5>
-                            <p class="text-muted small">
-                                استعراض كافة الدارسين المسجلين بالنظام (ضباط، ضباط صف، مدنيين) مع إمكانية التصفية بحسب القوة أو الوحدة والاطلاع على السجل الأكاديمي لكل دارس.
-                            </p>
                         </div>
                         <div class="mt-3">
                             <a href="{% url 'training:trainees_list' %}" class="btn btn-outline-success w-100 rounded-pill fw-bold">
@@ -697,9 +689,6 @@
                                 <i class="bi bi-award-fill"></i>
                             </div>
                             <h5 class="fw-bold text-dark">كشوفات النتائج والشهادات المعتمدة</h5>
-                            <p class="text-muted small">
-                                رصد الدرجات وحفظ النتائج النهائية واستخراج كشوفات الدرجات التفصيلية وطباعة الشهادات الرسمية بعد اكتمال متطلباتها.
-                            </p>
                         </div>
                         <div class="mt-3">
                             <a href="{% url 'training:results_center' %}" class="btn btn-outline-warning text-dark w-100 rounded-pill fw-bold">
@@ -737,7 +726,6 @@
                             اسم التصنيف <span class="text-danger">*</span>
                         </label>
                         {{ category_form.name }}
-                        <small class="text-muted">مثال: دورات الترقية، دورات الذكاء الاصطناعي، دورات متقدمة...</small>
                     </div>
 
                     <div class="mb-2">
