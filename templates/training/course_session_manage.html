@@ -50,9 +50,11 @@
             <div class="col-6 col-md-3">
                 <span class="text-muted small d-block">حالة الدورة</span>
                 {% if session.status == 'active' %}
-                    <span class="badge bg-success bg-opacity-15 text-success">جارية</span>
+                    <span class="badge px-3 py-1 rounded-pill" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 700;">جارية</span>
+                {% elif session.status == 'completed' %}
+                    <span class="badge px-3 py-1 rounded-pill" style="background-color: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; font-weight: 700;">مكتملة</span>
                 {% else %}
-                    <span class="badge bg-secondary">{{ session.get_status_display }}</span>
+                    <span class="badge px-3 py-1 rounded-pill" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">{{ session.get_status_display }}</span>
                 {% endif %}
             </div>
         </div>

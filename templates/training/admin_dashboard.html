@@ -326,11 +326,11 @@
                                     <td><span class="fw-bold">{{ sess.enrolled_count }}</span> دارس</td>
                                     <td>
                                         {% if sess.status == 'active' %}
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">جارية حالياً</span>
+                                            <span class="badge px-3 py-1 rounded-pill" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 700;">جارية حالياً</span>
                                         {% elif sess.status == 'completed' %}
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">مكتملة</span>
+                                            <span class="badge px-3 py-1 rounded-pill" style="background-color: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; font-weight: 700;">مكتملة</span>
                                         {% else %}
-                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">مخططة</span>
+                                            <span class="badge px-3 py-1 rounded-pill" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">مخططة</span>
                                         {% endif %}
                                     </td>
                                     <td>

@@ -63,9 +63,9 @@
             </div>
             <div class="col-lg-5 col-md-4">
                 <div class="d-flex flex-wrap justify-content-md-end gap-1">
-                    <button type="button" class="btn btn-sm btn-dark active rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('all', this)">جميع الدورات</button>
+                    <button type="button" class="btn btn-sm btn-dark active text-white fw-bold rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('all', this)">جميع الدورات</button>
                     {% for cat in categories %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('{{ cat.id }}', this)">{{ cat.name }}</button>
+                        <button type="button" class="btn btn-sm btn-light border border-secondary border-opacity-50 text-dark fw-bold rounded-pill px-3 session-cat-btn" onclick="filterSessionByCat('{{ cat.id }}', this)">{{ cat.name }}</button>
                     {% endfor %}
                 </div>
             </div>
@@ -115,43 +115,43 @@
 
                         <!-- عدد الدارسين -->
                         <td class="text-center">
-                            <a href="{% url 'training:course_session_manage' session.id %}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none px-3 py-2 rounded-pill fs-6 fw-bold border border-primary border-opacity-25" title="عرض وإدارة الطلبة">
-                                <i class="bi bi-people-fill me-1"></i> {{ session.enrollments.count }} دارس
+                            <a href="{% url 'training:course_session_manage' session.id %}" class="badge text-decoration-none px-3 py-2 rounded-pill fs-6 fw-bold shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important;" title="عرض وإدارة الطلبة">
+                                <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ session.enrollments.count }} دارس
                             </a>
                         </td>
 
                         <!-- الحالة -->
                         <td class="text-center">
                             {% if session.status == 'active' %}
-                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                                    <i class="bi bi-record-circle-fill me-1"></i> جارية حالياً
+                                <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 800; font-size: 0.85rem;">
+                                    <i class="bi bi-record-circle-fill me-1" style="color: #15803d !important;"></i> جارية حالياً
                                 </span>
                             {% elif session.status == 'completed' %}
-                                <span class="badge bg-secondary bg-opacity-15 text-secondary px-3 py-2 rounded-pill">
-                                    مكتملة
+                                <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #f1f5f9 !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; font-weight: 800; font-size: 0.85rem;">
+                                    <i class="bi bi-check-circle-fill me-1" style="color: #475569 !important;"></i> مكتملة
                                 </span>
                             {% else %}
-                                <span class="badge bg-info bg-opacity-15 text-info px-3 py-2 rounded-pill">
-                                    مخطط لها
+                                <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 800; font-size: 0.85rem;">
+                                    <i class="bi bi-clock-fill me-1" style="color: #0369a1 !important;"></i> مخطط لها
                                 </span>
                             {% endif %}
                         </td>
 
                         <!-- الإجراءات -->
                         <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a href="{% url 'training:course_session_manage' session.id %}" class="btn btn-sm btn-outline-success fw-bold px-2 py-1" title="إدارة الطلبة وتعديل الرتب والوحدات">
-                                    <i class="bi bi-person-gear"></i> إدارة الطلبة
+                            <div class="btn-group shadow-sm" role="group">
+                                <a href="{% url 'training:course_session_manage' session.id %}" class="btn btn-sm btn-success fw-bold px-2 py-1 text-white" style="background-color: #16a34a !important; border-color: #15803d !important; color: #ffffff !important;" title="إدارة الطلبة وتعديل الرتب والوحدات">
+                                    <i class="bi bi-person-gear text-white"></i> إدارة الطلبة
                                 </a>
-                                <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" title="رصد الدرجات">
-                                    <i class="bi bi-pencil-square"></i> الدرجات
+                                <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-primary fw-bold px-2 py-1 text-white" style="background-color: #2563eb !important; border-color: #1d4ed8 !important; color: #ffffff !important;" title="رصد الدرجات">
+                                    <i class="bi bi-pencil-square text-white"></i> الدرجات
                                 </a>
-                                <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-outline-secondary px-2 py-1" title="تعديل تواريخ الدورة">
-                                    <i class="bi bi-pencil"></i>
+                                <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-secondary text-white px-2 py-1" style="background-color: #64748b !important; border-color: #475569 !important; color: #ffffff !important;" title="تعديل تواريخ الدورة">
+                                    <i class="bi bi-pencil text-white"></i>
                                 </a>
                                 {% if is_admin %}
-                                    <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-outline-danger px-2 py-1" title="حذف الانعقاد">
-                                        <i class="bi bi-trash"></i>
+                                    <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-danger text-white px-2 py-1" style="background-color: #dc2626 !important; border-color: #b91c1c !important; color: #ffffff !important;" title="حذف الانعقاد">
+                                        <i class="bi bi-trash text-white"></i>
                                     </a>
                                 {% endif %}
                             </div>
@@ -218,12 +218,12 @@
     function filterSessionByCat(cat, btn) {
         currentSessionCat = cat;
         document.querySelectorAll('.session-cat-btn').forEach(b => {
-            b.classList.remove('active', 'btn-dark');
-            b.classList.add('btn-outline-secondary');
+            b.classList.remove('active', 'btn-dark', 'text-white');
+            b.classList.add('btn-light', 'border', 'text-dark', 'fw-bold');
         });
         if (btn) {
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-dark', 'active');
+            btn.classList.remove('btn-light', 'border', 'text-dark');
+            btn.classList.add('btn-dark', 'text-white', 'active');
         }
         applySessionFilters();
     }
