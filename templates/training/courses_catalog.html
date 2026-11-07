@@ -187,9 +187,11 @@
                                 <a href="{% url 'training:course_edit' course.id %}" class="btn btn-outline-secondary py-0 px-2" title="تعديل الدورة">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'training:course_delete' course.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف الدورة">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                {% if is_admin %}
+                                    <a href="{% url 'training:course_delete' course.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف الدورة">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -284,9 +286,11 @@
                                                 <a href="{% url 'training:subject_edit' sub.id %}" class="btn btn-outline-primary py-0 px-2" title="تعديل المادة">
                                                     <i class="bi bi-pencil-fill"></i>
                                                 </a>
-                                                <a href="{% url 'training:subject_delete' sub.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف المادة">
-                                                    <i class="bi bi-trash-fill"></i>
-                                                </a>
+                                                {% if is_admin %}
+                                                    <a href="{% url 'training:subject_delete' sub.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف المادة">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </a>
+                                                {% endif %}
                                             </div>
                                         </td>
                                     </tr>

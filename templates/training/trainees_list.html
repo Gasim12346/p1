@@ -186,9 +186,11 @@
                                 <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1 me-1" title="تعديل بيانات الدارس">
                                     <i class="bi bi-pencil-fill"></i> تعديل
                                 </a>
-                                <a href="{% url 'training:trainee_delete' trainee.military_number %}" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" title="حذف الدارس">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a>
+                                {% if is_admin %}
+                                    <a href="{% url 'training:trainee_delete' trainee.military_number %}" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" title="حذف الدارس">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

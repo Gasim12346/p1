@@ -86,6 +86,16 @@
     </div>
 </div>
 
+{% if is_locked %}
+    <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3">
+        <i class="bi bi-shield-lock-fill text-primary fs-3"></i>
+        <div>
+            <h6 class="fw-bold mb-0 text-dark">نتائج هذه الدورة معتمدة ومقفلة</h6>
+            <small class="text-muted">الدرجات معروضة للاطلاع وطباعة الكشوفات والشهادات. تعديل نتائج الدورات المكتملة محصور بصلاحيات مدير النظام (Admin).</small>
+        </div>
+    </div>
+{% endif %}
+
 <!-- Grade Entry Table Card -->
 <form method="post" id="gradesForm">
     {% csrf_token %}
@@ -203,6 +213,7 @@
                                            data-max="{{ item.subject.max_grade|unlocalize }}"
                                            placeholder="-"
                                            {% if item.score is not None %}value="{{ item.score|unlocalize }}"{% endif %}
+                                           {% if is_locked %}disabled readonly{% endif %}
                                            oninput="calculateRow(this, true)">
                                 </td>
                             {% endfor %}
@@ -218,6 +229,7 @@
                                        data-max="{{ session.attendance_max_grade|unlocalize }}"
                                        placeholder="-"
                                        {% if en.is_graded %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
+                                       {% if is_locked %}disabled readonly{% endif %}
                                        oninput="calculateRow(this, true)">
                             </td>
 
@@ -290,27 +302,38 @@
                 </span>
             </div>
 
-            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
-                <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-patch-check-fill"></i>
-                    <span>حفظ واعتماد النتيجة كـ دورة مكتملة</span>
-                </button>
+            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto align-items-center">
+                {% if is_locked %}
+                    <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
+                        <i class="bi bi-lock-fill fs-5"></i>
+                        <span>الدرجات معتمدة ومقفلة. التعديل محصور بمدير النظام (Admin) فقط.</span>
+                    </div>
+                {% else %}
+                    {% if is_admin and session.status != 'completed' %}
+                        <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-patch-check-fill"></i>
+                            <span>حفظ واعتماد النتيجة كـ دورة مكتملة</span>
+                        </button>
+                    {% endif %}
 
-                <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-save2-fill"></i>
-                    <span>حفظ ورصد جميع الدرجات</span>
-                </button>
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-save2-fill"></i>
+                        <span>حفظ ورصد جميع الدرجات</span>
+                    </button>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <!-- Mobile Sticky Save Bar -->
-    <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
-        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
-            <i class="bi bi-save2-fill"></i>
-            <span>حفظ ورصد جميع الدرجات</span>
-        </button>
-    </div>
+    {% if not is_locked %}
+        <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-save2-fill"></i>
+                <span>حفظ ورصد جميع الدرجات</span>
+            </button>
+        </div>
+    {% endif %}
 </form>
 {% endblock %}
 

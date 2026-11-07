@@ -149,9 +149,15 @@
                             </td>
                             <!-- حذف من الدورة -->
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="إزالة من الدورة" onclick="confirmRemoveTrainee('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
+                                {% if is_admin and not en.is_graded %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="إزالة من الدورة" onclick="confirmRemoveTrainee('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                {% elif en.is_graded %}
+                                    <span class="badge bg-light text-muted border px-2 py-1" title="لا يمكن إزالة دارس له نتائج معتمدة"><i class="bi bi-lock-fill text-secondary"></i> معتمد</span>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
                             </td>
                         </tr>
                     {% empty %}

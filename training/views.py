@@ -20,6 +20,35 @@ from .forms import (
 )
 
 
+def is_admin_user(user):
+    """التحقق مما إذا كان المستخدم يملك صلاحية مدير النظام"""
+    if not user or not user.is_authenticated:
+        return False
+    return bool(
+        user.is_superuser or 
+        user.is_staff or 
+        (hasattr(user, 'profile') and user.profile.role == UserRole.ADMIN)
+    )
+
+
+def admin_required(view_func):
+    """حصر الإجراءات الحساسة (مثل الحذف أو التعديل الحرج) على مدير النظام فقط"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('training:login')}?next={request.path}")
+
+        if not is_admin_user(request.user):
+            messages.error(request, 'عفواً، هذا الإجراء محصور بصلاحيات مدير النظام (Admin) فقط.')
+            referer = request.META.get('HTTP_REFERER')
+            if referer and url_has_allowed_host_and_scheme(referer, allowed_hosts={request.get_host()}):
+                return redirect(referer)
+            return redirect('training:home')
+
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
 @login_required
 def home_view(request):
     """الصفحة الرئيسية (لوحة التحكم الشاملة)"""
@@ -108,7 +137,7 @@ def trainee_edit_view(request, military_number):
     })
 
 
-@login_required
+@admin_required
 def trainee_delete_view(request, military_number):
     """حذف دارس مع الحماية الصارمة من حذف الدارسين المسجلين بدورات أو شهادات"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
@@ -227,7 +256,7 @@ def course_edit_view(request, course_id):
     })
 
 
-@login_required
+@admin_required
 def course_delete_view(request, course_id):
     """حذف دورة مع حماية الانعقادات والشهادات التاريخية"""
     course = get_object_or_404(Course, pk=course_id)
@@ -280,7 +309,7 @@ def subject_edit_view(request, subject_id):
     })
 
 
-@login_required
+@admin_required
 def subject_delete_view(request, subject_id):
     """حذف مادة دراسية مع حماية درجات الدارسين المرصودة"""
     subject = get_object_or_404(Subject, pk=subject_id)
@@ -459,8 +488,14 @@ def course_session_manage_view(request, session_id):
 
     # إزالة دارس من الدورة
     if request.method == 'POST' and 'remove_trainee_id' in request.POST:
+        if not is_admin_user(request.user):
+            messages.error(request, 'إجراء محظور: إزالة الدارسين من الدورات محصورة بمدير النظام (Admin) فقط.')
+            return redirect('training:course_session_manage', session_id=session.id)
         enrollment_id = request.POST.get('remove_trainee_id')
         enrollment = get_object_or_404(CourseEnrollment, pk=enrollment_id, session=session)
+        if enrollment.is_graded:
+            messages.error(request, f'تعذر إزالة الدارس "{enrollment.trainee.name}" نظراً لوجود نتائج معتمدة مرصودة له بهذه الدورة.')
+            return redirect('training:course_session_manage', session_id=session.id)
         t_name = enrollment.trainee.name
         enrollment.delete()
         messages.success(request, f'تم إزالة الدارس "{t_name}" من الدورة.')
@@ -499,7 +534,7 @@ def course_session_edit_view(request, session_id):
     })
 
 
-@login_required
+@admin_required
 def course_session_delete_view(request, session_id):
     """حذف انعقاد دورة مع حماية تسجيلات ونتائج الدارسين"""
     session = get_object_or_404(CourseSession, pk=session_id)
@@ -669,6 +704,16 @@ def results_entry_view(request, session_id):
 
     # معالجة حفظ الدرجات
     if request.method == 'POST' and 'save_grades' in request.POST:
+        # إذا كانت الدورة معتمدة ومكتملة، لا يُسمح بتعديل درجاتها إلا لمدير النظام
+        if session.status == 'completed' and not is_admin_user(request.user):
+            messages.error(request, 'إجراء محظور: نتائج هذه الدورة معتمدة ومقفلة، وتعديل الدرجات محصور بمدير النظام (Admin) فقط.')
+            return redirect('training:results_entry', session_id=session.id)
+
+        # لا يُسمح باعتماد وإغلاق الدورة إلا لمدير النظام
+        if 'mark_completed' in request.POST and not is_admin_user(request.user):
+            messages.error(request, 'إجراء محظور: اعتماد وإغلاق نتائج الدورة نهائياً محصور بمدير النظام (Admin) فقط.')
+            return redirect('training:results_entry', session_id=session.id)
+
         validation_errors = []
         parsed_data = {}
 
@@ -793,11 +838,14 @@ def results_entry_view(request, session_id):
                 except ValueError:
                     pass
 
+    is_locked = (session.status == 'completed' and not is_admin_user(request.user))
+
     context = {
         'session': session,
         'subjects': subjects,
         'enrollments': enrollments,
         'total_possible_score': session.total_possible_score,
+        'is_locked': is_locked,
     }
     return render(request, 'training/results_entry.html', context)
 
@@ -1006,12 +1054,7 @@ def admin_access_required(view_func):
             messages.warning(request, 'يرجى تسجيل الدخول بحساب مدير النظام للوصول إلى لوحة الأدمن.')
             return redirect(f"{reverse('training:login')}?next={request.path}")
         
-        is_admin = (
-            request.user.is_superuser or 
-            request.user.is_staff or 
-            (hasattr(request.user, 'profile') and request.user.profile.role == UserRole.ADMIN)
-        )
-        if not is_admin:
+        if not is_admin_user(request.user):
             messages.error(request, 'عفواً، هذه اللوحة مخصصة لمدير النظام (الأدمن) فقط. حسابك يملك صلاحيات النظام الرئيسي.')
             return redirect('training:home')
 

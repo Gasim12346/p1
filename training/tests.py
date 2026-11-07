@@ -326,6 +326,93 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(float(en.attendance_score), 18.0)
         self.assertEqual(float(en.total_score), 58.0)
 
+    def test_regular_user_blocked_from_deletions(self):
+        """التحقق من حظر المستخدم العادي تماماً من حذف الدارسين والدورات والمواد والانعقادات"""
+        self.client.login(username='user_test', password='Password123!')
+        from training.models import CourseCategory, Course, Subject, CourseSession, Trainee
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف اختبار الصلاحيات')
+        course = Course.objects.create(name='دورة صلاحيات', category=cat)
+        sub = Subject.objects.create(course=course, name='مادة صلاحيات', max_grade=50)
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-PERM',
+            start_date=datetime.date(2026, 9, 1),
+            end_date=datetime.date(2026, 10, 1)
+        )
+        trainee = Trainee.objects.create(
+            military_number='12345678',
+            name='دارس الصلاحيات',
+            rank='رائد',
+            unit='الجوية'
+        )
+
+        # 1. محاولة حذف دارس بواسطة مستخدم عادي
+        res_t = self.client.post(reverse('training:trainee_delete', kwargs={'military_number': trainee.military_number}))
+        self.assertEqual(res_t.status_code, 302)
+        self.assertTrue(Trainee.objects.filter(military_number=trainee.military_number).exists(), 'لا يجب حذف الدارس بواسطة مستخدم عادي')
+
+        # 2. محاولة حذف دورة بواسطة مستخدم عادي
+        res_c = self.client.post(reverse('training:course_delete', kwargs={'course_id': course.id}))
+        self.assertEqual(res_c.status_code, 302)
+        self.assertTrue(Course.objects.filter(pk=course.id).exists(), 'لا يجب حذف الدورة بواسطة مستخدم عادي')
+
+        # 3. محاولة حذف مادة بواسطة مستخدم عادي
+        res_s = self.client.post(reverse('training:subject_delete', kwargs={'subject_id': sub.id}))
+        self.assertEqual(res_s.status_code, 302)
+        self.assertTrue(Subject.objects.filter(pk=sub.id).exists(), 'لا يجب حذف المادة بواسطة مستخدم عادي')
+
+        # 4. محاولة حذف انعقاد بواسطة مستخدم عادي
+        res_sess = self.client.post(reverse('training:course_session_delete', kwargs={'session_id': session.id}))
+        self.assertEqual(res_sess.status_code, 302)
+        self.assertTrue(CourseSession.objects.filter(pk=session.id).exists(), 'لا يجب حذف الانعقاد بواسطة مستخدم عادي')
+
+    def test_regular_user_blocked_from_editing_completed_session_grades(self):
+        """التحقق من حظر المستخدم العادي من تعديل نتائج دورة مكتملة ومعتمدة"""
+        from training.models import CourseCategory, Course, Subject, CourseSession, Trainee, CourseEnrollment
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف معتمد')
+        course = Course.objects.create(name='دورة معتمدة نهائياً', category=cat)
+        sub = Subject.objects.create(course=course, name='مادة معتمدة', max_grade=100)
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-DONE',
+            start_date=datetime.date(2026, 1, 1),
+            end_date=datetime.date(2026, 2, 1),
+            status='completed'
+        )
+        trainee = Trainee.objects.create(
+            military_number='9990001',
+            name='دارس معتمد',
+            rank='نقيب',
+            unit='البحرية'
+        )
+        en = CourseEnrollment.objects.create(
+            session=session,
+            trainee=trainee,
+            current_rank='نقيب',
+            current_unit='البحرية',
+            is_graded=True,
+            total_score=95.0,
+            percentage=95.0,
+            grade_label='ممتاز'
+        )
+
+        # محاولة تعديل الدرجة بواسطة مستخدم عادي
+        self.client.login(username='user_test', password='Password123!')
+        url = reverse('training:results_entry', kwargs={'session_id': session.id})
+        res = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub.id}': '60.0',
+            f'att_{trainee.military_number}': '10.0',
+        })
+        self.assertEqual(res.status_code, 302)
+        en.refresh_from_db()
+        self.assertEqual(float(en.total_score), 95.0, 'لا يجب تغيير الدرجة في دورة معتمدة من قبل مستخدم عادي')
+
+
 
 
 

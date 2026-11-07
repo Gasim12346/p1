@@ -150,9 +150,11 @@
                                 <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-outline-secondary px-2 py-1" title="تعديل تواريخ الدورة">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-outline-danger px-2 py-1" title="حذف الانعقاد">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                {% if is_admin %}
+                                    <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-outline-danger px-2 py-1" title="حذف الانعقاد">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
