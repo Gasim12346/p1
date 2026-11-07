@@ -747,6 +747,8 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     """إنشاء أو تحديث بروفايل المستخدم تلقائياً عند حفظ كائن المستخدم"""
+    if kwargs.get('raw', False):
+        return
     if created:
         role = UserRole.ADMIN if (instance.is_superuser or instance.is_staff) else UserRole.REGULAR
         UserProfile.objects.get_or_create(user=instance, defaults={'role': role})
