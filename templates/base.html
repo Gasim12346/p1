@@ -125,12 +125,12 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
-        /* زر تسجيل خروج متناسق وأنيق ينسجم تماماً مع هوية النظام */
+        /* زر تسجيل خروج متناسق وواضح بألوان بارزة ونصوص بيضاء ظاهرة دائماً */
         .btn-nav-logout {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(248, 113, 113, 0.35);
-            color: #fca5a5 !important;
-            font-weight: 700;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            border: 1px solid #ef4444 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
             font-size: 0.88rem;
             padding: 6px 14px;
             border-radius: 30px;
@@ -142,36 +142,40 @@
             flex-shrink: 0 !important;
             text-decoration: none;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
         }
 
         .btn-nav-logout i {
             font-size: 1.05rem;
-            color: #f87171;
-            transition: transform 0.2s ease, color 0.2s ease;
+            color: #ffffff !important;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-nav-logout span {
+            color: #ffffff !important;
+            font-weight: 700 !important;
         }
 
         .btn-nav-logout:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            border-color: #ef4444;
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+            border-color: #dc2626 !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
             transform: translateY(-1px);
         }
 
         .btn-nav-logout:hover i {
-            color: #ffffff;
+            color: #ffffff !important;
             transform: translateX(-2px);
         }
 
         /* زر تسجيل الخروج في السايد بار */
         .btn-sidebar-logout {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            color: #fca5a5 !important;
-            font-weight: 700;
-            font-size: 0.85rem;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            border: 1px solid #ef4444 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            font-size: 0.88rem;
             padding: 8px 14px;
             border-radius: 12px;
             display: flex;
@@ -183,25 +187,54 @@
             text-decoration: none;
             transition: all 0.25s ease;
             box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
         }
 
         .btn-sidebar-logout i {
             font-size: 1.15rem;
-            color: #f87171;
+            color: #ffffff !important;
             flex-shrink: 0;
             transition: transform 0.2s ease;
         }
 
-        .btn-sidebar-logout:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            border-color: #ef4444;
+        .btn-sidebar-logout span {
             color: #ffffff !important;
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.35);
+            font-weight: 700 !important;
+        }
+
+        .btn-sidebar-logout:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+            border-color: #dc2626 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.45);
         }
 
         .btn-sidebar-logout:hover i {
-            color: #ffffff;
+            color: #ffffff !important;
             transform: translateX(-2px);
+        }
+
+        .btn-topbar-home {
+            background: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #1e293b !important;
+            font-weight: 700 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-topbar-home i {
+            color: #2563eb !important;
+        }
+
+        .btn-topbar-home .btn-topbar-home-text {
+            color: #1e293b !important;
+            font-weight: 700 !important;
+        }
+
+        .btn-topbar-home:hover {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
         }
 
         /* ========================================================
@@ -1094,9 +1127,9 @@
                                 <span>تسجيل خروج</span>
                             </a>
                         {% else %}
-                            <a href="{% url 'training:login' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1 shadow-sm">
-                                <i class="bi bi-box-arrow-in-left"></i>
-                                <span>تسجيل الدخول</span>
+                            <a href="{% url 'training:login' %}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1 shadow-sm text-white">
+                                <i class="bi bi-box-arrow-in-left text-white"></i>
+                                <span class="text-white">تسجيل الدخول</span>
                             </a>
                         {% endif %}
 

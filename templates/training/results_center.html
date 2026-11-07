@@ -283,8 +283,8 @@
                         المطابقة: {{ historical_enrollments|length }} دارس
                     </span>
                     {% if search_query or grade_filter or trainee_cat_filter or session_filter or year_filter %}
-                        <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-                            <i class="bi bi-x-circle me-1"></i> إلغاء التصفية
+                        <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold text-white shadow-sm">
+                            <i class="bi bi-x-circle me-1 text-white"></i> إلغاء التصفية
                         </a>
                     {% endif %}
                 </div>

@@ -88,14 +88,14 @@
 
 <!-- Mobile Quick Navigation Bar (Visible only on screens < 992px) -->
 <div class="d-flex d-lg-none gap-2 mb-3 overflow-x-auto pb-1 pills-scroll-mobile">
-    <a href="#categoriesSection" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold text-nowrap">
-        <i class="bi bi-layers-fill me-1"></i> 1. التصنيفات
+    <a href="#categoriesSection" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold text-nowrap shadow-sm text-white">
+        <i class="bi bi-layers-fill me-1 text-white"></i> 1. التصنيفات
     </a>
-    <a href="#coursesSection" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-bold text-dark text-nowrap">
+    <a href="#coursesSection" class="btn btn-sm btn-warning text-dark rounded-pill px-3 py-1 fw-bold text-nowrap shadow-sm">
         <i class="bi bi-journal-bookmark-fill me-1"></i> 2. الدورات ({{ selected_category.name }})
     </a>
-    <a href="#subjectsSection" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold text-nowrap">
-        <i class="bi bi-card-checklist me-1"></i> 3. مفردات المواد
+    <a href="#subjectsSection" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold text-nowrap shadow-sm text-white">
+        <i class="bi bi-card-checklist me-1 text-white"></i> 3. مفردات المواد
     </a>
 </div>
 
@@ -157,7 +157,7 @@
                     <span class="badge bg-primary bg-opacity-10 text-primary mb-1 small">{{ selected_category.name }}</span>
                     <h6 class="fw-bold mb-0 text-dark">قائمة الدورات المعتمدة</h6>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addCourseModal" title="إضافة دورة تحت هذا التصنيف">
+                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal" title="إضافة دورة تحت هذا التصنيف">
                     <i class="bi bi-plus-lg"></i> دورة جديدة
                 </button>
             </div>
