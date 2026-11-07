@@ -4,13 +4,22 @@ Django settings for config project.
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    env_file = BASE_DIR / '.env'
+    if env_file.exists():
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, val = line.split('=', 1)
+                    os.environ.setdefault(key.strip(), val.strip())
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-_d*(x4puqc^o997)4$g6$&w1bfbf3q)uqasqt0v)!7v-3c62!%')
 
