@@ -488,35 +488,47 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.assertTrue(inst.is_active)
 
     def test_admin_portal_instructor_crud(self):
-        """التحقق من إضافة وتعديل وحذف المعلمين عبر لوحة الأدمن"""
+        """التحقق من إضافة وتعديل وحذف المعلمين مع التصنيف والقوة والوحدة عبر لوحة الأدمن"""
         self.client.login(username='admin_inst', password='Password123!')
 
         # 1. إضافة معلم جديد
         create_url = reverse('training:instructor_create')
         res = self.client.post(create_url, {
             'military_number': '778899',
+            'category': 'officer',
             'rank': 'رائد',
             'name': 'خالد إبراهيم حسن',
+            'force': 'القوات البرية',
+            'unit': 'سلاح الإشارة',
             'phone': '0111223344',
             'is_active': 'on'
         })
         self.assertEqual(res.status_code, 302)
         from training.models import Instructor
-        self.assertTrue(Instructor.objects.filter(military_number='778899').exists())
+        inst = Instructor.objects.filter(military_number='778899').first()
+        self.assertIsNotNone(inst)
+        self.assertEqual(inst.category, 'officer')
+        self.assertEqual(inst.force, 'القوات البرية')
+        self.assertEqual(inst.unit, 'سلاح الإشارة')
 
         # 2. تعديل المعلم
         edit_url = reverse('training:instructor_edit', kwargs={'military_number': '778899'})
         res = self.client.post(edit_url, {
             'military_number': '778899',
+            'category': 'officer',
             'rank': 'مقدم',
             'name': 'خالد إبراهيم حسن المعدل',
+            'force': 'القوات الجوية',
+            'unit': 'جناح المقاتلات',
             'phone': '0111223355',
             'is_active': 'on'
         })
         self.assertEqual(res.status_code, 302)
-        inst = Instructor.objects.get(military_number='778899')
+        inst.refresh_from_db()
         self.assertEqual(inst.rank, 'مقدم')
         self.assertEqual(inst.name, 'خالد إبراهيم حسن المعدل')
+        self.assertEqual(inst.force, 'القوات الجوية')
+        self.assertEqual(inst.unit, 'جناح المقاتلات')
 
         # 3. حذف المعلم
         del_url = reverse('training:instructor_delete', kwargs={'military_number': '778899'})

@@ -8,9 +8,9 @@ from .models import (
 
 @admin.register(Instructor)
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ('military_number', 'rank', 'name', 'phone', 'is_active', 'created_at')
-    search_fields = ('military_number', 'name', 'rank', 'phone')
-    list_filter = ('is_active', 'rank')
+    list_display = ('military_number', 'category', 'rank', 'name', 'force', 'unit', 'phone', 'is_active', 'created_at')
+    search_fields = ('military_number', 'name', 'rank', 'force', 'unit', 'phone')
+    list_filter = ('category', 'is_active', 'force', 'rank')
     ordering = ('name',)
 
 

@@ -28,29 +28,69 @@
                     {% csrf_token %}
                     
                     <div class="row g-3 mb-4">
+                        <!-- النمرة العسكرية -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-dark">النمرة العسكرية (مفتاح أساسي)</label>
                             <input type="text" class="form-control form-control-lg bg-light font-monospace" value="{{ instructor.military_number }}" disabled>
                             <div class="form-text small text-muted">النمرة العسكرية لا يمكن تعديلها لأنها المفتاح الأساسي.</div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-dark">الرتبة <span class="text-danger">*</span></label>
-                            {{ form.rank }}
-                        </div>
-
+                        <!-- الاسم الكامل للمعلم -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-dark">الاسم الكامل للمعلم <span class="text-danger">*</span></label>
                             {{ form.name }}
                         </div>
 
+                        <!-- التصنيف (ضابط / ضابط صف) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">التصنيف <span class="text-danger">*</span></label>
+                            <select name="category" id="edit_inst_category" class="form-select form-select-lg" onchange="editUpdateRanks()">
+                                <option value="officer" {% if instructor.category == 'officer' %}selected{% endif %}>ضابط</option>
+                                <option value="nco" {% if instructor.category == 'nco' %}selected{% endif %}>ضابط صف</option>
+                            </select>
+                        </div>
+
+                        <!-- الرتبة (قائمة منسدلة تعتمد على التصنيف) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">الرتبة <span class="text-danger">*</span></label>
+                            <select id="edit_inst_rank_select" class="form-select form-select-lg" onchange="editHandleRankChange()" required>
+                                <option value="">-- اختر الرتبة --</option>
+                            </select>
+                            <input type="hidden" name="rank" id="edit_inst_final_rank" value="{{ instructor.rank }}" required>
+                            <input type="text" id="edit_inst_custom_rank" class="form-control form-control-lg mt-2" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="editSyncCustomRank()">
+                        </div>
+
+                        <!-- القوة (قائمة منسدلة) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">القوة التابع لها</label>
+                            <select name="force" id="edit_inst_force" class="form-select form-select-lg" onchange="editUpdateUnits()">
+                                <option value="">-- اختر القوة --</option>
+                                <option value="القوات البرية" {% if instructor.force == 'القوات البرية' %}selected{% endif %}>القوات البرية</option>
+                                <option value="القوات البحرية" {% if instructor.force == 'القوات البحرية' %}selected{% endif %}>القوات البحرية</option>
+                                <option value="القوات الجوية" {% if instructor.force == 'القوات الجوية' %}selected{% endif %}>القوات الجوية</option>
+                                <option value="قوات الدفاع الجوي" {% if instructor.force == 'قوات الدفاع الجوي' %}selected{% endif %}>قوات الدفاع الجوي</option>
+                            </select>
+                        </div>
+
+                        <!-- الوحدة (قائمة منسدلة تابعة للقوة) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">الوحدة التابع لها</label>
+                            <select id="edit_inst_unit_select" class="form-select form-select-lg bg-light" onchange="editHandleUnitChange()" disabled>
+                                <option value="">-- اختر القوة أولاً لعرض الوحدات --</option>
+                            </select>
+                            <input type="hidden" name="unit" id="edit_inst_final_unit" value="{{ instructor.unit|default:'' }}">
+                            <input type="text" id="edit_inst_custom_unit" class="form-control form-control-lg mt-2" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="editSyncCustomUnit()">
+                        </div>
+
+                        <!-- رقم الهاتف -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-dark">رقم الهاتف</label>
                             {{ form.phone }}
                         </div>
 
-                        <div class="col-12">
-                            <div class="form-check form-switch p-3 bg-light rounded-3 border">
+                        <!-- الحالة -->
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch p-3 bg-light rounded-3 border w-100 mt-2">
                                 {{ form.is_active }}
                                 <label class="form-check-label fw-bold ms-2" for="{{ form.is_active.id_for_label }}">
                                     المعلم نشط وعلى رأس العمل (يمكن تكليفه بالدورات والمواد)
@@ -73,4 +113,257 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const INSTRUCTOR_RANKS = {
+        'officer': [
+            'ملازم',
+            'ملازم أول',
+            'نقيب',
+            'رائد',
+            'مقدم',
+            'عقيد',
+            'عميد',
+            'لواء',
+            'فريق',
+            'فريق أول'
+        ],
+        'nco': [
+            'جندي',
+            'وكيل عريف',
+            'عريف',
+            'رقيب',
+            'رقيب أول',
+            'مساعد',
+            'مساعد أول'
+        ]
+    };
+
+    const INSTRUCTOR_FORCE_UNITS = {
+        'القوات البرية': [
+            'سلاح المشاة',
+            'سلاح المدرعات',
+            'سلاح المدفعية',
+            'سلاح الإشارة',
+            'سلاح المهندسين',
+            'سلاح الصيانة',
+            'سلاح النقل',
+            'الإدارة المالية',
+            'إدارة نظم المعلومات',
+            'إدارة التدريب',
+            'هيئة الإمداد والتموين',
+            'الشرطة العسكرية',
+            'شعبة الاستخبارات',
+            'لواء القوات الخاصة',
+            'إدارة العمليات',
+            'قيادة القوات البرية'
+        ],
+        'القوات البحرية': [
+            'قاعدة بورتسودان البحرية',
+            'قاعدة فلامنجو البحرية',
+            'أسطول الزوارق والسفن',
+            'لواء المشاة البحرية',
+            'جناح الضفادع البشرية',
+            'ورش الصيانة البحرية',
+            'إدارة نظم المعلومات البحرية',
+            'الإدارة المالية البحرية',
+            'جناح الاتصالات الساحلية',
+            'مركز تدريب القوات البحرية',
+            'قيادة القوات البحرية'
+        ],
+        'القوات الجوية': [
+            'قاعدة وادي سيدنا الجوية',
+            'قاعدة الشهيد مختار الجوية',
+            'قاعدة الأبيض الجوية',
+            'قاعدة مروي الجوية',
+            'جناح المقاتلات',
+            'جناح النقل الجوي',
+            'جناح المروحيات',
+            'مجمع صيانة الطيران',
+            'الملاحة والمراقبة الجوية',
+            'إدارة نظم المعلومات الجوية',
+            'الإدارة المالية الجوية',
+            'كلية القوات الجوية',
+            'قيادة القوات الجوية'
+        ],
+        'قوات الدفاع الجوي': [
+            'لواء الصواريخ م/ط',
+            'كتائب المدفعية م/ط',
+            'مراكز الرادارات والإنذار المبكر',
+            'قيادة السيطرة والتوجيه',
+            'الحرب الإلكترونية',
+            'سلاح الإشارة للدفاع الجوي',
+            'ورش الصيانة الفنية',
+            'مركز تدريب الدفاع الجوي',
+            'إدارة نظم المعلومات',
+            'الإدارة المالية',
+            'قيادة قوات الدفاع الجوي'
+        ]
+    };
+
+    const INITIAL_RANK = "{{ instructor.rank|escapejs }}";
+    const INITIAL_UNIT = "{{ instructor.unit|default:''|escapejs }}";
+
+    function editUpdateRanks(initialRank = INITIAL_RANK) {
+        const catSelect = document.getElementById('edit_inst_category');
+        const rankSelect = document.getElementById('edit_inst_rank_select');
+        const customRank = document.getElementById('edit_inst_custom_rank');
+        const finalRank = document.getElementById('edit_inst_final_rank');
+        if (!catSelect || !rankSelect || !finalRank) return;
+
+        const cat = catSelect.value || 'officer';
+        const ranks = INSTRUCTOR_RANKS[cat] || [];
+        rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
+
+        let matched = false;
+        ranks.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            opt.textContent = r;
+            if (initialRank && initialRank === r) {
+                opt.selected = true;
+                matched = true;
+            }
+            rankSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
+        rankSelect.appendChild(customOpt);
+
+        if (initialRank) {
+            if (matched) {
+                if (customRank) customRank.style.display = 'none';
+                finalRank.value = initialRank;
+            } else {
+                customOpt.selected = true;
+                if (customRank) {
+                    customRank.style.display = 'block';
+                    customRank.value = initialRank;
+                }
+                finalRank.value = initialRank;
+            }
+        } else {
+            if (customRank) customRank.style.display = 'none';
+            finalRank.value = '';
+        }
+    }
+
+    function editHandleRankChange() {
+        const rankSelect = document.getElementById('edit_inst_rank_select');
+        const customRank = document.getElementById('edit_inst_custom_rank');
+        const finalRank = document.getElementById('edit_inst_final_rank');
+        if (!rankSelect || !finalRank) return;
+
+        if (rankSelect.value === '__custom__') {
+            if (customRank) {
+                customRank.style.display = 'block';
+                customRank.focus();
+                finalRank.value = customRank.value.trim();
+            }
+        } else {
+            if (customRank) customRank.style.display = 'none';
+            finalRank.value = rankSelect.value;
+        }
+    }
+
+    function editSyncCustomRank() {
+        const customRank = document.getElementById('edit_inst_custom_rank');
+        const finalRank = document.getElementById('edit_inst_final_rank');
+        if (customRank && finalRank) {
+            finalRank.value = customRank.value.trim();
+        }
+    }
+
+    function editUpdateUnits(initialUnit = INITIAL_UNIT) {
+        const forceSelect = document.getElementById('edit_inst_force');
+        const unitSelect = document.getElementById('edit_inst_unit_select');
+        const customUnit = document.getElementById('edit_inst_custom_unit');
+        const finalUnit = document.getElementById('edit_inst_final_unit');
+        if (!forceSelect || !unitSelect || !finalUnit) return;
+
+        const force = forceSelect.value;
+        if (!force || !INSTRUCTOR_FORCE_UNITS[force]) {
+            unitSelect.innerHTML = '<option value="">-- اختر القوة أولاً لعرض الوحدات --</option>';
+            unitSelect.disabled = true;
+            unitSelect.classList.add('bg-light');
+            if (customUnit) customUnit.style.display = 'none';
+            finalUnit.value = '';
+            return;
+        }
+
+        unitSelect.disabled = false;
+        unitSelect.classList.remove('bg-light');
+        unitSelect.innerHTML = `<option value="">-- اختر الوحدة (${force}) --</option>`;
+
+        const units = INSTRUCTOR_FORCE_UNITS[force];
+        let matched = false;
+        units.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u;
+            opt.textContent = u;
+            if (initialUnit && initialUnit === u) {
+                opt.selected = true;
+                matched = true;
+            }
+            unitSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ وحدة أخرى (كتابة يدوية)';
+        unitSelect.appendChild(customOpt);
+
+        if (initialUnit) {
+            if (matched) {
+                if (customUnit) customUnit.style.display = 'none';
+                finalUnit.value = initialUnit;
+            } else {
+                customOpt.selected = true;
+                if (customUnit) {
+                    customUnit.style.display = 'block';
+                    customUnit.value = initialUnit;
+                }
+                finalUnit.value = initialUnit;
+            }
+        } else {
+            if (customUnit) customUnit.style.display = 'none';
+            finalUnit.value = '';
+        }
+    }
+
+    function editHandleUnitChange() {
+        const unitSelect = document.getElementById('edit_inst_unit_select');
+        const customUnit = document.getElementById('edit_inst_custom_unit');
+        const finalUnit = document.getElementById('edit_inst_final_unit');
+        if (!unitSelect || !finalUnit) return;
+
+        if (unitSelect.value === '__custom__') {
+            if (customUnit) {
+                customUnit.style.display = 'block';
+                customUnit.focus();
+                finalUnit.value = customUnit.value.trim();
+            }
+        } else {
+            if (customUnit) customUnit.style.display = 'none';
+            finalUnit.value = unitSelect.value;
+        }
+    }
+
+    function editSyncCustomUnit() {
+        const customUnit = document.getElementById('edit_inst_custom_unit');
+        const finalUnit = document.getElementById('edit_inst_final_unit');
+        if (customUnit && finalUnit) {
+            finalUnit.value = customUnit.value.trim();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        editUpdateRanks(INITIAL_RANK);
+        editUpdateUnits(INITIAL_UNIT);
+    });
+</script>
 {% endblock %}

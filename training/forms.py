@@ -77,7 +77,7 @@ class TraineeForm(forms.ModelForm):
 class InstructorForm(forms.ModelForm):
     class Meta:
         model = Instructor
-        fields = ['military_number', 'rank', 'name', 'phone', 'is_active']
+        fields = ['military_number', 'category', 'rank', 'name', 'force', 'unit', 'phone', 'is_active']
         widgets = {
             'military_number': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg font-monospace',
@@ -87,15 +87,27 @@ class InstructorForm(forms.ModelForm):
                 'oninput': "this.value = this.value.replace(/[^0-9]/g, '')",
                 'required': 'required'
             }),
+            'category': forms.Select(attrs={
+                'class': 'form-select form-select-lg',
+                'required': 'required'
+            }),
             'rank': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'الرتبة (مثال: مقدم، رائد، نقيب، مهندس...)',
+                'placeholder': 'الرتبة',
                 'required': 'required'
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
                 'placeholder': 'الاسم الكامل للمعلم',
                 'required': 'required'
+            }),
+            'force': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'القوة'
+            }),
+            'unit': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'الوحدة'
             }),
             'phone': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
@@ -108,8 +120,11 @@ class InstructorForm(forms.ModelForm):
         }
         labels = {
             'military_number': 'النمرة العسكرية (مفتاح أساسي) *',
+            'category': 'التصنيف *',
             'rank': 'الرتبة *',
             'name': 'الاسم الكامل *',
+            'force': 'القوة',
+            'unit': 'الوحدة',
             'phone': 'رقم الهاتف',
             'is_active': 'نشط / على رأس العمل'
         }

@@ -66,6 +66,11 @@ class Trainee(models.Model):
         return f"{self.name} ({self.military_number})"
 
 
+class InstructorCategory(models.TextChoices):
+    OFFICER = 'officer', 'ضابط'
+    NCO = 'nco', 'ضابط صف'
+
+
 class Instructor(models.Model):
     """بيانات المعلم / عضو هيئة التدريس"""
     military_number = models.CharField(
@@ -74,13 +79,31 @@ class Instructor(models.Model):
         validators=[numeric_only_validator],
         verbose_name='النمرة العسكرية (مفتاح أساسي)'
     )
-    name = models.CharField(
-        max_length=200,
-        verbose_name='اسم المعلم'
+    category = models.CharField(
+        max_length=20,
+        choices=InstructorCategory.choices,
+        default=InstructorCategory.OFFICER,
+        verbose_name='التصنيف'
     )
     rank = models.CharField(
         max_length=100,
         verbose_name='الرتبة'
+    )
+    name = models.CharField(
+        max_length=200,
+        verbose_name='اسم المعلم'
+    )
+    force = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='القوة'
+    )
+    unit = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        verbose_name='الوحدة'
     )
     phone = models.CharField(
         max_length=50,
@@ -107,9 +130,8 @@ class Instructor(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        if self.rank:
-            return f"{self.rank} / {self.name} ({self.military_number})"
-        return f"{self.name} ({self.military_number})"
+        prefix = f"{self.rank} / " if self.rank else ""
+        return f"{prefix}{self.name} ({self.military_number})"
 
 
 class CourseCategory(models.Model):
