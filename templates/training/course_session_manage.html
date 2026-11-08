@@ -359,12 +359,25 @@
                                 </thead>
                                 <tbody>
                                     {% for t in available_trainees %}
-                                        <tr class="modal-trainee-row" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}">
-                                            <td>
-                                                <input type="checkbox" name="extra_trainees" value="{{ t.military_number }}" class="form-check-input" style="width: 18px; height: 18px;">
+                                        <tr class="modal-trainee-row {% if t.military_number in passed_trainees_for_session %}table-light opacity-75{% endif %}" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}">
+                                            <td class="text-center">
+                                                {% if t.military_number in passed_trainees_for_session %}
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2" style="font-size: 0.72rem;" title="اجتاز هذه الدورة بنجاح مسبقاً (محظور)">
+                                                        <i class="bi bi-shield-x me-1"></i>ناجح مسبقاً
+                                                    </span>
+                                                {% else %}
+                                                    <input type="checkbox" name="extra_trainees" value="{{ t.military_number }}" class="form-check-input" style="width: 18px; height: 18px;">
+                                                {% endif %}
                                             </td>
                                             <td><span class="badge bg-light text-dark border">{{ t.military_number }}</span></td>
-                                            <td><strong>{{ t.name }}</strong></td>
+                                            <td>
+                                                <strong>{{ t.name }}</strong>
+                                                {% if t.military_number in passed_trainees_for_session %}
+                                                    <small class="text-danger d-block fw-bold" style="font-size: 0.75rem;">
+                                                        اجتاز الدورة مسبقاً (محظور إعادة التسجيل)
+                                                    </small>
+                                                {% endif %}
+                                            </td>
                                             <td>
                                                 {% if t.category == 'officer' %}
                                                     <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>

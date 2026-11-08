@@ -71,6 +71,13 @@ class TraineeForm(forms.ModelForm):
         number = self.cleaned_data.get('military_number', '').strip()
         if not number.isdigit():
             raise forms.ValidationError('النمرة تقبل أرقاماً فقط (0-9). يرجى عدم إدخال أحرف أو رموز.')
+        qs = Trainee.objects.filter(military_number=number)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً لدارس آخر ولا يمكن تكرارها.')
+        if Instructor.objects.filter(military_number=number).exists():
+            raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً في النظام كمعلم، ولا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
         return number
 
 
@@ -133,6 +140,13 @@ class InstructorForm(forms.ModelForm):
         number = self.cleaned_data.get('military_number', '').strip()
         if not number.isdigit():
             raise forms.ValidationError('النمرة تقبل أرقاماً فقط (0-9).')
+        qs = Instructor.objects.filter(military_number=number)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً لمعلم آخر ولا يمكن تكرارها.')
+        if Trainee.objects.filter(military_number=number).exists():
+            raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً في النظام كدارس، ولا يجوز تكرار النمرة العسكرية بين المعلمين والدارسين.')
         return number
 
 
@@ -148,6 +162,7 @@ class CourseForm(forms.ModelForm):
             'course_number': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg font-monospace',
                 'placeholder': 'مثال: GUIDE-101 أو C-2026',
+                'required': 'required'
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
@@ -162,10 +177,21 @@ class CourseForm(forms.ModelForm):
         }
         labels = {
             'category': 'تصنيف الدورة *',
-            'course_number': 'رقم/رمز الدورة',
+            'course_number': 'رقم/رمز الدورة *',
             'name': 'اسم الدورة *',
             'description': 'الوصف والأهداف',
         }
+
+    def clean_course_number(self):
+        number = self.cleaned_data.get('course_number', '').strip()
+        if not number:
+            raise forms.ValidationError('يرجى إدخال رقم / رمز الدورة.')
+        qs = Course.objects.filter(course_number__iexact=number)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f'رقم / رمز الدورة "{number}" مسجل مسبقاً لدورة أخرى ولا يمكن تكراره.')
+        return number
 
 
 class SubjectForm(forms.ModelForm):
@@ -175,8 +201,7 @@ class SubjectForm(forms.ModelForm):
         widgets = {
             'code': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg font-monospace',
-                'placeholder': 'مثال: G101 أو M-01',
-                'required': 'required'
+                'placeholder': 'توليد تلقائي من النظام',
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
@@ -198,11 +223,25 @@ class SubjectForm(forms.ModelForm):
             }),
         }
         labels = {
-            'code': 'رقم/كود المادة *',
+            'code': 'رقم/كود المادة (توليد تلقائي)',
             'name': 'اسم المادة *',
             'credit_hours': 'عدد الساعات *',
             'max_grade': 'الدرجة العظمى *',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].required = False
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code', '').strip()
+        if code:
+            qs = Subject.objects.filter(code__iexact=code)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f'رقم / كود المادة "{code}" مسجل مسبقاً لمادة أخرى ولا يمكن تكراره.')
+        return code
 
     def clean_max_grade(self):
         mg = self.cleaned_data.get('max_grade')

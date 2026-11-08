@@ -622,6 +622,200 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.assertEqual(assign2.instructor, self.instructor1)
 
 
+class BusinessConstraintsTests(TestCase):
+    """
+    اختبارات القيود الصارمة:
+    1. منع تسجيل الطالب في نفس الدورة إذا كان قد أكملها ونجح فيها مسبقاً.
+    2. منع تكرار النمرة العسكرية بين الدارسين والمعلمين في الاتجاهين.
+    3. منع تكرار رقم الدورة ورقم/كود المادة.
+    4. توليد كود المادة ورقمها تلقائياً من النظام وإمكانية الحفظ دون إدخال كود يدوي.
+    """
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_user(
+            username='admin_constraints',
+            password='Password123!',
+            is_staff=True
+        )
+        self.admin_user.profile.role = UserRole.ADMIN
+        self.admin_user.profile.save()
+
+        from training.models import CourseCategory, Course, Subject, Trainee, Instructor
+        self.category = CourseCategory.objects.create(name='تصنيف القيود')
+        self.course = Course.objects.create(
+            category=self.category,
+            course_number='C-CNST-100',
+            name='دورة القيود المتقدمة'
+        )
+        self.subject = Subject.objects.create(
+            course=self.course,
+            name='مادة القيود الأولى',
+            credit_hours=10,
+            max_grade=100.0
+        )
+        self.trainee = Trainee.objects.create(
+            military_number='11223344',
+            name='دارس تجربة القيود',
+            category='officer',
+            force='القوات البرية',
+            unit='سلاح الإشارة'
+        )
+
+    def test_passed_trainee_cannot_re_enroll_same_course(self):
+        """التحقق من منع تسجيل الدارس في نفس الدورة إذا اجتازها بنجاح مسبقاً"""
+        from training.models import CourseSession, CourseEnrollment, has_trainee_passed_course
+        # الدفعة الأولى: إكمال ونجاح الدارس
+        session1 = CourseSession.objects.create(
+            course=self.course,
+            session_code='دفعة 1 سابقة',
+            start_date='2026-01-01',
+            end_date='2026-02-01',
+            status='completed'
+        )
+        enrollment1 = CourseEnrollment.objects.create(
+            session=session1,
+            trainee=self.trainee,
+            current_rank='نقيب',
+            current_force='القوات البرية',
+            current_unit='سلاح الإشارة',
+            percentage=85.0,
+            grade_label='جيد جداً',
+            is_graded=True
+        )
+
+        # التحقق البرمجي المباشر من دالة التحقق
+        passed = has_trainee_passed_course(self.trainee, self.course)
+        self.assertIsNotNone(passed)
+        self.assertEqual(passed.id, enrollment1.id)
+
+        # محاولة إنشاء دورة جديدة وتسجيل نفس الدارس فيها عبر POST
+        self.client.login(username='admin_constraints', password='Password123!')
+        create_url = reverse('training:course_session_create')
+        res = self.client.post(create_url, {
+            'category': str(self.category.id),
+            'course': str(self.course.id),
+            'session_code': 'دفعة 2 جديدة',
+            'start_date': '2026-03-01',
+            'end_date': '2026-04-01',
+            'status': 'active',
+            'attendance_max_grade': '20.0',
+            'selected_trainees': [self.trainee.military_number],
+            f'rank_{self.trainee.military_number}': 'رائد',
+            f'force_{self.trainee.military_number}': 'القوات البرية',
+            f'unit_{self.trainee.military_number}': 'سلاح الإشارة',
+        })
+        # يجب ألا يتم إنشاء الدورة بالدارس المحظور بل إعادة تحميل الصفحة مع رسالة خطأ
+        session2 = CourseSession.objects.filter(session_code='دفعة 2 جديدة').first()
+        self.assertIsNone(session2)
+
+        # محاولة إضافة الدارس عبر صفحة إدارة دورة منعقدة أخرى لنفس المادة
+        session3 = CourseSession.objects.create(
+            course=self.course,
+            session_code='دفعة 3 منعقدة',
+            start_date='2026-05-01',
+            end_date='2026-06-01',
+            status='active'
+        )
+        manage_url = reverse('training:course_session_manage', kwargs={'session_id': session3.id})
+        res_manage = self.client.post(manage_url, {
+            'add_extra_trainees': '1',
+            'extra_trainees': [self.trainee.military_number],
+        })
+        self.assertFalse(session3.enrollments.filter(trainee=self.trainee).exists())
+
+    def test_military_number_cannot_be_duplicated_across_trainees_and_instructors(self):
+        """التحقق من منع تكرار النمرة العسكرية بين الدارسين وهيئة التدريس في كلا الاتجاهين"""
+        from training.models import Instructor, Trainee
+        from training.forms import TraineeForm, InstructorForm
+
+        # 1. إنشاء معلم بنمرة محددة
+        instructor = Instructor.objects.create(
+            military_number='77889900',
+            name='المعلم الأول',
+            rank='مقدم',
+            force='القوات البرية',
+            unit='إدارة التدريب'
+        )
+
+        # محاولة تسجيل دارس بنفس نمرة المعلم عبر النموذج
+        trainee_form = TraineeForm(data={
+            'military_number': '77889900',
+            'name': 'دارس مكرر النمرة',
+            'category': 'officer',
+            'force': 'القوات البرية',
+            'unit': 'سلاح المدرعات'
+        })
+        self.assertFalse(trainee_form.is_valid())
+        self.assertIn('military_number', trainee_form.errors)
+
+        # 2. إنشاء دارس بنمرة محددة ومحاولة تسجيل معلم بنفس النمرة
+        Trainee.objects.create(
+            military_number='66554433',
+            name='دارس أصيل',
+            category='officer',
+            force='القوات الجوية',
+            unit='جناح المقاتلات'
+        )
+        inst_form = InstructorForm(data={
+            'military_number': '66554433',
+            'name': 'معلم مكرر النمرة',
+            'category': 'officer',
+            'rank': 'عقيد',
+            'force': 'القوات الجوية',
+            'unit': 'جناح المقاتلات'
+        })
+        self.assertFalse(inst_form.is_valid())
+        self.assertIn('military_number', inst_form.errors)
+
+    def test_course_number_and_subject_code_uniqueness(self):
+        """التحقق من عدم تكرار رقم الدورة ورقم المادة الدراسية"""
+        from training.forms import CourseForm, SubjectForm
+        from training.models import Course, Subject
+
+        # رقم دورة مكرر
+        course_form = CourseForm(data={
+            'category': self.category.id,
+            'course_number': self.course.course_number,  # مكرر
+            'name': 'دورة مكررة الرمز',
+            'description': ''
+        })
+        self.assertFalse(course_form.is_valid())
+        self.assertIn('course_number', course_form.errors)
+
+        # كود مادة مكرر
+        sub_form = SubjectForm(data={
+            'name': 'مادة مكررة الكود',
+            'code': self.subject.code,  # مكرر
+            'credit_hours': 5,
+            'max_grade': 100.0
+        })
+        self.assertFalse(sub_form.is_valid())
+        self.assertIn('code', sub_form.errors)
+
+    def test_subject_code_auto_generation_and_hidden_field(self):
+        """التحقق من توليد كود المادة ورقمها تلقائياً من النظام دون الحاجة لإدخاله يدوياً"""
+        from training.models import Subject
+        # إنشاء مادتين جديدتين لنفس الدورة دون تعيين الكود
+        sub1 = Subject.objects.create(
+            course=self.course,
+            name='مادة تلقائية 1',
+            credit_hours=4,
+            max_grade=50.0
+        )
+        self.assertTrue(bool(sub1.code))
+        self.assertTrue(sub1.code.startswith(self.course.course_number))
+
+        sub2 = Subject.objects.create(
+            course=self.course,
+            name='مادة تلقائية 2',
+            credit_hours=6,
+            max_grade=100.0
+        )
+        self.assertTrue(bool(sub2.code))
+        self.assertNotEqual(sub1.code, sub2.code)
+
+
+
 
 
 

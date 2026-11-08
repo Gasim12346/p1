@@ -166,8 +166,8 @@ class Course(models.Model):
     )
     course_number = models.CharField(
         max_length=50,
-        blank=True,
-        null=True,
+        unique=True,
+        default='',
         verbose_name='رقم الدورة / الرمز'
     )
     name = models.CharField(
@@ -211,6 +211,8 @@ class Subject(models.Model):
     )
     code = models.CharField(
         max_length=50,
+        unique=True,
+        blank=True,
         verbose_name='رقم/كود المادة'
     )
     name = models.CharField(
@@ -237,6 +239,21 @@ class Subject(models.Model):
         super().clean()
         if self.max_grade is not None and self.max_grade <= 0:
             raise ValidationError({'max_grade': 'الدرجة العظمى للمادة يجب أن تكون أكبر من صفر.'})
+
+    @classmethod
+    def generate_unique_code(cls, course):
+        course_num = (course.course_number or f"C{course.id}").strip().replace(" ", "-")
+        count = cls.objects.filter(course=course).count() + 1
+        candidate = f"{course_num}-{count:02d}"
+        while cls.objects.filter(code=candidate).exists():
+            count += 1
+            candidate = f"{course_num}-{count:02d}"
+        return candidate
+
+    def save(self, *args, **kwargs):
+        if not self.code and self.course_id:
+            self.code = self.generate_unique_code(self.course)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -538,6 +555,19 @@ class CourseEnrollment(models.Model):
             'percentage': pct,
             'grade': grade
         }
+
+
+def has_trainee_passed_course(trainee, course):
+    """
+    التحقق مما إذا كان الطالب قد أكمل الدورة ونجح فيها مسبقاً (في أي دفعة سابقة).
+    النجاح: تم رصد الدرجات (is_graded=True)، والنسبة >= 50%، والتقدير ليس راسباً.
+    """
+    return CourseEnrollment.objects.filter(
+        trainee=trainee,
+        session__course=course,
+        is_graded=True,
+        percentage__gte=50.0
+    ).exclude(grade_label__icontains='راسب').select_related('session').first()
 
 
 class TraineeSubjectGrade(models.Model):

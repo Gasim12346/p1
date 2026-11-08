@@ -338,8 +338,9 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">رقم / رمز الدورة</label>
+                            <label class="form-label fw-bold text-dark">رقم / رمز الدورة <span class="text-danger">*</span></label>
                             {{ course_form.course_number }}
+                            <div class="form-text small text-muted">رمز فريد للدورة محمي من التكرار.</div>
                         </div>
 
                         <div class="col-12">
@@ -390,9 +391,9 @@
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">رقم / كود المادة <span class="text-danger">*</span></label>
-                            {{ subject_form.code }}
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark">اسم المادة الدراسية <span class="text-danger">*</span></label>
+                            {{ subject_form.name }}
                         </div>
 
                         <div class="col-md-6">
@@ -400,12 +401,7 @@
                             {{ subject_form.credit_hours }}
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label fw-bold text-dark">اسم المادة الدراسية <span class="text-danger">*</span></label>
-                            {{ subject_form.name }}
-                        </div>
-
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">الدرجة القصوى / العظمى <span class="text-danger">*</span></label>
                             {{ subject_form.max_grade }}
                         </div>

@@ -13,7 +13,8 @@ from .models import (
     Instructor, SessionSubjectInstructor,
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade,
-    CertificateSettings, SystemSettings, UserProfile, UserRole
+    CertificateSettings, SystemSettings, UserProfile, UserRole,
+    has_trainee_passed_course
 )
 from .forms import (
     InstructorForm, TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
@@ -71,7 +72,9 @@ def trainees_list_view(request):
         if form.is_valid():
             military_num = form.cleaned_data['military_number']
             if Trainee.objects.filter(military_number=military_num).exists():
-                messages.error(request, f'النمرة "{military_num}" مسجلة مسبقاً! الرجاء استخدام نمرة فريدة.')
+                messages.error(request, f'النمرة "{military_num}" مسجلة مسبقاً لدارس آخر! الرجاء استخدام نمرة فريدة.')
+            elif Instructor.objects.filter(military_number=military_num).exists():
+                messages.error(request, f'النمرة العسكرية "{military_num}" مسجلة مسبقاً في النظام كمعلم في هيئة التدريس! لا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
             else:
                 form.save()
                 messages.success(request, f'تم حفظ بيانات الدارس "{form.cleaned_data["name"]}" بنجاح.')
@@ -201,10 +204,12 @@ def courses_catalog_view(request):
         course_form = CourseForm(request.POST)
         if course_form.is_valid():
             new_course = course_form.save()
-            messages.success(request, f'تم إضافة الدورة "{new_course.name}" بنجاح.')
+            messages.success(request, f'تم إضافة الدورة "{new_course.name}" (الرمز: {new_course.course_number}) بنجاح.')
             return redirect(f"{request.path}?category_id={new_course.category_id}&course_id={new_course.id}")
         else:
-            messages.error(request, 'يرجى مراجعة بيانات الدورة والتأكد من إدخال الحقول المطلوبة.')
+            for field, errors in course_form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
     else:
         initial_cat = selected_category if selected_category else None
         course_form = CourseForm(initial={'category': initial_cat})
@@ -216,11 +221,15 @@ def courses_catalog_view(request):
         if subject_form.is_valid():
             new_subject = subject_form.save(commit=False)
             new_subject.course = target_course
+            if not new_subject.code:
+                new_subject.code = Subject.generate_unique_code(target_course)
             new_subject.save()
-            messages.success(request, f'تم إضافة المادة "{new_subject.name}" للدورة بنجاح.')
+            messages.success(request, f'تم إضافة المادة "{new_subject.name}" وتوليد كودها التلقائي ({new_subject.code}) بنجاح.')
             return redirect(f"{request.path}?category_id={target_course.category_id}&course_id={target_course.id}")
         else:
-            messages.error(request, 'يرجى التأكد من بيانات المادة المدخلة.')
+            for field, errors in subject_form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
     else:
         subject_form = SubjectForm()
 
@@ -396,66 +405,101 @@ def course_session_create_view(request):
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
         else:
             course = get_object_or_404(Course, pk=course_id)
-            supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
 
-            session = CourseSession.objects.create(
-                course=course,
-                session_code=session_code,
-                start_date=start_date,
-                end_date=end_date,
-                status=status,
-                attendance_max_grade=attendance_max_grade or 20.0,
-                supervisor=supervisor,
-                notes=notes
-            )
+            # التحقق الصارم من قيد النجاح المسبق: منع إعادة تسجيل أي دارس أكمل نفس الدورة ونجح فيها
+            blocked_trainees = []
+            for num in selected_trainee_nums:
+                t = Trainee.objects.filter(military_number=num).first()
+                if t:
+                    prev_passed = has_trainee_passed_course(t, course)
+                    if prev_passed:
+                        blocked_trainees.append((t, prev_passed))
 
-            # تعيين المعلمين لمواد الدورة
-            for sub in course.subjects.all():
-                teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
-                inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
-                SessionSubjectInstructor.objects.create(
-                    session=session,
-                    subject=sub,
-                    instructor=inst
+            if blocked_trainees:
+                msg_list = "، ".join([f'"{bt[0].name}" (دفعة {bt[1].session.session_code} - تقدير {bt[1].grade_label})' for bt in blocked_trainees])
+                messages.error(
+                    request,
+                    f'تحذير صارم: لا يمكن إتمام تسجيل الدورة؛ نظراً لأن الدارس(ين): {msg_list} قد أكملوا دورة "{course.name}" واجتازوها بنجاح مسبقاً، ويمنع النظام تكرار دخول نفس الدورة مرة أخرى!'
+                )
+            else:
+                supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
+
+                session = CourseSession.objects.create(
+                    course=course,
+                    session_code=session_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=status,
+                    attendance_max_grade=attendance_max_grade or 20.0,
+                    supervisor=supervisor,
+                    notes=notes
                 )
 
-            # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
-            enrolled_count = 0
-            for num in selected_trainee_nums:
-                try:
-                    t = Trainee.objects.get(military_number=num)
-                    # قراءة الرتبة والقوة والوحدة المعدلة من النموذج
-                    current_rank = request.POST.get(f'rank_{num}', '').strip()
-                    current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
-                    current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
-
-                    CourseEnrollment.objects.create(
+                # تعيين المعلمين لمواد الدورة
+                for sub in course.subjects.all():
+                    teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
+                    inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
+                    SessionSubjectInstructor.objects.create(
                         session=session,
-                        trainee=t,
-                        current_rank=current_rank,
-                        current_force=current_force,
-                        current_unit=current_unit
+                        subject=sub,
+                        instructor=inst
                     )
-                    
-                    has_changes = False
-                    if current_force and current_force != t.force:
-                        t.force = current_force
-                        has_changes = True
-                    if current_unit and current_unit != t.unit:
-                        t.unit = current_unit
-                        has_changes = True
-                    if has_changes:
-                        t.save(update_fields=['force', 'unit'])
-                    enrolled_count += 1
-                except Trainee.DoesNotExist:
-                    pass
 
-            messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
-            return redirect('training:course_session_manage', session_id=session.id)
+                # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
+                enrolled_count = 0
+                for num in selected_trainee_nums:
+                    try:
+                        t = Trainee.objects.get(military_number=num)
+                        # قراءة الرتبة والقوة والوحدة المعدلة من النموذج
+                        current_rank = request.POST.get(f'rank_{num}', '').strip()
+                        current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
+                        current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
+
+                        CourseEnrollment.objects.create(
+                            session=session,
+                            trainee=t,
+                            current_rank=current_rank,
+                            current_force=current_force,
+                            current_unit=current_unit
+                        )
+                        
+                        has_changes = False
+                        if current_force and current_force != t.force:
+                            t.force = current_force
+                            has_changes = True
+                        if current_unit and current_unit != t.unit:
+                            t.unit = current_unit
+                            has_changes = True
+                        if has_changes:
+                            t.save(update_fields=['force', 'unit'])
+                        enrolled_count += 1
+                    except Trainee.DoesNotExist:
+                        pass
+
+                messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
+                return redirect('training:course_session_manage', session_id=session.id)
 
     officer_count = trainees.filter(category=TraineeCategory.OFFICER).count()
     nco_count = trainees.filter(category=TraineeCategory.NCO).count()
     civilian_count = trainees.filter(category=TraineeCategory.CIVILIAN).count()
+
+    # خريطة الدارسين والدورات التي اجتازوها بنجاح مسبقاً لمنع تكرار التسجيل
+    passed_enrollments = CourseEnrollment.objects.filter(
+        is_graded=True,
+        percentage__gte=50.0
+    ).exclude(grade_label__icontains='راسب').select_related('session', 'session__course')
+
+    trainees_passed_map = {}
+    for pe in passed_enrollments:
+        tid = pe.trainee_id
+        cid = str(pe.session.course_id)
+        if tid not in trainees_passed_map:
+            trainees_passed_map[tid] = {}
+        trainees_passed_map[tid][cid] = {
+            'batch': pe.session.session_code,
+            'grade': pe.grade_label,
+            'pct': float(pe.percentage or 0.0)
+        }
 
     courses_subjects_map = {}
     for cat in categories:
@@ -476,6 +520,7 @@ def course_session_create_view(request):
         'trainees': trainees,
         'instructors': instructors,
         'courses_subjects_json': json.dumps(courses_subjects_map, ensure_ascii=False),
+        'trainees_passed_json': json.dumps(trainees_passed_map, ensure_ascii=False),
         'officer_count': officer_count,
         'nco_count': nco_count,
         'civilian_count': civilian_count,
@@ -552,27 +597,37 @@ def course_session_manage_view(request, session_id):
         added = 0
         for num in extra_nums:
             t = Trainee.objects.filter(military_number=num).first()
-            if t and not session.enrollments.filter(trainee=t).exists():
-                r = request.POST.get(f'extra_rank_{num}', '').strip()
-                f = request.POST.get(f'extra_force_{num}', t.force).strip() or t.force
-                u = request.POST.get(f'extra_unit_{num}', t.unit).strip() or t.unit
-                CourseEnrollment.objects.create(
-                    session=session,
-                    trainee=t,
-                    current_rank=r,
-                    current_force=f,
-                    current_unit=u
-                )
-                has_changes = False
-                if f and f != t.force:
-                    t.force = f
-                    has_changes = True
-                if u and u != t.unit:
-                    t.unit = u
-                    has_changes = True
-                if has_changes:
-                    t.save(update_fields=['force', 'unit'])
-                added += 1
+            if t:
+                # التحقق الصارم من أن الطالب لم يجتز هذه الدورة مسبقاً بنجاح
+                prev_passed = has_trainee_passed_course(t, session.course)
+                if prev_passed:
+                    messages.error(
+                        request,
+                        f'تحذير: لا يمكن إلحاق الدارس "{t.name}" ({t.military_number})؛ نظراً لأنه قد أكمل دورة "{session.course.name}" واجتازها بنجاح مسبقاً (دفعة: {prev_passed.session.session_code} - تقدير: {prev_passed.grade_label})!'
+                    )
+                    continue
+
+                if not session.enrollments.filter(trainee=t).exists():
+                    r = request.POST.get(f'extra_rank_{num}', '').strip()
+                    f = request.POST.get(f'extra_force_{num}', t.force).strip() or t.force
+                    u = request.POST.get(f'extra_unit_{num}', t.unit).strip() or t.unit
+                    CourseEnrollment.objects.create(
+                        session=session,
+                        trainee=t,
+                        current_rank=r,
+                        current_force=f,
+                        current_unit=u
+                    )
+                    has_changes = False
+                    if f and f != t.force:
+                        t.force = f
+                        has_changes = True
+                    if u and u != t.unit:
+                        t.unit = u
+                        has_changes = True
+                    if has_changes:
+                        t.save(update_fields=['force', 'unit'])
+                    added += 1
         if added > 0:
             messages.success(request, f'تم إلحاق {added} دارس إضافي بالدورة بنجاح.')
         return redirect('training:course_session_manage', session_id=session.id)
@@ -596,6 +651,21 @@ def course_session_manage_view(request, session_id):
     enrolled_trainee_ids = enrollments.values_list('trainee_id', flat=True)
     available_trainees = Trainee.objects.exclude(military_number__in=enrolled_trainee_ids)
 
+    # تحديد الدارسين الذين اجتازوا هذه الدورة بنجاح مسبقاً
+    passed_for_session = CourseEnrollment.objects.filter(
+        session__course=session.course,
+        is_graded=True,
+        percentage__gte=50.0
+    ).exclude(grade_label__icontains='راسب').select_related('session')
+
+    passed_trainees_for_session = {
+        pe.trainee_id: {
+            'batch': pe.session.session_code,
+            'grade': pe.grade_label
+        }
+        for pe in passed_for_session
+    }
+
     session_subject_instructors = list(session.subject_instructors.select_related('subject', 'instructor').all())
     assigned_subject_ids = {a.subject_id for a in session_subject_instructors}
     for sub in session.course.subjects.all():
@@ -609,6 +679,7 @@ def course_session_manage_view(request, session_id):
         'available_trainees': available_trainees,
         'instructors': instructors,
         'session_subject_instructors': session_subject_instructors,
+        'passed_trainees_for_session': passed_trainees_for_session,
     }
     return render(request, 'training/course_session_manage.html', context)
 
@@ -1490,6 +1561,8 @@ def instructor_create_view(request):
             mil_num = form.cleaned_data['military_number']
             if Instructor.objects.filter(military_number=mil_num).exists():
                 messages.error(request, f'النمرة العسكرية "{mil_num}" مسجلة مسبقاً لمعلم آخر!')
+            elif Trainee.objects.filter(military_number=mil_num).exists():
+                messages.error(request, f'النمرة العسكرية "{mil_num}" مسجلة مسبقاً في النظام كدارس! لا يجوز تكرار النمرة العسكرية بين المعلمين والدارسين.')
             else:
                 inst = form.save()
                 messages.success(request, f'تم إضافة المعلم "{inst.name}" بنجاح.')

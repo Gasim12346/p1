@@ -333,14 +333,19 @@
                     </tr>
 
                     {% for t in trainees %}
-                    <tr class="trainee-row" data-category="{{ t.category }}"
+                    <tr class="trainee-row" id="trainee_row_{{ t.military_number }}" data-category="{{ t.category }}"
+                        data-military-number="{{ t.military_number }}"
                         data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}"
                         style="display: none;">
                         <td class="text-center">
                             <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}"
+                                id="trainee_cb_{{ t.military_number }}"
                                 class="form-check-input trainee-checkbox"
                                 style="width: 20px; height: 20px; cursor: pointer;"
                                 onchange="updateSelectedCount(); highlightRow(this);">
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2 mt-1 passed-course-badge" id="passed_badge_{{ t.military_number }}" style="display: none; font-size: 0.72rem;">
+                                <i class="bi bi-shield-x me-1"></i>أكمل ونجح مسبقاً
+                            </span>
                         </td>
                         <td>
                             <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
@@ -349,6 +354,9 @@
                         </td>
                         <td>
                             <strong class="text-dark d-block">{{ t.name }}</strong>
+                            <small class="text-danger fw-bold passed-course-warning" id="passed_warning_{{ t.military_number }}" style="display: none;">
+                                اجتاز هذه الدورة بنجاح مسبقاً (محظور إعادة التسجيل)
+                            </small>
                         </td>
                         <td>
                             {% if t.category == 'officer' %}
@@ -461,8 +469,9 @@
 
 {% block extra_js %}
 <script>
-    // بيانات المواد الدراسية وقائمة المعلمين
+    // بيانات المواد الدراسية وقائمة المعلمين وسجل النجاح المسبق
     const COURSES_SUBJECTS = JSON.parse('{{ courses_subjects_json|escapejs }}');
+    const TRAINEES_PASSED = JSON.parse('{{ trainees_passed_json|default:"{}"|escapejs }}');
     const INSTRUCTORS_LIST = [
         {% for inst in instructors %}
         {
@@ -596,6 +605,7 @@
         // إخفاء الخطوة 1 وإظهار الخطوة 2
         document.getElementById('step1Container').style.display = 'none';
         document.getElementById('step2Container').style.display = 'block';
+        updatePassedTraineesRestrictions();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -633,10 +643,59 @@
         if (firstMatch) {
             courseSelect.value = firstMatch.value;
             renderCourseSubjects(firstMatch.value);
+            updatePassedTraineesRestrictions();
         } else {
             courseSelect.selectedIndex = 0;
             renderCourseSubjects(null);
+            updatePassedTraineesRestrictions();
         }
+    }
+
+    // التحقق من قيد النجاح المسبق في الدورة وتعطيل خيار التسجيل للدارسين الناجحين فيها
+    function updatePassedTraineesRestrictions() {
+        const courseSelect = document.getElementById('courseSelector');
+        const selectedCourseId = courseSelect ? String(courseSelect.value || '') : '';
+
+        const rows = document.querySelectorAll('.trainee-row');
+        rows.forEach(row => {
+            const milNumber = row.getAttribute('data-military-number');
+            const cb = document.getElementById('trainee_cb_' + milNumber);
+            const badge = document.getElementById('passed_badge_' + milNumber);
+            const warning = document.getElementById('passed_warning_' + milNumber);
+
+            const isPassed = Boolean(selectedCourseId && TRAINEES_PASSED[milNumber] && TRAINEES_PASSED[milNumber][selectedCourseId]);
+
+            if (isPassed) {
+                const passInfo = TRAINEES_PASSED[milNumber][selectedCourseId];
+                if (cb) {
+                    cb.checked = false;
+                    cb.disabled = true;
+                    highlightRow(cb);
+                }
+                if (badge) {
+                    badge.style.display = 'inline-block';
+                    badge.title = `أكمل الدورة ونجح فيها مسبقاً (دفعة: ${passInfo.batch} - تقدير: ${passInfo.grade})`;
+                }
+                if (warning) {
+                    warning.style.display = 'block';
+                    warning.textContent = `اجتاز هذه الدورة بنجاح مسبقاً (دفعة: ${passInfo.batch} - تقدير: ${passInfo.grade}) - محظور إعادة التسجيل`;
+                }
+                row.classList.add('table-light');
+            } else {
+                if (cb) {
+                    cb.disabled = false;
+                }
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+                if (warning) {
+                    warning.style.display = 'none';
+                }
+                row.classList.remove('table-light');
+            }
+        });
+
+        updateSelectedCount();
     }
 
     // تحديث عدد الطلبة المحددين
@@ -666,7 +725,7 @@
         rows.forEach(row => {
             if (row.style.display !== 'none') {
                 const cb = row.querySelector('.trainee-checkbox');
-                if (cb) {
+                if (cb && !cb.disabled) {
                     cb.checked = selectAll;
                     highlightRow(cb);
                 }
@@ -1005,14 +1064,16 @@
 
     // تهيئة جميع صفوف الدارسين ومراقبة الأحداث عند التحميل
     document.addEventListener('DOMContentLoaded', function() {
-        // مراقبة اختيار الدورة لتحديث المواد الدراسية ديناميكياً
+        // مراقبة اختيار الدورة لتحديث المواد الدراسية وتطبيق قيود النجاح المسبق
         const courseSelect = document.getElementById('courseSelector');
         if (courseSelect) {
             courseSelect.addEventListener('change', function() {
                 renderCourseSubjects(this.value);
+                updatePassedTraineesRestrictions();
             });
             if (courseSelect.value) {
                 renderCourseSubjects(courseSelect.value);
+                updatePassedTraineesRestrictions();
             }
         }
 
