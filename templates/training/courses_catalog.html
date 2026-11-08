@@ -328,19 +328,13 @@
                 
                 <div class="modal-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
                             <select name="category" class="form-select form-select-lg" required>
                                 {% for cat in categories %}
                                     <option value="{{ cat.id }}" {% if selected_category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                                 {% endfor %}
                             </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">رقم / رمز الدورة <span class="text-danger">*</span></label>
-                            {{ course_form.course_number }}
-                            <div class="form-text small text-muted">رمز فريد للدورة محمي من التكرار.</div>
                         </div>
 
                         <div class="col-12">

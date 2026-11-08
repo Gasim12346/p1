@@ -167,6 +167,7 @@ class Course(models.Model):
     course_number = models.CharField(
         max_length=50,
         unique=True,
+        blank=True,
         default='',
         verbose_name='رقم الدورة / الرمز'
     )
@@ -191,6 +192,32 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.category.name})"
+
+    @classmethod
+    def generate_unique_course_number(cls, category=None):
+        prefix = "CRS"
+        if category and category.name:
+            cat_name = category.name.strip()
+            if "مرشد" in cat_name:
+                prefix = "GUIDE"
+            elif "خاص" in cat_name:
+                prefix = "SPEC"
+            elif "مشترك" in cat_name:
+                prefix = "JOINT"
+            else:
+                prefix = f"C{category.id}"
+
+        count = cls.objects.filter(category=category).count() + 1 if category else cls.objects.count() + 1
+        candidate = f"{prefix}-{count:03d}"
+        while cls.objects.filter(course_number=candidate).exists():
+            count += 1
+            candidate = f"{prefix}-{count:03d}"
+        return candidate
+
+    def save(self, *args, **kwargs):
+        if not self.course_number:
+            self.course_number = self.generate_unique_course_number(self.category)
+        super().save(*args, **kwargs)
 
     @property
     def total_hours(self):

@@ -814,6 +814,49 @@ class BusinessConstraintsTests(TestCase):
         self.assertTrue(bool(sub2.code))
         self.assertNotEqual(sub1.code, sub2.code)
 
+    def test_course_number_auto_generation_and_hidden_field(self):
+        """التحقق من توليد رقم/رمز الدورة تلقائياً من النظام وإخفاء الحقل وإمكانية الحفظ دون إدخاله يدوياً"""
+        from training.models import Course
+        from training.forms import CourseForm
+
+        # 1. إنشاء دورات مباشرة دون تحديد رقم الدورة
+        c1 = Course.objects.create(
+            category=self.category,
+            name='دورة توليد تلقائي 1'
+        )
+        self.assertTrue(bool(c1.course_number))
+
+        c2 = Course.objects.create(
+            category=self.category,
+            name='دورة توليد تلقائي 2'
+        )
+        self.assertTrue(bool(c2.course_number))
+        self.assertNotEqual(c1.course_number, c2.course_number)
+
+        # 2. التحقق من صلاحية النموذج عند عدم إدخال رقم الدورة
+        form = CourseForm(data={
+            'category': self.category.id,
+            'name': 'دورة نموذج دون رقم',
+            'description': 'وصف اختياري'
+        })
+        self.assertTrue(form.is_valid())
+        saved_course = form.save()
+        self.assertTrue(bool(saved_course.course_number))
+
+        # 3. محاكاة طلب الحفظ من الشاشة عبر POST دون إرسال course_number
+        self.client.login(username='admin_constraints', password='Password123!')
+        res = self.client.post(reverse('training:courses_catalog'), {
+            'add_course': '1',
+            'category': str(self.category.id),
+            'name': 'دورة عبر الطلب المباشر',
+            'description': ''
+        })
+        self.assertEqual(res.status_code, 302)
+        created_c = Course.objects.filter(name='دورة عبر الطلب المباشر').first()
+        self.assertIsNotNone(created_c)
+        self.assertTrue(bool(created_c.course_number))
+
+
 
 
 

@@ -161,8 +161,7 @@ class CourseForm(forms.ModelForm):
             }),
             'course_number': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg font-monospace',
-                'placeholder': 'مثال: GUIDE-101 أو C-2026',
-                'required': 'required'
+                'placeholder': 'توليد تلقائي من النظام',
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
@@ -177,20 +176,25 @@ class CourseForm(forms.ModelForm):
         }
         labels = {
             'category': 'تصنيف الدورة *',
-            'course_number': 'رقم/رمز الدورة *',
+            'course_number': 'رقم/رمز الدورة (توليد تلقائي)',
             'name': 'اسم الدورة *',
             'description': 'الوصف والأهداف',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['course_number'].required = False
+
     def clean_course_number(self):
         number = self.cleaned_data.get('course_number', '').strip()
-        if not number:
-            raise forms.ValidationError('يرجى إدخال رقم / رمز الدورة.')
-        qs = Course.objects.filter(course_number__iexact=number)
-        if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if qs.exists():
-            raise forms.ValidationError(f'رقم / رمز الدورة "{number}" مسجل مسبقاً لدورة أخرى ولا يمكن تكراره.')
+        if not number and self.instance and self.instance.pk:
+            return self.instance.course_number
+        if number:
+            qs = Course.objects.filter(course_number__iexact=number)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f'رقم / رمز الدورة "{number}" مسجل مسبقاً لدورة أخرى ولا يمكن تكراره.')
         return number
 
 
