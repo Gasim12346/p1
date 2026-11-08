@@ -634,6 +634,44 @@ class UserCreateForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
 
+    # أذونات وصلاحيات كخيارات صح (Checkboxes) بأسلوب ويندوز
+    can_manage_users = forms.BooleanField(
+        label='التحكم الكامل وإدارة النظام (Full Control)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_manage_users'})
+    )
+    can_view = forms.BooleanField(
+        label='القراءة والعرض (Read / View)',
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_view'})
+    )
+    can_add = forms.BooleanField(
+        label='الكتابة والإضافة (Write / Add)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_add'})
+    )
+    can_edit = forms.BooleanField(
+        label='التعديل والكتابة (Modify / Edit)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_edit'})
+    )
+    can_delete = forms.BooleanField(
+        label='الحذف (Delete)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_delete'})
+    )
+    can_grade = forms.BooleanField(
+        label='رصد الدرجات (Grade Entry)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_grade'})
+    )
+    can_approve_results = forms.BooleanField(
+        label='اعتماد النتائج النهائية (Approve Results)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'create_perm_approve'})
+    )
+
     class Meta:
         model = User
         fields = ['username', 'password', 'first_name', 'last_name', 'is_active']
@@ -679,6 +717,44 @@ class UserEditForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+
+    # أذونات وصلاحيات كخيارات صح (Checkboxes) بأسلوب ويندوز
+    can_manage_users = forms.BooleanField(
+        label='التحكم الكامل وإدارة النظام (Full Control)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_manage_users'})
+    )
+    can_view = forms.BooleanField(
+        label='القراءة والعرض (Read / View)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_view'})
+    )
+    can_add = forms.BooleanField(
+        label='الكتابة والإضافة (Write / Add)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_add'})
+    )
+    can_edit = forms.BooleanField(
+        label='التعديل والكتابة (Modify / Edit)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_edit'})
+    )
+    can_delete = forms.BooleanField(
+        label='الحذف (Delete)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_delete'})
+    )
+    can_grade = forms.BooleanField(
+        label='رصد الدرجات (Grade Entry)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_grade'})
+    )
+    can_approve_results = forms.BooleanField(
+        label='اعتماد النتائج النهائية (Approve Results)',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input perm-check', 'id': 'edit_perm_approve'})
+    )
+
     new_password = forms.CharField(
         label='تعيين كلمة مرور جديدة (اتركه فارغاً للإبقاء على الحالية)',
         required=False,

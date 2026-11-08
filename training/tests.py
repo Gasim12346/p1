@@ -1151,6 +1151,64 @@ class UserRolePermissionsTest(TestCase):
         self.assertEqual(res_admin.status_code, 302)
         self.assertEqual(res_admin.url, reverse('training:home'))
 
+    def test_windows_style_checkbox_permissions_update(self):
+        """التحقق من مرونة تعديل الصلاحيات بخانات صح على غرار أذونات ويندوز"""
+        self.client.login(username='admin_role_tester', password='Password123!')
+
+        # 1. تحديث أذونات المستخدم sup_kamal بخانات مخصصة (Custom Permissions)
+        update_url = reverse('training:user_update_role', kwargs={'user_id': self.user_supervisor.id})
+        res = self.client.post(update_url, {
+            'role': 'custom',
+            'can_view': 'on',
+            'can_add': 'on',
+            'can_edit': 'on',
+            # can_delete غير محدد (False)
+            'can_grade': 'on',
+            # can_approve_results غير محدد (False)
+            # can_manage_users غير محدد (False)
+        })
+        self.assertEqual(res.status_code, 302)
+        self.user_supervisor.refresh_from_db()
+        profile = UserProfile.objects.get(user=self.user_supervisor)
+        self.assertEqual(profile.role, 'custom')
+        self.assertTrue(profile.can_view)
+        self.assertTrue(profile.can_add)
+        self.assertTrue(profile.can_edit)
+        self.assertFalse(profile.can_delete)
+        self.assertTrue(profile.can_grade)
+        self.assertFalse(profile.can_approve_results)
+        self.assertFalse(profile.can_manage_users)
+        self.assertFalse(self.user_supervisor.is_staff)
+
+        # 2. منح التحكم الكامل لمستخدم
+        res2 = self.client.post(update_url, {
+            'role': 'admin',
+            'can_manage_users': 'on',
+            'can_view': 'on',
+            'can_add': 'on',
+            'can_edit': 'on',
+            'can_delete': 'on',
+            'can_grade': 'on',
+            'can_approve_results': 'on',
+        })
+        self.assertEqual(res2.status_code, 302)
+        self.user_supervisor.refresh_from_db()
+        profile2 = UserProfile.objects.get(user=self.user_supervisor)
+        self.assertTrue(profile2.can_manage_users)
+        self.assertTrue(self.user_supervisor.is_staff)
+
+        # 3. حماية الأدمن الحالي من إزالة التحكم الكامل عن نفسه
+        admin_update_url = reverse('training:user_update_role', kwargs={'user_id': self.user_admin.id})
+        res_self = self.client.post(admin_update_url, {
+            'role': 'regular',
+            # بدون can_manage_users
+        })
+        self.assertEqual(res_self.status_code, 302)
+        self.user_admin.refresh_from_db()
+        profile_admin = UserProfile.objects.get(user=self.user_admin)
+        self.assertTrue(profile_admin.can_manage_users or profile_admin.role == UserRole.ADMIN)
+        self.assertTrue(self.user_admin.is_staff)
+
 
 
 

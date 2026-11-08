@@ -14,22 +14,48 @@ def system_settings_processor(request):
     user_role = None
     current_instructor = None
 
+    # أذونات مربعات الاختيار (Windows Permissions Checkboxes)
+    can_manage_users = False
+    can_view = False
+    can_add = False
+    can_edit = False
+    can_delete = False
+    can_grade = False
+    can_approve_results = False
+
     if request.user.is_authenticated:
         if request.user.is_superuser or request.user.is_staff:
             is_admin = True
             is_registrar = True
             is_supervisor = True
+            can_manage_users = True
+            can_view = True
+            can_add = True
+            can_edit = True
+            can_delete = True
+            can_grade = True
+            can_approve_results = True
 
         if hasattr(request.user, 'profile'):
             profile = request.user.profile
             user_role = profile.role
-            if profile.role == UserRole.ADMIN:
+
+            # أخذ الأذونات المباشرة من البروفايل
+            can_manage_users = can_manage_users or profile.can_manage_users or profile.is_admin
+            can_view = can_view or profile.can_view
+            can_add = can_add or profile.can_add or profile.is_admin
+            can_edit = can_edit or profile.can_edit or profile.is_admin
+            can_delete = can_delete or profile.can_delete or profile.is_admin
+            can_grade = can_grade or profile.can_grade or profile.is_admin
+            can_approve_results = can_approve_results or profile.can_approve_results or profile.is_admin
+
+            if profile.role == UserRole.ADMIN or can_manage_users:
                 is_admin = True
                 is_registrar = True
                 is_supervisor = True
-            elif profile.role == UserRole.REGISTRAR:
+            elif profile.role == UserRole.REGISTRAR or (can_add and can_edit):
                 is_registrar = True
-            elif profile.role == UserRole.SUPERVISOR:
+            elif profile.role == UserRole.SUPERVISOR or can_approve_results:
                 is_supervisor = True
             elif profile.role == UserRole.INSTRUCTOR:
                 is_instructor = True
@@ -44,4 +70,11 @@ def system_settings_processor(request):
         'is_instructor': is_instructor,
         'user_role': user_role,
         'current_instructor': current_instructor,
+        'can_manage_users': can_manage_users,
+        'can_view': can_view,
+        'can_add': can_add,
+        'can_edit': can_edit,
+        'can_delete': can_delete,
+        'can_grade': can_grade,
+        'can_approve_results': can_approve_results,
     }

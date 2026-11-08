@@ -72,6 +72,85 @@
                         </div>
                     </div>
 
+                    <!-- صندوق خانات صح للأذونات بأسلوب ويندوز (Windows Security Permissions Box) -->
+                    <div class="card border rounded-3 overflow-hidden shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white p-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-lock-fill text-warning fs-5"></i>
+                                <span class="fw-bold">أذونات وصلاحيات الأمان للمستخدم (Windows Permissions)</span>
+                            </div>
+                            <span class="badge bg-light text-dark small">خانات صح (Checkboxes)</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 75%;">اسم الصلاحية والعملية المسموحة</th>
+                                        <th style="width: 25%;" class="text-center">السماح (Allow)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="table-light">
+                                        <td>
+                                            <i class="bi bi-gear-wide-connected text-danger me-2 fs-6"></i>
+                                            <strong>التحكم الكامل وإدارة النظام (Full Control)</strong>
+                                            <div class="text-muted small">دخول لوحة تحكم الأدمن، إدارة المستخدمين، وتخصيص هوية النظام</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_manage_users }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-eye-fill text-info me-2 fs-6"></i>
+                                            <strong>القراءة والعرض (Read / View)</strong>
+                                            <div class="text-muted small">استعراض شاشات الدارسين والدورات والانعقادات</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_view }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-plus-circle-fill text-primary me-2 fs-6"></i>
+                                            <strong>الكتابة والإضافة (Write / Add)</strong>
+                                            <div class="text-muted small">تسجيل دارسين جدد وفتح دورات وانعقادات جديدة</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_add }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-pencil-square text-warning-emphasis me-2 fs-6"></i>
+                                            <strong>التعديل والكتابة (Modify / Edit)</strong>
+                                            <div class="text-muted small">تعديل بيانات الدارسين وتفاصيل الدورات والمواد</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_edit }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-trash-fill text-danger me-2 fs-6"></i>
+                                            <strong>الحذف (Delete)</strong>
+                                            <div class="text-muted small">حذف الدارسين والدورات غير المرتبطة بنتائج</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_delete }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-card-checklist text-success me-2 fs-6"></i>
+                                            <strong>رصد الدرجات (Grade Entry)</strong>
+                                            <div class="text-muted small">إدخال درجات الطلاب للمواد المكلف بها المعلم أو كافة المواد للمشرف</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_grade }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-patch-check-fill text-warning me-2 fs-6"></i>
+                                            <strong>اعتماد النتائج النهائية (Approve Results)</strong>
+                                            <div class="text-muted small">اعتماد وقفل النتيجة وإصدار الشهادات الرسمية</div>
+                                        </td>
+                                        <td class="text-center">{{ form.can_approve_results }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Password Reset Section -->
                     <div class="p-3 bg-light rounded-3 border mb-4">
                         <h6 class="fw-bold text-dark mb-2">
@@ -95,4 +174,54 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const manageEl = document.getElementById('edit_perm_manage_users');
+    const viewEl = document.getElementById('edit_perm_view');
+    const addEl = document.getElementById('edit_perm_add');
+    const editEl = document.getElementById('edit_perm_edit');
+    const delEl = document.getElementById('edit_perm_delete');
+    const gradeEl = document.getElementById('edit_perm_grade');
+    const approveEl = document.getElementById('edit_perm_approve');
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const r = this.value;
+            if (r === 'admin') {
+                if (manageEl) manageEl.checked = true; if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = true;
+                if (editEl) editEl.checked = true; if (delEl) delEl.checked = true; if (gradeEl) gradeEl.checked = true; if (approveEl) approveEl.checked = true;
+            } else if (r === 'registrar') {
+                if (manageEl) manageEl.checked = false; if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = true;
+                if (editEl) editEl.checked = true; if (delEl) delEl.checked = true; if (gradeEl) gradeEl.checked = false; if (approveEl) approveEl.checked = false;
+            } else if (r === 'supervisor') {
+                if (manageEl) manageEl.checked = false; if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = false;
+                if (editEl) editEl.checked = false; if (delEl) delEl.checked = false; if (gradeEl) gradeEl.checked = true; if (approveEl) approveEl.checked = true;
+            } else if (r === 'instructor') {
+                if (manageEl) manageEl.checked = false; if (viewEl) viewEl.checked = false; if (addEl) addEl.checked = false;
+                if (editEl) editEl.checked = false; if (delEl) delEl.checked = false; if (gradeEl) gradeEl.checked = true; if (approveEl) approveEl.checked = false;
+            } else if (r === 'regular') {
+                if (manageEl) manageEl.checked = false; if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = false;
+                if (editEl) editEl.checked = false; if (delEl) delEl.checked = false; if (gradeEl) gradeEl.checked = false; if (approveEl) approveEl.checked = false;
+            }
+        });
+    }
+
+    if (manageEl) {
+        manageEl.addEventListener('change', function() {
+            if (this.checked) {
+                if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = true;
+                if (editEl) editEl.checked = true; if (delEl) delEl.checked = true;
+                if (gradeEl) gradeEl.checked = true; if (approveEl) approveEl.checked = true;
+                if (roleSelect) roleSelect.value = 'admin';
+            } else {
+                if (roleSelect) roleSelect.value = 'custom';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

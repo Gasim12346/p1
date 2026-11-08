@@ -477,7 +477,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if u.profile.role == 'admin' or u.is_superuser %}
+                                        {% if u.profile.role == 'admin' or u.is_superuser or u.profile.can_manage_users %}
                                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i>مدير نظام (أدمن)</span>
                                         {% elif u.profile.role == 'registrar' %}
                                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-pencil-square me-1"></i>مسجل بيانات</span>
@@ -485,12 +485,28 @@
                                             <span class="badge border px-2 py-1" style="background-color: #fef3c7 !important; color: #92400e !important; border-color: #fde68a !important;"><i class="bi bi-patch-check-fill me-1"></i>مشرف دورة</span>
                                         {% elif u.profile.role == 'instructor' %}
                                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-person-video3 me-1"></i>معلم</span>
+                                        {% elif u.profile.role == 'custom' %}
+                                            <span class="badge border px-2 py-1" style="background-color: #f3e8ff !important; color: #7e22ce !important; border-color: #d8b4fe !important;"><i class="bi bi-sliders me-1"></i>أذونات مخصصة</span>
                                         {% else %}
                                             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1"><i class="bi bi-person me-1"></i>مستخدم عادي</span>
                                         {% endif %}
+
+                                        <!-- شارات الأذونات الممنوحة بأسلوب ويندوز -->
+                                        <div class="mt-1 d-flex flex-wrap gap-1" style="max-width: 220px;">
+                                            {% if u.profile.can_manage_users or u.is_superuser or u.profile.role == 'admin' %}
+                                                <span class="badge bg-danger text-white rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="التحكم الكامل"><i class="bi bi-gear-fill me-1"></i>تحكم كامل</span>
+                                            {% else %}
+                                                {% if u.profile.can_view %}<span class="badge bg-light text-secondary border rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="القراءة والعرض"><i class="bi bi-eye"></i> قراءة</span>{% endif %}
+                                                {% if u.profile.can_add %}<span class="badge bg-primary bg-opacity-15 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="الكتابة والإضافة"><i class="bi bi-plus"></i> إضافة</span>{% endif %}
+                                                {% if u.profile.can_edit %}<span class="badge bg-info bg-opacity-15 text-dark border border-info border-opacity-25 rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="التعديل والكتابة"><i class="bi bi-pencil"></i> تعديل</span>{% endif %}
+                                                {% if u.profile.can_delete %}<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="الحذف"><i class="bi bi-trash"></i> حذف</span>{% endif %}
+                                                {% if u.profile.can_grade %}<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="رصد الدرجات"><i class="bi bi-card-checklist"></i> رصد</span>{% endif %}
+                                                {% if u.profile.can_approve_results %}<span class="badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 rounded-pill px-2 py-0" style="font-size: 0.65rem;" title="اعتماد النتائج"><i class="bi bi-patch-check"></i> اعتماد</span>{% endif %}
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td>
-                                        {% if u.profile.role == 'instructor' %}
+                                        {% if u.profile.role == 'instructor' or u.profile.can_grade %}
                                             {% if u.profile.instructor %}
                                                 <span class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1">
                                                     <i class="bi bi-link-45deg"></i>
@@ -522,8 +538,8 @@
                                     <td class="small text-muted">{{ u.date_joined|date:"Y/m/d" }}</td>
                                     <td class="text-center">
                                         <div class="d-inline-flex gap-1 align-items-center">
-                                            <!-- زر تغيير الصلاحية السريع -->
-                                            <button type="button" class="btn btn-sm btn-outline-success rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تغيير الصلاحية والدور" onclick="openChangeRoleModal('{{ u.id }}', '{{ u.username }}', '{{ u.get_full_name|default:u.username }}', '{{ u.profile.role }}', '{{ u.profile.instructor.military_number|default:u.profile.military_number|default:'' }}', {% if u.id == user.id %}true{% else %}false{% endif %})">
+                                            <!-- زر تغيير الصلاحية والأذونات السريع -->
+                                            <button type="button" class="btn btn-sm btn-outline-success rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تغيير الصلاحية وخانات الأذونات" onclick="openChangeRoleModal('{{ u.id }}', '{{ u.username }}', '{{ u.get_full_name|default:u.username }}', '{{ u.profile.role }}', '{{ u.profile.instructor.military_number|default:u.profile.military_number|default:'' }}', {% if u.id == user.id %}true{% else %}false{% endif %}, {% if u.profile.can_manage_users or u.is_superuser or u.profile.role == 'admin' %}true{% else %}false{% endif %}, {% if u.profile.can_view %}true{% else %}false{% endif %}, {% if u.profile.can_add %}true{% else %}false{% endif %}, {% if u.profile.can_edit %}true{% else %}false{% endif %}, {% if u.profile.can_delete %}true{% else %}false{% endif %}, {% if u.profile.can_grade %}true{% else %}false{% endif %}, {% if u.profile.can_approve_results %}true{% else %}false{% endif %})">
                                                 <i class="bi bi-shield-check"></i>
                                             </button>
 
@@ -1317,6 +1333,58 @@
                                 <label class="form-check-label fw-bold" for="{{ user_create_form.is_active.id_for_label }}">تفعيل الحساب فوراً</label>
                             </div>
                         </div>
+
+                        <!-- صندوق خانات صح للأذونات بأسلوب ويندوز عند إضافة مستخدم جديد -->
+                        <div class="col-12 mt-3">
+                            <div class="card border rounded-3 overflow-hidden shadow-sm">
+                                <div class="card-header bg-light p-2 px-3 d-flex align-items-center justify-content-between">
+                                    <span class="fw-bold small text-dark">
+                                        <i class="bi bi-ui-checks text-primary me-1"></i> أذونات وصلاحيات الحساب (Permissions Checkboxes)
+                                    </span>
+                                    <span class="badge bg-white text-muted border small">يمكن التعديل الفردي لكل خانة صح</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0 small">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 75%;">الصلاحية والعملية المسموحة</th>
+                                                <th style="width: 25%;" class="text-center">السماح (Allow)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="table-light">
+                                                <td><i class="bi bi-gear-wide-connected text-danger me-1"></i> <strong>التحكم الكامل وإدارة النظام</strong></td>
+                                                <td class="text-center">{{ user_create_form.can_manage_users }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-eye-fill text-info me-1"></i> القراءة والعرض (الدارسين، الدورات، الجداول)</td>
+                                                <td class="text-center">{{ user_create_form.can_view }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-plus-circle-fill text-primary me-1"></i> الكتابة والإضافة (تسجيل دارسين، دورات جديدة)</td>
+                                                <td class="text-center">{{ user_create_form.can_add }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-pencil-square text-warning-emphasis me-1"></i> التعديل والكتابة (تعديل السجلات)</td>
+                                                <td class="text-center">{{ user_create_form.can_edit }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-trash-fill text-danger me-1"></i> الحذف (حذف السجلات غير المرتبطة بنتائج)</td>
+                                                <td class="text-center">{{ user_create_form.can_delete }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-card-checklist text-success me-1"></i> رصد الدرجات (إدخال الدرجات في صفحة النتيجة)</td>
+                                                <td class="text-center">{{ user_create_form.can_grade }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="bi bi-patch-check-fill text-warning me-1"></i> اعتماد النتائج النهائية (وقفل النتيجة)</td>
+                                                <td class="text-center">{{ user_create_form.can_approve_results }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1331,42 +1399,207 @@
     </div>
 </div>
 
-<!-- Modal: تعديل صلاحية ودور المستخدم السريع (Change Role Modal) -->
+<!-- Modal: تعديل أذونات وصلاحيات المستخدم بأسلوب ويندوز (Windows Security Permissions Dialog) -->
 <div class="modal fade" id="changeRoleModal" tabindex="-1" aria-labelledby="changeRoleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-success text-white p-3 px-4">
+            <div class="modal-header bg-dark text-white p-3 px-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-shield-check fs-5"></i>
-                    <h5 class="modal-title fw-bold" id="changeRoleModalLabel">تغيير صلاحية ودور المستخدم</h5>
+                    <i class="bi bi-shield-lock-fill text-warning fs-4"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="changeRoleModalLabel">خصائص وأذونات الأمان للمستخدم</h5>
+                        <small class="text-white-50">تحديد صلاحيات القراءة والكتابة والتعديل بخانات صح (Checkboxes)</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <form id="changeRoleForm" method="post" action="">
                 {% csrf_token %}
-                <div class="modal-body p-4">
-                    <div class="alert alert-light border rounded-3 p-3 mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-person-badge text-success fs-3"></i>
+                <div class="modal-body p-4 bg-light bg-opacity-50">
+                    
+                    <!-- بطاقة المستخدم المستهدف -->
+                    <div class="card border rounded-3 p-3 mb-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 44px; height: 44px;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark fs-6" id="modalTargetUserFullname">-</div>
+                                    <div class="text-muted small">اسم المستخدم: <span class="fw-semibold text-dark font-monospace" id="modalTargetUsername">-</span></div>
+                                </div>
+                            </div>
                             <div>
-                                <div class="fw-bold text-dark fs-6" id="modalTargetUserFullname">-</div>
-                                <div class="text-muted small">اسم الحساب: <span class="fw-semibold text-dark" id="modalTargetUsername">-</span></div>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-3 py-1 rounded-pill small">
+                                    <i class="bi bi-sliders me-1"></i> تحكم مباشر بخانات الاختيار
+                                </span>
                             </div>
                         </div>
                     </div>
 
+                    <!-- اختيار قالب الصلاحية الجاهز (Preset Role) -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">اختر الدور والصلاحية المطلوبة <span class="text-danger">*</span></label>
-                        <select name="role" id="modalRoleSelect" class="form-select form-select-lg fs-6" required onchange="handleModalRoleChange(this.value)">
+                        <label class="form-label fw-bold small text-dark d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-bookmark-star-fill text-warning me-1"></i> قالب الصلاحية والدور الأساسي:</span>
+                            <span class="text-muted fw-normal small">اختيار دور جاهز يضبط خانات الأذونات تلقائياً</span>
+                        </label>
+                        <select name="role" id="modalRoleSelect" class="form-select form-select-lg fs-6" onchange="applyPresetRole(this.value)">
                             {% for role_val, role_label in user_roles %}
                                 <option value="{{ role_val }}">{{ role_label }}</option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted d-block mt-1">تمنح الصلاحية حقوق الوصول للشاشات المحددة في دليل ومصفوفة الصلاحيات.</small>
                     </div>
 
-                    <div class="mb-3" id="modalInstructorWrapper" style="display: none;">
-                        <label class="form-label fw-bold small text-success">
+                    <!-- صندوق أذونات وصلاحيات الأمان بأسلوب ويندوز (Windows Security Permissions Box) -->
+                    <div class="card border rounded-3 overflow-hidden shadow-sm mb-3">
+                        <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between">
+                            <span class="fw-bold small text-dark">
+                                <i class="bi bi-ui-checks text-primary me-1"></i> قائمة الأذونات المسموحة (Permissions Allow)
+                            </span>
+                            <span class="badge bg-light text-muted border small">خانة صح = مسموح (Allow)</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 75%;">اسم الصلاحية / نوع العملية</th>
+                                        <th style="width: 25%;" class="text-center">السماح (Allow)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 1. التحكم الكامل -->
+                                    <tr class="table-light bg-opacity-50">
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-gear-wide-connected text-danger fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_manage_users">التحكم الكامل وإدارة النظام (Full Control)</label>
+                                                    <small class="text-muted">الوصول الكامل للوحة تحكم الأدمن، إدارة المستخدمين، وتخصيص النظام</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check form-switch d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_manage_users" id="role_perm_manage_users" onchange="handleFullControlClick(this)">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 2. القراءة والعرض -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-eye-fill text-info fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_view">القراءة والعرض (Read / View)</label>
+                                                    <small class="text-muted">استعراض قوائم الدارسين، شاشات الدورات والانعقادات، والاطلاع على الجداول</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_view" id="role_perm_view" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 3. الكتابة والإضافة -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-plus-circle-fill text-primary fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_add">الكتابة والإضافة (Write / Add)</label>
+                                                    <small class="text-muted">تسجيل دارسين جدد، إنشاء دورات ومواد، وفتح دفعات انعقاد جديدة</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_add" id="role_perm_add" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 4. التعديل والكتابة -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-pencil-square text-warning-emphasis fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_edit">التعديل والكتابة (Modify / Edit)</label>
+                                                    <small class="text-muted">تعديل بيانات الدارسين، تحديث بيانات الدورات والمواد، وتعديل الدفعات</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_edit" id="role_perm_edit" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 5. الحذف -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_delete">الحذف (Delete)</label>
+                                                    <small class="text-muted">إمكانية حذف الدارسين، وحذف الدورات والمواد غير المرتبطة بنتائج</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_delete" id="role_perm_delete" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 6. رصد الدرجات -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-card-checklist text-success fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_grade">رصد الدرجات (Grade Entry)</label>
+                                                    <small class="text-muted">إدخال ورصد درجات المتدربين (للمعلم مواده المكلف بها فقط، وللمشرف كافة المواد)</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_grade" id="role_perm_grade" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- 7. اعتماد النتائج -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-patch-check-fill text-warning fs-5"></i>
+                                                <div>
+                                                    <label class="form-check-label fw-bold text-dark d-block" for="role_perm_approve">اعتماد النتائج النهائية (Approve Results)</label>
+                                                    <small class="text-muted">اعتماد كشوف الدرجات نهائياً، قفل التعديل، وتوليد الشهادات الرسمية</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block m-0">
+                                                <input class="form-check-input" type="checkbox" name="can_approve_results" id="role_perm_approve" onchange="handlePermissionCheckboxClick()">
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ربط ملف المعلم في هيئة التدريس -->
+                    <div class="card border rounded-3 p-3 mb-3 bg-white shadow-sm" id="modalInstructorWrapper" style="display: none;">
+                        <label class="form-label fw-bold small text-success mb-1">
                             <i class="bi bi-link-45deg me-1"></i> ربط الحساب بملف المعلم في هيئة التدريس
                         </label>
                         <select name="instructor" id="modalInstructorSelect" class="form-select">
@@ -1375,17 +1608,18 @@
                                 <option value="{{ inst.military_number }}">{{ inst.rank }} {{ inst.name }} (النمرة: {{ inst.military_number }}) - {{ inst.unit }}</option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted d-block mt-1">المعلم يستطيع فقط رصد درجات المواد المكلف بها رسمياً في الدورات.</small>
+                        <small class="text-muted d-block mt-1">عند تفعيل رصد الدرجات للمعلم، يحدد هذا الربط المواد الدراسية المكلف بها فقط.</small>
                     </div>
 
                     <div id="modalSelfAdminWarning" class="alert alert-warning small mb-0" style="display: none;">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> تنبيه أمني: هذا حسابك الحالي. لا يمكن خفض صلاحية الإدارة عن حسابك لتجنب الإغلاق الذاتي للنظام.
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> تنبيه أمني: هذا حسابك الحالي. لا يمكن إزالة صلاحية الإدارة أو التحكم الكامل عن حسابك لمنع حبس النظام.
                     </div>
                 </div>
-                <div class="modal-footer bg-light p-3">
+
+                <div class="modal-footer bg-white border-top p-3 px-4">
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
                     <button type="submit" id="modalSubmitRoleBtn" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
-                        <i class="bi bi-check-lg me-1"></i> حفظ وتطبيق الصلاحية فوراً
+                        <i class="bi bi-check-lg me-1"></i> حفظ وتطبيق الأذونات فوراً
                     </button>
                 </div>
             </form>
@@ -1778,7 +2012,7 @@
     }
 
     // دوال إدارة قسم الصلاحيات والمستخدمين
-    function openChangeRoleModal(userId, username, fullname, currentRole, instructorMilNum, isSelf) {
+    function openChangeRoleModal(userId, username, fullname, currentRole, instructorMilNum, isSelf, canManageUsers, canView, canAdd, canEdit, canDelete, canGrade, canApproveResults) {
         const form = document.getElementById('changeRoleForm');
         form.action = `/admin-portal/users/${userId}/update-role/`;
         document.getElementById('modalTargetUsername').textContent = username;
@@ -1794,13 +2028,32 @@
             instSelect.value = instructorMilNum || '';
         }
 
+        // تعبئة خانات أذونات وصلاحيات الأمان بأسلوب ويندوز
+        const manageEl = document.getElementById('role_perm_manage_users');
+        const viewEl = document.getElementById('role_perm_view');
+        const addEl = document.getElementById('role_perm_add');
+        const editEl = document.getElementById('role_perm_edit');
+        const delEl = document.getElementById('role_perm_delete');
+        const gradeEl = document.getElementById('role_perm_grade');
+        const approveEl = document.getElementById('role_perm_approve');
+
+        if (manageEl) manageEl.checked = !!canManageUsers;
+        if (viewEl) viewEl.checked = !!canView;
+        if (addEl) addEl.checked = !!canAdd;
+        if (editEl) editEl.checked = !!canEdit;
+        if (delEl) delEl.checked = !!canDelete;
+        if (gradeEl) gradeEl.checked = !!canGrade;
+        if (approveEl) approveEl.checked = !!canApproveResults;
+
         handleModalRoleChange(currentRole);
 
         const warning = document.getElementById('modalSelfAdminWarning');
-        if (isSelf && currentRole === 'admin') {
+        if (isSelf && (currentRole === 'admin' || canManageUsers)) {
             if (warning) warning.style.display = 'block';
+            if (manageEl) manageEl.disabled = true;
         } else {
             if (warning) warning.style.display = 'none';
+            if (manageEl) manageEl.disabled = false;
         }
 
         const modalEl = document.getElementById('changeRoleModal');
@@ -1810,10 +2063,115 @@
         }
     }
 
+    function applyPresetRole(role) {
+        const manageEl = document.getElementById('role_perm_manage_users');
+        const viewEl = document.getElementById('role_perm_view');
+        const addEl = document.getElementById('role_perm_add');
+        const editEl = document.getElementById('role_perm_edit');
+        const delEl = document.getElementById('role_perm_delete');
+        const gradeEl = document.getElementById('role_perm_grade');
+        const approveEl = document.getElementById('role_perm_approve');
+
+        if (role === 'admin') {
+            if (manageEl) manageEl.checked = true;
+            if (viewEl) viewEl.checked = true;
+            if (addEl) addEl.checked = true;
+            if (editEl) editEl.checked = true;
+            if (delEl) delEl.checked = true;
+            if (gradeEl) gradeEl.checked = true;
+            if (approveEl) approveEl.checked = true;
+        } else if (role === 'registrar') {
+            if (manageEl) manageEl.checked = false;
+            if (viewEl) viewEl.checked = true;
+            if (addEl) addEl.checked = true;
+            if (editEl) editEl.checked = true;
+            if (delEl) delEl.checked = true;
+            if (gradeEl) gradeEl.checked = false;
+            if (approveEl) approveEl.checked = false;
+        } else if (role === 'supervisor') {
+            if (manageEl) manageEl.checked = false;
+            if (viewEl) viewEl.checked = true;
+            if (addEl) addEl.checked = false;
+            if (editEl) editEl.checked = false;
+            if (delEl) delEl.checked = false;
+            if (gradeEl) gradeEl.checked = true;
+            if (approveEl) approveEl.checked = true;
+        } else if (role === 'instructor') {
+            if (manageEl) manageEl.checked = false;
+            if (viewEl) viewEl.checked = false;
+            if (addEl) addEl.checked = false;
+            if (editEl) editEl.checked = false;
+            if (delEl) delEl.checked = false;
+            if (gradeEl) gradeEl.checked = true;
+            if (approveEl) approveEl.checked = false;
+        } else if (role === 'regular') {
+            if (manageEl) manageEl.checked = false;
+            if (viewEl) viewEl.checked = true;
+            if (addEl) addEl.checked = false;
+            if (editEl) editEl.checked = false;
+            if (delEl) delEl.checked = false;
+            if (gradeEl) gradeEl.checked = false;
+            if (approveEl) approveEl.checked = false;
+        }
+        handleModalRoleChange(role);
+    }
+
+    function handleFullControlClick(checkbox) {
+        const isChecked = checkbox.checked;
+        const viewEl = document.getElementById('role_perm_view');
+        const addEl = document.getElementById('role_perm_add');
+        const editEl = document.getElementById('role_perm_edit');
+        const delEl = document.getElementById('role_perm_delete');
+        const gradeEl = document.getElementById('role_perm_grade');
+        const approveEl = document.getElementById('role_perm_approve');
+        const roleSelect = document.getElementById('modalRoleSelect');
+
+        if (isChecked) {
+            if (viewEl) viewEl.checked = true;
+            if (addEl) addEl.checked = true;
+            if (editEl) editEl.checked = true;
+            if (delEl) delEl.checked = true;
+            if (gradeEl) gradeEl.checked = true;
+            if (approveEl) approveEl.checked = true;
+            if (roleSelect) roleSelect.value = 'admin';
+        } else {
+            if (roleSelect) roleSelect.value = 'custom';
+        }
+        handleModalRoleChange(roleSelect ? roleSelect.value : '');
+    }
+
+    function handlePermissionCheckboxClick() {
+        const manageEl = document.getElementById('role_perm_manage_users')?.checked;
+        const viewEl = document.getElementById('role_perm_view')?.checked;
+        const addEl = document.getElementById('role_perm_add')?.checked;
+        const editEl = document.getElementById('role_perm_edit')?.checked;
+        const delEl = document.getElementById('role_perm_delete')?.checked;
+        const gradeEl = document.getElementById('role_perm_grade')?.checked;
+        const approveEl = document.getElementById('role_perm_approve')?.checked;
+        const roleSelect = document.getElementById('modalRoleSelect');
+        if (!roleSelect) return;
+
+        if (manageEl && viewEl && addEl && editEl && delEl && gradeEl && approveEl) {
+            roleSelect.value = 'admin';
+        } else if (!manageEl && viewEl && addEl && editEl && delEl && !gradeEl && !approveEl) {
+            roleSelect.value = 'registrar';
+        } else if (!manageEl && viewEl && !addEl && !editEl && !delEl && gradeEl && approveEl) {
+            roleSelect.value = 'supervisor';
+        } else if (!manageEl && !viewEl && !addEl && !editEl && !delEl && gradeEl && !approveEl) {
+            roleSelect.value = 'instructor';
+        } else if (!manageEl && viewEl && !addEl && !editEl && !delEl && !gradeEl && !approveEl) {
+            roleSelect.value = 'regular';
+        } else {
+            roleSelect.value = 'custom';
+        }
+        handleModalRoleChange(roleSelect.value);
+    }
+
     function handleModalRoleChange(role) {
         const instWrapper = document.getElementById('modalInstructorWrapper');
+        const isGradeChecked = document.getElementById('role_perm_grade')?.checked;
         if (instWrapper) {
-            if (role === 'instructor') {
+            if (role === 'instructor' || isGradeChecked) {
                 instWrapper.style.display = 'block';
             } else {
                 instWrapper.style.display = 'none';
@@ -1822,6 +2180,36 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // مزامنة الأذونات في نافذة إضافة مستخدم جديد
+        const createRoleSelect = document.querySelector('#addUserModal select[name="role"]');
+        if (createRoleSelect) {
+            createRoleSelect.addEventListener('change', function() {
+                const r = this.value;
+                const m = document.getElementById('create_perm_manage_users');
+                const v = document.getElementById('create_perm_view');
+                const a = document.getElementById('create_perm_add');
+                const e = document.getElementById('create_perm_edit');
+                const d = document.getElementById('create_perm_delete');
+                const g = document.getElementById('create_perm_grade');
+                const ap = document.getElementById('create_perm_approve');
+                if (r === 'admin') {
+                    if (m) m.checked = true; if (v) v.checked = true; if (a) a.checked = true;
+                    if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = true; if (ap) ap.checked = true;
+                } else if (r === 'registrar') {
+                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = true;
+                    if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = false; if (ap) ap.checked = false;
+                } else if (r === 'supervisor') {
+                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
+                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = true;
+                } else if (r === 'instructor') {
+                    if (m) m.checked = false; if (v) v.checked = false; if (a) a.checked = false;
+                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = false;
+                } else if (r === 'regular') {
+                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
+                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = false; if (ap) ap.checked = false;
+                }
+            });
+        }
         // فحص رابط المعلمات لتفعيل تبويب قسم الصلاحيات والمستخدمين مباشرة
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('tab') === 'users') {

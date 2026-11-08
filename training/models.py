@@ -870,6 +870,7 @@ class UserRole(models.TextChoices):
     SUPERVISOR = 'supervisor', 'مشرف دورة'
     INSTRUCTOR = 'instructor', 'معلم / هيئة التدريس'
     REGULAR = 'regular', 'مستخدم عادي'
+    CUSTOM = 'custom', 'أذونات مخصصة'
 
 
 class UserProfile(models.Model):
@@ -918,6 +919,37 @@ class UserProfile(models.Model):
         null=True,
         verbose_name='رقم الهاتف'
     )
+
+    # أذونات وصلاحيات تفصيلية كخيارات صح (Checkboxes) بأسلوب ويندوز
+    can_manage_users = models.BooleanField(
+        default=False,
+        verbose_name='التحكم الكامل وإدارة النظام (Full Control)'
+    )
+    can_view = models.BooleanField(
+        default=True,
+        verbose_name='القراءة والعرض (Read/View)'
+    )
+    can_add = models.BooleanField(
+        default=False,
+        verbose_name='الكتابة والإضافة (Write/Add)'
+    )
+    can_edit = models.BooleanField(
+        default=False,
+        verbose_name='التعديل والكتابة (Modify/Edit)'
+    )
+    can_delete = models.BooleanField(
+        default=False,
+        verbose_name='الحذف (Delete)'
+    )
+    can_grade = models.BooleanField(
+        default=False,
+        verbose_name='رصد الدرجات (Grade Entry)'
+    )
+    can_approve_results = models.BooleanField(
+        default=False,
+        verbose_name='اعتماد النتائج (Approve Results)'
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='تاريخ الإضافة'
@@ -930,21 +962,64 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
 
+    def sync_permissions_from_role(self):
+        """مزامنة خانات الاختيار للأذونات تلقائياً بناءً على الدور المختار"""
+        if self.role == UserRole.ADMIN or (self.user and (self.user.is_superuser or self.user.is_staff)):
+            self.can_manage_users = True
+            self.can_view = True
+            self.can_add = True
+            self.can_edit = True
+            self.can_delete = True
+            self.can_grade = True
+            self.can_approve_results = True
+        elif self.role == UserRole.REGISTRAR:
+            self.can_manage_users = False
+            self.can_view = True
+            self.can_add = True
+            self.can_edit = True
+            self.can_delete = True
+            self.can_grade = False
+            self.can_approve_results = False
+        elif self.role == UserRole.SUPERVISOR:
+            self.can_manage_users = False
+            self.can_view = True
+            self.can_add = False
+            self.can_edit = False
+            self.can_delete = False
+            self.can_grade = True
+            self.can_approve_results = True
+        elif self.role == UserRole.INSTRUCTOR:
+            self.can_manage_users = False
+            self.can_view = False
+            self.can_add = False
+            self.can_edit = False
+            self.can_delete = False
+            self.can_grade = True
+            self.can_approve_results = False
+        elif self.role == UserRole.REGULAR:
+            self.can_manage_users = False
+            self.can_view = True
+            self.can_add = False
+            self.can_edit = False
+            self.can_delete = False
+            self.can_grade = False
+            self.can_approve_results = False
+
     @property
     def is_admin(self):
-        return bool(self.user.is_superuser or self.user.is_staff or self.role == UserRole.ADMIN)
+        return bool(self.user.is_superuser or self.user.is_staff or self.role == UserRole.ADMIN or self.can_manage_users)
 
     @property
     def is_registrar(self):
-        return self.is_admin or self.role == UserRole.REGISTRAR
+        return self.is_admin or self.role == UserRole.REGISTRAR or (self.can_add and self.can_edit)
 
     @property
     def is_supervisor(self):
-        return self.is_admin or self.role == UserRole.SUPERVISOR
+        return self.is_admin or self.role == UserRole.SUPERVISOR or self.can_approve_results
 
     @property
     def is_instructor(self):
-        return self.role == UserRole.INSTRUCTOR
+        return self.role == UserRole.INSTRUCTOR or (self.can_grade and not self.is_admin and not self.can_approve_results)
 
     def get_instructor(self):
         """إرجاع كائن المعلم المرتبط بهذا المستخدم إن وجد"""
@@ -962,11 +1037,12 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         return
     if created:
         role = UserRole.ADMIN if (instance.is_superuser or instance.is_staff) else UserRole.REGULAR
-        UserProfile.objects.get_or_create(user=instance, defaults={'role': role})
-    else:
-        if hasattr(instance, 'profile'):
-            instance.profile.save()
-        else:
-            role = UserRole.ADMIN if (instance.is_superuser or instance.is_staff) else UserRole.REGULAR
-            UserProfile.objects.get_or_create(user=instance, defaults={'role': role})
+        profile, _ = UserProfile.objects.get_or_create(user=instance, defaults={'role': role})
+        profile.sync_permissions_from_role()
+        profile.save()
+    elif not hasattr(instance, 'profile'):
+        role = UserRole.ADMIN if (instance.is_superuser or instance.is_staff) else UserRole.REGULAR
+        profile, _ = UserProfile.objects.get_or_create(user=instance, defaults={'role': role})
+        profile.sync_permissions_from_role()
+        profile.save()
 

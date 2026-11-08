@@ -24,39 +24,41 @@ from .forms import (
 
 
 def is_admin_user(user):
-    """التحقق مما إذا كان المستخدم يملك صلاحية مدير النظام"""
+    """التحقق مما إذا كان المستخدم يملك صلاحية مدير النظام أو تحكم كامل"""
     if not user or not user.is_authenticated:
         return False
     return bool(
         user.is_superuser or 
         user.is_staff or 
-        (hasattr(user, 'profile') and user.profile.role == UserRole.ADMIN)
+        (hasattr(user, 'profile') and (user.profile.role == UserRole.ADMIN or user.profile.can_manage_users))
     )
 
 
 def is_registrar_user(user):
-    """التحقق مما إذا كان المستخدم مسجل بيانات أو مدير نظام"""
+    """التحقق مما إذا كان المستخدم مسجل بيانات أو يملك صلاحية الإضافة والتعديل"""
     if not user or not user.is_authenticated:
         return False
     if is_admin_user(user):
         return True
-    return bool(hasattr(user, 'profile') and user.profile.role == UserRole.REGISTRAR)
+    return bool(hasattr(user, 'profile') and (user.profile.role == UserRole.REGISTRAR or (user.profile.can_add and user.profile.can_edit)))
 
 
 def is_supervisor_user(user):
-    """التحقق مما إذا كان المستخدم مشرف دورة أو مدير نظام"""
+    """التحقق مما إذا كان المستخدم مشرف دورة أو يملك صلاحية اعتماد النتائج"""
     if not user or not user.is_authenticated:
         return False
     if is_admin_user(user):
         return True
-    return bool(hasattr(user, 'profile') and user.profile.role == UserRole.SUPERVISOR)
+    return bool(hasattr(user, 'profile') and (user.profile.role == UserRole.SUPERVISOR or user.profile.can_approve_results))
 
 
 def is_instructor_user(user):
     """التحقق مما إذا كان المستخدم معلماً في هيئة التدريس"""
     if not user or not user.is_authenticated:
         return False
-    return bool(hasattr(user, 'profile') and user.profile.role == UserRole.INSTRUCTOR)
+    if not hasattr(user, 'profile'):
+        return False
+    return bool(user.profile.role == UserRole.INSTRUCTOR or (user.profile.can_grade and not is_admin_user(user) and not user.profile.can_approve_results))
 
 
 def get_user_instructor(user):
@@ -1631,6 +1633,19 @@ def user_create_view(request):
                 if not profile.unit:
                     profile.unit = profile.instructor.unit
 
+            # حفظ أذونات وصلاحيات مربعات الاختيار (Windows Permissions Checkboxes)
+            profile.can_manage_users = form.cleaned_data.get('can_manage_users', False)
+            profile.can_view = form.cleaned_data.get('can_view', True)
+            profile.can_add = form.cleaned_data.get('can_add', False)
+            profile.can_edit = form.cleaned_data.get('can_edit', False)
+            profile.can_delete = form.cleaned_data.get('can_delete', False)
+            profile.can_grade = form.cleaned_data.get('can_grade', False)
+            profile.can_approve_results = form.cleaned_data.get('can_approve_results', False)
+
+            if profile.can_manage_users or role == UserRole.ADMIN:
+                user.is_staff = True
+                user.save(update_fields=['is_staff'])
+
             profile.save()
 
             messages.success(request, f'تم إنشاء حساب المستخدم الجديد "{user.username}" بنجاح وتعيين الصلاحية ({profile.get_role_display()}).')
@@ -1645,7 +1660,7 @@ def user_create_view(request):
 def user_edit_view(request, user_id):
     """تعديل بيانات وصلاحيات وكلمة مرور المستخدم"""
     target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
-    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
 
     if request.method == 'POST':
         form = UserEditForm(request.POST, instance=target_user)
@@ -1679,6 +1694,21 @@ def user_edit_view(request, user_id):
                 if not profile.unit:
                     profile.unit = profile.instructor.unit
 
+            # حفظ أذونات وصلاحيات مربعات الاختيار (Windows Permissions Checkboxes)
+            profile.can_manage_users = form.cleaned_data.get('can_manage_users', False)
+            profile.can_view = form.cleaned_data.get('can_view', True)
+            profile.can_add = form.cleaned_data.get('can_add', False)
+            profile.can_edit = form.cleaned_data.get('can_edit', False)
+            profile.can_delete = form.cleaned_data.get('can_delete', False)
+            profile.can_grade = form.cleaned_data.get('can_grade', False)
+            profile.can_approve_results = form.cleaned_data.get('can_approve_results', False)
+
+            if profile.can_manage_users or role == UserRole.ADMIN:
+                u.is_staff = True
+            elif u.id != request.user.id:  # منع المستخدم الحالي من إزالة صفة الإدارة عن نفسه بالخطأ
+                u.is_staff = False
+            u.save()
+
             profile.save()
 
             messages.success(request, f'تم حفظ تعديلات المستخدم "{target_user.username}" بنجاح.')
@@ -1695,6 +1725,13 @@ def user_edit_view(request, user_id):
             'rank': profile.rank,
             'unit': profile.unit,
             'phone': profile.phone,
+            'can_manage_users': profile.can_manage_users,
+            'can_view': profile.can_view,
+            'can_add': profile.can_add,
+            'can_edit': profile.can_edit,
+            'can_delete': profile.can_delete,
+            'can_grade': profile.can_grade,
+            'can_approve_results': profile.can_approve_results,
         }
         form = UserEditForm(instance=target_user, initial=initial_data)
 
@@ -1745,43 +1782,71 @@ def user_toggle_active_view(request, user_id):
 
 @admin_access_required
 def user_update_role_view(request, user_id):
-    """تحديث سريع لدور وصلاحية المستخدم مباشرة من قسم الصلاحيات والمستخدمين"""
+    """تحديث سريع لدور وصلاحيات المستخدم وأذونات مربعات الاختيار (Windows Permissions)"""
     if request.method != 'POST':
         return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
     target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
-    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
 
     new_role = request.POST.get('role', '').strip()
     instructor_num = request.POST.get('instructor', '').strip()
 
-    if new_role in UserRole.values:
-        # منع الأدمن الحالي من خفض صلاحياته بنفسه لمنع حبس النظام
-        if target_user.id == request.user.id and new_role != UserRole.ADMIN:
-            messages.error(request, 'إجراء محظور: لا يمكنك إزالة صلاحية الإدارة عن حسابك الحالي!')
-            return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+    # قراءة أذونات مربعات الاختيار (Windows Permissions Checkboxes)
+    def is_checked(name):
+        val = request.POST.get(name)
+        return val in ('1', 'on', 'true', 'True')
 
-        profile.role = new_role
-        if new_role == UserRole.ADMIN:
-            target_user.is_staff = True
-        else:
-            if target_user.id != request.user.id:
-                target_user.is_staff = False
-        target_user.save(update_fields=['is_staff'])
+    can_manage_users = is_checked('can_manage_users')
+    can_view = is_checked('can_view')
+    can_add = is_checked('can_add')
+    can_edit = is_checked('can_edit')
+    can_delete = is_checked('can_delete')
+    can_grade = is_checked('can_grade')
+    can_approve_results = is_checked('can_approve_results')
 
-        # ربط المعلم إن وجد
-        if instructor_num:
-            profile.instructor = Instructor.objects.filter(military_number=instructor_num).first()
-        elif new_role == UserRole.INSTRUCTOR and profile.military_number:
-            profile.instructor = Instructor.objects.filter(military_number=profile.military_number).first()
-        elif new_role != UserRole.INSTRUCTOR:
-            profile.instructor = None
+    if new_role not in UserRole.values:
+        new_role = UserRole.CUSTOM
 
-        profile.save()
-        messages.success(request, f'تم تحديث صلاحية المستخدم "{target_user.username}" إلى ({profile.get_role_display()}) بنجاح.')
+    # منع الأدمن الحالي من خفض صلاحياته بنفسه لمنع حبس النظام
+    if target_user.id == request.user.id and not can_manage_users and new_role != UserRole.ADMIN:
+        messages.error(request, 'إجراء محظور: لا يمكنك إزالة صلاحية الإدارة أو التحكم الكامل عن حسابك الحالي!')
+        return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+
+    # إذا اختار دوراً قياسياً بدون مربعات محددة مسبقاً في الطلب، نحدد أذوناته الافتراضية
+    has_explicit_checkboxes = any(k in request.POST for k in (
+        'can_manage_users', 'can_view', 'can_add', 'can_edit', 'can_delete', 'can_grade', 'can_approve_results'
+    ))
+
+    profile.role = new_role
+    if has_explicit_checkboxes:
+        profile.can_manage_users = can_manage_users
+        profile.can_view = can_view
+        profile.can_add = can_add
+        profile.can_edit = can_edit
+        profile.can_delete = can_delete
+        profile.can_grade = can_grade
+        profile.can_approve_results = can_approve_results
     else:
-        messages.error(request, 'الصلاحية المحددة غير صالحة.')
+        profile.sync_permissions_from_role()
 
+    if profile.can_manage_users or new_role == UserRole.ADMIN:
+        target_user.is_staff = True
+    else:
+        if target_user.id != request.user.id:
+            target_user.is_staff = False
+    target_user.save(update_fields=['is_staff'])
+
+    # ربط المعلم إن وجد
+    if instructor_num:
+        profile.instructor = Instructor.objects.filter(military_number=instructor_num).first()
+    elif (new_role == UserRole.INSTRUCTOR or profile.can_grade) and profile.military_number:
+        profile.instructor = Instructor.objects.filter(military_number=profile.military_number).first()
+    elif new_role != UserRole.INSTRUCTOR and not profile.can_grade:
+        profile.instructor = None
+
+    profile.save()
+    messages.success(request, f'تم حفظ وتطبيق أذونات وصلاحيات المستخدم "{target_user.username}" بنجاح.')
     return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
 
