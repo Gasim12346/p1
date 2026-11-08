@@ -192,10 +192,10 @@
                                 <span class="tab-title">التحليلات والمؤشرات</span>
                             </button>
 
-                            <!-- 2. إدارة المستخدمين والصلاحيات -->
+                            <!-- 2. قسم الصلاحيات والمستخدمين -->
                             <button class="nav-link" id="tab-users" data-bs-toggle="pill" data-bs-target="#pane-users" type="button" role="tab">
-                                <i class="bi bi-people-fill icon-tab text-success"></i>
-                                <span class="tab-title">المستخدمين والصلاحيات</span>
+                                <i class="bi bi-shield-lock-fill icon-tab text-success"></i>
+                                <span class="tab-title">قسم الصلاحيات والمستخدمين</span>
                                 <span class="badge bg-success bg-opacity-10 text-success rounded-pill ms-auto count-badge">{{ users|length }}</span>
                             </button>
 
@@ -337,62 +337,181 @@
         </div>
 
         <!-- ========================================================
-             PANE 2: إدارة المستخدمين وأنواع وصلاحيات الحسابات
+             PANE 2: قسم الصلاحيات وإدارة المستخدمين
              ======================================================== -->
         <div class="tab-pane fade" id="pane-users" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div>
-                        <h5 class="fw-bold mb-0 text-dark">
-                            <i class="bi bi-people-fill text-success me-2"></i>
-                            إدارة المستخدمين وصلاحيات الحسابات
-                        </h5>
+            
+            <!-- ترويسة قسم الصلاحيات والمستخدمين -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <div class="card-body p-4 text-white">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-4 d-flex align-items-center justify-content-center shadow" style="width: 56px; height: 56px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.4);">
+                                <i class="bi bi-shield-lock-fill text-success fs-3"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-1 text-white">قسم الصلاحيات وإدارة المستخدمين</h4>
+                                <p class="text-white-50 mb-0 small">لوحة الإشراف المركزية لتحديد أدوار وصلاحيات الحسابات، ربط المعلمين، والتحكم بوصول المستخدمين لشاشات النظام</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="#rolesMatrixCard" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold small">
+                                <i class="bi bi-card-checklist me-1"></i> مصفوفة ودليل الصلاحيات
+                            </a>
+                            <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="bi bi-person-plus-fill me-1"></i> إضافة مستخدم جديد
+                            </button>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                        <i class="bi bi-person-plus-fill me-1"></i> إضافة مستخدم جديد
-                    </button>
+                </div>
+            </div>
+
+            <!-- بطاقات الإحصائيات والفلاتر السريعة للصلاحيات -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card active" data-filter-role="all" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-muted small fw-bold mb-1">كافة الحسابات</div>
+                            <div class="fs-4 fw-bold text-dark">{{ role_counts.all }}</div>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill small mt-1">الكل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card" data-filter-role="admin" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-danger small fw-bold mb-1"><i class="bi bi-shield-lock-fill me-1"></i>مدير نظام</div>
+                            <div class="fs-4 fw-bold text-danger">{{ role_counts.admin }}</div>
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill small mt-1">تحكم شامل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card" data-filter-role="registrar" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-primary small fw-bold mb-1"><i class="bi bi-pencil-square me-1"></i>مسجل بيانات</div>
+                            <div class="fs-4 fw-bold text-primary">{{ role_counts.registrar }}</div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small mt-1">دارسين ودورات</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card" data-filter-role="supervisor" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-warning-emphasis small fw-bold mb-1"><i class="bi bi-patch-check-fill me-1"></i>مشرف دورة</div>
+                            <div class="fs-4 fw-bold text-warning-emphasis">{{ role_counts.supervisor }}</div>
+                            <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill small mt-1">اعتماد النتائج</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card" data-filter-role="instructor" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-success small fw-bold mb-1"><i class="bi bi-person-video3 me-1"></i>معلم</div>
+                            <div class="fs-4 fw-bold text-success">{{ role_counts.instructor }}</div>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill small mt-1">رصد المواد</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 role-filter-card" data-filter-role="regular" style="cursor: pointer; transition: all 0.2s ease;">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-secondary small fw-bold mb-1"><i class="bi bi-person me-1"></i>مستخدم عادي</div>
+                            <div class="fs-4 fw-bold text-secondary">{{ role_counts.regular }}</div>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill small mt-1">استعراض فقط</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- جدول المستخدمين وإدارة الصلاحيات -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-people-fill text-success fs-5"></i>
+                        <h6 class="fw-bold mb-0 text-dark">جدول المستخدمين والصلاحيات المخصصة</h6>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 small" id="usersFilterCountBadge">{{ users|length }} مستخدم</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="usersSearchInput" class="form-control bg-light border-0" placeholder="بحث بالاسم أو النمرة...">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover table-custom align-middle mb-0">
-                        <thead>
+                    <table class="table table-hover table-custom align-middle mb-0" id="usersPermissionsTable">
+                        <thead class="table-light">
                             <tr>
-                                <th>اسم المستخدم</th>
+                                <th>المستخدم</th>
                                 <th>الاسم الكامل</th>
-                                <th>نوع وصلاحية الحساب</th>
-                                <th>النمرة والرتبة</th>
-                                <th>الوحدة</th>
-                                <th>الحالة</th>
+                                <th>الصلاحية الممنوحة</th>
+                                <th>المعلم المرتبط</th>
+                                <th>النمرة والرتبة والوحدة</th>
+                                <th>حالة الحساب</th>
                                 <th>تاريخ الانضمام</th>
-                                <th class="text-center">الإجراءات</th>
+                                <th class="text-center" style="min-width: 140px;">التحكم بالصلاحية والإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for u in users %}
-                                <tr>
+                                <tr class="user-row" data-role="{% if u.is_superuser or u.profile.role == 'admin' %}admin{% else %}{{ u.profile.role }}{% endif %}" data-username="{{ u.username|lower }}" data-fullname="{{ u.get_full_name|lower }}" data-military="{{ u.profile.military_number|default:'' }}">
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+                                            <div class="rounded-circle {% if u.profile.role == 'admin' or u.is_superuser %}bg-danger bg-opacity-10 text-danger{% elif u.profile.role == 'instructor' %}bg-success bg-opacity-10 text-success{% elif u.profile.role == 'supervisor' %}bg-warning bg-opacity-15 text-warning-emphasis{% elif u.profile.role == 'registrar' %}bg-primary bg-opacity-10 text-primary{% else %}bg-secondary bg-opacity-10 text-secondary{% endif %} d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px; font-size: 0.95rem;">
                                                 {{ u.username|slice:":1"|upper }}
                                             </div>
                                             <div>
-                                                <span class="fw-bold text-dark">{{ u.username }}</span>
+                                                <div class="fw-bold text-dark">{{ u.username }}</div>
                                                 {% if u.id == user.id %}
-                                                    <span class="badge bg-secondary ms-1 small">حسابك الحالي</span>
+                                                    <span class="badge bg-secondary ms-1 small" style="font-size: 0.7rem;">حسابك الحالي</span>
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ u.get_full_name|default:"-" }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ u.get_full_name|default:"-" }}</div>
+                                        {% if u.email %}
+                                            <div class="text-muted small" style="font-size: 0.75rem;">{{ u.email }}</div>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if u.profile.role == 'admin' or u.is_superuser %}
                                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i>مدير نظام (أدمن)</span>
+                                        {% elif u.profile.role == 'registrar' %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-pencil-square me-1"></i>مسجل بيانات</span>
+                                        {% elif u.profile.role == 'supervisor' %}
+                                            <span class="badge border px-2 py-1" style="background-color: #fef3c7 !important; color: #92400e !important; border-color: #fde68a !important;"><i class="bi bi-patch-check-fill me-1"></i>مشرف دورة</span>
+                                        {% elif u.profile.role == 'instructor' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-person-video3 me-1"></i>معلم</span>
                                         {% else %}
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-person-fill me-1"></i>مستخدم عادي</span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1"><i class="bi bi-person me-1"></i>مستخدم عادي</span>
                                         {% endif %}
                                     </td>
-                                    <td class="small">{{ u.profile.rank|default:"" }} {{ u.profile.military_number|default:"-" }}</td>
-                                    <td class="small text-muted">{{ u.profile.unit|default:"-" }}</td>
+                                    <td>
+                                        {% if u.profile.role == 'instructor' %}
+                                            {% if u.profile.instructor %}
+                                                <span class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1">
+                                                    <i class="bi bi-link-45deg"></i>
+                                                    <span>{{ u.profile.instructor.name }} ({{ u.profile.instructor.military_number }})</span>
+                                                </span>
+                                            {% elif u.profile.get_instructor %}
+                                                <span class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1">
+                                                    <i class="bi bi-link-45deg"></i>
+                                                    <span>{{ u.profile.get_instructor.name }} ({{ u.profile.get_instructor.military_number }})</span>
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 small">غير مربوط بمعلم</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small">
+                                        <div><span class="fw-bold">{{ u.profile.rank|default:"" }}</span> {{ u.profile.military_number|default:"-" }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">{{ u.profile.unit|default:"-" }}</div>
+                                    </td>
                                     <td>
                                         {% if u.is_active %}
                                             <span class="badge px-3 py-1 rounded-pill" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 700;">نشط ومفعل</span>
@@ -402,10 +521,18 @@
                                     </td>
                                     <td class="small text-muted">{{ u.date_joined|date:"Y/m/d" }}</td>
                                     <td class="text-center">
-                                        <div class="d-inline-flex gap-1">
-                                            <a href="{% url 'training:user_edit' u.id %}" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تعديل المستخدم">
+                                        <div class="d-inline-flex gap-1 align-items-center">
+                                            <!-- زر تغيير الصلاحية السريع -->
+                                            <button type="button" class="btn btn-sm btn-outline-success rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تغيير الصلاحية والدور" onclick="openChangeRoleModal('{{ u.id }}', '{{ u.username }}', '{{ u.get_full_name|default:u.username }}', '{{ u.profile.role }}', '{{ u.profile.instructor.military_number|default:u.profile.military_number|default:'' }}', {% if u.id == user.id %}true{% else %}false{% endif %})">
+                                                <i class="bi bi-shield-check"></i>
+                                            </button>
+
+                                            <!-- زر تعديل المستخدم كاملاً -->
+                                            <a href="{% url 'training:user_edit' u.id %}" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تعديل بيانات المستخدم">
                                                 <i class="bi bi-pencil-fill"></i>
                                             </a>
+
+                                            <!-- تفعيل / تعطيل الحساب -->
                                             {% if u.id != user.id %}
                                                 <form method="post" action="{% url 'training:user_toggle_active' u.id %}" class="d-inline m-0 p-0" onsubmit="return confirm('هل أنت متأكد من {% if u.is_active %}تعطيل{% else %}تفعيل{% endif %} حساب المستخدم ({{ u.username }})؟');">
                                                     {% csrf_token %}
@@ -413,6 +540,7 @@
                                                         <i class="bi bi-power"></i>
                                                     </button>
                                                 </form>
+                                                <!-- حذف المستخدم -->
                                                 <a href="{% url 'training:user_delete' u.id %}" class="btn btn-sm btn-outline-danger rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="حذف المستخدم">
                                                     <i class="bi bi-trash-fill"></i>
                                                 </a>
@@ -429,6 +557,86 @@
                     </table>
                 </div>
             </div>
+
+            <!-- بطاقة مصفوفة ودليل الصلاحيات في النظام -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="rolesMatrixCard">
+                <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success fs-5"></i>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">دليل ومصفوفة الصلاحيات في النظام</h6>
+                            <small class="text-muted">جدول توضيحي لحقوق الوصول وإمكانيات الإضافة والتعديل والحذف لكل صلاحية</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1">نظام حماية الصلاحيات مفعل</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 text-center small">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 18%;" class="text-start">الصلاحية / الدور</th>
+                                <th style="width: 20%;">شاشة الدارسين</th>
+                                <th style="width: 20%;">شاشة الدورات والانعقاد</th>
+                                <th style="width: 22%;">شاشة رصد النتائج</th>
+                                <th style="width: 20%;">لوحة تحكم الأدمن</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 mb-1 d-inline-block"><i class="bi bi-shield-lock-fill me-1"></i>مدير نظام (أدمن)</span>
+                                    <div class="text-muted" style="font-size: 0.75rem;">كامل الصلاحيات والإشراف التقني</div>
+                                </td>
+                                <td class="text-success"><i class="bi bi-check-circle-fill me-1"></i>تحكم كامل (إضافة، تعديل، حذف، تصدير)</td>
+                                <td class="text-success"><i class="bi bi-check-circle-fill me-1"></i>تحكم كامل (إنشاء دورة، مواد، فتح دفعات)</td>
+                                <td class="text-success"><i class="bi bi-check-circle-fill me-1"></i>رصد كافة المواد، المواظبة، واعتماد النتيجة</td>
+                                <td class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>دخول كامل وإدارة النظام</td>
+                            </tr>
+                            <tr>
+                                <td class="text-start">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 mb-1 d-inline-block"><i class="bi bi-pencil-square me-1"></i>مسجل بيانات</span>
+                                    <div class="text-muted" style="font-size: 0.75rem;">إدارة شؤون المتدربين والبرامج التدريبية</div>
+                                </td>
+                                <td class="text-success"><i class="bi bi-check-circle-fill me-1"></i>تحكم كامل (إضافة وتعديل وحذف)</td>
+                                <td class="text-success"><i class="bi bi-check-circle-fill me-1"></i>تحكم كامل (فتح دفعات وربط طلبة)</td>
+                                <td class="text-primary"><i class="bi bi-eye-fill me-1"></i>استعراض ومتابعة الرصد فقط</td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>غير مصرح بالدخول</td>
+                            </tr>
+                            <tr>
+                                <td class="text-start">
+                                    <span class="badge border px-2 py-1 mb-1 d-inline-block" style="background-color: #fef3c7 !important; color: #92400e !important; border-color: #fde68a !important;"><i class="bi bi-patch-check-fill me-1"></i>مشرف دورة</span>
+                                    <div class="text-muted" style="font-size: 0.75rem;">الإشراف الميداني واعتماد الدرجات</div>
+                                </td>
+                                <td class="text-primary"><i class="bi bi-eye-fill me-1"></i>استعراض وتدقيق بيانات المتدربين</td>
+                                <td class="text-primary"><i class="bi bi-eye-fill me-1"></i>استعراض بيانات الدفعات والمواد</td>
+                                <td class="text-success fw-bold"><i class="bi bi-check2-all me-1"></i>مراجعة الرصد واعتماد النتيجة نهائياً</td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>غير مصرح بالدخول</td>
+                            </tr>
+                            <tr>
+                                <td class="text-start">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 mb-1 d-inline-block"><i class="bi bi-person-video3 me-1"></i>معلم</span>
+                                    <div class="text-muted" style="font-size: 0.75rem;">عضو هيئة التدريس المكلف بالمواد</div>
+                                </td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>محظور (تحويل تلقائي لصفحة الرصد)</td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>محظور (تحويل تلقائي لصفحة الرصد)</td>
+                                <td class="text-success fw-bold"><i class="bi bi-pencil-fill me-1"></i>رصد درجات مادته المكلف بها فقط</td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>غير مصرح بالدخول</td>
+                            </tr>
+                            <tr>
+                                <td class="text-start">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 mb-1 d-inline-block"><i class="bi bi-person me-1"></i>مستخدم عادي</span>
+                                    <div class="text-muted" style="font-size: 0.75rem;">صلاحيات استعراض أساسية</div>
+                                </td>
+                                <td class="text-muted"><i class="bi bi-eye me-1"></i>استعراض فقط</td>
+                                <td class="text-muted"><i class="bi bi-eye me-1"></i>استعراض فقط</td>
+                                <td class="text-muted"><i class="bi bi-eye me-1"></i>استعراض فقط</td>
+                                <td class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>غير مصرح بالدخول</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
 
         <!-- ========================================================
@@ -1123,6 +1331,68 @@
     </div>
 </div>
 
+<!-- Modal: تعديل صلاحية ودور المستخدم السريع (Change Role Modal) -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1" aria-labelledby="changeRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-success text-white p-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="changeRoleModalLabel">تغيير صلاحية ودور المستخدم</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form id="changeRoleForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-light border rounded-3 p-3 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-badge text-success fs-3"></i>
+                            <div>
+                                <div class="fw-bold text-dark fs-6" id="modalTargetUserFullname">-</div>
+                                <div class="text-muted small">اسم الحساب: <span class="fw-semibold text-dark" id="modalTargetUsername">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">اختر الدور والصلاحية المطلوبة <span class="text-danger">*</span></label>
+                        <select name="role" id="modalRoleSelect" class="form-select form-select-lg fs-6" required onchange="handleModalRoleChange(this.value)">
+                            {% for role_val, role_label in user_roles %}
+                                <option value="{{ role_val }}">{{ role_label }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted d-block mt-1">تمنح الصلاحية حقوق الوصول للشاشات المحددة في دليل ومصفوفة الصلاحيات.</small>
+                    </div>
+
+                    <div class="mb-3" id="modalInstructorWrapper" style="display: none;">
+                        <label class="form-label fw-bold small text-success">
+                            <i class="bi bi-link-45deg me-1"></i> ربط الحساب بملف المعلم في هيئة التدريس
+                        </label>
+                        <select name="instructor" id="modalInstructorSelect" class="form-select">
+                            <option value="">-- بدون ربط أو تحديد لاحقاً --</option>
+                            {% for inst in instructors %}
+                                <option value="{{ inst.military_number }}">{{ inst.rank }} {{ inst.name }} (النمرة: {{ inst.military_number }}) - {{ inst.unit }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted d-block mt-1">المعلم يستطيع فقط رصد درجات المواد المكلف بها رسمياً في الدورات.</small>
+                    </div>
+
+                    <div id="modalSelfAdminWarning" class="alert alert-warning small mb-0" style="display: none;">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> تنبيه أمني: هذا حسابك الحالي. لا يمكن خفض صلاحية الإدارة عن حسابك لتجنب الإغلاق الذاتي للنظام.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" id="modalSubmitRoleBtn" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-check-lg me-1"></i> حفظ وتطبيق الصلاحية فوراً
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: إضافة تصنيف دورات جديد (Add Category Modal) -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1507,7 +1777,61 @@
         }
     }
 
+    // دوال إدارة قسم الصلاحيات والمستخدمين
+    function openChangeRoleModal(userId, username, fullname, currentRole, instructorMilNum, isSelf) {
+        const form = document.getElementById('changeRoleForm');
+        form.action = `/admin-portal/users/${userId}/update-role/`;
+        document.getElementById('modalTargetUsername').textContent = username;
+        document.getElementById('modalTargetUserFullname').textContent = fullname;
+
+        const roleSelect = document.getElementById('modalRoleSelect');
+        if (roleSelect) {
+            roleSelect.value = currentRole;
+        }
+
+        const instSelect = document.getElementById('modalInstructorSelect');
+        if (instSelect) {
+            instSelect.value = instructorMilNum || '';
+        }
+
+        handleModalRoleChange(currentRole);
+
+        const warning = document.getElementById('modalSelfAdminWarning');
+        if (isSelf && currentRole === 'admin') {
+            if (warning) warning.style.display = 'block';
+        } else {
+            if (warning) warning.style.display = 'none';
+        }
+
+        const modalEl = document.getElementById('changeRoleModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    }
+
+    function handleModalRoleChange(role) {
+        const instWrapper = document.getElementById('modalInstructorWrapper');
+        if (instWrapper) {
+            if (role === 'instructor') {
+                instWrapper.style.display = 'block';
+            } else {
+                instWrapper.style.display = 'none';
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // فحص رابط المعلمات لتفعيل تبويب قسم الصلاحيات والمستخدمين مباشرة
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'users') {
+            const usersTabBtn = document.getElementById('tab-users');
+            if (usersTabBtn) {
+                const tab = new bootstrap.Tab(usersTabBtn);
+                tab.show();
+            }
+        }
+
         // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
         const hash = window.location.hash;
         if (hash) {
@@ -1526,6 +1850,62 @@
                 }
             });
         });
+
+        // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
+        const filterCards = document.querySelectorAll('.role-filter-card');
+        const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
+        const countBadge = document.getElementById('usersFilterCountBadge');
+
+        filterCards.forEach(card => {
+            card.addEventListener('click', function() {
+                filterCards.forEach(c => {
+                    c.classList.remove('active', 'border-primary', 'shadow');
+                    c.style.backgroundColor = '';
+                });
+                this.classList.add('active', 'border-primary', 'shadow');
+                this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+
+                const filterRole = this.getAttribute('data-filter-role');
+                let visibleCount = 0;
+
+                userRows.forEach(row => {
+                    const rowRole = row.getAttribute('data-role');
+                    if (filterRole === 'all' || rowRole === filterRole) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                if (countBadge) {
+                    countBadge.textContent = `${visibleCount} مستخدم`;
+                }
+            });
+        });
+
+        // حقل البحث السريع في جدول المستخدمين
+        const usersSearchInput = document.getElementById('usersSearchInput');
+        if (usersSearchInput) {
+            usersSearchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                let visibleCount = 0;
+                userRows.forEach(row => {
+                    const username = row.getAttribute('data-username') || '';
+                    const fullname = row.getAttribute('data-fullname') || '';
+                    const military = row.getAttribute('data-military') || '';
+                    if (username.includes(query) || fullname.includes(query) || military.includes(query)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                if (countBadge) {
+                    countBadge.textContent = `${visibleCount} مستخدم`;
+                }
+            });
+        }
 
         const modal = document.getElementById('addInstructorModal');
         if (modal) {

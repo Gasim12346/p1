@@ -1457,8 +1457,19 @@ def admin_dashboard_view(request):
     categories = CourseCategory.objects.annotate(courses_count=Count('courses')).order_by('name')
 
     # 6. إدارة المستخدمين والصلاحيات
-    users = User.objects.select_related('profile').order_by('-date_joined')
+    users = User.objects.select_related('profile', 'profile__instructor').order_by('-date_joined')
     user_create_form = UserCreateForm()
+    instructors = Instructor.objects.all().order_by('-created_at')
+    instructor_form = InstructorForm()
+
+    role_counts = {
+        'all': users.count(),
+        'admin': users.filter(Q(is_superuser=True) | Q(profile__role=UserRole.ADMIN)).distinct().count(),
+        'registrar': users.filter(profile__role=UserRole.REGISTRAR).count(),
+        'supervisor': users.filter(profile__role=UserRole.SUPERVISOR).count(),
+        'instructor': users.filter(profile__role=UserRole.INSTRUCTOR).count(),
+        'regular': users.filter(profile__role=UserRole.REGULAR).count(),
+    }
 
     # 7. إعدادات الشهادة الرسمية وتعديل اللوغهات
     cert_settings = CertificateSettings.get_settings()
@@ -1561,9 +1572,13 @@ def admin_dashboard_view(request):
         # Categories
         'categories': categories,
         'category_form': CourseCategoryForm(),
-        # Users
+        # Users & Permissions
         'users': users,
         'user_create_form': user_create_form,
+        'role_counts': role_counts,
+        'user_roles': UserRole.choices,
+        'instructors': instructors,
+        'instructor_form': instructor_form,
         # Certificate Settings
         'cert_settings': cert_settings,
         'cert_form': cert_form,
@@ -1623,7 +1638,7 @@ def user_create_view(request):
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
-    return redirect('training:admin_dashboard')
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
 
 @admin_access_required
@@ -1667,7 +1682,7 @@ def user_edit_view(request, user_id):
             profile.save()
 
             messages.success(request, f'تم حفظ تعديلات المستخدم "{target_user.username}" بنجاح.')
-            return redirect('training:admin_dashboard')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -1697,13 +1712,13 @@ def user_delete_view(request, user_id):
 
     if target_user.id == request.user.id:
         messages.error(request, 'إجراء محظور: لا يمكنك حذف حسابك الحالي الذي تستخدمه لتسجيل الدخول!')
-        return redirect('training:admin_dashboard')
+        return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
     if request.method == 'POST':
         uname = target_user.username
         target_user.delete()
         messages.success(request, f'تم حذف المستخدم "{uname}" نهائياً من النظام.')
-        return redirect('training:admin_dashboard')
+        return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
     return render(request, 'admin_portal/user_confirm_delete.html', {
         'target_user': target_user
@@ -1725,7 +1740,49 @@ def user_toggle_active_view(request, user_id):
         target_user.save()
         status_text = 'تفعيل' if target_user.is_active else 'تعطيل'
         messages.success(request, f'تم {status_text} حساب المستخدم "{target_user.username}" بنجاح.')
-    return redirect('training:admin_dashboard')
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+
+
+@admin_access_required
+def user_update_role_view(request, user_id):
+    """تحديث سريع لدور وصلاحية المستخدم مباشرة من قسم الصلاحيات والمستخدمين"""
+    if request.method != 'POST':
+        return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+
+    target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+
+    new_role = request.POST.get('role', '').strip()
+    instructor_num = request.POST.get('instructor', '').strip()
+
+    if new_role in UserRole.values:
+        # منع الأدمن الحالي من خفض صلاحياته بنفسه لمنع حبس النظام
+        if target_user.id == request.user.id and new_role != UserRole.ADMIN:
+            messages.error(request, 'إجراء محظور: لا يمكنك إزالة صلاحية الإدارة عن حسابك الحالي!')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+
+        profile.role = new_role
+        if new_role == UserRole.ADMIN:
+            target_user.is_staff = True
+        else:
+            if target_user.id != request.user.id:
+                target_user.is_staff = False
+        target_user.save(update_fields=['is_staff'])
+
+        # ربط المعلم إن وجد
+        if instructor_num:
+            profile.instructor = Instructor.objects.filter(military_number=instructor_num).first()
+        elif new_role == UserRole.INSTRUCTOR and profile.military_number:
+            profile.instructor = Instructor.objects.filter(military_number=profile.military_number).first()
+        elif new_role != UserRole.INSTRUCTOR:
+            profile.instructor = None
+
+        profile.save()
+        messages.success(request, f'تم تحديث صلاحية المستخدم "{target_user.username}" إلى ({profile.get_role_display()}) بنجاح.')
+    else:
+        messages.error(request, 'الصلاحية المحددة غير صالحة.')
+
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
 
 # =====================================================================

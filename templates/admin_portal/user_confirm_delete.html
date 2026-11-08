@@ -31,7 +31,7 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="d-flex align-items-center justify-content-end gap-2">
-                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                        <a href="{% url 'training:admin_dashboard' %}?tab=users" class="btn btn-outline-secondary px-4 rounded-pill">
                             إلغاء
                         </a>
                         <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold">

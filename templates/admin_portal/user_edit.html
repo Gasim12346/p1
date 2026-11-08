@@ -17,7 +17,7 @@
                             <small class="text-muted">اسم المستخدم: <strong>{{ target_user.username }}</strong></small>
                         </div>
                     </div>
-                    <a href="{% url 'training:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <a href="{% url 'training:admin_dashboard' %}?tab=users" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                         <i class="bi bi-arrow-right me-1"></i> العودة للوحة القيادة
                     </a>
                 </div>
@@ -83,7 +83,7 @@
                     </div>
 
                     <div class="d-flex align-items-center justify-content-end gap-2">
-                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                        <a href="{% url 'training:admin_dashboard' %}?tab=users" class="btn btn-outline-secondary px-4 rounded-pill">
                             إلغاء
                         </a>
                         <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold">
