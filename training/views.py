@@ -1,8 +1,10 @@
 import json
+from datetime import timedelta
 from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -14,7 +16,8 @@ from .models import (
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade,
     CertificateSettings, SystemSettings, UserProfile, UserRole,
-    has_trainee_passed_course
+    has_trainee_passed_course,
+    ActivityLog, ActivityAction, ActivityCategory, log_activity
 )
 from .forms import (
     InstructorForm, TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
@@ -142,7 +145,15 @@ def trainees_list_view(request):
             elif Instructor.objects.filter(military_number=military_num).exists():
                 messages.error(request, f'النمرة العسكرية "{military_num}" مسجلة مسبقاً في النظام كمعلم في هيئة التدريس! لا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
             else:
-                form.save()
+                new_trainee = form.save()
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.CREATE,
+                    action_category=ActivityCategory.TRAINEES,
+                    description=f"إضافة دارس جديد: {new_trainee.name} (نمرة: {military_num})",
+                    target_model="Trainee",
+                    target_id=military_num
+                )
                 messages.success(request, f'تم حفظ بيانات الدارس "{form.cleaned_data["name"]}" بنجاح.')
                 return redirect('training:trainees_list')
         else:
@@ -190,7 +201,15 @@ def trainee_edit_view(request, military_number):
         form = TraineeForm(request.POST, instance=trainee)
         form.fields['military_number'].disabled = True
         if form.is_valid():
-            form.save()
+            updated_trainee = form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.TRAINEES,
+                description=f"تعديل بيانات الدارس: {updated_trainee.name} (نمرة: {updated_trainee.military_number})",
+                target_model="Trainee",
+                target_id=updated_trainee.military_number
+            )
             messages.success(request, f'تم تحديث بيانات الدارس "{trainee.name}" بنجاح.')
             return redirect('training:trainees_list')
         else:
@@ -223,7 +242,16 @@ def trainee_delete_view(request, military_number):
             return redirect('training:trainees_list')
         try:
             name = trainee.name
+            mil_num = trainee.military_number
             trainee.delete()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.DELETE,
+                action_category=ActivityCategory.TRAINEES,
+                description=f"حذف الدارس: {name} (نمرة: {mil_num})",
+                target_model="Trainee",
+                target_id=mil_num
+            )
             messages.success(request, f'تم حذف الدارس "{name}" بنجاح.')
         except ProtectedError:
             messages.error(request, f'تعذر حذف الدارس "{trainee.name}" لوجود سجلات أكاديمية مرتبطة به في النظام.')
@@ -278,6 +306,14 @@ def courses_catalog_view(request):
         course_form = CourseForm(request.POST)
         if course_form.is_valid():
             new_course = course_form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.CREATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"إضافة دورة تدريبية جديدة: {new_course.name} (رمز: {new_course.course_number}) بمواظبة {new_course.attendance_max_grade}",
+                target_model="Course",
+                target_id=new_course.id
+            )
             messages.success(request, f'تم إضافة الدورة "{new_course.name}" (الرمز: {new_course.course_number}) بنجاح.')
             return redirect(f"{request.path}?category_id={new_course.category_id}&course_id={new_course.id}")
         else:
@@ -302,6 +338,14 @@ def courses_catalog_view(request):
             if not new_subject.code:
                 new_subject.code = Subject.generate_unique_code(target_course)
             new_subject.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.CREATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"إضافة مادة دراسية: {new_subject.name} (كود: {new_subject.code} - عظمى: {new_subject.max_grade}) لدورة {target_course.name}",
+                target_model="Subject",
+                target_id=new_subject.id
+            )
             messages.success(request, f'تم إضافة المادة "{new_subject.name}" وتوليد كودها التلقائي ({new_subject.code}) بنجاح.')
             return redirect(f"{request.path}?category_id={target_course.category_id}&course_id={target_course.id}")
         else:
@@ -331,6 +375,14 @@ def course_edit_view(request, course_id):
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"تعديل بيانات الدورة التدريبية: {course.name} (رمز: {course.course_number})",
+                target_model="Course",
+                target_id=course.id
+            )
             messages.success(request, f'تم تحديث بيانات الدورة "{course.name}" بنجاح.')
             return redirect(f"/courses/?category_id={course.category_id}&course_id={course.id}")
         else:
@@ -361,7 +413,17 @@ def course_delete_view(request, course_id):
             return redirect(f"/courses/?category_id={category_id}")
         try:
             name = course.name
+            c_num = course.course_number
+            cid = course.id
             course.delete()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.DELETE,
+                action_category=ActivityCategory.COURSES,
+                description=f"حذف الدورة التدريبية: {name} (رمز: {c_num})",
+                target_model="Course",
+                target_id=cid
+            )
             messages.success(request, f'تم حذف الدورة "{name}" وجميع موادها بنجاح.')
         except ProtectedError:
             messages.error(request, f'تعذر حذف الدورة "{course.name}" لوجود سجلات أكاديمية مرتبطة بها.')
@@ -383,6 +445,14 @@ def subject_edit_view(request, subject_id):
         form = SubjectForm(request.POST, instance=subject)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"تعديل مادة دراسية: {subject.name} (كود: {subject.code}) لدورة {course.name}",
+                target_model="Subject",
+                target_id=subject.id
+            )
             messages.success(request, f'تم تحديث بيانات المادة "{subject.name}" بنجاح.')
             return redirect(f"/courses/?category_id={course.category_id}&course_id={course.id}")
         else:
@@ -414,7 +484,17 @@ def subject_delete_view(request, subject_id):
             return redirect(f"/courses/?category_id={course.category_id}&course_id={course.id}")
         try:
             name = subject.name
+            sid = subject.id
+            cname = course.name
             subject.delete()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.DELETE,
+                action_category=ActivityCategory.COURSES,
+                description=f"حذف مادة دراسية: {name} من دورة {cname}",
+                target_model="Subject",
+                target_id=sid
+            )
             messages.success(request, f'تم حذف المادة "{name}" بنجاح.')
         except ProtectedError:
             messages.error(request, f'تعذر حذف المادة "{subject.name}" لوجود درجات مسجلة لها.')
@@ -556,6 +636,15 @@ def course_session_create_view(request):
                         enrolled_count += 1
                     except Trainee.DoesNotExist:
                         pass
+
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.CREATE,
+                    action_category=ActivityCategory.SESSIONS,
+                    description=f"إنشاء انعقاد دورة جديدة: {session.session_code} لدورة '{course.name}' وتسجيل {enrolled_count} دارس بها",
+                    target_model="CourseSession",
+                    target_id=session.id
+                )
 
                 messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
                 return redirect('training:course_session_manage', session_id=session.id)
@@ -755,6 +844,14 @@ def course_session_edit_view(request, session_id):
         form = CourseSessionForm(request.POST, instance=session)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.SESSIONS,
+                description=f"تعديل بيانات انعقاد الدورة: {session.session_code} لدورة '{session.course.name}'",
+                target_model="CourseSession",
+                target_id=session.id
+            )
             messages.success(request, f'تم تحديث بيانات الدورة المنعقدة بنجاح.')
             return redirect('training:course_sessions')
         else:
@@ -791,7 +888,17 @@ def course_session_delete_view(request, session_id):
             return redirect('training:course_sessions')
         try:
             code = session.session_code
+            sid = session.id
+            cname = session.course.name
             session.delete()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.DELETE,
+                action_category=ActivityCategory.SESSIONS,
+                description=f"حذف انعقاد الدورة: {code} لدورة '{cname}'",
+                target_model="CourseSession",
+                target_id=sid
+            )
             messages.success(request, f'تم حذف انعقاد الدورة "{code}" بنجاح.')
         except ProtectedError:
             messages.error(request, f'تعذر حذف انعقاد الدورة "{session.session_code}" لوجود سجلات أكاديمية مرتبطة به.')
@@ -1024,6 +1131,14 @@ def results_entry_view(request, session_id):
                 en.calculate_results()
             session.status = 'completed'
             session.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.GRADE_APPROVAL,
+                action_category=ActivityCategory.GRADES,
+                description=f"اعتماد وإقفال نتائج دورة '{session.course.name}' (دفعة: {session.session_code}) رسمياً",
+                target_model="CourseSession",
+                target_id=session.id
+            )
             messages.success(request, f'تم اعتماد وإقفال نتيجة دورة "{session.course.name}" بنجاح بعد اكتمال رصد كافة المواد من هيئة التدريس.')
             return redirect('training:results_entry', session_id=session.id)
 
@@ -1068,6 +1183,15 @@ def results_entry_view(request, session_id):
                     # تحديث احتساب النتيجة إن اكتملت جميع المواد والمواظبة
                     if en.grades.filter(score__isnull=False).count() == len(subjects) and en.attendance_score is not None:
                         en.calculate_results()
+
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.GRADE_ENTRY,
+                    action_category=ActivityCategory.GRADES,
+                    description=f"رصد وحفظ درجات مادة/مواد مكلف بها في دورة '{session.course.name}' (دفعة: {session.session_code}) لعدد {len(enrollments)} دارس",
+                    target_model="CourseSession",
+                    target_id=session.id
+                )
 
                 messages.success(request, f'تم حفظ ورصد درجات المواد المكلف بها في دورة "{session.course.name}" بنجاح.')
                 return redirect('training:results_entry', session_id=session.id)
@@ -1126,6 +1250,15 @@ def results_entry_view(request, session_id):
                         en.calculate_results()
                     else:
                         en.save()
+
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.GRADE_ENTRY,
+                    action_category=ActivityCategory.GRADES,
+                    description=f"رصد وحفظ درجات ومواظبة دورة '{session.course.name}' (دفعة: {session.session_code}) لعدد {len(enrollments)} دارس",
+                    target_model="CourseSession",
+                    target_id=session.id
+                )
 
                 messages.success(request, f'تم حفظ وتحديث الدرجات في دورة "{session.course.name}" بنجاح.')
                 return redirect('training:results_entry', session_id=session.id)
@@ -1551,6 +1684,56 @@ def admin_dashboard_view(request):
         enrolled_count=Count('enrollments')
     ).order_by('-start_date')[:6]
 
+    # 11. سجل النشاط والعمليات الشامل ومسار تدقيق المستخدمين (Audit & Activity Logs)
+    activity_qs = ActivityLog.objects.all()
+
+    # معلمات الفلترة والبحث
+    activity_user = request.GET.get('activity_user', '').strip()
+    activity_action = request.GET.get('activity_action', '').strip()
+    activity_category = request.GET.get('activity_category', '').strip()
+    activity_date = request.GET.get('activity_date', 'all').strip()
+    activity_q = request.GET.get('activity_q', '').strip()
+
+    if activity_user:
+        if activity_user.isdigit():
+            activity_qs = activity_qs.filter(user_id=int(activity_user))
+        else:
+            activity_qs = activity_qs.filter(username=activity_user)
+
+    if activity_action and activity_action != 'ALL':
+        activity_qs = activity_qs.filter(action_type=activity_action)
+
+    if activity_category and activity_category != 'ALL':
+        activity_qs = activity_qs.filter(action_category=activity_category)
+
+    today = timezone.localdate()
+    if activity_date == 'today':
+        activity_qs = activity_qs.filter(timestamp__date=today)
+    elif activity_date == '7days':
+        activity_qs = activity_qs.filter(timestamp__date__gte=today - timedelta(days=7))
+    elif activity_date == '30days':
+        activity_qs = activity_qs.filter(timestamp__date__gte=today - timedelta(days=30))
+
+    if activity_q:
+        activity_qs = activity_qs.filter(
+            Q(description__icontains=activity_q) |
+            Q(username__icontains=activity_q) |
+            Q(user_fullname__icontains=activity_q) |
+            Q(user_military_number__icontains=activity_q) |
+            Q(ip_address__icontains=activity_q)
+        )
+
+    activity_logs_total = ActivityLog.objects.count()
+    activity_logs_today = ActivityLog.objects.filter(timestamp__date=today).count()
+    activity_logs_creates = ActivityLog.objects.filter(action_type=ActivityAction.CREATE).count()
+    activity_logs_updates = ActivityLog.objects.filter(action_type=ActivityAction.UPDATE).count()
+    activity_logs_deletes = ActivityLog.objects.filter(action_type=ActivityAction.DELETE).count()
+    activity_logs_sessions = ActivityLog.objects.filter(action_type__in=[ActivityAction.LOGIN, ActivityAction.LOGOUT]).count()
+    activity_logs_grades = ActivityLog.objects.filter(action_type__in=[ActivityAction.GRADE_ENTRY, ActivityAction.GRADE_APPROVAL]).count()
+
+    activity_logs = list(activity_qs[:300])
+    activity_users_list = User.objects.all().order_by('username')
+
     context = {
         # KPIs
         'trainees_total': trainees_total,
@@ -1589,6 +1772,23 @@ def admin_dashboard_view(request):
         'system_settings': system_settings,
         'system_form': system_form,
         'color_presets': color_presets,
+        # Activity Logs
+        'activity_logs': activity_logs,
+        'activity_logs_total': activity_logs_total,
+        'activity_logs_today': activity_logs_today,
+        'activity_logs_creates': activity_logs_creates,
+        'activity_logs_updates': activity_logs_updates,
+        'activity_logs_deletes': activity_logs_deletes,
+        'activity_logs_sessions': activity_logs_sessions,
+        'activity_logs_grades': activity_logs_grades,
+        'activity_actions': ActivityAction.choices,
+        'activity_categories': ActivityCategory.choices,
+        'activity_user': activity_user,
+        'activity_action': activity_action,
+        'activity_category': activity_category,
+        'activity_date': activity_date,
+        'activity_q': activity_q,
+        'activity_users_list': activity_users_list,
     }
     return render(request, 'admin_portal/dashboard.html', context)
 
@@ -1648,6 +1848,15 @@ def user_create_view(request):
                 user.save(update_fields=['is_staff'])
 
             profile.save()
+
+            log_activity(
+                request=request,
+                action_type=ActivityAction.CREATE,
+                action_category=ActivityCategory.USERS,
+                description=f"إضافة حساب مستخدم جديد: {user.username} بصلاحية ({profile.get_role_display()})",
+                target_model="User",
+                target_id=user.id
+            )
 
             messages.success(request, f'تم إنشاء حساب المستخدم الجديد "{user.username}" بنجاح وتعيين الصلاحية ({profile.get_role_display()}).')
         else:
@@ -1712,6 +1921,15 @@ def user_edit_view(request, user_id):
 
             profile.save()
 
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.USERS,
+                description=f"تعديل بيانات المستخدم: {target_user.username} (الصلاحية: {profile.get_role_display()})",
+                target_model="User",
+                target_id=target_user.id
+            )
+
             messages.success(request, f'تم حفظ تعديلات المستخدم "{target_user.username}" بنجاح.')
             return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
         else:
@@ -1754,7 +1972,16 @@ def user_delete_view(request, user_id):
 
     if request.method == 'POST':
         uname = target_user.username
+        uid = target_user.id
         target_user.delete()
+        log_activity(
+            request=request,
+            action_type=ActivityAction.DELETE,
+            action_category=ActivityCategory.USERS,
+            description=f"حذف حساب المستخدم نهائياً: {uname}",
+            target_model="User",
+            target_id=uid
+        )
         messages.success(request, f'تم حذف المستخدم "{uname}" نهائياً من النظام.')
         return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
@@ -1777,6 +2004,14 @@ def user_toggle_active_view(request, user_id):
         target_user.is_active = not target_user.is_active
         target_user.save()
         status_text = 'تفعيل' if target_user.is_active else 'تعطيل'
+        log_activity(
+            request=request,
+            action_type=ActivityAction.STATUS_CHANGE,
+            action_category=ActivityCategory.USERS,
+            description=f"تغيير حالة حساب المستخدم '{target_user.username}' إلى ({status_text})",
+            target_model="User",
+            target_id=target_user.id
+        )
         messages.success(request, f'تم {status_text} حساب المستخدم "{target_user.username}" بنجاح.')
     return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
@@ -1847,6 +2082,14 @@ def user_update_role_view(request, user_id):
         profile.instructor = None
 
     profile.save()
+    log_activity(
+        request=request,
+        action_type=ActivityAction.UPDATE,
+        action_category=ActivityCategory.USERS,
+        description=f"تحديث أذونات وصلاحيات المستخدم '{target_user.username}' إلى دور: {profile.get_role_display()}",
+        target_model="User",
+        target_id=target_user.id
+    )
     messages.success(request, f'تم حفظ وتطبيق أذونات وصلاحيات المستخدم "{target_user.username}" بنجاح.')
     return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
@@ -1867,6 +2110,14 @@ def instructor_create_view(request):
                 messages.error(request, f'النمرة العسكرية "{mil_num}" مسجلة مسبقاً في النظام كدارس! لا يجوز تكرار النمرة العسكرية بين المعلمين والدارسين.')
             else:
                 inst = form.save()
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.CREATE,
+                    action_category=ActivityCategory.INSTRUCTORS,
+                    description=f"إضافة معلم جديد: {inst.name} (نمرة: {inst.military_number} - رتبة: {inst.rank})",
+                    target_model="Instructor",
+                    target_id=inst.military_number
+                )
                 messages.success(request, f'تم إضافة المعلم "{inst.name}" بنجاح.')
         else:
             for field, errors in form.errors.items():
@@ -1884,6 +2135,14 @@ def instructor_edit_view(request, military_number):
         form.fields['military_number'].disabled = True
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.INSTRUCTORS,
+                description=f"تعديل بيانات المعلم: {instructor.name} (نمرة: {instructor.military_number})",
+                target_model="Instructor",
+                target_id=instructor.military_number
+            )
             messages.success(request, f'تم حفظ تعديلات بيانات المعلم "{instructor.name}" بنجاح.')
             return redirect('training:admin_dashboard')
         else:
@@ -1909,7 +2168,16 @@ def instructor_delete_view(request, military_number):
 
     if request.method == 'POST':
         name = instructor.name
+        mil_num = instructor.military_number
         instructor.delete()
+        log_activity(
+            request=request,
+            action_type=ActivityAction.DELETE,
+            action_category=ActivityCategory.INSTRUCTORS,
+            description=f"حذف المعلم: {name} (نمرة: {mil_num})",
+            target_model="Instructor",
+            target_id=mil_num
+        )
         messages.success(request, f'تم حذف المعلم "{name}" بنجاح.')
         return redirect('training:admin_dashboard')
 
@@ -1945,6 +2213,13 @@ def certificate_settings_update_view(request):
         form = CertificateSettingsForm(request.POST, request.FILES, instance=cert_settings)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.SETTINGS,
+                description="تحديث إعدادات وتوقيعات ولوغهات الشهادة الرسمية",
+                target_model="CertificateSettings"
+            )
             messages.success(request, 'تم حفظ وتحديث إعدادات وتوقيعات ولوغهات الشهادة الرسمية بنجاح. ستنعكس فوراً على جميع الشهادات.')
         else:
             for field, errors in form.errors.items():
@@ -2029,6 +2304,13 @@ def system_settings_update_view(request):
                 for k, v in p.items():
                     setattr(system_settings, k, v)
                 system_settings.save()
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.UPDATE,
+                    action_category=ActivityCategory.SETTINGS,
+                    description=f"تطبيق حزمة ألوان وثيم جاهز: {presets_map[preset_id].get('name', preset_id)}",
+                    target_model="SystemSettings"
+                )
                 messages.success(request, f'تم تطبيق حزمة الألوان بنجاح وانعكست على كافة شاشات النظام فوراً.')
                 return redirect('training:admin_dashboard')
 
@@ -2036,6 +2318,13 @@ def system_settings_update_view(request):
         form = SystemSettingsForm(request.POST, request.FILES, instance=system_settings)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.SETTINGS,
+                description="تحديث إعدادات وشعار وهوية وألوان النظام المخصصة",
+                target_model="SystemSettings"
+            )
             messages.success(request, 'تم حفظ وتحديث هوية وشعار وألوان النظام بنجاح. تنعكس الآن على كامل شاشات النظام فوراً.')
         else:
             for field, errors in form.errors.items():
@@ -2055,6 +2344,14 @@ def category_create_view(request):
         form = CourseCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.CREATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"إضافة تصنيف دورات تدريبية جديد: {category.name}",
+                target_model="CourseCategory",
+                target_id=category.id
+            )
             messages.success(request, f'تم إضافة تصنيف الدورات الجديد "{category.name}" بنجاح.')
         else:
             for field, errors in form.errors.items():
@@ -2071,6 +2368,14 @@ def category_edit_view(request, category_id):
         form = CourseCategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.COURSES,
+                description=f"تعديل تصنيف الدورات التدريبية: {category.name}",
+                target_model="CourseCategory",
+                target_id=category.id
+            )
             messages.success(request, f'تم تعديل تصنيف الدورات "{category.name}" بنجاح.')
             return redirect('training:admin_dashboard')
         else:
@@ -2100,7 +2405,16 @@ def category_delete_view(request, category_id):
             )
         else:
             category_name = category.name
+            cid = category.id
             category.delete()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.DELETE,
+                action_category=ActivityCategory.COURSES,
+                description=f"حذف تصنيف الدورات: {category_name}",
+                target_model="CourseCategory",
+                target_id=cid
+            )
             messages.success(request, f'تم حذف تصنيف الدورات "{category_name}" بنجاح.')
         return redirect('training:admin_dashboard')
 
@@ -2108,6 +2422,25 @@ def category_delete_view(request, category_id):
         'category': category,
         'linked_courses_count': linked_courses_count
     })
+
+
+# =====================================================================
+# إدارة سجل النشاط وتفريغ السجلات (Activity Log Management)
+# =====================================================================
+@admin_access_required
+def admin_clear_activity_logs_view(request):
+    """تفريغ وتنظيف سجل النشاط والعمليات من لوحة الأدمن مع توثيق عملية التفريغ"""
+    if request.method == 'POST':
+        count = ActivityLog.objects.count()
+        ActivityLog.objects.all().delete()
+        log_activity(
+            request=request,
+            action_type=ActivityAction.DELETE,
+            action_category=ActivityCategory.SYSTEM,
+            description=f"قام مدير النظام بتفريغ وحذف سجل النشاط والعمليات السابق بالكامل (كان يحتوي على {count} عملية مسجلة)."
+        )
+        messages.success(request, f'تم تفريغ وحذف سجل النشاط السابق بنجاح ({count} سجل تم تنظيفها).')
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=activity-log#pane-activity-log")
 
 
 # =====================================================================

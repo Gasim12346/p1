@@ -1259,6 +1259,71 @@ class UserRolePermissionsTest(TestCase):
         course_form_obj = form.save()
         self.assertEqual(course_form_obj.attendance_max_grade, Decimal('10.00'))
 
+    def test_activity_log_tracking_and_user_session_journey(self):
+        """التحقق من توثيق سجل النشاط لعمليات المستخدم من الدخول حتى الخروج والفلاتر في صفحة الأدمن"""
+        from training.models import ActivityLog, ActivityAction, ActivityCategory
+
+        # 1. تسجيل دخول المستخدم مسجل البيانات
+        self.client.login(username='registrar_user', password='Password123!')
+        login_log = ActivityLog.objects.filter(username='registrar_user', action_type=ActivityAction.LOGIN).first()
+        self.assertIsNotNone(login_log)
+        self.assertEqual(login_log.action_category, ActivityCategory.AUTH)
+
+        # 2. قيام المستخدم بعملية إضافة دارس جديد
+        res_add = self.client.post(reverse('training:trainees_list'), {
+            'add_trainee': '1',
+            'military_number': '99881',
+            'category': 'officer',
+            'name': 'دارس سجل النشاط',
+            'force': 'القوات الجوية',
+            'unit': 'قاعدة الخرطوم'
+        })
+        self.assertEqual(res_add.status_code, 302)
+        add_log = ActivityLog.objects.filter(username='registrar_user', action_type=ActivityAction.CREATE, target_model='Trainee').first()
+        self.assertIsNotNone(add_log)
+        self.assertIn('99881', add_log.description)
+
+        # 3. قيام المستخدم بتعديل بيانات الدارس
+        res_edit = self.client.post(reverse('training:trainee_edit', kwargs={'military_number': '99881'}), {
+            'military_number': '99881',
+            'category': 'officer',
+            'name': 'دارس معدل في سجل النشاط',
+            'force': 'القوات الجوية',
+            'unit': 'جناح العمليات'
+        })
+        self.assertEqual(res_edit.status_code, 302)
+        edit_log = ActivityLog.objects.filter(username='registrar_user', action_type=ActivityAction.UPDATE, target_model='Trainee').first()
+        self.assertIsNotNone(edit_log)
+        self.assertIn('دارس معدل', edit_log.description)
+
+        # 4. تسجيل الخروج من النظام
+        self.client.get(reverse('training:logout'))
+        logout_log = ActivityLog.objects.filter(username='registrar_user', action_type=ActivityAction.LOGOUT).first()
+        self.assertIsNotNone(logout_log)
+
+        # 5. دخول الأدمن للوحة الأدمن وتفحص سجل النشاط
+        self.client.login(username='admin_role_tester', password='Password123!')
+        res_admin = self.client.get(reverse('training:admin_dashboard') + '?tab=activity-log')
+        self.assertEqual(res_admin.status_code, 200)
+        self.assertContains(res_admin, 'سجل النشاط ومسار عمليات المستخدمين')
+        self.assertContains(res_admin, 'registrar_user')
+
+        # 6. فلترة مسار جلسة المستخدم المختار
+        res_user_filter = self.client.get(reverse('training:admin_dashboard') + '?tab=activity-log&activity_user=registrar_user')
+        self.assertEqual(res_user_filter.status_code, 200)
+        self.assertContains(res_user_filter, 'تتبع مسار نشاط وجلسات المستخدم')
+        self.assertContains(res_user_filter, 'دارس معدل في سجل النشاط')
+
+        # 7. التحقق من تفريغ سجل النشاط
+        clear_res = self.client.post(reverse('training:admin_clear_activity_logs'))
+        self.assertEqual(clear_res.status_code, 302)
+        # بعد التفريغ، يجب أن يتواجد سجل واحد يوثق قيام الأدمن بالتفريغ نفسه
+        self.assertEqual(ActivityLog.objects.count(), 1)
+        clear_log = ActivityLog.objects.first()
+        self.assertEqual(clear_log.action_type, ActivityAction.DELETE)
+        self.assertIn('تفريغ وحذف سجل النشاط', clear_log.description)
+
+
 
 
 

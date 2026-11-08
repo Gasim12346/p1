@@ -70,4 +70,7 @@ urlpatterns = [
     # التقرير الإحصائي القابل للطباعة
     path('admin-portal/report/print/', views.admin_report_print_view, name='admin_report_print'),
     path('admin-dashboard/report/print/', views.admin_report_print_view),
+
+    # سجل النشاط والعمليات
+    path('admin-portal/activity-log/clear/', views.admin_clear_activity_logs_view, name='admin_clear_activity_logs'),
 ]
