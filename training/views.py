@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
@@ -9,12 +10,13 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 from .models import (
+    Instructor, SessionSubjectInstructor,
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade,
     CertificateSettings, SystemSettings, UserProfile, UserRole
 )
 from .forms import (
-    TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
+    InstructorForm, TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
     UserLoginForm, CourseCategoryForm, CertificateSettingsForm,
     SystemSettingsForm, UserCreateForm, UserEditForm, AdminLoginForm
 )
@@ -371,10 +373,12 @@ def course_session_create_view(request):
     - اختيار الطلبة الدارسين مع إمكانية تعديل الرتبة والوحدة وقت الدورة.
     - حفظ الانعقاد والطلبة.
     """
-    categories = CourseCategory.objects.prefetch_related('courses').all()
+    categories = CourseCategory.objects.prefetch_related('courses__subjects').all()
     trainees = Trainee.objects.all().order_by('category', 'name')
+    instructors = Instructor.objects.filter(is_active=True).order_by('name')
 
     if request.method == 'POST':
+        category_id = request.POST.get('category')
         course_id = request.POST.get('course')
         session_code = request.POST.get('session_code', '').strip()
         start_date = request.POST.get('start_date')
@@ -382,6 +386,7 @@ def course_session_create_view(request):
         status = request.POST.get('status', 'active')
         attendance_max_grade = request.POST.get('attendance_max_grade', '20.0')
         notes = request.POST.get('notes', '').strip()
+        supervisor_num = request.POST.get('supervisor', '').strip()
 
         selected_trainee_nums = request.POST.getlist('selected_trainees')
 
@@ -391,6 +396,8 @@ def course_session_create_view(request):
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
         else:
             course = get_object_or_404(Course, pk=course_id)
+            supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
+
             session = CourseSession.objects.create(
                 course=course,
                 session_code=session_code,
@@ -398,8 +405,19 @@ def course_session_create_view(request):
                 end_date=end_date,
                 status=status,
                 attendance_max_grade=attendance_max_grade or 20.0,
+                supervisor=supervisor,
                 notes=notes
             )
+
+            # تعيين المعلمين لمواد الدورة
+            for sub in course.subjects.all():
+                teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
+                inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
+                SessionSubjectInstructor.objects.create(
+                    session=session,
+                    subject=sub,
+                    instructor=inst
+                )
 
             # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
             enrolled_count = 0
@@ -432,16 +450,32 @@ def course_session_create_view(request):
                 except Trainee.DoesNotExist:
                     pass
 
-            messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتسجيل {enrolled_count} دارس بها.')
+            messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
             return redirect('training:course_session_manage', session_id=session.id)
 
     officer_count = trainees.filter(category=TraineeCategory.OFFICER).count()
     nco_count = trainees.filter(category=TraineeCategory.NCO).count()
     civilian_count = trainees.filter(category=TraineeCategory.CIVILIAN).count()
 
+    courses_subjects_map = {}
+    for cat in categories:
+        for c in cat.courses.all():
+            courses_subjects_map[str(c.id)] = [
+                {
+                    'id': s.id,
+                    'code': s.code,
+                    'name': s.name,
+                    'credit_hours': s.credit_hours,
+                    'max_grade': float(s.max_grade),
+                }
+                for s in c.subjects.all()
+            ]
+
     return render(request, 'training/course_session_create.html', {
         'categories': categories,
         'trainees': trainees,
+        'instructors': instructors,
+        'courses_subjects_json': json.dumps(courses_subjects_map, ensure_ascii=False),
         'officer_count': officer_count,
         'nco_count': nco_count,
         'civilian_count': civilian_count,
@@ -453,11 +487,30 @@ def course_session_manage_view(request, session_id):
     """
     إدارة وتعديل الدارسين في دورة منعقدة:
     - تعديل الرتبة والقوة والوحدة للدارسين في الدورة.
+    - تحديث المشرف ومعلمي المواد.
     - إضافة دارسين جدد للدورة.
     - إزالة دارس من الدورة.
     """
-    session = get_object_or_404(CourseSession.objects.select_related('course', 'course__category'), pk=session_id)
+    session = get_object_or_404(CourseSession.objects.select_related('course', 'course__category', 'supervisor'), pk=session_id)
     enrollments = session.enrollments.select_related('trainee').all()
+    instructors = Instructor.objects.filter(is_active=True).order_by('name')
+
+    # تحديث مشرف الدورة ومعلمي المواد
+    if request.method == 'POST' and 'update_session_teachers' in request.POST:
+        new_sup_num = request.POST.get('supervisor', '').strip()
+        session.supervisor = Instructor.objects.filter(military_number=new_sup_num).first() if new_sup_num else None
+        session.save(update_fields=['supervisor'])
+
+        for sub in session.course.subjects.all():
+            t_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
+            inst = Instructor.objects.filter(military_number=t_num).first() if t_num else None
+            SessionSubjectInstructor.objects.update_or_create(
+                session=session,
+                subject=sub,
+                defaults={'instructor': inst}
+            )
+        messages.success(request, 'تم حفظ وتحديث بيانات مشرف الدورة ومعلمي المواد الدراسية بنجاح.')
+        return redirect('training:course_session_manage', session_id=session.id)
 
     # تحديث الرتب والقوة والوحدات للدارسين المسجلين
     if request.method == 'POST' and 'update_enrollments' in request.POST:
@@ -543,10 +596,19 @@ def course_session_manage_view(request, session_id):
     enrolled_trainee_ids = enrollments.values_list('trainee_id', flat=True)
     available_trainees = Trainee.objects.exclude(military_number__in=enrolled_trainee_ids)
 
+    session_subject_instructors = list(session.subject_instructors.select_related('subject', 'instructor').all())
+    assigned_subject_ids = {a.subject_id for a in session_subject_instructors}
+    for sub in session.course.subjects.all():
+        if sub.id not in assigned_subject_ids:
+            assign = SessionSubjectInstructor.objects.create(session=session, subject=sub, instructor=None)
+            session_subject_instructors.append(assign)
+
     context = {
         'session': session,
         'enrollments': enrollments,
         'available_trainees': available_trainees,
+        'instructors': instructors,
+        'session_subject_instructors': session_subject_instructors,
     }
     return render(request, 'training/course_session_manage.html', context)
 
@@ -1275,6 +1337,9 @@ def admin_dashboard_view(request):
         # Users
         'users': users,
         'user_create_form': user_create_form,
+        # Instructors
+        'instructors': Instructor.objects.all().order_by('name'),
+        'instructor_form': InstructorForm(),
         # Certificate Settings
         'cert_settings': cert_settings,
         'cert_form': cert_form,
@@ -1411,6 +1476,73 @@ def user_toggle_active_view(request, user_id):
         status_text = 'تفعيل' if target_user.is_active else 'تعطيل'
         messages.success(request, f'تم {status_text} حساب المستخدم "{target_user.username}" بنجاح.')
     return redirect('training:admin_dashboard')
+
+
+# =====================================================================
+# إدارة هيئة التعليم والمعلمين (Instructor Management)
+# =====================================================================
+@admin_access_required
+def instructor_create_view(request):
+    """إضافة معلم جديد للنظام من لوحة الأدمن"""
+    if request.method == 'POST':
+        form = InstructorForm(request.POST)
+        if form.is_valid():
+            mil_num = form.cleaned_data['military_number']
+            if Instructor.objects.filter(military_number=mil_num).exists():
+                messages.error(request, f'النمرة العسكرية "{mil_num}" مسجلة مسبقاً لمعلم آخر!')
+            else:
+                inst = form.save()
+                messages.success(request, f'تم إضافة المعلم "{inst.name}" بنجاح.')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    return redirect('training:admin_dashboard')
+
+
+@admin_access_required
+def instructor_edit_view(request, military_number):
+    """تعديل بيانات معلم"""
+    instructor = get_object_or_404(Instructor, military_number=military_number)
+    if request.method == 'POST':
+        form = InstructorForm(request.POST, instance=instructor)
+        form.fields['military_number'].disabled = True
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'تم حفظ تعديلات بيانات المعلم "{instructor.name}" بنجاح.')
+            return redirect('training:admin_dashboard')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    else:
+        form = InstructorForm(instance=instructor)
+        form.fields['military_number'].disabled = True
+
+    return render(request, 'admin_portal/instructor_edit.html', {
+        'form': form,
+        'instructor': instructor
+    })
+
+
+@admin_access_required
+def instructor_delete_view(request, military_number):
+    """حذف معلم من النظام مع حماية الدورات المسندة له"""
+    instructor = get_object_or_404(Instructor, military_number=military_number)
+    has_sessions = instructor.supervised_sessions.exists()
+    has_assignments = instructor.teaching_assignments.exists()
+
+    if request.method == 'POST':
+        name = instructor.name
+        instructor.delete()
+        messages.success(request, f'تم حذف المعلم "{name}" بنجاح.')
+        return redirect('training:admin_dashboard')
+
+    return render(request, 'admin_portal/instructor_confirm_delete.html', {
+        'instructor': instructor,
+        'has_sessions': has_sessions,
+        'has_assignments': has_assignments
+    })
 
 
 # =====================================================================

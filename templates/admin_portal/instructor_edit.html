@@ -1,0 +1,76 @@
+{% extends 'admin_portal/base_admin.html' %}
+
+{% block title %}تعديل بيانات المعلم - {{ instructor.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 48px; height: 48px;">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">تعديل بيانات المعلم</h5>
+                            <small class="text-muted">النمرة العسكرية: <strong class="font-monospace">{{ instructor.military_number }}</strong></small>
+                        </div>
+                    </div>
+                    <a href="{% url 'training:admin_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للوحة القيادة
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">النمرة العسكرية (مفتاح أساسي)</label>
+                            <input type="text" class="form-control form-control-lg bg-light font-monospace" value="{{ instructor.military_number }}" disabled>
+                            <div class="form-text small text-muted">النمرة العسكرية لا يمكن تعديلها لأنها المفتاح الأساسي.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">الرتبة <span class="text-danger">*</span></label>
+                            {{ form.rank }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">الاسم الكامل للمعلم <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">رقم الهاتف</label>
+                            {{ form.phone }}
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch p-3 bg-light rounded-3 border">
+                                {{ form.is_active }}
+                                <label class="form-check-label fw-bold ms-2" for="{{ form.is_active.id_for_label }}">
+                                    المعلم نشط وعلى رأس العمل (يمكن تكليفه بالدورات والمواد)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                            إلغاء ورجوع
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>حفظ التعديلات</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

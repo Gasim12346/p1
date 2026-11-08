@@ -1,0 +1,57 @@
+{% extends 'admin_portal/base_admin.html' %}
+
+{% block title %}تأكيد حذف المعلم - {{ instructor.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-danger text-white p-4">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                    <div>
+                        <h5 class="fw-bold mb-0">تأكيد حذف المعلم</h5>
+                        <small class="text-white-50">إجراء نهائي لإزالة المعلم من سجلات هيئة التدريس</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <p class="fs-6 text-dark mb-2">
+                    هل أنت متأكد من رغبتك في حذف بيانات المعلم:
+                </p>
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="fw-bold fs-5 text-danger">{{ instructor.rank }} / {{ instructor.name }}</div>
+                    <div class="small text-muted mt-1">
+                        النمرة العسكرية: <code class="font-monospace fw-bold">{{ instructor.military_number }}</code>
+                        {% if instructor.phone %} • الهاتف: <span>{{ instructor.phone }}</span>{% endif %}
+                    </div>
+                </div>
+
+                {% if has_sessions or has_assignments %}
+                <div class="alert alert-warning border-0 rounded-3 small mb-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    <strong>تنبيه:</strong> هذا المعلم مسجل كمشرف على دورات أو كمعلم لمواد دراسية. حذف المعلم سيؤدي إلى إفراغ خانة المعلم في تلك الدورات دون حذف الدورات نفسها.
+                </div>
+                {% endif %}
+
+                <p class="text-muted small mb-4">
+                    سيتم حذف سجل هذا المعلم بشكل نهائي من قاعدة البيانات.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="{% url 'training:admin_dashboard' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold">
+                            <i class="bi bi-trash-fill me-1"></i> نعم، تأكيد الحذف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

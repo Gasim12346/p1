@@ -148,6 +148,13 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-instructors" data-bs-toggle="tab" data-bs-target="#pane-instructors" type="button" role="tab">
+                <i class="bi bi-person-workspace text-primary"></i>
+                <span>هيئة التعليم والمعلمون</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">{{ instructors|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-categories" data-bs-toggle="tab" data-bs-target="#pane-categories" type="button" role="tab">
                 <i class="bi bi-tags-fill text-info"></i>
                 <span>تصنيفات الدورات</span>
@@ -344,6 +351,97 @@
                             {% empty %}
                                 <tr>
                                     <td colspan="8" class="text-center py-4 text-muted">لا يوجد مستخدمون مسجلون.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================
+             PANE: هيئة التعليم والمعلمون
+             ======================================================== -->
+        <div class="tab-pane fade" id="pane-instructors" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-person-workspace text-primary me-2"></i>
+                            سجل هيئة التعليم والمعلمين
+                        </h5>
+                    </div>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
+                        <i class="bi bi-person-plus-fill me-1"></i> إضافة معلم جديد
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-custom align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>النمرة العسكرية (مفتاح أساسي)</th>
+                                <th>الرتبة</th>
+                                <th>اسم المعلم</th>
+                                <th>رقم الهاتف</th>
+                                <th>الإشراف على الدورات</th>
+                                <th>المواد المسندة</th>
+                                <th>الحالة</th>
+                                <th class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inst in instructors %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark font-monospace fs-6 px-3 py-2 border">
+                                            {{ inst.military_number }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 fw-bold">
+                                            {{ inst.rank }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-dark fs-6">{{ inst.name }}</span>
+                                    </td>
+                                    <td class="text-muted small">
+                                        {{ inst.phone|default:"-" }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">
+                                            {{ inst.supervised_sessions.count }} دورة
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-dark px-2 py-1">
+                                            {{ inst.teaching_assignments.count }} مادة
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if inst.is_active %}
+                                            <span class="badge px-3 py-1 rounded-pill" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 700;">نشط</span>
+                                        {% else %}
+                                            <span class="badge px-3 py-1 rounded-pill" style="background-color: #fee2e2 !important; color: #b91c1c !important; border: 1px solid #fca5a5 !important; font-weight: 700;">غير نشط</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{% url 'training:instructor_edit' inst.military_number %}" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تعديل بيانات المعلم">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </a>
+                                            <a href="{% url 'training:instructor_delete' inst.military_number %}" class="btn btn-sm btn-outline-danger rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="حذف المعلم">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        لا يوجد معلمون مسجلون حالياً. انقر على "إضافة معلم جديد" للبدء.
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -960,6 +1058,65 @@
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
                         <i class="bi bi-check-lg me-1"></i> حفظ التصنيف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: إضافة معلم جديد (Add Instructor Modal) -->
+<div class="modal fade" id="addInstructorModal" tabindex="-1" aria-labelledby="addInstructorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-workspace fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="addInstructorModalLabel">إضافة معلم جديد لهيئة التدريس</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            
+            <form method="post" action="{% url 'training:instructor_create' %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">النمرة العسكرية (مفتاح أساسي) <span class="text-danger">*</span></label>
+                            {{ instructor_form.military_number }}
+                            <div class="form-text small text-muted">أرقام فقط - تستخدم كمفتاح أساسي فريد في قاعدة البيانات.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">الرتبة <span class="text-danger">*</span></label>
+                            {{ instructor_form.rank }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">الاسم الكامل للمعلم <span class="text-danger">*</span></label>
+                            {{ instructor_form.name }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">رقم الهاتف</label>
+                            {{ instructor_form.phone }}
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch p-3 bg-light rounded-3 border">
+                                {{ instructor_form.is_active }}
+                                <label class="form-check-label fw-bold ms-2" for="{{ instructor_form.is_active.id_for_label }}">
+                                    المعلم نشط وعلى رأس العمل (جاهز للتكليف بالدورات والمواد)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-check-lg me-1"></i> حفظ وإضافة المعلم
                     </button>
                 </div>
             </form>

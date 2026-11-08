@@ -61,6 +61,71 @@
     </div>
 </div>
 
+<!-- Course Teachers & Supervisor Card -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-workspace text-primary fs-5"></i>
+            <div>
+                <h6 class="fw-bold text-dark mb-0">مشرف الدورة وهيئة تدريس المواد الدراسية</h6>
+                <small class="text-muted">
+                    مشرف الدورة:
+                    {% if session.supervisor %}
+                        <strong class="text-primary">{{ session.supervisor.rank }} / {{ session.supervisor.name }}</strong> ({{ session.supervisor.military_number }})
+                    {% else %}
+                        <span class="text-muted">لم يتم تعيين مشرف بعد</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#editTeachersModal">
+            <i class="bi bi-pencil-square"></i>
+            <span>تعديل المشرف والمعلمين</span>
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th style="width: 15%;">كود المادة</th>
+                    <th style="width: 30%;">اسم المادة الدراسية</th>
+                    <th style="width: 15%;">الساعات</th>
+                    <th style="width: 15%;">الدرجة العظمى</th>
+                    <th style="width: 25%;">معلم المادة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in session_subject_instructors %}
+                    <tr>
+                        <td><span class="badge bg-light text-dark font-monospace border px-2 py-1">{{ item.subject.code|default:"-" }}</span></td>
+                        <td><strong class="text-dark">{{ item.subject.name }}</strong></td>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ item.subject.credit_hours|default:"0" }} س</span></td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary">{{ item.subject.max_grade|default:"100" }} درجة</span></td>
+                        <td>
+                            {% if item.instructor %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 fs-6">
+                                    <i class="bi bi-person-check-fill me-1"></i>
+                                    {{ item.instructor.rank }} / {{ item.instructor.name }}
+                                </span>
+                                <small class="text-muted d-block font-monospace">({{ item.instructor.military_number }})</small>
+                            {% else %}
+                                <span class="text-muted small">
+                                    <i class="bi bi-dash-circle me-1"></i> لم يعين معلم
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-3 text-muted">لا توجد مواد مسجلة في خطة هذه الدورة.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <!-- Enrolled Trainees List & Rank/Unit Editing -->
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
     <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
@@ -390,6 +455,99 @@
                             إلحاق الدارسين المحددين
                         </button>
                     {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Teachers and Supervisor -->
+<div class="modal fade" id="editTeachersModal" tabindex="-1" aria-labelledby="editTeachersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-workspace fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="editTeachersModalLabel">تعديل مشرف الدورة ومعلمي المواد الدراسية</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="update_session_teachers" value="1">
+
+                <div class="modal-body p-4">
+                    <!-- مشرف الدورة -->
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <label class="form-label fw-bold text-dark">
+                            <i class="bi bi-person-badge-fill text-primary me-1"></i>
+                            مشرف الدورة
+                        </label>
+                        <select name="supervisor" class="form-select form-select-lg">
+                            <option value="">-- بدون مشرف / يحدد لاحقاً --</option>
+                            {% for inst in instructors %}
+                                <option value="{{ inst.military_number }}" {% if session.supervisor_id == inst.military_number %}selected{% endif %}>
+                                    {{ inst.rank }} / {{ inst.name }} ({{ inst.military_number }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">اختر المعلم المكلف بالإشراف على هذه الدورة التدريبية.</div>
+                    </div>
+
+                    <!-- معلمو المواد -->
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-book-half text-success me-1"></i>
+                        المعلمون المكلفون بالمواد الدراسية:
+                    </h6>
+
+                    <div class="table-responsive border rounded-3 overflow-hidden">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>الساعات والدرجة</th>
+                                    <th style="min-width: 250px;">المعلم المسؤول</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in session_subject_instructors %}
+                                    <tr>
+                                        <td>
+                                            <strong class="text-dark">{{ item.subject.name }}</strong>
+                                            {% if item.subject.code %}
+                                                <small class="text-muted d-block font-monospace">{{ item.subject.code }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small text-muted">
+                                            {{ item.subject.credit_hours|default:0 }} س • {{ item.subject.max_grade|default:100 }} د
+                                        </td>
+                                        <td>
+                                            <select name="subject_teacher_{{ item.subject.id }}" class="form-select form-select-sm">
+                                                <option value="">-- لم يعين معلم --</option>
+                                                {% for inst in instructors %}
+                                                    <option value="{{ inst.military_number }}" {% if item.instructor_id == inst.military_number %}selected{% endif %}>
+                                                        {{ inst.rank }} / {{ inst.name }} ({{ inst.military_number }})
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-3 text-muted">لا توجد مواد مسجلة في خطة هذه الدورة.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" name="update_session_teachers" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-check-lg me-1"></i> حفظ التعديلات
+                    </button>
                 </div>
             </form>
         </div>

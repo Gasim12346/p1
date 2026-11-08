@@ -408,6 +408,209 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(float(en.total_score), 95.0, 'لا يجب تغيير الدرجة في دورة معتمدة من قبل مستخدم عادي')
 
 
+class InstructorManagementAndCourseSessionTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Admin user
+        self.admin_user = User.objects.create_user(
+            username='admin_inst',
+            password='Password123!',
+            is_staff=True
+        )
+        self.admin_user.profile.role = UserRole.ADMIN
+        self.admin_user.profile.save()
+
+        # Regular user
+        self.regular_user = User.objects.create_user(
+            username='user_inst',
+            password='Password123!'
+        )
+        self.regular_user.profile.role = UserRole.REGULAR
+        self.regular_user.profile.save()
+
+        # Category and Course
+        from training.models import Instructor, CourseCategory, Course, Subject, CourseSession, SessionSubjectInstructor, Trainee
+
+        self.cat = CourseCategory.objects.create(name='دورات مرشد')
+        self.course = Course.objects.create(
+            name='دورة أمن المعلومات',
+            course_number='SEC-101',
+            category=self.cat
+        )
+        self.subject1 = Subject.objects.create(
+            course=self.course,
+            name='الأمن السيبراني',
+            code='CS-01',
+            credit_hours=3,
+            max_grade=100
+        )
+        self.subject2 = Subject.objects.create(
+            course=self.course,
+            name='التشفير والشبكات',
+            code='CS-02',
+            credit_hours=2,
+            max_grade=100
+        )
+
+        # Instructors
+        self.instructor1 = Instructor.objects.create(
+            military_number='112233',
+            name='د. أحمد عبد الله',
+            rank='عقيد',
+            phone='0123456789',
+            is_active=True
+        )
+        self.instructor2 = Instructor.objects.create(
+            military_number='445566',
+            name='أ. سامي عثمان',
+            rank='مقدم',
+            phone='0987654321',
+            is_active=True
+        )
+
+        # Trainee
+        self.trainee = Trainee.objects.create(
+            military_number='55667788',
+            name='علي محمد خالد',
+            category='officer',
+            force='القوات البرية',
+            unit='سلاح الإشارة'
+        )
+
+    def test_instructor_creation_and_primary_key(self):
+        """التحقق من أن النمرة العسكرية هي المفتاح الأساسي للمعلم وتتطابق مع أرقام فقط"""
+        from training.models import Instructor
+        inst = Instructor.objects.get(military_number='112233')
+        self.assertEqual(inst.pk, '112233')
+        self.assertEqual(inst.name, 'د. أحمد عبد الله')
+        self.assertEqual(inst.rank, 'عقيد')
+        self.assertTrue(inst.is_active)
+
+    def test_admin_portal_instructor_crud(self):
+        """التحقق من إضافة وتعديل وحذف المعلمين عبر لوحة الأدمن"""
+        self.client.login(username='admin_inst', password='Password123!')
+
+        # 1. إضافة معلم جديد
+        create_url = reverse('training:instructor_create')
+        res = self.client.post(create_url, {
+            'military_number': '778899',
+            'rank': 'رائد',
+            'name': 'خالد إبراهيم حسن',
+            'phone': '0111223344',
+            'is_active': 'on'
+        })
+        self.assertEqual(res.status_code, 302)
+        from training.models import Instructor
+        self.assertTrue(Instructor.objects.filter(military_number='778899').exists())
+
+        # 2. تعديل المعلم
+        edit_url = reverse('training:instructor_edit', kwargs={'military_number': '778899'})
+        res = self.client.post(edit_url, {
+            'military_number': '778899',
+            'rank': 'مقدم',
+            'name': 'خالد إبراهيم حسن المعدل',
+            'phone': '0111223355',
+            'is_active': 'on'
+        })
+        self.assertEqual(res.status_code, 302)
+        inst = Instructor.objects.get(military_number='778899')
+        self.assertEqual(inst.rank, 'مقدم')
+        self.assertEqual(inst.name, 'خالد إبراهيم حسن المعدل')
+
+        # 3. حذف المعلم
+        del_url = reverse('training:instructor_delete', kwargs={'military_number': '778899'})
+        res = self.client.post(del_url)
+        self.assertEqual(res.status_code, 302)
+        self.assertFalse(Instructor.objects.filter(military_number='778899').exists())
+
+    def test_regular_user_cannot_manage_instructors(self):
+        """المستخدم العادي محظور من إضافة أو تعديل أو حذف المعلمين ويتم تحويله للرئيسية"""
+        self.client.login(username='user_inst', password='Password123!')
+        res = self.client.post(reverse('training:instructor_create'), {
+            'military_number': '999888',
+            'rank': 'نقيب',
+            'name': 'محاولة غير مصرح بها',
+        })
+        self.assertEqual(res.status_code, 302)
+        self.assertRedirects(res, reverse('training:home'))
+
+    def test_course_session_creation_with_supervisor_and_subject_instructors(self):
+        """التحقق من إنشاء دورة وتعيين مشرف الدورة ومعلمي المواد الدراسية"""
+        self.client.login(username='admin_inst', password='Password123!')
+        url = reverse('training:course_session_create')
+
+        post_data = {
+            'category': str(self.cat.id),
+            'course': str(self.course.id),
+            'session_code': 'الدفعة التجريبية 2026',
+            'start_date': '2026-05-01',
+            'end_date': '2026-07-01',
+            'status': 'active',
+            'attendance_max_grade': '20.0',
+            'supervisor': self.instructor1.military_number,
+            f'subject_teacher_{self.subject1.id}': self.instructor1.military_number,
+            f'subject_teacher_{self.subject2.id}': self.instructor2.military_number,
+            'selected_trainees': [self.trainee.military_number],
+            f'rank_{self.trainee.military_number}': 'ملازم أول',
+            f'force_{self.trainee.military_number}': 'القوات البرية',
+            f'unit_{self.trainee.military_number}': 'سلاح الإشارة',
+        }
+
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        from training.models import CourseSession, SessionSubjectInstructor
+        session = CourseSession.objects.filter(session_code='الدفعة التجريبية 2026').first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.supervisor, self.instructor1)
+
+        # التحقق من مواد الدورة وتعيين المعلمين
+        assign1 = SessionSubjectInstructor.objects.filter(session=session, subject=self.subject1).first()
+        self.assertIsNotNone(assign1)
+        self.assertEqual(assign1.instructor, self.instructor1)
+
+        assign2 = SessionSubjectInstructor.objects.filter(session=session, subject=self.subject2).first()
+        self.assertIsNotNone(assign2)
+        self.assertEqual(assign2.instructor, self.instructor2)
+
+        # التحقق من تسجيل الطالب
+        enrollment = session.enrollments.filter(trainee=self.trainee).first()
+        self.assertIsNotNone(enrollment)
+        self.assertEqual(enrollment.current_rank, 'ملازم أول')
+
+    def test_course_session_manage_update_teachers(self):
+        """التحقق من تحديث مشرف الدورة ومعلمي المواد من صفحة إدارة الدورة"""
+        self.client.login(username='admin_inst', password='Password123!')
+        from training.models import CourseSession, SessionSubjectInstructor
+        session = CourseSession.objects.create(
+            course=self.course,
+            session_code='دفعة التعديل',
+            start_date='2026-01-01',
+            end_date='2026-03-01',
+            status='active'
+        )
+
+        manage_url = reverse('training:course_session_manage', kwargs={'session_id': session.id})
+        res = self.client.post(manage_url, {
+            'update_session_teachers': '1',
+            'supervisor': self.instructor2.military_number,
+            f'subject_teacher_{self.subject1.id}': self.instructor2.military_number,
+            f'subject_teacher_{self.subject2.id}': self.instructor1.military_number,
+        })
+        self.assertEqual(res.status_code, 302)
+
+        session.refresh_from_db()
+        self.assertEqual(session.supervisor, self.instructor2)
+
+        assign1 = SessionSubjectInstructor.objects.get(session=session, subject=self.subject1)
+        self.assertEqual(assign1.instructor, self.instructor2)
+
+        assign2 = SessionSubjectInstructor.objects.get(session=session, subject=self.subject2)
+        self.assertEqual(assign2.instructor, self.instructor1)
+
+
+
 
 
 

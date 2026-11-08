@@ -49,6 +49,11 @@ urlpatterns = [
     path('admin-portal/users/<int:user_id>/delete/', views.user_delete_view, name='user_delete'),
     path('admin-portal/users/<int:user_id>/toggle-active/', views.user_toggle_active_view, name='user_toggle_active'),
 
+    # إدارة المعلمين
+    path('admin-portal/instructors/create/', views.instructor_create_view, name='instructor_create'),
+    path('admin-portal/instructors/<str:military_number>/edit/', views.instructor_edit_view, name='instructor_edit'),
+    path('admin-portal/instructors/<str:military_number>/delete/', views.instructor_delete_view, name='instructor_delete'),
+
     # هوية وشعار وألوان النظام
     path('admin-portal/settings/system/', views.system_settings_update_view, name='system_settings_update'),
 

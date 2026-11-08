@@ -38,85 +38,160 @@
 <form method="post" id="sessionCreateForm">
     {% csrf_token %}
 
-    <!-- 1. بيانات الدورة والانعقاد -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-success text-white py-3 px-4 rounded-top-4 d-flex align-items-center gap-2">
-            <i class="bi bi-calendar-plus-fill fs-5"></i>
-            <h5 class="fw-bold mb-0">الخطوة 1: اختيار الدورة وبيانات الانعقاد والتواريخ</h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="row g-3">
-                <!-- اختيار تصنيف الدورة -->
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
-                    <select id="categorySelector" class="form-select form-select-lg" required
-                        onchange="filterCoursesByCategory()">
-                        <option value="" disabled selected>--- اختر تصنيف الدورة ---</option>
-                        {% for cat in categories %}
-                        <option value="{{ cat.id }}">{{ cat.name }}</option>
-                        {% endfor %}
-                    </select>
+    <!-- ========================================================
+         الخطوة 1: اختيار الدورة وبيانات الانعقاد والمشرف والمعلمين
+         ======================================================== -->
+    <div id="step1Container">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-success text-white py-3 px-4 rounded-top-4 d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-plus-fill fs-5"></i>
+                <h5 class="fw-bold mb-0">الخطوة 1: اختيار الدورة وبيانات الانعقاد والمشرف والمعلمين</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <!-- اختيار تصنيف الدورة -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
+                        <select id="categorySelector" class="form-select form-select-lg" required
+                            onchange="filterCoursesByCategory()">
+                            <option value="" disabled selected>--- اختر تصنيف الدورة ---</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- اختيار اسم الدورة -->
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span
+                                class="text-danger">*</span></label>
+                        <select name="course" id="courseSelector" class="form-select form-select-lg" required>
+                            <option value="" disabled selected>--- اختر تصنيف الدورة أولاً ---</option>
+                            {% for cat in categories %}
+                            {% for c in cat.courses.all %}
+                            <option value="{{ c.id }}" data-category="{{ cat.id }}" style="display: none;">
+                                {{ c.name }} ({{ c.course_number|default:"بدون رمز" }})
+                            </option>
+                            {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- رمز الدفعة -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">رمز الدفعة <span class="text-danger">*</span></label>
+                        <input type="text" name="session_code" id="sessionCode" class="form-control form-control-lg"
+                            placeholder="مثال: الدفعة 21 - 2026" required>
+                    </div>
+
+                    <!-- تاريخ البداية -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span
+                                class="text-danger">*</span></label>
+                        <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required>
+                    </div>
+
+                    <!-- تاريخ النهاية -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span
+                                class="text-danger">*</span></label>
+                        <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required>
+                    </div>
+
+                    <!-- درجة المواظبة -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">درجة المواظبة</label>
+                        <input type="number" name="attendance_max_grade" class="form-control form-control-lg" value="20"
+                            step="0.5" min="0">
+                    </div>
+
+                    <!-- حالة الدورة -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">حالة الدورة</label>
+                        <select name="status" class="form-select form-select-lg">
+                            <option value="active" selected>جارية حالياً</option>
+                            <option value="planned">مخطط لها</option>
+                            <option value="completed">مكتملة</option>
+                        </select>
+                    </div>
+
+                    <!-- اختيار مشرف الدورة -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-dark">
+                            <i class="bi bi-person-badge-fill text-primary me-1"></i>
+                            مشرف الدورة (اختيار من المعلمين)
+                        </label>
+                        <select name="supervisor" id="supervisorSelect" class="form-select form-select-lg">
+                            <option value="">-- اختر مشرف الدورة من قائمة المعلمين (اختياري) --</option>
+                            {% for inst in instructors %}
+                            <option value="{{ inst.military_number }}">{{ inst.rank }} / {{ inst.name }} ({{ inst.military_number }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">قائمة تظهر جميع المعلمين لاختيار أحدهم مشرفاً للدورة.</div>
+                    </div>
+
+                    <!-- مواد الدورة ومعلمو المواد -->
+                    <div class="col-12 mt-4 pt-3 border-top">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-journal-bookmark-fill text-success me-2"></i>
+                                    مواد الدورة التدريبية وتعيين المعلم لكل مادة
+                                </h6>
+                                <small class="text-muted">اختر المعلم لكل مادة من القائمة المنسدلة أمامها</small>
+                            </div>
+                            <span class="badge bg-light text-dark border px-3 py-2 fw-bold" id="subjectsCountBadge">
+                                0 مادة مسجلة
+                            </span>
+                        </div>
+
+                        <div id="courseSubjectsContainer">
+                            <div class="alert alert-light border text-muted small p-3 rounded-3 text-center mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                يرجى اختيار اسم الدورة أعلاه لعرض مفردات موادها وتحديد المعلم لكل مادة.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- اختيار اسم الدورة -->
-                <div class="col-md-5">
-                    <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span
-                            class="text-danger">*</span></label>
-                    <select name="course" id="courseSelector" class="form-select form-select-lg" required>
-                        <option value="" disabled selected>--- اختر تصنيف الدورة أولاً ---</option>
-                        {% for cat in categories %}
-                        {% for c in cat.courses.all %}
-                        <option value="{{ c.id }}" data-category="{{ cat.id }}" style="display: none;">
-                            {{ c.name }} ({{ c.course_number|default:"بدون رمز" }})
-                        </option>
-                        {% endfor %}
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- رمز الدفعة -->
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">رمز الدفعة <span class="text-danger">*</span></label>
-                    <input type="text" name="session_code" class="form-control form-control-lg"
-                        placeholder="مثال: الدفعة 21 - 2026" required>
-                </div>
-
-                <!-- تاريخ البداية -->
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span
-                            class="text-danger">*</span></label>
-                    <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required>
-                </div>
-
-                <!-- تاريخ النهاية -->
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span
-                            class="text-danger">*</span></label>
-                    <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required>
-                </div>
-
-                <!-- درجة المواظبة -->
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">درجة المواظبة</label>
-                    <input type="number" name="attendance_max_grade" class="form-control form-control-lg" value="20"
-                        step="0.5" min="0">
-                </div>
-
-                <!-- حالة الدورة -->
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">حالة الدورة</label>
-                    <select name="status" class="form-select form-select-lg">
-                        <option value="active" selected>جارية حالياً</option>
-                        <option value="planned">مخطط لها</option>
-                        <option value="completed">مكتملة</option>
-                    </select>
+                <!-- زر موافق للانتقال للخطوة 2 -->
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <a href="{% url 'training:course_sessions' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-arrow-right me-1"></i> إلغاء والرجوع للقائمة
+                    </a>
+                    <button type="button" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow d-inline-flex align-items-center gap-2" id="btnGoToStep2" onclick="goToStep2()">
+                        <span>موافق: الانتقال لاختيار الطلبة الدارسين</span>
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. ربط الطلبة وتعديل رتبهم ووحداتهم -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <!-- ========================================================
+         الخطوة 2: اختيار الطلبة الدارسين
+         ======================================================== -->
+    <div id="step2Container" style="display: none;">
+        <!-- شريط ملخص الدورة المختارة -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light border-start border-success border-4 p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <span class="badge bg-success text-white px-3 py-1 rounded-pill mb-1">بيانات الدورة المحددة</span>
+                    <h5 class="fw-bold text-dark mb-1" id="summaryCourseName">-</h5>
+                    <div class="text-muted small">
+                        الدفعة: <strong id="summarySessionCode" class="text-dark">-</strong> •
+                        فترة الانعقاد: <span id="summaryDates">-</span> •
+                        مشرف الدورة: <strong id="summarySupervisor" class="text-primary">-</strong>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="backToStep1()">
+                    <i class="bi bi-pencil me-1"></i> تعديل بيانات الدورة والمعلمين
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. ربط الطلبة وتعديل رتبهم ووحداتهم -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div
             class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div>
@@ -369,9 +444,9 @@
     <!-- Action Bar -->
     <div class="card border-0 shadow-sm rounded-4 p-4 mb-5 bg-white">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <a href="{% url 'training:course_sessions' %}" class="btn btn-outline-secondary px-4 py-2 rounded-3">
-                <i class="bi bi-arrow-right me-1"></i> إلغاء والرجوع للقائمة
-            </a>
+            <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-3" onclick="backToStep1()">
+                <i class="bi bi-arrow-right me-1"></i> الرجوع للخطوة 1 (بيانات الدورة والمعلمين)
+            </button>
 
             <button type="submit"
                 class="btn btn-success btn-lg px-5 py-2 rounded-3 fw-bold shadow d-inline-flex align-items-center gap-2">
@@ -380,11 +455,157 @@
             </button>
         </div>
     </div>
+</div>
 </form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // بيانات المواد الدراسية وقائمة المعلمين
+    const COURSES_SUBJECTS = JSON.parse('{{ courses_subjects_json|escapejs }}');
+    const INSTRUCTORS_LIST = [
+        {% for inst in instructors %}
+        {
+            military_number: "{{ inst.military_number|escapejs }}",
+            name: "{{ inst.name|escapejs }}",
+            rank: "{{ inst.rank|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // عرض مواد الدورة وتوليد قوائم اختيار المعلم لكل مادة
+    function renderCourseSubjects(courseId) {
+        const container = document.getElementById('courseSubjectsContainer');
+        const countBadge = document.getElementById('subjectsCountBadge');
+        if (!container) return;
+
+        if (!courseId || !COURSES_SUBJECTS[courseId]) {
+            container.innerHTML = `
+                <div class="alert alert-light border text-muted small p-3 rounded-3 text-center mb-0">
+                    <i class="bi bi-info-circle me-1"></i> يرجى اختيار اسم الدورة أعلاه لعرض مفردات موادها وتحديد المعلم لكل مادة.
+                </div>`;
+            if (countBadge) countBadge.textContent = '0 مادة مسجلة';
+            return;
+        }
+
+        const subjects = COURSES_SUBJECTS[courseId];
+        if (countBadge) {
+            countBadge.textContent = `${subjects.length} مادة مسجلة`;
+        }
+
+        if (subjects.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-warning border-0 small p-3 rounded-3 text-center mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> لا توجد مواد دراسية مسجلة في خطة هذه الدورة حالياً. يمكنك المتابعة أو إضافة مواد للدورة من قسم الدورات ومفرداتها.
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="table-responsive border rounded-3 overflow-hidden shadow-sm">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th style="width: 15%;">كود المادة</th>
+                            <th style="width: 32%;">اسم المادة الدراسية</th>
+                            <th style="width: 13%;">الساعات</th>
+                            <th style="width: 15%;">الدرجة العظمى</th>
+                            <th style="width: 25%;">معلم المادة (قائمة المعلمين)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        subjects.forEach((sub, idx) => {
+            let teacherOptions = '<option value="">-- اختر معلم المادة (اختياري) --</option>';
+            INSTRUCTORS_LIST.forEach(inst => {
+                const rankPrefix = inst.rank ? inst.rank + ' / ' : '';
+                teacherOptions += `<option value="${inst.military_number}">${rankPrefix}${inst.name} (${inst.military_number})</option>`;
+            });
+
+            html += `
+                <tr>
+                    <td><span class="badge bg-light text-dark font-monospace border px-2 py-1">${sub.code || ('مادة ' + (idx + 1))}</span></td>
+                    <td><span class="fw-bold text-dark fs-6">${sub.name}</span></td>
+                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary">${sub.credit_hours || 0} س</span></td>
+                    <td><span class="badge bg-primary bg-opacity-10 text-primary">${sub.max_grade || 100} درجة</span></td>
+                    <td>
+                        <select name="subject_teacher_${sub.id}" class="form-select form-select-sm border-primary">
+                            ${teacherOptions}
+                        </select>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    // الانتقال للخطوة 2 بعد التحقق من ملء حقول الخطوة 1
+    function goToStep2() {
+        const categorySelector = document.getElementById('categorySelector');
+        const courseSelector = document.getElementById('courseSelector');
+        const sessionCode = document.getElementById('sessionCode');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+
+        if (!categorySelector.value) {
+            alert('يرجى اختيار تصنيف الدورة أولاً.');
+            categorySelector.focus();
+            return;
+        }
+        if (!courseSelector.value) {
+            alert('يرجى اختيار اسم الدورة التدريبية.');
+            courseSelector.focus();
+            return;
+        }
+        if (!sessionCode.value.trim()) {
+            alert('يرجى إدخال رمز الدفعة (مثال: الدفعة 21 - 2026).');
+            sessionCode.focus();
+            return;
+        }
+        if (!startDate.value) {
+            alert('يرجى تحديد تاريخ بداية الدورة.');
+            startDate.focus();
+            return;
+        }
+        if (!endDate.value) {
+            alert('يرجى تحديد تاريخ نهاية الدورة.');
+            endDate.focus();
+            return;
+        }
+
+        // تعبئة ملخص الدورة في الخطوة 2
+        const selectedCourseOption = courseSelector.options[courseSelector.selectedIndex];
+        const courseName = selectedCourseOption ? selectedCourseOption.textContent.trim() : '';
+        document.getElementById('summaryCourseName').textContent = courseName;
+        document.getElementById('summarySessionCode').textContent = sessionCode.value.trim();
+        document.getElementById('summaryDates').textContent = `من ${startDate.value} إلى ${endDate.value}`;
+
+        const supervisorSelect = document.getElementById('supervisorSelect');
+        const supOption = supervisorSelect.options[supervisorSelect.selectedIndex];
+        const supText = (supervisorSelect.value && supOption) ? supOption.textContent.trim() : 'لم يتم تحديد مشرف بعد';
+        document.getElementById('summarySupervisor').textContent = supText;
+
+        // إخفاء الخطوة 1 وإظهار الخطوة 2
+        document.getElementById('step1Container').style.display = 'none';
+        document.getElementById('step2Container').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // العودة للخطوة 1
+    function backToStep1() {
+        document.getElementById('step2Container').style.display = 'none';
+        document.getElementById('step1Container').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     // تصفية الدورات حسب التصنيف المختار
     function filterCoursesByCategory() {
         const catSelect = document.getElementById('categorySelector');
@@ -411,8 +632,10 @@
 
         if (firstMatch) {
             courseSelect.value = firstMatch.value;
+            renderCourseSubjects(firstMatch.value);
         } else {
             courseSelect.selectedIndex = 0;
+            renderCourseSubjects(null);
         }
     }
 
@@ -780,8 +1003,32 @@
         }
     }
 
-    // تهيئة جميع صفوف الدارسين عند التحميل
+    // تهيئة جميع صفوف الدارسين ومراقبة الأحداث عند التحميل
     document.addEventListener('DOMContentLoaded', function() {
+        // مراقبة اختيار الدورة لتحديث المواد الدراسية ديناميكياً
+        const courseSelect = document.getElementById('courseSelector');
+        if (courseSelect) {
+            courseSelect.addEventListener('change', function() {
+                renderCourseSubjects(this.value);
+            });
+            if (courseSelect.value) {
+                renderCourseSubjects(courseSelect.value);
+            }
+        }
+
+        // التحقق قبل حفظ الدورة من تحديد طالب دارس واحد على الأقل
+        const form = document.getElementById('sessionCreateForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const checked = document.querySelectorAll('.trainee-checkbox:checked');
+                if (checked.length === 0) {
+                    e.preventDefault();
+                    alert('يرجى تحديد دارس واحد على الأقل للالتحاق بالدورة التدريبية.');
+                    return false;
+                }
+            });
+        }
+
         const forceSelects = document.querySelectorAll('[id^="force_select_"]');
         forceSelects.forEach(fs => {
             const num = fs.id.replace('force_select_', '');

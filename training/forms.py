@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import (
-    Trainee, TraineeCategory, CourseCategory, Course, Subject, CourseSession,
+    Instructor, Trainee, TraineeCategory, CourseCategory, Course, Subject, CourseSession,
     CertificateSettings, SystemSettings, UserProfile, UserRole
 )
 
@@ -71,6 +71,53 @@ class TraineeForm(forms.ModelForm):
         number = self.cleaned_data.get('military_number', '').strip()
         if not number.isdigit():
             raise forms.ValidationError('النمرة تقبل أرقاماً فقط (0-9). يرجى عدم إدخال أحرف أو رموز.')
+        return number
+
+
+class InstructorForm(forms.ModelForm):
+    class Meta:
+        model = Instructor
+        fields = ['military_number', 'rank', 'name', 'phone', 'is_active']
+        widgets = {
+            'military_number': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg font-monospace',
+                'placeholder': 'أدخل النمرة العسكرية (أرقام فقط)',
+                'pattern': '[0-9]+',
+                'inputmode': 'numeric',
+                'oninput': "this.value = this.value.replace(/[^0-9]/g, '')",
+                'required': 'required'
+            }),
+            'rank': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'الرتبة (مثال: مقدم، رائد، نقيب، مهندس...)',
+                'required': 'required'
+            }),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'الاسم الكامل للمعلم',
+                'required': 'required'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'رقم الهاتف (اختياري)'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'style': 'width: 22px; height: 22px;'
+            }),
+        }
+        labels = {
+            'military_number': 'النمرة العسكرية (مفتاح أساسي) *',
+            'rank': 'الرتبة *',
+            'name': 'الاسم الكامل *',
+            'phone': 'رقم الهاتف',
+            'is_active': 'نشط / على رأس العمل'
+        }
+
+    def clean_military_number(self):
+        number = self.cleaned_data.get('military_number', '').strip()
+        if not number.isdigit():
+            raise forms.ValidationError('النمرة تقبل أرقاماً فقط (0-9).')
         return number
 
 

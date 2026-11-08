@@ -66,6 +66,52 @@ class Trainee(models.Model):
         return f"{self.name} ({self.military_number})"
 
 
+class Instructor(models.Model):
+    """بيانات المعلم / عضو هيئة التدريس"""
+    military_number = models.CharField(
+        max_length=50,
+        primary_key=True,
+        validators=[numeric_only_validator],
+        verbose_name='النمرة العسكرية (مفتاح أساسي)'
+    )
+    name = models.CharField(
+        max_length=200,
+        verbose_name='اسم المعلم'
+    )
+    rank = models.CharField(
+        max_length=100,
+        verbose_name='الرتبة'
+    )
+    phone = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name='رقم الهاتف'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='نشط / على رأس العمل'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='تاريخ الإضافة'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='تاريخ التحديث'
+    )
+
+    class Meta:
+        verbose_name = 'معلم'
+        verbose_name_plural = 'المعلمون'
+        ordering = ['name']
+
+    def __str__(self):
+        if self.rank:
+            return f"{self.rank} / {self.name} ({self.military_number})"
+        return f"{self.name} ({self.military_number})"
+
+
 class CourseCategory(models.Model):
     """تصنيف الدورة (دورات مرشد، دورات خاصة، دورات مشتركة)"""
     name = models.CharField(
@@ -211,6 +257,14 @@ class CourseSession(models.Model):
         default=20.00,
         verbose_name='درجة المواظبة والسلوك العظمى'
     )
+    supervisor = models.ForeignKey(
+        Instructor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supervised_sessions',
+        verbose_name='مشرف الدورة'
+    )
     notes = models.TextField(
         blank=True,
         null=True,
@@ -238,6 +292,39 @@ class CourseSession(models.Model):
     def total_possible_score(self):
         subjects_total = sum(s.max_grade for s in self.course.subjects.all())
         return float(subjects_total) + float(self.attendance_max_grade)
+
+
+class SessionSubjectInstructor(models.Model):
+    """ربط المادة في الدورة المنعقدة بالمعلم المسؤول عنها"""
+    session = models.ForeignKey(
+        CourseSession,
+        on_delete=models.CASCADE,
+        related_name='subject_instructors',
+        verbose_name='الدورة المنعقدة'
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name='session_assignments',
+        verbose_name='المادة الدراسية'
+    )
+    instructor = models.ForeignKey(
+        Instructor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='teaching_assignments',
+        verbose_name='معلم المادة'
+    )
+
+    class Meta:
+        verbose_name = 'معلم المادة بالدورة'
+        verbose_name_plural = 'معلمو المواد بالدورات'
+        unique_together = ('session', 'subject')
+
+    def __str__(self):
+        inst_name = self.instructor.name if self.instructor else 'لم يحدد'
+        return f"{self.session.session_code} - {self.subject.name}: {inst_name}"
 
 
 class CourseEnrollment(models.Model):
