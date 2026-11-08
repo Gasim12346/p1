@@ -1,7 +1,12 @@
+from datetime import date
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from training.models import UserProfile, UserRole
+from training.models import (
+    UserProfile, UserRole, CourseCategory, Course, Subject,
+    CourseSession, Trainee, TraineeCategory, CourseEnrollment,
+    TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor
+)
 
 
 class AuthenticationAndSecurityTests(TestCase):
@@ -31,7 +36,7 @@ class AuthenticationAndSecurityTests(TestCase):
         self.regular_user.profile.save()
 
     def test_unauthenticated_user_redirected_to_login(self):
-        """التحقق من حظر الوصول غير المصرح به لجميع الواجهات الرئيسية والتحويل لصفحة تسجيل الدخول"""
+        """التحقق من حظر الوصول غير المصرح به لجميع الشاشات الرئيسية والتحويل لصفحة تسجيل الدخول"""
         protected_urls = [
             '/',
             '/trainees/',
@@ -855,6 +860,296 @@ class BusinessConstraintsTests(TestCase):
         created_c = Course.objects.filter(name='دورة عبر الطلب المباشر').first()
         self.assertIsNotNone(created_c)
         self.assertTrue(bool(created_c.course_number))
+
+
+class UserRolePermissionsTest(TestCase):
+    """اختبارات نظام الصلاحيات المتقن والأدوار (معلم، مشرف، مسجل بيانات، مدير نظام)"""
+
+    def setUp(self):
+        self.client = Client()
+
+        # تصنيف دورة
+        self.category = CourseCategory.objects.create(name='دورات تخصصية')
+
+        # دورة ومواد
+        self.course = Course.objects.create(
+            category=self.category,
+            name='دورة إدارة العمليات',
+            course_number='OPS-101'
+        )
+        self.subject1 = Subject.objects.create(
+            course=self.course,
+            name='تخطيط استراتيجي',
+            credit_hours=20,
+            max_grade=50.0
+        )
+        self.subject2 = Subject.objects.create(
+            course=self.course,
+            name='إدارة الموارد',
+            credit_hours=20,
+            max_grade=50.0
+        )
+
+        # معلم 1 ومعلم 2
+        self.instructor1 = Instructor.objects.create(
+            military_number='11111',
+            name='معلم أحمد علي',
+            rank='رائد',
+            category=InstructorCategory.OFFICER
+        )
+        self.instructor2 = Instructor.objects.create(
+            military_number='22222',
+            name='معلم ياسر حسن',
+            rank='نقيب',
+            category=InstructorCategory.OFFICER
+        )
+
+        # مشرف
+        self.supervisor_instructor = Instructor.objects.create(
+            military_number='33333',
+            name='مشرف كمال إبراهيم',
+            rank='عقيد',
+            category=InstructorCategory.OFFICER
+        )
+
+        # مستخدم معلم 1
+        self.user_inst1 = User.objects.create_user(
+            username='inst_ahmed',
+            password='Password123!',
+            first_name='أحمد',
+            last_name='علي'
+        )
+        self.user_inst1.profile.role = UserRole.INSTRUCTOR
+        self.user_inst1.profile.instructor = self.instructor1
+        self.user_inst1.profile.military_number = self.instructor1.military_number
+        self.user_inst1.profile.save()
+
+        # مستخدم مشرف
+        self.user_supervisor = User.objects.create_user(
+            username='sup_kamal',
+            password='Password123!',
+            first_name='كمال',
+            last_name='إبراهيم'
+        )
+        self.user_supervisor.profile.role = UserRole.SUPERVISOR
+        self.user_supervisor.profile.instructor = self.supervisor_instructor
+        self.user_supervisor.profile.military_number = self.supervisor_instructor.military_number
+        self.user_supervisor.profile.save()
+
+        # مستخدم مسجل بيانات
+        self.user_registrar = User.objects.create_user(
+            username='registrar_user',
+            password='Password123!',
+            first_name='مسجل',
+            last_name='البيانات'
+        )
+        self.user_registrar.profile.role = UserRole.REGISTRAR
+        self.user_registrar.profile.save()
+
+        # مستخدم أدمن
+        self.user_admin = User.objects.create_superuser(
+            username='admin_role_tester',
+            password='Password123!',
+            email='admin@academy.test'
+        )
+        self.user_admin.profile.role = UserRole.ADMIN
+        self.user_admin.profile.save()
+
+        # انعقاد دورة
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='الدفعة 10 - 2026',
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 3, 1),
+            attendance_max_grade=20.0,
+            supervisor=self.supervisor_instructor,
+            status='active'
+        )
+
+        # ربط المواد بالمعلمين
+        SessionSubjectInstructor.objects.create(
+            session=self.session,
+            subject=self.subject1,
+            instructor=self.instructor1
+        )
+        SessionSubjectInstructor.objects.create(
+            session=self.session,
+            subject=self.subject2,
+            instructor=self.instructor2
+        )
+
+        # دارس وتسجيله
+        self.trainee = Trainee.objects.create(
+            military_number='77777',
+            name='دارس طارق محمود',
+            category=TraineeCategory.OFFICER,
+            force='القوات البرية',
+            unit='اللواء الأول'
+        )
+        self.enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='نقيب',
+            current_unit='اللواء الأول'
+        )
+
+    def test_instructor_restricted_from_management_pages(self):
+        """التحقق من حصر المعلم في صفحة النتيجة وتوجيهه عند محاولة دخول أقسام الإدارة"""
+        self.client.login(username='inst_ahmed', password='Password123!')
+
+        # 1. الدخول للرئيسية يوجه المعلم لصفحة النتيجة
+        res_home = self.client.get(reverse('training:home'))
+        self.assertEqual(res_home.status_code, 302)
+        self.assertEqual(res_home.url, reverse('training:results_center'))
+
+        # 2. محاولة الدخول للدارسين توجه لصفحة النتيجة
+        res_trainees = self.client.get(reverse('training:trainees_list'))
+        self.assertEqual(res_trainees.status_code, 302)
+        self.assertEqual(res_trainees.url, reverse('training:results_center'))
+
+        # 3. محاولة الدخول للدورات توجه لصفحة النتيجة
+        res_courses = self.client.get(reverse('training:courses_catalog'))
+        self.assertEqual(res_courses.status_code, 302)
+        self.assertEqual(res_courses.url, reverse('training:results_center'))
+
+        # 4. محاولة الدخول للانعقادات توجه لصفحة النتيجة
+        res_sessions = self.client.get(reverse('training:course_sessions'))
+        self.assertEqual(res_sessions.status_code, 302)
+        self.assertEqual(res_sessions.url, reverse('training:results_center'))
+
+        # 5. صفحة رصد النتائج متاحة للمعلم
+        res_results = self.client.get(reverse('training:results_entry', kwargs={'session_id': self.session.id}))
+        self.assertEqual(res_results.status_code, 200)
+
+    def test_instructor_grades_only_assigned_subject(self):
+        """التحقق من أن المعلم يرصد درجات مادته فقط ولا يؤثر على درجات مادة زميله أو المواظبة"""
+        # أولاً: رصد درجة المادة الثانية مسبقاً
+        TraineeSubjectGrade.objects.create(
+            enrollment=self.enrollment,
+            subject=self.subject2,
+            score=45.0
+        )
+        self.enrollment.attendance_score = 18.0
+        self.enrollment.save()
+
+        # تسجيل دخول المعلم 1 (مكلف بالمادة 1 فقط)
+        self.client.login(username='inst_ahmed', password='Password123!')
+
+        # 1. المعلم يرسل درجات المادة 1، مع محاولة تغيير مادة زميله والمواظبة
+        res = self.client.post(
+            reverse('training:results_entry', kwargs={'session_id': self.session.id}),
+            {
+                'save_grades': '1',
+                f'grade_{self.trainee.military_number}_{self.subject1.id}': '48.0',
+                f'grade_{self.trainee.military_number}_{self.subject2.id}': '10.0',  # محاولة تعديل مادة زميله
+                f'att_{self.trainee.military_number}': '5.0',  # محاولة تعديل المواظبة
+            }
+        )
+        self.assertEqual(res.status_code, 302)
+
+        # التحقق من أن درجة المادة 1 حُفظت بنجاح
+        g1 = TraineeSubjectGrade.objects.filter(enrollment=self.enrollment, subject=self.subject1).first()
+        self.assertIsNotNone(g1)
+        self.assertEqual(float(g1.score), 48.0)
+
+        # التحقق من أن درجة المادة 2 لم تتأثر وظلت 45.0 ولم تُحذف
+        g2 = TraineeSubjectGrade.objects.filter(enrollment=self.enrollment, subject=self.subject2).first()
+        self.assertIsNotNone(g2)
+        self.assertEqual(float(g2.score), 45.0)
+
+        # التحقق من أن المواظبة لم يغيرها المعلم
+        self.enrollment.refresh_from_db()
+        self.assertEqual(float(self.enrollment.attendance_score), 18.0)
+
+        # 2. محاولة اعتماد غير مصرح بها من قبل المعلم
+        res_mark = self.client.post(
+            reverse('training:results_entry', kwargs={'session_id': self.session.id}),
+            {
+                'save_grades': '1',
+                'mark_completed': '1',
+            }
+        )
+        self.assertEqual(res_mark.status_code, 302)
+
+        # الدورة لا تزال جارية ولم يتم اعتمادها
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, 'active')
+
+    def test_supervisor_cannot_finalize_until_all_grades_complete(self):
+        """التحقق من أن المشرف لا يستطيع اعتماد النتيجة نهائياً إلا بعد اكتمال رصد كافة درجات المواد"""
+        self.client.login(username='sup_kamal', password='Password123!')
+
+        # محاولة الاعتماد بينما درجات المواد غير مكتملة
+        res = self.client.post(
+            reverse('training:results_entry', kwargs={'session_id': self.session.id}),
+            {
+                'save_grades': '1',
+                'mark_completed': '1',
+            }
+        )
+        self.assertEqual(res.status_code, 302)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, 'active')
+
+        # الآن نقوم برصد درجات كافة المواد للدارس
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.subject1, score=45.0)
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.subject2, score=42.0)
+        self.enrollment.attendance_score = 19.0
+        self.enrollment.save()
+
+        # المشرف يعتمد النتيجة بعد اكتمال رصد جميع المواد
+        res_ok = self.client.post(
+            reverse('training:results_entry', kwargs={'session_id': self.session.id}),
+            {
+                'save_grades': '1',
+                'mark_completed': '1',
+            }
+        )
+        self.assertEqual(res_ok.status_code, 302)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, 'completed')
+
+    def test_registrar_can_manage_trainees_and_courses_but_not_admin_portal(self):
+        """التحقق من صلاحيات مسجل البيانات في إضافة وتعديل وحذف الدارسين والدورات ومنعه من لوحة الأدمن"""
+        self.client.login(username='registrar_user', password='Password123!')
+
+        # 1. إضافة دارس جديد
+        res_trainee = self.client.post(reverse('training:trainees_list'), {
+            'add_trainee': '1',
+            'military_number': '88888',
+            'name': 'دارس مسجل جديد',
+            'category': TraineeCategory.NCO,
+            'force': 'القوات الجوية',
+            'unit': 'قاعدة الخرطوم'
+        })
+        self.assertEqual(res_trainee.status_code, 302)
+        self.assertTrue(Trainee.objects.filter(military_number='88888').exists())
+
+        # 2. حذف دارس غير مسجل بدورات
+        res_del_trainee = self.client.post(reverse('training:trainee_delete', kwargs={'military_number': '88888'}))
+        self.assertEqual(res_del_trainee.status_code, 302)
+        self.assertFalse(Trainee.objects.filter(military_number='88888').exists())
+
+        # 3. إضافة دورة جديدة
+        res_course = self.client.post(reverse('training:courses_catalog'), {
+            'add_course': '1',
+            'category': str(self.category.id),
+            'name': 'دورة اتصالات حربية',
+            'description': 'دورة مخصصة'
+        })
+        self.assertEqual(res_course.status_code, 302)
+        new_c = Course.objects.filter(name='دورة اتصالات حربية').first()
+        self.assertIsNotNone(new_c)
+
+        # 4. حذف دورة ليس لها انعقادات
+        res_del_course = self.client.post(reverse('training:course_delete', kwargs={'course_id': new_c.id}))
+        self.assertEqual(res_del_course.status_code, 302)
+        self.assertFalse(Course.objects.filter(id=new_c.id).exists())
+
+        # 5. محاولة الدخول للوحة الأدمن المنفصلة تمنع مسجل البيانات وتوجهه للرئيسية
+        res_admin = self.client.get(reverse('training:admin_dashboard'))
+        self.assertEqual(res_admin.status_code, 302)
+        self.assertEqual(res_admin.url, reverse('training:home'))
 
 
 

@@ -13,10 +13,12 @@
             </div>
             <h1 class="display-6 fw-bold mb-4 text-white">نظام تسجيل الدارسين واستخراج النتائج والشهادات</h1>
             <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2">
+                {% if is_registrar or is_admin %}
                 <a href="{% url 'training:trainees_list' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm text-dark d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-person-plus-fill"></i>
                     <span>دخول سجل الدارسين</span>
                 </a>
+                {% endif %}
                 <a href="{% url 'training:results_center' %}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-award"></i>
                     <span>رصد النتائج واستخراج الشهادات</span>
@@ -43,6 +45,7 @@
 <!-- 4 Core Modules Cards -->
 <div class="row g-4 mb-5">
     
+    {% if is_registrar or is_admin %}
     <!-- Module 1: الدارسين -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
@@ -82,7 +85,9 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
+    {% if is_registrar or is_supervisor or is_admin %}
     <!-- Module 3: الدورة التي يتم دراستها -->
     <div class="col-md-6 col-xl-3">
         <div class="module-card">
@@ -102,6 +107,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Module 4: النتيجة والشهادات -->
     <div class="col-md-6 col-xl-3">

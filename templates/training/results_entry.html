@@ -145,22 +145,28 @@
                         
                         <!-- رؤوس أعمدة المواد الدراسية -->
                         {% for sub in subjects %}
-                            <th style="min-width: 110px;">
+                            <th style="min-width: 120px;">
                                 <div class="text-dark fw-bold">{{ sub.name }}</div>
-                                <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace">
+                                <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace mb-1">
                                     العظمى: {{ sub.max_grade }}
                                 </span>
+                                <div class="small text-muted" style="font-size: 0.75rem;" title="المعلم المكلف بتدريس ورصد درجات هذه المادة">
+                                    <i class="bi bi-person-workspace text-primary me-1"></i>{{ sub.instructor_name }}
+                                </div>
                             </th>
                         {% empty %}
                             <th>لا توجد مواد</th>
                         {% endfor %}
 
                         <!-- عمود المواظبة والسلوك -->
-                        <th style="min-width: 110px;">
+                        <th style="min-width: 120px;">
                             <div class="text-primary fw-bold">المواظبة والسلوك</div>
-                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace">
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace mb-1">
                                 العظمى: {{ session.attendance_max_grade }}
                             </span>
+                            <div class="small text-muted" style="font-size: 0.75rem;">
+                                <i class="bi bi-shield-check text-success me-1"></i>مشرف الدورة
+                            </div>
                         </th>
 
                         <!-- النتائج التلقائية المحسوبة -->
@@ -201,33 +207,49 @@
                             <!-- درجات المواد -->
                             {% for item in en.subjects_data %}
                                 <td class="text-center p-2">
-                                    <input type="number" 
-                                           name="grade_{{ en.trainee.military_number }}_{{ item.subject.id }}"
-                                           class="form-control grade-input subject-grade mx-auto"
-                                           min="0" 
-                                           max="{{ item.subject.max_grade|unlocalize }}" 
-                                           step="0.5"
-                                           data-max="{{ item.subject.max_grade|unlocalize }}"
-                                           placeholder="-"
-                                           {% if item.score is not None %}value="{{ item.score|unlocalize }}"{% endif %}
-                                           {% if is_locked %}disabled readonly{% endif %}
-                                           oninput="calculateRow(this, true)">
+                                    {% if is_instructor_only and item.subject.id not in allowed_subject_ids %}
+                                        <input type="text" 
+                                               class="form-control grade-input subject-grade mx-auto bg-light text-muted border-dashed"
+                                               value="{% if item.score is not None %}{{ item.score|unlocalize }}{% else %}-{% endif %}"
+                                               disabled readonly
+                                               title="خاصة بمعلم المادة ({{ item.subject.instructor_name }})">
+                                    {% else %}
+                                        <input type="number" 
+                                               name="grade_{{ en.trainee.military_number }}_{{ item.subject.id }}"
+                                               class="form-control grade-input subject-grade mx-auto"
+                                               min="0" 
+                                               max="{{ item.subject.max_grade|unlocalize }}" 
+                                               step="0.5"
+                                               data-max="{{ item.subject.max_grade|unlocalize }}"
+                                               placeholder="-"
+                                               {% if item.score is not None %}value="{{ item.score|unlocalize }}"{% endif %}
+                                               {% if is_locked %}disabled readonly{% endif %}
+                                               oninput="calculateRow(this, true)">
+                                    {% endif %}
                                 </td>
                             {% endfor %}
 
                             <!-- درجة المواظبة -->
                             <td class="text-center p-2">
-                                <input type="number" 
-                                       name="att_{{ en.trainee.military_number }}"
-                                       class="form-control grade-input attendance-grade mx-auto border-primary"
-                                       min="0" 
-                                       max="{{ session.attendance_max_grade|unlocalize }}" 
-                                       step="0.5"
-                                       data-max="{{ session.attendance_max_grade|unlocalize }}"
-                                       placeholder="-"
-                                       {% if en.is_graded %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
-                                       {% if is_locked %}disabled readonly{% endif %}
-                                       oninput="calculateRow(this, true)">
+                                {% if is_instructor_only %}
+                                    <input type="text" 
+                                           class="form-control grade-input attendance-grade mx-auto bg-light text-muted"
+                                           value="{% if en.is_graded or en.attendance_score %}{{ en.attendance_score|unlocalize }}{% else %}-{% endif %}"
+                                           disabled readonly
+                                           title="رصد درجة المواظبة محصور بمشرف الدورة أو مدير النظام">
+                                {% else %}
+                                    <input type="number" 
+                                           name="att_{{ en.trainee.military_number }}"
+                                           class="form-control grade-input attendance-grade mx-auto border-primary"
+                                           min="0" 
+                                           max="{{ session.attendance_max_grade|unlocalize }}" 
+                                           step="0.5"
+                                           data-max="{{ session.attendance_max_grade|unlocalize }}"
+                                           placeholder="-"
+                                           {% if en.is_graded or en.attendance_score %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
+                                           {% if is_locked %}disabled readonly{% endif %}
+                                           oninput="calculateRow(this, true)">
+                                {% endif %}
                             </td>
 
                             <!-- المجموع المكتسب التلقائي -->
@@ -306,16 +328,23 @@
                         <span>الدرجات معتمدة ومقفلة. التعديل محصور بمدير النظام (Admin) فقط.</span>
                     </div>
                 {% else %}
-                    {% if is_admin and session.status != 'completed' %}
-                        <button type="submit" name="mark_completed" value="1" class="btn btn-outline-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-patch-check-fill"></i>
-                            <span>حفظ واعتماد النتيجة كـ دورة مكتملة</span>
-                        </button>
+                    {% if is_supervisor_or_admin and session.status != 'completed' %}
+                        {% if is_fully_graded %}
+                            <button type="submit" name="mark_completed" value="1" class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
+                                <i class="bi bi-patch-check-fill fs-5"></i>
+                                <span>اعتماد نتيجة الدورة نهائياً</span>
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين">
+                                <i class="bi bi-hourglass-split text-warning"></i>
+                                <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
+                            </button>
+                        {% endif %}
                     {% endif %}
 
                     <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
                         <i class="bi bi-save2-fill"></i>
-                        <span>حفظ ورصد جميع الدرجات</span>
+                        <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% else %}حفظ ورصد جميع الدرجات{% endif %}</span>
                     </button>
                 {% endif %}
             </div>

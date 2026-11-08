@@ -600,6 +600,13 @@ class UserCreateForm(forms.ModelForm):
         choices=UserRole.choices,
         widget=forms.Select(attrs={'class': 'form-select form-select-lg', 'required': 'required'})
     )
+    instructor = forms.ModelChoiceField(
+        queryset=Instructor.objects.filter(is_active=True),
+        required=False,
+        label='ربط بملف المعلم من هيئة التدريس',
+        empty_label='-- اختياري: غير مرتبط بمعلم محدد --',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     military_number = forms.CharField(
         label='النمرة العسكرية (إن وجدت)',
         required=False,
@@ -644,6 +651,13 @@ class UserEditForm(forms.ModelForm):
         label='نوع وصلاحية المستخدم *',
         choices=UserRole.choices,
         widget=forms.Select(attrs={'class': 'form-select', 'required': 'required'})
+    )
+    instructor = forms.ModelChoiceField(
+        queryset=Instructor.objects.filter(is_active=True),
+        required=False,
+        label='ربط بملف المعلم من هيئة التدريس',
+        empty_label='-- اختياري: غير مرتبط بمعلم محدد --',
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
     military_number = forms.CharField(
         label='النمرة العسكرية',

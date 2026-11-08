@@ -77,12 +77,14 @@
         </h2>
     </div>
 
+    {% if is_registrar %}
     <div class="d-flex gap-2 w-100 w-sm-auto">
         <button type="button" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100" data-bs-toggle="modal" data-bs-target="#addCourseModal">
             <i class="bi bi-plus-circle-fill"></i>
             <span>إضافة دورة جديدة</span>
         </button>
     </div>
+    {% endif %}
 </div>
 
 <!-- Mobile Quick Navigation Bar (Visible only on screens < 992px) -->
@@ -147,9 +149,11 @@
                     <span class="badge bg-primary bg-opacity-10 text-primary mb-1 small">{{ selected_category.name }}</span>
                     <h6 class="fw-bold mb-0 text-dark">قائمة الدورات المعتمدة</h6>
                 </div>
+                {% if is_registrar %}
                 <button type="button" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal" title="إضافة دورة تحت هذا التصنيف">
                     <i class="bi bi-plus-lg"></i> دورة جديدة
                 </button>
+                {% endif %}
             </div>
             <div class="card-body p-3">
                 {% for course in courses %}
@@ -173,25 +177,27 @@
                             <small class="text-muted">
                                 <i class="bi bi-clock-history me-1"></i> {{ course.total_hours }} ساعة تدريبية
                             </small>
+                            {% if is_registrar %}
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'training:course_edit' course.id %}" class="btn btn-outline-secondary py-0 px-2" title="تعديل الدورة">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                {% if is_admin %}
-                                    <a href="{% url 'training:course_delete' course.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف الدورة">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                {% endif %}
+                                <a href="{% url 'training:course_delete' course.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف الدورة">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                 {% empty %}
                     <div class="text-center py-5 text-muted">
                         <i class="bi bi-journal-x fs-1 text-muted opacity-50 d-block mb-2"></i>
                         <p class="mb-3 small">لا توجد دورات مسجلة تحت تصنيف "{{ selected_category.name }}"</p>
+                        {% if is_registrar %}
                         <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#addCourseModal">
                             <i class="bi bi-plus-lg me-1"></i> أضف دورة الآن
                         </button>
+                        {% endif %}
                     </div>
                 {% endfor %}
             </div>
@@ -210,7 +216,7 @@
                         <h6 class="fw-bold mb-0 text-dark">المواد الدراسية ومقررات الدورة</h6>
                     {% endif %}
                 </div>
-                {% if selected_course %}
+                {% if selected_course and is_registrar %}
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
                         <i class="bi bi-plus-lg"></i>
                         <span>إضافة مادة</span>
@@ -272,16 +278,18 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
+                                            {% if is_registrar %}
                                             <div class="btn-group btn-group-sm">
                                                 <a href="{% url 'training:subject_edit' sub.id %}" class="btn btn-outline-primary py-0 px-2" title="تعديل المادة">
                                                     <i class="bi bi-pencil-fill"></i>
                                                 </a>
-                                                {% if is_admin %}
-                                                    <a href="{% url 'training:subject_delete' sub.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف المادة">
-                                                        <i class="bi bi-trash-fill"></i>
-                                                    </a>
-                                                {% endif %}
+                                                <a href="{% url 'training:subject_delete' sub.id %}" class="btn btn-outline-danger py-0 px-2" title="حذف المادة">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </a>
                                             </div>
+                                            {% else %}
+                                            <span class="text-muted small">-</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% empty %}
@@ -289,9 +297,11 @@
                                         <td colspan="5" class="text-center py-5 text-muted">
                                             <i class="bi bi-book text-muted opacity-50 fs-2 d-block mb-2"></i>
                                             <p class="mb-2">لم يتم إدراج مواد دراسية لهذه الدورة بعد.</p>
+                                            {% if is_registrar %}
                                             <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
                                                 <i class="bi bi-plus-lg me-1"></i> أضف أول مادة دراسية الآن
                                             </button>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}

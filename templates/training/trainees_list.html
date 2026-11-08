@@ -18,12 +18,14 @@
         </h2>
     </div>
     
+    {% if is_registrar %}
     <div class="w-100 w-sm-auto">
         <button type="button" class="btn btn-primary btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100" data-bs-toggle="modal" data-bs-target="#addTraineeModal">
             <i class="bi bi-person-plus-fill fs-5"></i>
             <span>إضافة دارس جديد</span>
         </button>
     </div>
+    {% endif %}
 </div>
 
 <!-- Tabs & Category Filters -->
@@ -176,10 +178,10 @@
                                 <a href="{% url 'training:trainee_transcript' trainee.military_number %}" class="btn btn-sm btn-outline-info rounded-2 px-2 py-1 me-1 text-dark" title="السجل التدريبي وشهادات الدارس">
                                     <i class="bi bi-mortarboard-fill text-primary"></i> الدورات
                                 </a>
-                                <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1 me-1" title="تعديل بيانات الدارس">
-                                    <i class="bi bi-pencil-fill"></i> تعديل
-                                </a>
-                                {% if is_admin %}
+                                {% if is_registrar %}
+                                    <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1 me-1" title="تعديل بيانات الدارس">
+                                        <i class="bi bi-pencil-fill"></i> تعديل
+                                    </a>
                                     <a href="{% url 'training:trainee_delete' trainee.military_number %}" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" title="حذف الدارس">
                                         <i class="bi bi-trash-fill"></i>
                                     </a>

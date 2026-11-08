@@ -1012,30 +1012,36 @@
                 <!-- شريط روابط التنقل المتجاوب: تظهر جميع محتوياته دائماً حتى عند تصغير الشاشة -->
                 <div class="navbar-links-scroll-wrapper w-100 mt-2 pt-2 border-top border-secondary border-opacity-25">
                     <ul class="navbar-nav-responsive">
-                        <li class="nav-item">
-                            <a class="nav-link-custom active" href="{% url 'training:home' %}">
-                                <i class="bi bi-speedometer2"></i>
-                                <span>الرئيسية</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
-                                <i class="bi bi-people-fill"></i>
-                                <span>الدارسين</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
-                                <i class="bi bi-journal-bookmark-fill"></i>
-                                <span>الدورات ومفرداتها</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
-                                <i class="bi bi-diagram-3-fill"></i>
-                                <span>الدورة التي تدرس</span>
-                            </a>
-                        </li>
+                        {% if not is_instructor %}
+                            <li class="nav-item">
+                                <a class="nav-link-custom active" href="{% url 'training:home' %}">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>الرئيسية</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if is_registrar or is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
+                                    <i class="bi bi-people-fill"></i>
+                                    <span>الدارسين</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
+                                    <i class="bi bi-journal-bookmark-fill"></i>
+                                    <span>الدورات ومفرداتها</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if is_registrar or is_supervisor or is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span>الدورة التي تدرس</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link-custom" href="{% url 'training:results_center' %}">
                                 <i class="bi bi-award-fill"></i>
@@ -1052,7 +1058,7 @@
             <div class="container">
     {% else %}
         <!-- =========================================================
-             B. باقي الواجهات والصفحات: تحويل النافبار إلى قائمة جانبية (Sidebar)
+             B. باقي الشاشات والصفحات: تحويل القائمة العلوية إلى قائمة جانبية (Sidebar)
              ========================================================= -->
         <div class="sidebar-page-layout">
             
@@ -1085,29 +1091,35 @@
                 <div class="sidebar-nav">
                     <div class="sidebar-section-title">بوابات النظام</div>
 
-                    <!-- 1. الرئيسية -->
-                    <a href="{% url 'training:home' %}" class="sidebar-nav-link" title="الرئيسية (لوحة التحكم)">
-                        <i class="bi bi-speedometer2"></i>
-                        <span>الرئيسية</span>
-                    </a>
+                    {% if not is_instructor %}
+                        <!-- 1. الرئيسية -->
+                        <a href="{% url 'training:home' %}" class="sidebar-nav-link" title="الرئيسية (لوحة التحكم)">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>الرئيسية</span>
+                        </a>
+                    {% endif %}
 
-                    <!-- 2. الدارسين -->
-                    <a href="{% url 'training:trainees_list' %}" class="sidebar-nav-link {% if 'trainee' in request.resolver_match.url_name %}active{% endif %}" title="سجل الدارسين وبياناتهم">
-                        <i class="bi bi-people-fill"></i>
-                        <span>الدارسين</span>
-                    </a>
+                    {% if is_registrar or is_admin %}
+                        <!-- 2. الدارسين -->
+                        <a href="{% url 'training:trainees_list' %}" class="sidebar-nav-link {% if 'trainee' in request.resolver_match.url_name %}active{% endif %}" title="سجل الدارسين وبياناتهم">
+                            <i class="bi bi-people-fill"></i>
+                            <span>الدارسين</span>
+                        </a>
 
-                    <!-- 3. الدورات ومفردات المواد -->
-                    <a href="{% url 'training:courses_catalog' %}" class="sidebar-nav-link {% if 'course' in request.resolver_match.url_name and 'session' not in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}active{% endif %}" title="الدورات ومفردات المواد">
-                        <i class="bi bi-journal-bookmark-fill"></i>
-                        <span>الدورات ومفرداتها</span>
-                    </a>
+                        <!-- 3. الدورات ومفردات المواد -->
+                        <a href="{% url 'training:courses_catalog' %}" class="sidebar-nav-link {% if 'course' in request.resolver_match.url_name and 'session' not in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}active{% endif %}" title="الدورات ومفردات المواد">
+                            <i class="bi bi-journal-bookmark-fill"></i>
+                            <span>الدورات ومفرداتها</span>
+                        </a>
+                    {% endif %}
 
-                    <!-- 4. الدورة التي تدرس -->
-                    <a href="{% url 'training:course_sessions' %}" class="sidebar-nav-link {% if 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}active{% endif %}" title="الدورة التي تدرس (الانعقاد والدارسون)">
-                        <i class="bi bi-diagram-3-fill"></i>
-                        <span>الدورة التي تدرس</span>
-                    </a>
+                    {% if is_registrar or is_supervisor or is_admin %}
+                        <!-- 4. الدورة التي تدرس -->
+                        <a href="{% url 'training:course_sessions' %}" class="sidebar-nav-link {% if 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}active{% endif %}" title="الدورة التي تدرس (الانعقاد والدارسون)">
+                            <i class="bi bi-diagram-3-fill"></i>
+                            <span>الدورة التي تدرس</span>
+                        </a>
+                    {% endif %}
 
                     <!-- 5. النتيجة والشهادات -->
                     <a href="{% url 'training:results_center' %}" class="sidebar-nav-link {% if 'result' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name or 'certificate' in request.resolver_match.url_name %}active{% endif %}" title="النتيجة ورصد الدرجات والشهادات">

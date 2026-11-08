@@ -866,6 +866,9 @@ class SystemSettings(models.Model):
 
 class UserRole(models.TextChoices):
     ADMIN = 'admin', 'مدير نظام (أدمن)'
+    REGISTRAR = 'registrar', 'مسجل بيانات'
+    SUPERVISOR = 'supervisor', 'مشرف دورة'
+    INSTRUCTOR = 'instructor', 'معلم / هيئة التدريس'
     REGULAR = 'regular', 'مستخدم عادي'
 
 
@@ -882,6 +885,14 @@ class UserProfile(models.Model):
         choices=UserRole.choices,
         default=UserRole.REGULAR,
         verbose_name='نوع وصلاحية المستخدم'
+    )
+    instructor = models.ForeignKey(
+        'Instructor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_profiles',
+        verbose_name='سجل المعلم المرتبط'
     )
     military_number = models.CharField(
         max_length=50,
@@ -918,6 +929,30 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
+
+    @property
+    def is_admin(self):
+        return bool(self.user.is_superuser or self.user.is_staff or self.role == UserRole.ADMIN)
+
+    @property
+    def is_registrar(self):
+        return self.is_admin or self.role == UserRole.REGISTRAR
+
+    @property
+    def is_supervisor(self):
+        return self.is_admin or self.role == UserRole.SUPERVISOR
+
+    @property
+    def is_instructor(self):
+        return self.role == UserRole.INSTRUCTOR
+
+    def get_instructor(self):
+        """إرجاع كائن المعلم المرتبط بهذا المستخدم إن وجد"""
+        if self.instructor:
+            return self.instructor
+        if self.military_number:
+            return Instructor.objects.filter(military_number=self.military_number).first()
+        return None
 
 
 @receiver(post_save, sender=User)

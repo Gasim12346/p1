@@ -18,12 +18,14 @@
         </h2>
     </div>
 
+    {% if is_registrar %}
     <div class="w-100 w-sm-auto">
         <a href="{% url 'training:course_session_create' %}" class="btn btn-success btn-lg rounded-3 fw-bold px-4 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100">
             <i class="bi bi-plus-circle-fill fs-5"></i>
             <span>فتح دورة جديدة وربط الطلبة</span>
         </a>
     </div>
+    {% endif %}
 </div>
 
 <!-- Sessions Table / Cards -->
@@ -146,10 +148,10 @@
                                 <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-primary fw-bold px-2 py-1 text-white" style="background-color: #2563eb !important; border-color: #1d4ed8 !important; color: #ffffff !important;" title="رصد الدرجات">
                                     <i class="bi bi-pencil-square text-white"></i> الدرجات
                                 </a>
-                                <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-secondary text-white px-2 py-1" style="background-color: #64748b !important; border-color: #475569 !important; color: #ffffff !important;" title="تعديل تواريخ الدورة">
-                                    <i class="bi bi-pencil text-white"></i>
-                                </a>
-                                {% if is_admin %}
+                                {% if is_registrar %}
+                                    <a href="{% url 'training:course_session_edit' session.id %}" class="btn btn-sm btn-secondary text-white px-2 py-1" style="background-color: #64748b !important; border-color: #475569 !important; color: #ffffff !important;" title="تعديل تواريخ الدورة">
+                                        <i class="bi bi-pencil text-white"></i>
+                                    </a>
                                     <a href="{% url 'training:course_session_delete' session.id %}" class="btn btn-sm btn-danger text-white px-2 py-1" style="background-color: #dc2626 !important; border-color: #b91c1c !important; color: #ffffff !important;" title="حذف الانعقاد">
                                         <i class="bi bi-trash text-white"></i>
                                     </a>
@@ -163,9 +165,11 @@
                             <div class="py-4">
                                 <i class="bi bi-calendar-x text-muted" style="font-size: 3.5rem;"></i>
                                 <h5 class="fw-bold text-dark mt-3 mb-3">لا توجد دورات منعقدة حالياً</h5>
+                                {% if is_registrar %}
                                 <a href="{% url 'training:course_session_create' %}" class="btn btn-success rounded-3 px-4 fw-bold">
                                     <i class="bi bi-plus-circle-fill me-1"></i> فتح دورة جديدة
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
