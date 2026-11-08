@@ -91,8 +91,7 @@ def trainees_list_view(request):
             Q(name__icontains=search_query) |
             Q(military_number__icontains=search_query) |
             Q(unit__icontains=search_query) |
-            Q(force__icontains=search_query) |
-            Q(rank__icontains=search_query)
+            Q(force__icontains=search_query)
         )
 
     counts = {
@@ -402,21 +401,33 @@ def course_session_create_view(request):
                 notes=notes
             )
 
-            # تسجيل الطلبة مع حفظ الرتبة والوحدة المحدثة وقت الدورة
+            # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
             enrolled_count = 0
             for num in selected_trainee_nums:
                 try:
                     t = Trainee.objects.get(military_number=num)
-                    # قراءة الرتبة والوحدة المعدلة من النموذج
-                    current_rank = request.POST.get(f'rank_{num}', t.rank).strip() or t.rank
+                    # قراءة الرتبة والقوة والوحدة المعدلة من النموذج
+                    current_rank = request.POST.get(f'rank_{num}', '').strip()
+                    current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
                     current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
 
                     CourseEnrollment.objects.create(
                         session=session,
                         trainee=t,
                         current_rank=current_rank,
+                        current_force=current_force,
                         current_unit=current_unit
                     )
+                    
+                    has_changes = False
+                    if current_force and current_force != t.force:
+                        t.force = current_force
+                        has_changes = True
+                    if current_unit and current_unit != t.unit:
+                        t.unit = current_unit
+                        has_changes = True
+                    if has_changes:
+                        t.save(update_fields=['force', 'unit'])
                     enrolled_count += 1
                 except Trainee.DoesNotExist:
                     pass
@@ -441,29 +452,45 @@ def course_session_create_view(request):
 def course_session_manage_view(request, session_id):
     """
     إدارة وتعديل الدارسين في دورة منعقدة:
-    - تعديل الرتبة والوحدة للدارسين في الدورة.
+    - تعديل الرتبة والقوة والوحدة للدارسين في الدورة.
     - إضافة دارسين جدد للدورة.
     - إزالة دارس من الدورة.
     """
     session = get_object_or_404(CourseSession.objects.select_related('course', 'course__category'), pk=session_id)
     enrollments = session.enrollments.select_related('trainee').all()
 
-    # تحديث الرتب والوحدات للدارسين المسجلين
+    # تحديث الرتب والقوة والوحدات للدارسين المسجلين
     if request.method == 'POST' and 'update_enrollments' in request.POST:
         updated_count = 0
         for enrollment in enrollments:
             num = enrollment.trainee.military_number
             new_rank = request.POST.get(f'rank_{num}', '').strip()
+            new_force = request.POST.get(f'force_{num}', '').strip()
             new_unit = request.POST.get(f'unit_{num}', '').strip()
-            if new_rank or new_unit:
-                if new_rank:
-                    enrollment.current_rank = new_rank
-                if new_unit:
-                    enrollment.current_unit = new_unit
+            
+            t = enrollment.trainee
+            t_changed = False
+
+            if new_rank:
+                enrollment.current_rank = new_rank
+            if new_force:
+                enrollment.current_force = new_force
+                if t.force != new_force:
+                    t.force = new_force
+                    t_changed = True
+            if new_unit:
+                enrollment.current_unit = new_unit
+                if t.unit != new_unit:
+                    t.unit = new_unit
+                    t_changed = True
+
+            if new_rank or new_force or new_unit:
                 enrollment.save()
+                if t_changed:
+                    t.save(update_fields=['force', 'unit'])
                 updated_count += 1
 
-        messages.success(request, f'تم حفظ وتحديث بيانات الرتب والوحدات لـ {updated_count} دارس بالدورة بنجاح.')
+        messages.success(request, f'تم حفظ وتحديث بيانات الرتب والقوة والوحدات لـ {updated_count} دارس بالدورة بنجاح.')
         return redirect('training:course_session_manage', session_id=session.id)
 
     # إضافة دارسين إضافيين للدورة
@@ -473,14 +500,25 @@ def course_session_manage_view(request, session_id):
         for num in extra_nums:
             t = Trainee.objects.filter(military_number=num).first()
             if t and not session.enrollments.filter(trainee=t).exists():
-                r = request.POST.get(f'extra_rank_{num}', t.rank).strip() or t.rank
+                r = request.POST.get(f'extra_rank_{num}', '').strip()
+                f = request.POST.get(f'extra_force_{num}', t.force).strip() or t.force
                 u = request.POST.get(f'extra_unit_{num}', t.unit).strip() or t.unit
                 CourseEnrollment.objects.create(
                     session=session,
                     trainee=t,
                     current_rank=r,
+                    current_force=f,
                     current_unit=u
                 )
+                has_changes = False
+                if f and f != t.force:
+                    t.force = f
+                    has_changes = True
+                if u and u != t.unit:
+                    t.unit = u
+                    has_changes = True
+                if has_changes:
+                    t.save(update_fields=['force', 'unit'])
                 added += 1
         if added > 0:
             messages.success(request, f'تم إلحاق {added} دارس إضافي بالدورة بنجاح.')
@@ -953,7 +991,7 @@ def trainee_transcript_view(request, military_number):
             'success': True,
             'name': trainee.name,
             'military_number': trainee.military_number,
-            'rank': trainee.rank,
+            'rank': courses_data[0]['current_rank'] if courses_data else '',
             'unit': trainee.unit,
             'force': trainee.force,
             'category_display': trainee.get_category_display(),

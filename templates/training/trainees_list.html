@@ -73,7 +73,7 @@
                         <span class="input-group-text bg-white border-end-0 text-muted">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0" placeholder="بحث بالاسم، النمرة، الرتبة، الوحدة..." aria-label="بحث">
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0" placeholder="بحث بالاسم، النمرة، الوحدة، القوة..." aria-label="بحث">
                         <button class="btn btn-outline-secondary px-3" type="submit">بحث</button>
                         {% if search_query %}
                             <a href="{% url 'training:trainees_list' %}{% if category_filter %}?category={{ category_filter }}{% endif %}" class="btn btn-light border text-danger" title="إلغاء البحث">
@@ -108,7 +108,6 @@
                 <tr>
                     <th style="min-width: 140px;">النمرة (مفتاح أساسي)</th>
                     <th style="min-width: 110px;">التصنيف</th>
-                    <th style="min-width: 110px;">الرتبة</th>
                     <th style="min-width: 190px;">الاسم الكامل</th>
                     <th style="min-width: 140px;">الوحدة</th>
                     <th style="min-width: 90px;">القوة</th>
@@ -142,11 +141,6 @@
                             {% endif %}
                         </td>
 
-                        <!-- الرتبة -->
-                        <td>
-                            <strong class="text-dark">{{ trainee.rank }}</strong>
-                        </td>
-
                         <!-- الاسم -->
                         <td>
                             <div class="fw-bold" style="font-size: 1rem;">
@@ -165,14 +159,14 @@
                         <!-- الوحدة -->
                         <td>
                             <span class="text-secondary fw-semibold">
-                                <i class="bi bi-geo-alt text-muted me-1"></i>{{ trainee.unit }}
+                                <i class="bi bi-geo-alt text-muted me-1"></i>{{ trainee.unit|default:"-" }}
                             </span>
                         </td>
 
                         <!-- القوة -->
                         <td>
                             <span class="badge bg-light text-dark border px-2 py-1">
-                                {{ trainee.force }}
+                                {{ trainee.force|default:"-" }}
                             </span>
                         </td>
 
@@ -195,7 +189,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-5">
+                        <td colspan="6" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-inbox text-muted" style="font-size: 3.5rem;"></i>
                                 <h5 class="fw-bold text-dark mt-3">لا توجد بيانات مطابقة</h5>
@@ -241,42 +235,17 @@
                         <!-- التصنيف -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
-                            <select name="category" id="categorySelect" class="form-select form-select-lg" required onchange="updateRanksList('categorySelect', 'rankSelect', 'customRankDiv', 'rankInput')">
+                            <select name="category" id="categorySelect" class="form-select form-select-lg" required>
                                 <option value="officer" selected>ضباط</option>
                                 <option value="nco">ضباط صف</option>
                                 <option value="civilian">مدنيين</option>
                             </select>
                         </div>
 
-                        <!-- الرتبة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">الرتبة / المسمى <span class="text-danger">*</span></label>
-                            <select id="rankSelect" class="form-select form-select-lg mb-2" required onchange="handleRankChange('rankSelect', 'customRankDiv', 'rankInput')">
-                                <!-- سيتم ملؤها ديناميكياً بواسطة JavaScript -->
-                            </select>
-                            
-                            <!-- حقل الإدخال النهائي المخفي أو اليدوي -->
-                            <div id="customRankDiv" style="display: none;">
-                                <input type="text" id="rankInput" name="rank" class="form-control form-control-lg" placeholder="اكتب الرتبة أو المسمى الوظيفي هنا">
-                            </div>
-                        </div>
-
                         <!-- الاسم الكامل -->
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
                             {{ form.name }}
-                        </div>
-
-                        <!-- الوحدة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">الوحدة <span class="text-danger">*</span></label>
-                            {{ form.unit }}
-                        </div>
-
-                        <!-- القوة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">القوة <span class="text-danger">*</span></label>
-                            {{ form.force }}
                         </div>
                     </div>
                 </div>
@@ -292,121 +261,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // قوائم الرتب المحددة بدقة
-    const RANKS_DATA = {
-        'officer': [
-            'ملازم',
-            'ملازم أول',
-            'نقيب',
-            'رائد',
-            'مقدم',
-            'عقيد',
-            'عميد',
-            'لواء'
-        ],
-        'nco': [
-            'جندي',
-            'وكيل عريف',
-            'عريف',
-            'رقيب',
-            'رقيب أول',
-            'مساعد'
-        ],
-        'civilian': [
-            'موظف مدني',
-            'أخصائي',
-            'باحث',
-            'مهندس',
-            'فني',
-            'إداري'
-        ]
-    };
-
-    function updateRanksList(catSelectId, rankSelectId, customDivId, rankInputId, initialVal = null) {
-        const catSelect = document.getElementById(catSelectId);
-        const rankSelect = document.getElementById(rankSelectId);
-        const customDiv = document.getElementById(customDivId);
-        const rankInput = document.getElementById(rankInputId);
-
-        if (!catSelect || !rankSelect) return;
-
-        const selectedCat = catSelect.value;
-        const ranks = RANKS_DATA[selectedCat] || [];
-
-        // مسح الخيارات السابقة
-        rankSelect.innerHTML = '';
-
-        // خيار إرشادي أول
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.textContent = '--- اختر الرتبة من القائمة ---';
-        defaultOpt.disabled = true;
-        rankSelect.appendChild(defaultOpt);
-
-        let matchFound = false;
-
-        // إضافة الرتب الخاصة بالتصنيف
-        ranks.forEach(rank => {
-            const opt = document.createElement('option');
-            opt.value = rank;
-            opt.textContent = rank;
-            if (initialVal && initialVal === rank) {
-                opt.selected = true;
-                matchFound = true;
-            }
-            rankSelect.appendChild(opt);
-        });
-
-        // إضافة خيار كتابة يدوية
-        const customOpt = document.createElement('option');
-        customOpt.value = '__custom__';
-        customOpt.textContent = '✍️ رتبة أخرى / كتابة يدوية...';
-        rankSelect.appendChild(customOpt);
-
-        // إذا كانت هناك قيمة أولية غير موجودة بالقائمة أو لم يتم تحديد شيء
-        if (initialVal) {
-            if (!matchFound) {
-                customOpt.selected = true;
-                customDiv.style.display = 'block';
-                rankInput.value = initialVal;
-            } else {
-                customDiv.style.display = 'none';
-                rankInput.value = initialVal;
-            }
-        } else {
-            // اختيار أول رتبة افتراضياً
-            if (ranks.length > 0) {
-                rankSelect.selectedIndex = 1;
-                rankInput.value = ranks[0];
-            }
-            customDiv.style.display = 'none';
-        }
-    }
-
-    function handleRankChange(rankSelectId, customDivId, rankInputId) {
-        const rankSelect = document.getElementById(rankSelectId);
-        const customDiv = document.getElementById(customDivId);
-        const rankInput = document.getElementById(rankInputId);
-
-        if (rankSelect.value === '__custom__') {
-            customDiv.style.display = 'block';
-            rankInput.value = '';
-            rankInput.focus();
-            rankInput.required = true;
-        } else {
-            customDiv.style.display = 'none';
-            rankInput.value = rankSelect.value;
-            rankInput.required = false;
-        }
-    }
-
-    // تهيئة القوائم عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', function () {
-        updateRanksList('categorySelect', 'rankSelect', 'customRankDiv', 'rankInput');
-    });
-</script>
 {% endblock %}

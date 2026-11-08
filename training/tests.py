@@ -137,7 +137,6 @@ class AuthenticationAndSecurityTests(TestCase):
         trainee = Trainee.objects.create(
             military_number='9999',
             name='دارس اختبار',
-            rank='ملازم',
             unit='سلاح الإشارة'
         )
         session = CourseSession.objects.create(
@@ -184,7 +183,6 @@ class AuthenticationAndSecurityTests(TestCase):
         trainee = Trainee.objects.create(
             military_number='8888',
             name='دارس السنوات',
-            rank='نقيب',
             unit='سلاح المدرعات'
         )
         CourseEnrollment.objects.create(
@@ -271,7 +269,6 @@ class AuthenticationAndSecurityTests(TestCase):
         trainee = Trainee.objects.create(
             military_number='777711',
             name='دارس فحص الحدود',
-            rank='نقيب',
             unit='سلاح الإشارة'
         )
         en = CourseEnrollment.objects.create(
@@ -344,7 +341,6 @@ class AuthenticationAndSecurityTests(TestCase):
         trainee = Trainee.objects.create(
             military_number='12345678',
             name='دارس الصلاحيات',
-            rank='رائد',
             unit='الجوية'
         )
 
@@ -386,7 +382,6 @@ class AuthenticationAndSecurityTests(TestCase):
         trainee = Trainee.objects.create(
             military_number='9990001',
             name='دارس معتمد',
-            rank='نقيب',
             unit='البحرية'
         )
         en = CourseEnrollment.objects.create(

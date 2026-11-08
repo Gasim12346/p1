@@ -32,20 +32,20 @@ class Trainee(models.Model):
         default=TraineeCategory.OFFICER,
         verbose_name='التصنيف'
     )
-    rank = models.CharField(
-        max_length=100,
-        verbose_name='الرتبة'
-    )
     name = models.CharField(
         max_length=200,
         verbose_name='الاسم الكامل'
     )
     unit = models.CharField(
         max_length=150,
+        blank=True,
+        default='',
         verbose_name='الوحدة'
     )
     force = models.CharField(
         max_length=150,
+        blank=True,
+        default='',
         verbose_name='القوة'
     )
     created_at = models.DateTimeField(
@@ -63,7 +63,7 @@ class Trainee(models.Model):
         ordering = ['category', 'military_number']
 
     def __str__(self):
-        return f"{self.rank} / {self.name} ({self.military_number})"
+        return f"{self.name} ({self.military_number})"
 
 
 class CourseCategory(models.Model):
@@ -257,10 +257,20 @@ class CourseEnrollment(models.Model):
     # تتيح تعديل الرتبة والوحدة في الدورة مع الاحتفاظ بالأصل أو التحديث
     current_rank = models.CharField(
         max_length=100,
+        blank=True,
+        default='',
         verbose_name='الرتبة أثناء الدورة'
+    )
+    current_force = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='القوة أثناء الدورة'
     )
     current_unit = models.CharField(
         max_length=150,
+        blank=True,
+        default='',
         verbose_name='الوحدة أثناء الدورة'
     )
     attendance_score = models.DecimalField(

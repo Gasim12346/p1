@@ -85,7 +85,6 @@ class Command(BaseCommand):
                 military_number=num,
                 defaults={
                     'category': cat,
-                    'rank': rank,
                     'name': name,
                     'unit': unit,
                     'force': force
@@ -109,18 +108,18 @@ class Command(BaseCommand):
         # 6. تسجيل طلبة ورصد درجات نموذجية
         subs = list(c1.subjects.all())
         sample_scores = [
-            (created_trainees[0], [92, 95, 88], 19.5), # ممتاز
-            (created_trainees[1], [82, 78, 85], 18.0), # جيد جداً
-            (created_trainees[2], [70, 72, 68], 16.0), # جيد
-            (created_trainees[3], [58, 62, 55], 14.0), # مقبول
+            (created_trainees[0], 'مقدم', [92, 95, 88], 19.5), # ممتاز
+            (created_trainees[1], 'رائد', [82, 78, 85], 18.0), # جيد جداً
+            (created_trainees[2], 'نقيب', [70, 72, 68], 16.0), # جيد
+            (created_trainees[3], 'مساعد', [58, 62, 55], 14.0), # مقبول
         ]
 
-        for tr, marks, att in sample_scores:
+        for tr, sample_rank, marks, att in sample_scores:
             enrollment, _ = CourseEnrollment.objects.get_or_create(
                 session=session,
                 trainee=tr,
                 defaults={
-                    'current_rank': tr.rank,
+                    'current_rank': sample_rank,
                     'current_unit': tr.unit,
                     'attendance_score': att
                 }

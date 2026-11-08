@@ -185,8 +185,7 @@
                             onclick="filterByCategoryTab('civilian', this)" title="عرض الدارسين المدنيين فقط">
                             <i class="bi bi-person-badge-fill"></i>
                             <span>مدنيين</span>
-                            <span class="badge ms-1" style="background-color: #7e22ce; color: #fff;">{{ civilian_count
-                                }}</span>
+                            <span class="badge ms-1" style="background-color: #7e22ce; color: #fff;">{{ civilian_count }}</span>
                         </button>
                     </div>
                 </div>
@@ -211,14 +210,15 @@
                         <th style="min-width: 130px;">النمرة (أرقام فقط)</th>
                         <th style="min-width: 180px;">اسم الدارس</th>
                         <th style="min-width: 100px;">التصنيف</th>
-                        <th style="min-width: 160px;">الرتبة أثناء الدورة (قابلة للتعديل)</th>
-                        <th style="min-width: 160px;">الوحدة أثناء الدورة (قابلة للتعديل)</th>
+                        <th style="min-width: 170px;">الرتبة أثناء الدورة</th>
+                        <th style="min-width: 160px;">القوة أثناء الدورة</th>
+                        <th style="min-width: 200px;">الوحدة أثناء الدورة</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- رسالة التوجيه قبل اختيار التصنيف -->
                     <tr id="selectCategoryFirstRow">
-                        <td colspan="6" class="text-center py-5 bg-white">
+                        <td colspan="7" class="text-center py-5 bg-white">
                             <div class="py-4">
                                 <div class="mb-3">
                                     <span
@@ -250,8 +250,7 @@
                                         style="background-color: #7e22ce;"
                                         onclick="filterByCategoryTab('civilian', document.getElementById('btn-cat-civilian'))">
                                         <i class="bi bi-person-badge-fill me-1"></i> مدنيين
-                                        <span class="badge bg-white ms-1" style="color: #7e22ce;">{{ civilian_count
-                                            }}</span>
+                                        <span class="badge bg-white ms-1" style="color: #7e22ce;">{{ civilian_count }}</span>
                                     </button>
                                 </div>
                             </div>
@@ -260,7 +259,7 @@
 
                     {% for t in trainees %}
                     <tr class="trainee-row" data-category="{{ t.category }}"
-                        data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}"
+                        data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}"
                         style="display: none;">
                         <td class="text-center">
                             <input type="checkbox" name="selected_trainees" value="{{ t.military_number }}"
@@ -275,7 +274,6 @@
                         </td>
                         <td>
                             <strong class="text-dark d-block">{{ t.name }}</strong>
-                            <small class="text-muted">{{ t.force }}</small>
                         </td>
                         <td>
                             {% if t.category == 'officer' %}
@@ -286,28 +284,79 @@
                             <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
                             {% endif %}
                         </td>
-                        <!-- حقل الرتبة وقت الدورة (قابل للتعديل) -->
+                        <!-- حقل الرتبة وقت الدورة (قائمة منسدلة) -->
                         <td>
-                            <input type="text" name="rank_{{ t.military_number }}" value="{{ t.rank }}"
-                                class="form-control form-control-sm" placeholder="الرتبة أثناء الدورة">
+                            <input type="hidden" name="rank_{{ t.military_number }}" id="final_rank_{{ t.military_number }}" value="">
+                            <select id="rank_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleRankSelect('{{ t.military_number }}')">
+                                <option value="">-- اختر الرتبة --</option>
+                                {% if t.category == 'officer' %}
+                                    <option value="ملازم">ملازم</option>
+                                    <option value="ملازم أول">ملازم أول</option>
+                                    <option value="نقيب">نقيب</option>
+                                    <option value="رائد">رائد</option>
+                                    <option value="مقدم">مقدم</option>
+                                    <option value="عقيد">عقيد</option>
+                                    <option value="عميد">عميد</option>
+                                    <option value="لواء">لواء</option>
+                                    <option value="فريق">فريق</option>
+                                    <option value="فريق أول">فريق أول</option>
+                                {% elif t.category == 'nco' %}
+                                    <option value="جندي">جندي</option>
+                                    <option value="وكيل عريف">وكيل عريف</option>
+                                    <option value="عريف">عريف</option>
+                                    <option value="رقيب">رقيب</option>
+                                    <option value="رقيب أول">رقيب أول</option>
+                                    <option value="مساعد">مساعد</option>
+                                    <option value="مساعد أول">مساعد أول</option>
+                                {% else %}
+                                    <option value="موظف">موظف</option>
+                                    <option value="مهندس">مهندس</option>
+                                    <option value="إداري">إداري</option>
+                                    <option value="فني">فني</option>
+                                    <option value="محاسب">محاسب</option>
+                                    <option value="أخصائي">أخصائي</option>
+                                    <option value="باحث">باحث</option>
+                                    <option value="مستشار">مستشار</option>
+                                    <option value="كاتب">كاتب</option>
+                                {% endif %}
+                                <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
+                            </select>
+                            <input type="text" id="custom_rank_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncRank('{{ t.military_number }}')">
                         </td>
-                        <!-- حقل الوحدة وقت الدورة (قابل للتعديل) -->
+                        <!-- حقل القوة وقت الدورة (قائمة منسدلة) -->
                         <td>
-                            <input type="text" name="unit_{{ t.military_number }}" value="{{ t.unit }}"
-                                class="form-control form-control-sm" placeholder="الوحدة أثناء الدورة">
+                            <select name="force_{{ t.military_number }}" id="force_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleForceChange('{{ t.military_number }}')">
+                                <option value="">-- اختر القوة --</option>
+                                <option value="القوات البرية" {% if t.force == 'القوات البرية' %}selected{% endif %}>القوات البرية</option>
+                                <option value="القوات البحرية" {% if t.force == 'القوات البحرية' %}selected{% endif %}>القوات البحرية</option>
+                                <option value="القوات الجوية" {% if t.force == 'القوات الجوية' %}selected{% endif %}>القوات الجوية</option>
+                                <option value="قوات الدفاع الجوي" {% if t.force == 'قوات الدفاع الجوي' %}selected{% endif %}>قوات الدفاع الجوي</option>
+                            </select>
+                        </td>
+                        <!-- حقل الوحدة وقت الدورة (قائمة منسدلة تعتمد على القوة) -->
+                        <td>
+                            <input type="hidden" name="unit_{{ t.military_number }}" id="final_unit_{{ t.military_number }}" value="{{ t.unit|default:'' }}">
+                            <select id="unit_select_{{ t.military_number }}" class="form-select form-select-sm bg-light" data-initial-unit="{{ t.unit|default:'' }}" onchange="handleUnitSelect('{{ t.military_number }}')" disabled>
+                                <option value="">-- اختر القوة أولاً لعرض الوحدات --</option>
+                            </select>
+                            <input type="text" id="custom_unit_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="syncUnit('{{ t.military_number }}')">
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
                         </td>
                     </tr>
                     {% endfor %}
                     <tr id="noFilterMatchRow" style="display: none;">
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
                             <span class="fw-bold fs-6">لا يوجد دارسون يطابقون خيار التصنيف أو البحث المختار!</span>
+                            <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
+                                مسح عبارة البحث لإظهار النتائج.</p>
+                        </td>
+                    </tr>
                             <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
                                 مسح عبارة البحث لإظهار النتائج.</p>
                         </td>
@@ -551,5 +600,195 @@
             input.focus();
         }
     }
+
+    // ==========================================
+    // إدارة الرتبة والقوة والوحدة التابعة
+    // ==========================================
+    const FORCE_UNITS = {
+        'القوات البرية': [
+            'سلاح المشاة',
+            'سلاح المدرعات',
+            'سلاح المدفعية',
+            'سلاح الإشارة',
+            'سلاح المهندسين',
+            'سلاح الصيانة',
+            'سلاح النقل',
+            'الإدارة المالية',
+            'إدارة نظم المعلومات',
+            'إدارة التدريب',
+            'هيئة الإمداد والتموين',
+            'الشرطة العسكرية',
+            'شعبة الاستخبارات',
+            'لواء القوات الخاصة',
+            'إدارة العمليات',
+            'قيادة القوات البرية'
+        ],
+        'القوات البحرية': [
+            'قاعدة بورتسودان البحرية',
+            'قاعدة فلامنجو البحرية',
+            'أسطول الزوارق والسفن',
+            'لواء المشاة البحرية',
+            'جناح الضفادع البشرية',
+            'ورش الصيانة البحرية',
+            'إدارة نظم المعلومات البحرية',
+            'الإدارة المالية البحرية',
+            'جناح الاتصالات الساحلية',
+            'مركز تدريب القوات البحرية',
+            'قيادة القوات البحرية'
+        ],
+        'القوات الجوية': [
+            'قاعدة وادي سيدنا الجوية',
+            'قاعدة الشهيد مختار الجوية',
+            'قاعدة الأبيض الجوية',
+            'قاعدة مروي الجوية',
+            'جناح المقاتلات',
+            'جناح النقل الجوي',
+            'جناح المروحيات',
+            'مجمع صيانة الطيران',
+            'الملاحة والمراقبة الجوية',
+            'إدارة نظم المعلومات الجوية',
+            'الإدارة المالية الجوية',
+            'كلية القوات الجوية',
+            'قيادة القوات الجوية'
+        ],
+        'قوات الدفاع الجوي': [
+            'لواء الصواريخ م/ط',
+            'كتائب المدفعية م/ط',
+            'مراكز الرادارات والإنذار المبكر',
+            'قيادة السيطرة والتوجيه',
+            'الحرب الإلكترونية',
+            'سلاح الإشارة للدفاع الجوي',
+            'ورش الصيانة الفنية',
+            'مركز تدريب الدفاع الجوي',
+            'إدارة نظم المعلومات',
+            'الإدارة المالية',
+            'قيادة قوات الدفاع الجوي'
+        ]
+    };
+
+    function handleRankSelect(num) {
+        const select = document.getElementById('rank_select_' + num);
+        const customInput = document.getElementById('custom_rank_' + num);
+        const finalInput = document.getElementById('final_rank_' + num);
+        if (!select || !finalInput) return;
+
+        if (select.value === '__custom__') {
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.focus();
+                finalInput.value = customInput.value.trim();
+            }
+        } else {
+            if (customInput) customInput.style.display = 'none';
+            finalInput.value = select.value;
+        }
+    }
+
+    function syncRank(num) {
+        const customInput = document.getElementById('custom_rank_' + num);
+        const finalInput = document.getElementById('final_rank_' + num);
+        if (customInput && finalInput) {
+            finalInput.value = customInput.value.trim();
+        }
+    }
+
+    function handleForceChange(num, initialUnit = null) {
+        const forceSelect = document.getElementById('force_select_' + num);
+        const unitSelect = document.getElementById('unit_select_' + num);
+        const customUnitInput = document.getElementById('custom_unit_' + num);
+        const finalUnitInput = document.getElementById('final_unit_' + num);
+        if (!forceSelect || !unitSelect) return;
+
+        const selectedForce = forceSelect.value;
+
+        if (!selectedForce || !FORCE_UNITS[selectedForce]) {
+            // لا تظهر الوحدات إطلاقاً حتى يتم اختيار القوة
+            unitSelect.innerHTML = '<option value="">-- اختر القوة أولاً لعرض الوحدات --</option>';
+            unitSelect.disabled = true;
+            unitSelect.classList.add('bg-light');
+            if (customUnitInput) customUnitInput.style.display = 'none';
+            if (finalUnitInput) finalUnitInput.value = '';
+            return;
+        }
+
+        // تفعيل قائمة الوحدات وتعبئتها بوحدات القوة المختارة
+        unitSelect.disabled = false;
+        unitSelect.classList.remove('bg-light');
+        unitSelect.innerHTML = `<option value="">-- اختر الوحدة (${selectedForce}) --</option>`;
+
+        const units = FORCE_UNITS[selectedForce];
+        const targetUnit = initialUnit !== null ? initialUnit : (unitSelect.getAttribute('data-initial-unit') || (finalUnitInput ? finalUnitInput.value : ''));
+        let matched = false;
+
+        units.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u;
+            opt.textContent = u;
+            if (targetUnit && targetUnit === u) {
+                opt.selected = true;
+                matched = true;
+            }
+            unitSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ وحدة أخرى (كتابة يدوية)';
+        unitSelect.appendChild(customOpt);
+
+        if (targetUnit) {
+            if (matched) {
+                if (customUnitInput) customUnitInput.style.display = 'none';
+                if (finalUnitInput) finalUnitInput.value = targetUnit;
+            } else {
+                customOpt.selected = true;
+                if (customUnitInput) {
+                    customUnitInput.style.display = 'block';
+                    customUnitInput.value = targetUnit;
+                }
+                if (finalUnitInput) finalUnitInput.value = targetUnit;
+            }
+        } else {
+            if (customUnitInput) customUnitInput.style.display = 'none';
+            if (finalUnitInput) finalUnitInput.value = '';
+        }
+    }
+
+    function handleUnitSelect(num) {
+        const unitSelect = document.getElementById('unit_select_' + num);
+        const customUnitInput = document.getElementById('custom_unit_' + num);
+        const finalUnitInput = document.getElementById('final_unit_' + num);
+        if (!unitSelect || !finalUnitInput) return;
+
+        if (unitSelect.value === '__custom__') {
+            if (customUnitInput) {
+                customUnitInput.style.display = 'block';
+                customUnitInput.focus();
+                finalUnitInput.value = customUnitInput.value.trim();
+            }
+        } else {
+            if (customUnitInput) customUnitInput.style.display = 'none';
+            finalUnitInput.value = unitSelect.value;
+        }
+    }
+
+    function syncUnit(num) {
+        const customUnitInput = document.getElementById('custom_unit_' + num);
+        const finalUnitInput = document.getElementById('final_unit_' + num);
+        if (customUnitInput && finalUnitInput) {
+            finalUnitInput.value = customUnitInput.value.trim();
+        }
+    }
+
+    // تهيئة جميع صفوف الدارسين عند التحميل
+    document.addEventListener('DOMContentLoaded', function() {
+        const forceSelects = document.querySelectorAll('[id^="force_select_"]');
+        forceSelects.forEach(fs => {
+            const num = fs.id.replace('force_select_', '');
+            if (fs.value) {
+                handleForceChange(num);
+            }
+        });
+    });
 </script>
 {% endblock %}

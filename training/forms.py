@@ -39,7 +39,7 @@ CIVILIAN_TITLES = [
 class TraineeForm(forms.ModelForm):
     class Meta:
         model = Trainee
-        fields = ['military_number', 'category', 'rank', 'name', 'unit', 'force']
+        fields = ['military_number', 'category', 'name']
         widgets = {
             'military_number': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg font-monospace',
@@ -55,35 +55,16 @@ class TraineeForm(forms.ModelForm):
                 'id': 'categorySelect',
                 'required': 'required'
             }),
-            'rank': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'id': 'rankInput',
-                'placeholder': 'اختر الرتبة من القائمة أو اكتبها',
-                'required': 'required'
-            }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
                 'placeholder': 'الاسم الكامل للدارس',
-                'required': 'required'
-            }),
-            'unit': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'placeholder': 'مثال: لواء التدريب المشترك / إدارة العمليات',
-                'required': 'required'
-            }),
-            'force': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'placeholder': 'مثال: القوات البرية / الحرس الوطني / الوزارة',
                 'required': 'required'
             }),
         }
         labels = {
             'military_number': 'النمرة (أرقام فقط) *',
             'category': 'التصنيف *',
-            'rank': 'الرتبة *',
             'name': 'الاسم الكامل *',
-            'unit': 'الوحدة *',
-            'force': 'القوة *',
         }
 
     def clean_military_number(self):

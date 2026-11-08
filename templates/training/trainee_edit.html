@@ -38,43 +38,17 @@
                         <!-- التصنيف -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
-                            <select name="category" id="editCategorySelect" class="form-select form-select-lg" required onchange="updateRanksList('editCategorySelect', 'editRankSelect', 'editCustomRankDiv', 'editRankInput')">
+                            <select name="category" id="editCategorySelect" class="form-select form-select-lg" required>
                                 <option value="officer" {% if trainee.category == 'officer' %}selected{% endif %}>ضباط</option>
                                 <option value="nco" {% if trainee.category == 'nco' %}selected{% endif %}>ضباط صف</option>
                                 <option value="civilian" {% if trainee.category == 'civilian' %}selected{% endif %}>مدنيين</option>
                             </select>
-                            <div class="form-text small text-muted">اختر: ضباط، ضباط صف، مدنيين</div>
-                        </div>
-
-                        <!-- الرتبة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">الرتبة / المسمى <span class="text-danger">*</span></label>
-                            <select id="editRankSelect" class="form-select form-select-lg mb-2" required onchange="handleRankChange('editRankSelect', 'editCustomRankDiv', 'editRankInput')">
-                                <!-- تملأ ديناميكياً -->
-                            </select>
-                            
-                            <!-- حقل الإدخال النهائي المخفي أو اليدوي -->
-                            <div id="editCustomRankDiv" style="display: none;">
-                                <input type="text" id="editRankInput" name="rank" value="{{ trainee.rank }}" class="form-control form-control-lg" placeholder="اكتب الرتبة أو المسمى هنا">
-                            </div>
                         </div>
 
                         <!-- الاسم الكامل -->
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
                             {{ form.name }}
-                        </div>
-
-                        <!-- الوحدة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">الوحدة <span class="text-danger">*</span></label>
-                            {{ form.unit }}
-                        </div>
-
-                        <!-- القوة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">القوة <span class="text-danger">*</span></label>
-                            {{ form.force }}
                         </div>
                     </div>
                 </div>
@@ -92,114 +66,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    const RANKS_DATA = {
-        'officer': [
-            'ملازم',
-            'ملازم أول',
-            'نقيب',
-            'رائد',
-            'مقدم',
-            'عقيد',
-            'عميد',
-            'لواء'
-        ],
-        'nco': [
-            'جندي',
-            'وكيل عريف',
-            'عريف',
-            'رقيب',
-            'رقيب أول',
-            'مساعد'
-        ],
-        'civilian': [
-            'موظف مدني',
-            'أخصائي',
-            'باحث',
-            'مهندس',
-            'فني',
-            'إداري'
-        ]
-    };
-
-    function updateRanksList(catSelectId, rankSelectId, customDivId, rankInputId, initialVal = null) {
-        const catSelect = document.getElementById(catSelectId);
-        const rankSelect = document.getElementById(rankSelectId);
-        const customDiv = document.getElementById(customDivId);
-        const rankInput = document.getElementById(rankInputId);
-
-        if (!catSelect || !rankSelect) return;
-
-        const selectedCat = catSelect.value;
-        const ranks = RANKS_DATA[selectedCat] || [];
-
-        rankSelect.innerHTML = '';
-
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.textContent = '--- اختر الرتبة من القائمة ---';
-        defaultOpt.disabled = true;
-        rankSelect.appendChild(defaultOpt);
-
-        let matchFound = false;
-
-        ranks.forEach(rank => {
-            const opt = document.createElement('option');
-            opt.value = rank;
-            opt.textContent = rank;
-            if (initialVal && initialVal === rank) {
-                opt.selected = true;
-                matchFound = true;
-            }
-            rankSelect.appendChild(opt);
-        });
-
-        const customOpt = document.createElement('option');
-        customOpt.value = '__custom__';
-        customOpt.textContent = '✍️ رتبة أخرى / كتابة يدوية...';
-        rankSelect.appendChild(customOpt);
-
-        if (initialVal) {
-            if (!matchFound) {
-                customOpt.selected = true;
-                customDiv.style.display = 'block';
-                rankInput.value = initialVal;
-            } else {
-                customDiv.style.display = 'none';
-                rankInput.value = initialVal;
-            }
-        } else {
-            if (ranks.length > 0) {
-                rankSelect.selectedIndex = 1;
-                rankInput.value = ranks[0];
-            }
-            customDiv.style.display = 'none';
-        }
-    }
-
-    function handleRankChange(rankSelectId, customDivId, rankInputId) {
-        const rankSelect = document.getElementById(rankSelectId);
-        const customDiv = document.getElementById(customDivId);
-        const rankInput = document.getElementById(rankInputId);
-
-        if (rankSelect.value === '__custom__') {
-            customDiv.style.display = 'block';
-            rankInput.value = '';
-            rankInput.focus();
-            rankInput.required = true;
-        } else {
-            customDiv.style.display = 'none';
-            rankInput.value = rankSelect.value;
-            rankInput.required = false;
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const currentRank = "{{ trainee.rank|escapejs }}";
-        updateRanksList('editCategorySelect', 'editRankSelect', 'editCustomRankDiv', 'editRankInput', currentRank);
-    });
-</script>
 {% endblock %}
