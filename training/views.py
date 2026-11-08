@@ -473,7 +473,8 @@ def course_session_create_view(request):
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         status = request.POST.get('status', 'active')
-        attendance_max_grade = request.POST.get('attendance_max_grade', '20.0')
+        attendance_raw = request.POST.get('attendance_max_grade', '').strip()
+        attendance_max_grade = attendance_raw if attendance_raw else None
         notes = request.POST.get('notes', '').strip()
         supervisor_num = request.POST.get('supervisor', '').strip()
 
@@ -510,7 +511,7 @@ def course_session_create_view(request):
                     start_date=start_date,
                     end_date=end_date,
                     status=status,
-                    attendance_max_grade=attendance_max_grade or 20.0,
+                    attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
                     supervisor=supervisor,
                     notes=notes
                 )

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django import forms
 from django.contrib.auth.models import User
 from .models import (
@@ -153,7 +154,7 @@ class InstructorForm(forms.ModelForm):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['category', 'course_number', 'name', 'description']
+        fields = ['category', 'course_number', 'name', 'attendance_max_grade', 'description']
         widgets = {
             'category': forms.Select(attrs={
                 'class': 'form-select form-select-lg',
@@ -168,6 +169,13 @@ class CourseForm(forms.ModelForm):
                 'placeholder': 'مثال: دورة مرشد متقدمة',
                 'required': 'required'
             }),
+            'attendance_max_grade': forms.NumberInput(attrs={
+                'class': 'form-control form-control-lg',
+                'step': '0.5',
+                'min': '0',
+                'placeholder': '10',
+                'value': '10',
+            }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -178,12 +186,23 @@ class CourseForm(forms.ModelForm):
             'category': 'تصنيف الدورة *',
             'course_number': 'رقم/رمز الدورة (توليد تلقائي)',
             'name': 'اسم الدورة *',
+            'attendance_max_grade': 'درجة المواظبة *',
             'description': 'الوصف والأهداف',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['course_number'].required = False
+        if 'attendance_max_grade' in self.fields:
+            self.fields['attendance_max_grade'].required = False
+            if not self.instance.pk:
+                self.fields['attendance_max_grade'].initial = 10.00
+
+    def clean_attendance_max_grade(self):
+        val = self.cleaned_data.get('attendance_max_grade')
+        if val is None or val == '':
+            return Decimal('10.00')
+        return val
 
     def clean_course_number(self):
         number = self.cleaned_data.get('course_number', '').strip()

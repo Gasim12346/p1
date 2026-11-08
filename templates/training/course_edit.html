@@ -38,9 +38,14 @@
                             <input type="text" class="form-control form-control-lg bg-light font-monospace text-dark fw-bold" value="{{ course.course_number }}" disabled>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-md-8">
                             <label class="form-label fw-bold text-dark">اسم الدورة <span class="text-danger">*</span></label>
                             {{ form.name }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark">درجة المواظبة <span class="text-danger">*</span></label>
+                            {{ form.attendance_max_grade }}
                         </div>
 
                         <div class="col-12">

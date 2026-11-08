@@ -1209,6 +1209,57 @@ class UserRolePermissionsTest(TestCase):
         self.assertTrue(profile_admin.can_manage_users or profile_admin.role == UserRole.ADMIN)
         self.assertTrue(self.user_admin.is_staff)
 
+    def test_course_and_session_attendance_grade_inheritance(self):
+        """التحقق من نزول درجة المواظبة في نموذج وشاشة الدورات وافتراضيتها 10 ووراثتها للدورات المنعقدة"""
+        from decimal import Decimal
+        from training.forms import CourseForm
+
+        # 1. التحقق من القيمة الافتراضية في نموذج الدورة Course
+        category = CourseCategory.objects.first() or CourseCategory.objects.create(name="تصنيف اختبار")
+        course_default = Course.objects.create(
+            category=category,
+            name="دورة قيادة افتراضية",
+            course_number="TEST-ATT-1"
+        )
+        self.assertEqual(course_default.attendance_max_grade, Decimal('10.00'))
+
+        # 2. التحقق من الدورة المنعقدة CourseSession ووراثتها للدرجة تلقائياً
+        session = CourseSession.objects.create(
+            course=course_default,
+            session_code="دفعة 1 - مواظبة",
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 3, 1),
+            status='active'
+        )
+        self.assertEqual(session.attendance_max_grade, Decimal('10.00'))
+
+        # 3. التحقق من دورة بدرجة مواظبة مخصصة
+        course_custom = Course.objects.create(
+            category=category,
+            name="دورة متقدمة بمواظبة 15",
+            course_number="TEST-ATT-2",
+            attendance_max_grade=Decimal('15.00')
+        )
+        session_custom = CourseSession.objects.create(
+            course=course_custom,
+            session_code="دفعة 2 - مواظبة مخصصة",
+            start_date=date(2026, 4, 1),
+            end_date=date(2026, 6, 1),
+            status='active'
+        )
+        self.assertEqual(session_custom.attendance_max_grade, Decimal('15.00'))
+
+        # 4. اختبار CourseForm ووجود حقل attendance_max_grade وقيمته الافتراضية 10
+        form = CourseForm(data={
+            'category': category.id,
+            'name': 'دورة مجربة عبر النموذج',
+            'attendance_max_grade': '',
+        })
+        self.assertTrue(form.is_valid())
+        course_form_obj = form.save()
+        self.assertEqual(course_form_obj.attendance_max_grade, Decimal('10.00'))
+
+
 
 
 

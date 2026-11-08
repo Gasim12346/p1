@@ -175,6 +175,12 @@ class Course(models.Model):
         max_length=200,
         verbose_name='اسم الدورة'
     )
+    attendance_max_grade = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=10.00,
+        verbose_name='درجة المواظبة'
+    )
     description = models.TextField(
         blank=True,
         null=True,
@@ -320,7 +326,7 @@ class CourseSession(models.Model):
     attendance_max_grade = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        default=20.00,
+        default=10.00,
         verbose_name='درجة المواظبة والسلوك العظمى'
     )
     supervisor = models.ForeignKey(
@@ -350,6 +356,12 @@ class CourseSession(models.Model):
         super().clean()
         if self.attendance_max_grade is not None and self.attendance_max_grade < 0:
             raise ValidationError({'attendance_max_grade': 'الدرجة العظمى للمواظبة لا يمكن أن تكون سالبة.'})
+
+    def save(self, *args, **kwargs):
+        if not self.pk and (self.attendance_max_grade is None or self.attendance_max_grade == 10.00):
+            if self.course and hasattr(self.course, 'attendance_max_grade') and self.course.attendance_max_grade is not None:
+                self.attendance_max_grade = self.course.attendance_max_grade
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.course.name} - {self.session_code} ({self.start_date})"
