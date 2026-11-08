@@ -28,32 +28,68 @@
         pointer-events: none;
     }
 
-    .admin-tab-nav {
-        border-bottom: 2px solid #e2e8f0;
-        gap: 6px;
+    /* Admin Sidebar Styling */
+    .admin-sidebar {
+        transition: all 0.3s ease;
     }
-    .admin-tab-nav .nav-link {
+    .admin-sidebar-nav .nav-link {
         border: none;
-        color: #64748b;
+        color: #475569;
         font-weight: 700;
-        padding: 0.85rem 1.35rem;
-        border-radius: 12px 12px 0 0;
+        font-size: 0.92rem;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         background: transparent;
+        margin-bottom: 4px;
+        text-align: right;
+        position: relative;
     }
-    .admin-tab-nav .nav-link:hover {
+    .admin-sidebar-nav .nav-link:hover {
         color: #0f172a;
         background: #f1f5f9;
+        transform: translateX(-4px);
     }
-    .admin-tab-nav .nav-link.active {
-        color: #1e3a8a;
-        background: #ffffff;
-        border-bottom: 3px solid #2563eb;
+    .admin-sidebar-nav .nav-link.active {
+        color: #1e40af;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
         font-weight: 800;
-        box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    }
+    .admin-sidebar-nav .nav-link.active .icon-tab {
+        transform: scale(1.15);
+    }
+    .admin-sidebar-nav .nav-link .icon-tab {
+        font-size: 1.15rem;
+        transition: transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        flex-shrink: 0;
+    }
+    .admin-sidebar-nav .nav-link .count-badge {
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+    @media (max-width: 991.98px) {
+        .admin-sidebar {
+            position: static !important;
+        }
+        .admin-sidebar-nav {
+            flex-direction: row !important;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 6px;
+        }
+        .admin-sidebar-nav .nav-link {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
     }
 
     .preset-theme-card {
@@ -132,57 +168,93 @@
         </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-tabs admin-tab-nav mb-4" id="adminCommandTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-analytics" data-bs-toggle="tab" data-bs-target="#pane-analytics" type="button" role="tab">
-                <i class="bi bi-pie-chart-fill text-primary"></i>
-                <span>التحليلات والمؤشرات العامة</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-users" data-bs-toggle="tab" data-bs-target="#pane-users" type="button" role="tab">
-                <i class="bi bi-people-fill text-success"></i>
-                <span>إدارة المستخدمين والصلاحيات</span>
-                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">{{ users|length }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-instructors" data-bs-toggle="tab" data-bs-target="#pane-instructors" type="button" role="tab">
-                <i class="bi bi-person-workspace text-primary"></i>
-                <span>هيئة التعليم والمعلمون</span>
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">{{ instructors|length }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-categories" data-bs-toggle="tab" data-bs-target="#pane-categories" type="button" role="tab">
-                <i class="bi bi-tags-fill text-info"></i>
-                <span>تصنيفات الدورات</span>
-                <span class="badge bg-info bg-opacity-10 text-primary rounded-pill px-2">{{ categories_total }}</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-certificate" data-bs-toggle="tab" data-bs-target="#pane-certificate" type="button" role="tab">
-                <i class="bi bi-award-fill text-warning"></i>
-                <span>تخصيص الشهادة وتعديل اللوغهات</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-branding" data-bs-toggle="tab" data-bs-target="#pane-branding" type="button" role="tab">
-                <i class="bi bi-palette-fill text-danger"></i>
-                <span>لوغو وألوان وهوية النظام</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-reports" data-bs-toggle="tab" data-bs-target="#pane-reports" type="button" role="tab">
-                <i class="bi bi-file-earmark-bar-graph-fill text-secondary"></i>
-                <span>التقارير التنفيذية</span>
-            </button>
-        </li>
-    </ul>
+    <!-- 2-Columns Layout: [Sidebar (سايد بار قوائم الأدمن)] + [Main Content Area] -->
+    <div class="row g-4">
+        
+        <!-- 1. سايد بار قوائم صفحة الأدمن (Admin Sidebar) -->
+        <div class="col-lg-3 col-xxl-2">
+            <aside class="admin-sidebar sticky-top" style="top: 85px; z-index: 99;">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 bg-white">
+                    <div class="card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-grid-fill text-primary fs-5"></i>
+                            <h6 class="fw-bold mb-0 text-dark">قوائم الأدمن</h6>
+                        </div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">7 أقسام</span>
+                    </div>
 
-    <!-- Tabs Content Panes -->
-    <div class="tab-content" id="adminCommandTabsContent">
+                    <div class="card-body p-2">
+                        <div class="nav flex-column nav-pills admin-sidebar-nav gap-1" id="adminCommandTabs" role="tablist" aria-orientation="vertical">
+                            
+                            <!-- 1. التحليلات والمؤشرات -->
+                            <button class="nav-link active" id="tab-analytics" data-bs-toggle="pill" data-bs-target="#pane-analytics" type="button" role="tab">
+                                <i class="bi bi-pie-chart-fill icon-tab text-primary"></i>
+                                <span class="tab-title">التحليلات والمؤشرات</span>
+                            </button>
+
+                            <!-- 2. إدارة المستخدمين والصلاحيات -->
+                            <button class="nav-link" id="tab-users" data-bs-toggle="pill" data-bs-target="#pane-users" type="button" role="tab">
+                                <i class="bi bi-people-fill icon-tab text-success"></i>
+                                <span class="tab-title">المستخدمين والصلاحيات</span>
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill ms-auto count-badge">{{ users|length }}</span>
+                            </button>
+
+                            <!-- 3. هيئة التعليم والمعلمون -->
+                            <button class="nav-link" id="tab-instructors" data-bs-toggle="pill" data-bs-target="#pane-instructors" type="button" role="tab">
+                                <i class="bi bi-person-workspace icon-tab text-primary"></i>
+                                <span class="tab-title">هيئة التعليم والمعلمون</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{ instructors|length }}</span>
+                            </button>
+
+                            <!-- 4. تصنيفات الدورات -->
+                            <button class="nav-link" id="tab-categories" data-bs-toggle="pill" data-bs-target="#pane-categories" type="button" role="tab">
+                                <i class="bi bi-tags-fill icon-tab text-info"></i>
+                                <span class="tab-title">تصنيفات الدورات</span>
+                                <span class="badge bg-info bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{ categories_total }}</span>
+                            </button>
+
+                            <!-- 5. تخصيص الشهادة وتعديل اللوغهات -->
+                            <button class="nav-link" id="tab-certificate" data-bs-toggle="pill" data-bs-target="#pane-certificate" type="button" role="tab">
+                                <i class="bi bi-award-fill icon-tab text-warning"></i>
+                                <span class="tab-title">تخصيص الشهادة واللوغهات</span>
+                            </button>
+
+                            <!-- 6. لوغو وألوان وهوية النظام -->
+                            <button class="nav-link" id="tab-branding" data-bs-toggle="pill" data-bs-target="#pane-branding" type="button" role="tab">
+                                <i class="bi bi-palette-fill icon-tab text-danger"></i>
+                                <span class="tab-title">ألوان وهوية النظام</span>
+                            </button>
+
+                            <!-- 7. التقارير التنفيذية -->
+                            <button class="nav-link" id="tab-reports" data-bs-toggle="pill" data-bs-target="#pane-reports" type="button" role="tab">
+                                <i class="bi bi-file-earmark-bar-graph-fill icon-tab text-secondary"></i>
+                                <span class="tab-title">التقارير التنفيذية</span>
+                            </button>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بطاقة روابط واختصارات سريعة أسفل السايد بار -->
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-none d-lg-block">
+                    <div class="small fw-bold text-muted mb-2 px-1">روابط سريعة</div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'training:home' %}" class="btn btn-outline-primary btn-sm rounded-3 text-start d-flex align-items-center gap-2">
+                            <i class="bi bi-mortarboard-fill text-warning"></i>
+                            <span>بوابة التدريب والدارسين</span>
+                        </a>
+                        <a href="{% url 'training:admin_report_print' %}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-3 text-start d-flex align-items-center gap-2">
+                            <i class="bi bi-printer-fill text-primary"></i>
+                            <span>طباعة التقرير الشامل</span>
+                        </a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 2. منطقة المحتوى الرئيسي (Main Content Panes) -->
+        <div class="col-lg-9 col-xxl-10">
+            <div class="tab-content" id="adminCommandTabsContent">
 
         <!-- ========================================================
              PANE 1: التحليلات ومؤشرات الأداء العامة
@@ -970,6 +1042,9 @@
 
     </div>
 
+        </div> <!-- Close Main Content Column -->
+    </div> <!-- Close Row -->
+
 </div>
 
 <!-- Modal: إضافة مستخدم جديد (Add User Modal) -->
@@ -1429,6 +1504,25 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
+        const hash = window.location.hash;
+        if (hash) {
+            const triggerEl = document.querySelector(`.admin-sidebar-nav [data-bs-target="${hash}"]`);
+            if (triggerEl) {
+                const tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+        }
+        const tabButtons = document.querySelectorAll('.admin-sidebar-nav button[data-bs-toggle="pill"]');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('shown.bs.tab', function(e) {
+                const target = e.target.getAttribute('data-bs-target');
+                if (target) {
+                    history.replaceState(null, null, target);
+                }
+            });
+        });
+
         const modal = document.getElementById('addInstructorModal');
         if (modal) {
             modal.addEventListener('show.bs.modal', function() {
