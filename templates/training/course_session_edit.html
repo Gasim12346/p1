@@ -24,7 +24,7 @@
                 </span>
             </div>
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="card-body p-4">
                     <div class="row g-3">
@@ -46,6 +46,22 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">تاريخ النهاية <span class="text-danger">*</span></label>
                             {{ form.end_date }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">تاريخ أمر التحرك <span class="text-danger">*</span></label>
+                            {{ form.movement_order_date }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">صورة scan لأمر التحرك</label>
+                            {{ form.movement_order_file }}
+                            {% if session.movement_order_file %}
+                                <div class="mt-1 small">
+                                    <span class="text-muted">الملف الحالي:</span>
+                                    <a href="{{ session.movement_order_file.url }}" target="_blank" class="fw-bold text-primary"><i class="bi bi-file-earmark-pdf me-1"></i> عرض المستند الحالي</a>
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-6">

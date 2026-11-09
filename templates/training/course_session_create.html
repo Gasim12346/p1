@@ -35,7 +35,7 @@
     </ol>
 </nav>
 
-<form method="post" id="sessionCreateForm">
+<form method="post" id="sessionCreateForm" enctype="multipart/form-data">
     {% csrf_token %}
 
     <!-- ========================================================
@@ -281,12 +281,14 @@
                         <th style="min-width: 170px;">الرتبة أثناء الدورة</th>
                         <th style="min-width: 160px;">القوة أثناء الدورة</th>
                         <th style="min-width: 200px;">الوحدة أثناء الدورة</th>
+                        <th style="min-width: 170px;">تاريخ أمر التحرك <span class="text-danger">*</span></th>
+                        <th style="min-width: 220px;">صورة scan لأمر التحرك <span class="text-danger">*</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- رسالة التوجيه قبل اختيار التصنيف -->
                     <tr id="selectCategoryFirstRow">
-                        <td colspan="7" class="text-center py-5 bg-white">
+                        <td colspan="9" class="text-center py-5 bg-white">
                             <div class="py-4">
                                 <div class="mb-3">
                                     <span
@@ -417,22 +419,26 @@
                             </select>
                             <input type="text" id="custom_unit_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="syncUnit('{{ t.military_number }}')">
                         </td>
+                        <!-- حقل تاريخ أمر التحرك الخاص بالدارس -->
+                        <td>
+                            <input type="date" name="movement_order_date_{{ t.military_number }}" id="mov_date_{{ t.military_number }}" class="form-control form-control-sm border-danger-subtle">
+                        </td>
+                        <!-- حقل صورة scan لأمر التحرك الخاص بالدارس -->
+                        <td>
+                            <input type="file" name="movement_order_file_{{ t.military_number }}" id="mov_file_{{ t.military_number }}" class="form-control form-control-sm border-primary-subtle" accept="image/*,.pdf">
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
                         </td>
                     </tr>
                     {% endfor %}
                     <tr id="noFilterMatchRow" style="display: none;">
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
                             <span class="fw-bold fs-6">لا يوجد دارسون يطابقون خيار التصنيف أو البحث المختار!</span>
-                            <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
-                                مسح عبارة البحث لإظهار النتائج.</p>
-                        </td>
-                    </tr>
                             <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
                                 مسح عبارة البحث لإظهار النتائج.</p>
                         </td>
@@ -1071,7 +1077,7 @@
             }
         }
 
-        // التحقق قبل حفظ الدورة من تحديد طالب دارس واحد على الأقل
+        // التحقق الصارم قبل حفظ الدورة من تاريخ أمر التحرك وصورة Scan وتحديد دارس واحد على الأقل
         const form = document.getElementById('sessionCreateForm');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -1080,6 +1086,36 @@
                     e.preventDefault();
                     alert('يرجى تحديد دارس واحد على الأقل للالتحاق بالدورة التدريبية.');
                     return false;
+                }
+
+                // التحقق من أن كل دارس تم اختياره قد تم إدخال تاريخ أمر التحرك وصورة scan خاصة به
+                for (let i = 0; i < checked.length; i++) {
+                    const cb = checked[i];
+                    const num = cb.value;
+                    const row = cb.closest('tr');
+                    const traineeName = row ? (row.querySelector('strong')?.textContent.trim() || num) : num;
+                    const dateInput = document.getElementById('mov_date_' + num);
+                    const fileInput = document.getElementById('mov_file_' + num);
+
+                    if (!dateInput || !dateInput.value) {
+                        e.preventDefault();
+                        alert(`قيد إلزامي: لا يمكن حفظ الدورة بدون إدخال تاريخ أمر التحرك للدارس "${traineeName}" (${num})!`);
+                        if (dateInput) {
+                            dateInput.focus();
+                            dateInput.classList.add('border-danger');
+                        }
+                        return false;
+                    }
+
+                    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                        e.preventDefault();
+                        alert(`قيد إلزامي: لا يمكن حفظ الدورة بدون إرفاق صورة scan أو مستند أمر التحرك للدارس "${traineeName}" (${num})!`);
+                        if (fileInput) {
+                            fileInput.focus();
+                            fileInput.classList.add('border-danger');
+                        }
+                        return false;
+                    }
                 }
             });
         }

@@ -112,6 +112,15 @@
                             <div class="small text-muted">
                                 <div><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></div>
                                 <div><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></div>
+                                {% if session.movement_order_date %}
+                                    <div class="mt-1 pt-1 border-top"><i class="bi bi-file-earmark-check me-1 text-primary"></i> أمر التحرك: <strong class="text-danger">{{ session.movement_order_date|date:"Y-m-d" }}</strong>
+                                        {% if session.movement_order_file %}
+                                            <a href="{{ session.movement_order_file.url }}" target="_blank" class="badge bg-light text-primary border ms-1" title="عرض مستند أمر التحرك">
+                                                <i class="bi bi-paperclip"></i> Scan
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </td>
 

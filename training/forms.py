@@ -387,7 +387,7 @@ class SubjectForm(forms.ModelForm):
 class CourseSessionForm(forms.ModelForm):
     class Meta:
         model = CourseSession
-        fields = ['course', 'session_code', 'start_date', 'end_date', 'status', 'attendance_max_grade', 'notes']
+        fields = ['course', 'session_code', 'start_date', 'end_date', 'movement_order_date', 'movement_order_file', 'status', 'attendance_max_grade', 'notes']
         widgets = {
             'course': forms.Select(attrs={
                 'class': 'form-select form-select-lg',
@@ -407,6 +407,14 @@ class CourseSessionForm(forms.ModelForm):
                 'class': 'form-control form-control-lg',
                 'type': 'date',
                 'required': 'required'
+            }),
+            'movement_order_date': forms.DateInput(attrs={
+                'class': 'form-control form-control-lg',
+                'type': 'date',
+            }),
+            'movement_order_file': forms.FileInput(attrs={
+                'class': 'form-control form-control-lg',
+                'accept': 'image/*,.pdf',
             }),
             'status': forms.Select(attrs={
                 'class': 'form-select form-select-lg',
@@ -428,6 +436,8 @@ class CourseSessionForm(forms.ModelForm):
             'session_code': 'رمز الدفعة / رقم الانعقاد *',
             'start_date': 'تاريخ البداية *',
             'end_date': 'تاريخ النهاية *',
+            'movement_order_date': 'تاريخ أمر التحرك *',
+            'movement_order_file': 'صورة scan لأمر التحرك *',
             'status': 'حالة الدورة',
             'attendance_max_grade': 'درجة المواظبة والسلوك العظمى',
             'notes': 'ملاحظات الانعقاد',

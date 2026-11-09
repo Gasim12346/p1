@@ -553,6 +553,8 @@ def course_session_create_view(request):
         session_code = request.POST.get('session_code', '').strip()
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
+        movement_order_date = request.POST.get('movement_order_date', '').strip()
+        movement_order_file = request.FILES.get('movement_order_file')
         status = request.POST.get('status', 'active')
         attendance_raw = request.POST.get('attendance_max_grade', '').strip()
         attendance_max_grade = attendance_raw if attendance_raw else None
@@ -561,10 +563,23 @@ def course_session_create_view(request):
 
         selected_trainee_nums = request.POST.getlist('selected_trainees')
 
+        missing_movement = []
+        for num in selected_trainee_nums:
+            m_date = request.POST.get(f'movement_order_date_{num}', '').strip()
+            m_file = request.FILES.get(f'movement_order_file_{num}')
+            if not m_date or not m_file:
+                t_obj = Trainee.objects.filter(military_number=num).first()
+                missing_movement.append(f'"{t_obj.name}" ({num})' if t_obj else num)
+
         if not course_id or not session_code or not start_date or not end_date:
             messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، رمز الدفعة، تاريخ البداية والنهاية).')
         elif not selected_trainee_nums:
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
+        elif missing_movement:
+            names_str = '، '.join(missing_movement[:4])
+            if len(missing_movement) > 4:
+                names_str += f' وغيرهم (إجمالي {len(missing_movement)} دارس)'
+            messages.error(request, f'قيد إلزامي: لا يمكن حفظ الدورة؛ نظراً لعدم استكمال تاريخ أمر التحرك أو إرفاق صورة scan لأمر التحرك للدارس(ين): {names_str}. يرجى استكمال بيانات أمر التحرك لكل دارس تم تحديده.')
         else:
             course = get_object_or_404(Course, pk=course_id)
 
@@ -591,6 +606,8 @@ def course_session_create_view(request):
                     session_code=session_code,
                     start_date=start_date,
                     end_date=end_date,
+                    movement_order_date=movement_order_date if movement_order_date else None,
+                    movement_order_file=movement_order_file if movement_order_file else None,
                     status=status,
                     attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
                     supervisor=supervisor,
@@ -612,17 +629,21 @@ def course_session_create_view(request):
                 for num in selected_trainee_nums:
                     try:
                         t = Trainee.objects.get(military_number=num)
-                        # قراءة الرتبة والقوة والوحدة المعدلة من النموذج
+                        # قراءة الرتبة والقوة والوحدة وأمر التحرك المعدلة من النموذج
                         current_rank = request.POST.get(f'rank_{num}', '').strip()
                         current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
                         current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
+                        m_date = request.POST.get(f'movement_order_date_{num}', '').strip()
+                        m_file = request.FILES.get(f'movement_order_file_{num}')
 
                         CourseEnrollment.objects.create(
                             session=session,
                             trainee=t,
                             current_rank=current_rank,
                             current_force=current_force,
-                            current_unit=current_unit
+                            current_unit=current_unit,
+                            movement_order_date=m_date if m_date else None,
+                            movement_order_file=m_file if m_file else None
                         )
                         
                         has_changes = False
@@ -743,6 +764,8 @@ def course_session_manage_view(request, session_id):
             new_rank = request.POST.get(f'rank_{num}', '').strip()
             new_force = request.POST.get(f'force_{num}', '').strip()
             new_unit = request.POST.get(f'unit_{num}', '').strip()
+            new_mov_date = request.POST.get(f'movement_order_date_{num}', '').strip()
+            new_mov_file = request.FILES.get(f'movement_order_file_{num}')
             
             t = enrollment.trainee
             t_changed = False
@@ -759,14 +782,18 @@ def course_session_manage_view(request, session_id):
                 if t.unit != new_unit:
                     t.unit = new_unit
                     t_changed = True
+            if new_mov_date:
+                enrollment.movement_order_date = new_mov_date
+            if new_mov_file:
+                enrollment.movement_order_file = new_mov_file
 
-            if new_rank or new_force or new_unit:
+            if new_rank or new_force or new_unit or new_mov_date or new_mov_file:
                 enrollment.save()
                 if t_changed:
                     t.save(update_fields=['force', 'unit'])
                 updated_count += 1
 
-        messages.success(request, f'تم حفظ وتحديث بيانات الرتب والقوة والوحدات لـ {updated_count} دارس بالدورة بنجاح.')
+        messages.success(request, f'تم حفظ وتحديث بيانات الرتب والقوة والوحدات وأوامر التحرك لـ {updated_count} دارس بالدورة بنجاح.')
         return redirect('training:course_session_manage', session_id=session.id)
 
     # إضافة دارسين إضافيين للدورة
@@ -789,12 +816,16 @@ def course_session_manage_view(request, session_id):
                     r = request.POST.get(f'extra_rank_{num}', '').strip()
                     f = request.POST.get(f'extra_force_{num}', t.force).strip() or t.force
                     u = request.POST.get(f'extra_unit_{num}', t.unit).strip() or t.unit
+                    m_date = request.POST.get(f'extra_movement_order_date_{num}', '').strip()
+                    m_file = request.FILES.get(f'extra_movement_order_file_{num}')
                     CourseEnrollment.objects.create(
                         session=session,
                         trainee=t,
                         current_rank=r,
                         current_force=f,
-                        current_unit=u
+                        current_unit=u,
+                        movement_order_date=m_date if m_date else None,
+                        movement_order_file=m_file if m_file else None
                     )
                     has_changes = False
                     if f and f != t.force:
@@ -868,7 +899,7 @@ def course_session_edit_view(request, session_id):
     """تعديل بيانات انعقاد الدورة (التواريخ، الحالة، الملاحظات)"""
     session = get_object_or_404(CourseSession, pk=session_id)
     if request.method == 'POST':
-        form = CourseSessionForm(request.POST, instance=session)
+        form = CourseSessionForm(request.POST, request.FILES, instance=session)
         if form.is_valid():
             form.save()
             log_activity(

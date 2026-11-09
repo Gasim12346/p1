@@ -338,6 +338,19 @@ class CourseSession(models.Model):
         related_name='supervised_sessions',
         verbose_name='مشرف الدورة'
     )
+    movement_order_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='تاريخ أمر التحرك',
+        help_text='تاريخ صدور أمر التحرك الرسمي للدورة'
+    )
+    movement_order_file = models.FileField(
+        upload_to='movement_orders/',
+        null=True,
+        blank=True,
+        verbose_name='صورة أمر التحرك (Scan)',
+        help_text='صورة ضوئية أو مستند PDF لأمر التحرك'
+    )
     notes = models.TextField(
         blank=True,
         null=True,
@@ -438,6 +451,17 @@ class CourseEnrollment(models.Model):
         blank=True,
         default='',
         verbose_name='الوحدة أثناء الدورة'
+    )
+    movement_order_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='تاريخ أمر التحرك الخاص بالدارس'
+    )
+    movement_order_file = models.FileField(
+        upload_to='trainee_movement_orders/',
+        null=True,
+        blank=True,
+        verbose_name='صورة أمر التحرك الخاص بالدارس (Scan)'
     )
     attendance_score = models.DecimalField(
         max_digits=5,

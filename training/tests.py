@@ -566,6 +566,9 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.assertIn(self.instructor1.military_number, get_res.content.decode('utf-8'))
         self.assertIn(self.instructor1.name, get_res.content.decode('utf-8'))
 
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        fake_scan = SimpleUploadedFile("movement_order.png", b"file_content", content_type="image/png")
+
         post_data = {
             'category': str(self.cat.id),
             'course': str(self.course.id),
@@ -581,6 +584,8 @@ class InstructorManagementAndCourseSessionTests(TestCase):
             f'rank_{self.trainee.military_number}': 'ملازم أول',
             f'force_{self.trainee.military_number}': 'القوات البرية',
             f'unit_{self.trainee.military_number}': 'سلاح الإشارة',
+            f'movement_order_date_{self.trainee.military_number}': '2026-04-25',
+            f'movement_order_file_{self.trainee.military_number}': fake_scan,
         }
 
         res = self.client.post(url, post_data)
@@ -600,10 +605,57 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.assertIsNotNone(assign2)
         self.assertEqual(assign2.instructor, self.instructor2)
 
-        # التحقق من تسجيل الطالب
+        # التحقق من تسجيل الطالب وحفظ بيانات أمر التحرك الخاص به
         enrollment = session.enrollments.filter(trainee=self.trainee).first()
         self.assertIsNotNone(enrollment)
         self.assertEqual(enrollment.current_rank, 'ملازم أول')
+        self.assertEqual(str(enrollment.movement_order_date), '2026-04-25')
+        self.assertTrue(bool(enrollment.movement_order_file))
+
+    def test_course_session_creation_requires_movement_order_date_and_file(self):
+        """التحقق من إلزامية تاريخ وصورة أمر التحرك لكل دارس ومنع حفظ الدورة بدونهما"""
+        self.client.login(username='admin_inst', password='Password123!')
+        url = reverse('training:course_session_create')
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from training.models import CourseSession
+
+        t_num = self.trainee.military_number
+        base_data = {
+            'category': str(self.cat.id),
+            'course': str(self.course.id),
+            'session_code': 'دفعة فحص القيود',
+            'start_date': '2026-06-01',
+            'end_date': '2026-08-01',
+            'status': 'active',
+            'selected_trainees': [t_num],
+        }
+
+        # 1. إرسال بدون تاريخ أمر التحرك للدارس
+        data_no_date = dict(base_data)
+        data_no_date[f'movement_order_file_{t_num}'] = SimpleUploadedFile("scan.pdf", b"pdf_data", content_type="application/pdf")
+        res1 = self.client.post(url, data_no_date)
+        self.assertEqual(res1.status_code, 200)
+        self.assertFalse(CourseSession.objects.filter(session_code='دفعة فحص القيود').exists())
+
+        # 2. إرسال بدون صورة أمر التحرك للدارس
+        data_no_file = dict(base_data)
+        data_no_file[f'movement_order_date_{t_num}'] = '2026-05-20'
+        res2 = self.client.post(url, data_no_file)
+        self.assertEqual(res2.status_code, 200)
+        self.assertFalse(CourseSession.objects.filter(session_code='دفعة فحص القيود').exists())
+
+        # 3. إرسال مع كلا الحقلين ينجح في حفظ الدورة وحفظ أمر التحرك على سجل الدارس
+        data_valid = dict(base_data)
+        data_valid[f'movement_order_date_{t_num}'] = '2026-05-20'
+        data_valid[f'movement_order_file_{t_num}'] = SimpleUploadedFile("scan.pdf", b"pdf_data", content_type="application/pdf")
+        res3 = self.client.post(url, data_valid)
+        self.assertEqual(res3.status_code, 302)
+        created_session = CourseSession.objects.filter(session_code='دفعة فحص القيود').first()
+        self.assertIsNotNone(created_session)
+        created_enrollment = created_session.enrollments.filter(trainee=self.trainee).first()
+        self.assertIsNotNone(created_enrollment)
+        self.assertEqual(str(created_enrollment.movement_order_date), '2026-05-20')
+        self.assertTrue(bool(created_enrollment.movement_order_file))
 
     def test_course_session_manage_update_teachers(self):
         """التحقق من تحديث مشرف الدورة ومعلمي المواد من صفحة إدارة الدورة"""
@@ -634,6 +686,42 @@ class InstructorManagementAndCourseSessionTests(TestCase):
 
         assign2 = SessionSubjectInstructor.objects.get(session=session, subject=self.subject2)
         self.assertEqual(assign2.instructor, self.instructor1)
+
+    def test_course_session_manage_update_movement_order(self):
+        """التحقق من تحديث تاريخ وصورة أمر التحرك للدارس من قائمة الدارسين وتعديل الرتب والوحدات"""
+        self.client.login(username='admin_inst', password='Password123!')
+        from training.models import CourseSession, CourseEnrollment
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        session = CourseSession.objects.create(
+            course=self.course,
+            session_code='دفعة أمر التحرك',
+            start_date='2026-01-01',
+            end_date='2026-03-01',
+            status='active'
+        )
+        enrollment = CourseEnrollment.objects.create(
+            session=session,
+            trainee=self.trainee,
+            current_rank='ملازم',
+            current_force=self.trainee.force,
+            current_unit=self.trainee.unit
+        )
+        manage_url = reverse('training:course_session_manage', kwargs={'session_id': session.id})
+        t_num = self.trainee.military_number
+        fake_file = SimpleUploadedFile("updated_order.pdf", b"pdf_data", content_type="application/pdf")
+        res = self.client.post(manage_url, {
+            'update_enrollments': '1',
+            f'rank_{t_num}': 'ملازم أول',
+            f'force_{t_num}': 'القوات البرية',
+            f'unit_{t_num}': 'اللواء الأول',
+            f'movement_order_date_{t_num}': '2026-01-05',
+            f'movement_order_file_{t_num}': fake_file,
+        })
+        self.assertEqual(res.status_code, 302)
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.current_rank, 'ملازم أول')
+        self.assertEqual(str(enrollment.movement_order_date), '2026-01-05')
+        self.assertTrue(bool(enrollment.movement_order_file))
 
 
 class BusinessConstraintsTests(TestCase):
