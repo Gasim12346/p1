@@ -544,8 +544,9 @@ def course_session_create_view(request):
     - اختيار الطلبة الدارسين مع إمكانية تعديل الرتبة والوحدة وقت الدورة.
     - حفظ الانعقاد والطلبة.
     """
-    categories = CourseCategory.objects.prefetch_related('courses').all()
+    categories = CourseCategory.objects.prefetch_related('courses__subjects').all()
     trainees = Trainee.objects.all().order_by('category', 'name')
+    instructors = Instructor.objects.filter(is_active=True).order_by('name')
 
     if request.method == 'POST':
         course_id = request.POST.get('course')
@@ -671,9 +672,25 @@ def course_session_create_view(request):
             'pct': float(pe.percentage or 0.0)
         }
 
+    courses_subjects_map = {}
+    for cat in categories:
+        for c in cat.courses.all():
+            courses_subjects_map[str(c.id)] = [
+                {
+                    'id': s.id,
+                    'code': s.code,
+                    'name': s.name,
+                    'credit_hours': s.credit_hours,
+                    'max_grade': float(s.max_grade),
+                }
+                for s in c.subjects.all()
+            ]
+
     return render(request, 'training/course_session_create.html', {
         'categories': categories,
         'trainees': trainees,
+        'instructors': instructors,
+        'courses_subjects_json': json.dumps(courses_subjects_map, ensure_ascii=False),
         'trainees_passed_json': json.dumps(trainees_passed_map, ensure_ascii=False),
         'officer_count': officer_count,
         'nco_count': nco_count,
@@ -827,10 +844,20 @@ def course_session_manage_view(request, session_id):
         for pe in passed_for_session
     }
 
+    instructors = Instructor.objects.filter(is_active=True).order_by('name')
+    session_subject_instructors = list(session.subject_instructors.select_related('subject', 'instructor').all())
+    assigned_subject_ids = {a.subject_id for a in session_subject_instructors}
+    for sub in session.course.subjects.all():
+        if sub.id not in assigned_subject_ids:
+            assign = SessionSubjectInstructor.objects.create(session=session, subject=sub, instructor=None)
+            session_subject_instructors.append(assign)
+
     context = {
         'session': session,
         'enrollments': enrollments,
         'available_trainees': available_trainees,
+        'instructors': instructors,
+        'session_subject_instructors': session_subject_instructors,
         'passed_trainees_for_session': passed_trainees_for_session,
     }
     return render(request, 'training/course_session_manage.html', context)

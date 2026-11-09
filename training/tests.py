@@ -557,6 +557,15 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.client.login(username='admin_inst', password='Password123!')
         url = reverse('training:course_session_create')
 
+        # التحقق من تحميل صفحة الإنشاء وتوفر المعلمين ومواد الدورة بصيغة JSON
+        get_res = self.client.get(url)
+        self.assertEqual(get_res.status_code, 200)
+        self.assertIn('instructors', get_res.context)
+        self.assertIn('courses_subjects_json', get_res.context)
+        self.assertTrue(len(get_res.context['instructors']) > 0)
+        self.assertIn(self.instructor1.military_number, get_res.content.decode('utf-8'))
+        self.assertIn(self.instructor1.name, get_res.content.decode('utf-8'))
+
         post_data = {
             'category': str(self.cat.id),
             'course': str(self.course.id),

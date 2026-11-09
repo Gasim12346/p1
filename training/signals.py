@@ -32,3 +32,4 @@ def log_user_logout(sender, request, user, **kwargs):
             target_model="User",
             target_id=user.id
         )
+
