@@ -424,12 +424,43 @@
                                 {{ form.phone }}
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark">الولاية</label>
-                                {{ form.residence_state }}
+                                <label class="form-label fw-bold text-dark">
+                                    <i class="bi bi-map text-primary me-1"></i> الولاية
+                                </label>
+                                <input type="hidden" name="residence_state" id="add_final_residence_state" value="{{ form.residence_state.value|default:'' }}">
+                                <select id="add_state_select" class="form-select form-select-lg" onchange="handleAddStateChange()">
+                                    <option value="">-- اختر الولاية من القائمة --</option>
+                                    <option value="الخرطوم">ولاية الخرطوم</option>
+                                    <option value="الجزيرة">ولاية الجزيرة</option>
+                                    <option value="البحر الأحمر">ولاية البحر الأحمر</option>
+                                    <option value="كسلا">ولاية كسلا</option>
+                                    <option value="القضارف">ولاية القضارف</option>
+                                    <option value="سنار">ولاية سنار</option>
+                                    <option value="النيل الأبيض">ولاية النيل الأبيض</option>
+                                    <option value="النيل الأزرق">ولاية النيل الأزرق</option>
+                                    <option value="نهر النيل">ولاية نهر النيل</option>
+                                    <option value="الشمالية">الولاية الشمالية</option>
+                                    <option value="شمال كردفان">ولاية شمال كردفان</option>
+                                    <option value="جنوب كردفان">ولاية جنوب كردفان</option>
+                                    <option value="غرب كردفان">ولاية غرب كردفان</option>
+                                    <option value="شمال دارفور">ولاية شمال دارفور</option>
+                                    <option value="جنوب دارفور">ولاية جنوب دارفور</option>
+                                    <option value="غرب دارفور">ولاية غرب دارفور</option>
+                                    <option value="وسط دارفور">ولاية وسط دارفور</option>
+                                    <option value="شرق دارفور">ولاية شرق دارفور</option>
+                                    <option value="__custom__">✍️ ولاية أخرى (كتابة يدوية)</option>
+                                </select>
+                                <input type="text" id="add_custom_state" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم الولاية يدوياً" oninput="syncAddState()">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold text-dark">المدينة</label>
-                                {{ form.residence_city }}
+                                <label class="form-label fw-bold text-dark">
+                                    <i class="bi bi-buildings text-primary me-1"></i> المدينة
+                                </label>
+                                <input type="hidden" name="residence_city" id="add_final_residence_city" value="{{ form.residence_city.value|default:'' }}">
+                                <select id="add_city_select" class="form-select form-select-lg bg-light" onchange="handleAddCityChange()" disabled>
+                                    <option value="">-- اختر الولاية أولاً لعرض مدنها --</option>
+                                </select>
+                                <input type="text" id="add_custom_city" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم المدينة يدوياً" oninput="syncAddCity()">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold text-dark">الحي</label>
@@ -571,4 +602,154 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const SUDAN_STATES_CITIES = {
+        'الخرطوم': ['الخرطوم', 'أم درمان', 'بحري', 'شرق النيل', 'جبل أولياء'],
+        'الجزيرة': ['ود مدني', 'المناقل', 'الحصاحيصا', 'الكاملين', 'رفاعة', 'طابت', 'أم القرى', '24 القرشي', 'المسلمية'],
+        'البحر الأحمر': ['بورتسودان', 'سواكن', 'سنكات', 'طوكر', 'جبيت', 'حلايب', 'درديب'],
+        'كسلا': ['كسلا', 'حلفا الجديدة', 'خشم القربة', 'أروما', 'همشكوريب', 'ود الحليو', 'تلكوك'],
+        'القضارف': ['القضارف', 'الفاو', 'القلابات', 'الحواتة', 'دوكة', 'الرهد', 'الفشقة'],
+        'سنار': ['سنجة', 'سنار', 'الدندر', 'السوكي', 'أبو حجار', 'مايرنو', 'الدالي والمزموم'],
+        'النيل الأبيض': ['ربك', 'كوستي', 'الدويم', 'القطينة', 'تندلتي', 'الجبلين', 'أم رميتة', 'قلي'],
+        'النيل الأزرق': ['الدمازين', 'الروصيرص', 'باو', 'الكرمك', 'قيسان', 'التضامن'],
+        'نهر النيل': ['الدامر', 'عطبرة', 'شندي', 'بربر', 'المتمة', 'أبو حمد', 'البحيرة'],
+        'الشمالية': ['دنقلا', 'مروي', 'الدبة', 'وادي حلفا', 'كرمة', 'القولد', 'البرقيق'],
+        'شمال كردفان': ['الأبيض', 'أم روابة', 'بارا', 'الرهد', 'سودري', 'جبرة الشيخ', 'غرب بارا'],
+        'جنوب كردفان': ['كادقلي', 'الدلنج', 'تلودي', 'هبيلا', 'الليري', 'رشاد', 'أبو جبيهة', 'العباسية'],
+        'غرب كردفان': ['الفولة', 'النهود', 'بابنوسة', 'المجلد', 'غبيش', 'أبو زبد', 'ود بندة'],
+        'شمال دارفور': ['الفاشر', 'كتم', 'مليط', 'كبكابية', 'أم كدادة', 'طويلة', 'سرف عمرة'],
+        'جنوب دارفور': ['نيالا', 'كاس', 'برام', 'تلس', 'عد الفرسان', 'رهيد البردي', 'قريضة'],
+        'غرب دارفور': ['الجنينة', 'كلبس', 'سربا', 'بيضة', 'كرينك', 'هبيلا'],
+        'وسط دارفور': ['زالنجي', 'وادي صالح', 'نيرتتي', 'قارسلا', 'مكجر', 'بندسي', 'أزوم'],
+        'شرق دارفور': ['الضعين', 'عديلة', 'عسلاية', 'بحر العرب', 'أبو كارنكا', 'الفردوس']
+    };
+
+    function handleAddStateChange() {
+        const stateSelect = document.getElementById('add_state_select');
+        const customStateInput = document.getElementById('add_custom_state');
+        const finalStateInput = document.getElementById('add_final_residence_state');
+        const citySelect = document.getElementById('add_city_select');
+        const customCityInput = document.getElementById('add_custom_city');
+        const finalCityInput = document.getElementById('add_final_residence_city');
+
+        const stateVal = stateSelect.value;
+
+        if (stateVal === '__custom__') {
+            customStateInput.style.display = 'block';
+            customStateInput.focus();
+            finalStateInput.value = customStateInput.value.trim();
+
+            citySelect.innerHTML = '<option value="">-- اختر المدينة --</option><option value="__custom__">✍️ كتابة اسم المدينة يدوياً</option>';
+            citySelect.disabled = false;
+            citySelect.classList.remove('bg-light');
+            citySelect.value = '__custom__';
+            handleAddCityChange();
+        } else if (!stateVal) {
+            customStateInput.style.display = 'none';
+            finalStateInput.value = '';
+
+            citySelect.innerHTML = '<option value="">-- اختر الولاية أولاً لعرض مدنها --</option>';
+            citySelect.disabled = true;
+            citySelect.classList.add('bg-light');
+            customCityInput.style.display = 'none';
+            finalCityInput.value = '';
+        } else {
+            customStateInput.style.display = 'none';
+            finalStateInput.value = stateVal;
+
+            citySelect.disabled = false;
+            citySelect.classList.remove('bg-light');
+            citySelect.innerHTML = '<option value="">-- اختر المدينة --</option>';
+
+            const cities = SUDAN_STATES_CITIES[stateVal] || [];
+            cities.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                opt.textContent = city;
+                citySelect.appendChild(opt);
+            });
+
+            const customOpt = document.createElement('option');
+            customOpt.value = '__custom__';
+            customOpt.textContent = '✍️ مدينة أخرى (كتابة يدوية)';
+            citySelect.appendChild(customOpt);
+
+            customCityInput.style.display = 'none';
+            finalCityInput.value = '';
+        }
+    }
+
+    function handleAddCityChange() {
+        const citySelect = document.getElementById('add_city_select');
+        const customCityInput = document.getElementById('add_custom_city');
+        const finalCityInput = document.getElementById('add_final_residence_city');
+
+        const cityVal = citySelect.value;
+        if (cityVal === '__custom__') {
+            customCityInput.style.display = 'block';
+            customCityInput.focus();
+            finalCityInput.value = customCityInput.value.trim();
+        } else {
+            customCityInput.style.display = 'none';
+            finalCityInput.value = cityVal;
+        }
+    }
+
+    function syncAddState() {
+        const customStateInput = document.getElementById('add_custom_state');
+        const finalStateInput = document.getElementById('add_final_residence_state');
+        if (customStateInput && finalStateInput) {
+            finalStateInput.value = customStateInput.value.trim();
+        }
+    }
+
+    function syncAddCity() {
+        const customCityInput = document.getElementById('add_custom_city');
+        const finalCityInput = document.getElementById('add_final_residence_city');
+        if (customCityInput && finalCityInput) {
+            finalCityInput.value = customCityInput.value.trim();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const existingState = document.getElementById('add_final_residence_state')?.value?.trim();
+        const existingCity = document.getElementById('add_final_residence_city')?.value?.trim();
+        if (existingState) {
+            const stateSelect = document.getElementById('add_state_select');
+            let normState = existingState.replace(/^ولاية\s+/, '').replace(/^الولاية\s+/, '');
+            if (SUDAN_STATES_CITIES[normState]) {
+                stateSelect.value = normState;
+                handleAddStateChange();
+                if (existingCity) {
+                    const citySelect = document.getElementById('add_city_select');
+                    const cities = SUDAN_STATES_CITIES[normState];
+                    if (cities.includes(existingCity)) {
+                        citySelect.value = existingCity;
+                        handleAddCityChange();
+                    } else {
+                        citySelect.value = '__custom__';
+                        handleAddCityChange();
+                        const customCityInput = document.getElementById('add_custom_city');
+                        customCityInput.value = existingCity;
+                        syncAddCity();
+                    }
+                }
+            } else {
+                stateSelect.value = '__custom__';
+                handleAddStateChange();
+                const customStateInput = document.getElementById('add_custom_state');
+                customStateInput.value = existingState;
+                syncAddState();
+                if (existingCity) {
+                    const customCityInput = document.getElementById('add_custom_city');
+                    customCityInput.value = existingCity;
+                    syncAddCity();
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}
