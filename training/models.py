@@ -603,6 +603,11 @@ class CourseEnrollment(models.Model):
         default=False,
         verbose_name='تم رصد الدرجات'
     )
+    certificate_note = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='ملحوظة الشهادة'
+    )
 
     class Meta:
         verbose_name = 'تسجيل دارس بالدورة'
@@ -732,6 +737,70 @@ class CourseEnrollment(models.Model):
             'grade': grade
         }
 
+    @property
+    def rank_number(self):
+        """الترتيب الرقمي للدارس بين زملائه في نفس الانعقاد حسب المجموع الكلي"""
+        if not self.is_graded or self.total_score is None:
+            return None
+        graded_ids = list(
+            self.session.enrollments.filter(is_graded=True)
+            .order_by('-total_score', 'trainee__name')
+            .values_list('id', flat=True)
+        )
+        try:
+            return graded_ids.index(self.id) + 1
+        except ValueError:
+            return None
+
+    @property
+    def total_enrolled_count(self):
+        """إجمالي عدد الدارسين المرصودين في نفس الانعقاد"""
+        count = self.session.enrollments.filter(is_graded=True).count()
+        return count if count > 0 else self.session.enrollments.count()
+
+    @property
+    def rank_arabic_text(self):
+        """الترتيب كتابة باللغة العربية (الأول، الثاني، ...)"""
+        rn = self.rank_number
+        if not rn:
+            return '-'
+        ranks = {
+            1: 'الأول', 2: 'الثاني', 3: 'الثالث', 4: 'الرابع', 5: 'الخامس',
+            6: 'السادس', 7: 'السابع', 8: 'الثامن', 9: 'التاسع', 10: 'العاشر',
+            11: 'الحادي عشر', 12: 'الثاني عشر', 13: 'الثالث عشر', 14: 'الرابع عشر', 15: 'الخامس عشر',
+            16: 'السادس عشر', 17: 'السابع عشر', 18: 'الثامن عشر', 19: 'التاسع عشر', 20: 'العشرون',
+            21: 'الحادي والعشرون', 22: 'الثاني والعشرون', 23: 'الثالث والعشرون', 24: 'الرابع والعشرون', 25: 'الخامس والعشرون',
+            26: 'السادس والعشرون', 27: 'السابع والعشرون', 28: 'الثامن والعشرون', 29: 'التاسع والعشرون', 30: 'الثلاثون',
+            31: 'الحادي والثلاثون', 32: 'الثاني والثلاثون', 33: 'الثالث والثلاثون', 34: 'الرابع والثلاثون', 35: 'الخامس والثلاثون',
+            36: 'السادس والثلاثون', 37: 'السابع والثلاثون', 38: 'الثامن والثلاثون', 39: 'التاسع والثلاثون', 40: 'الأربعون',
+            41: 'الحادي والأربعون', 42: 'الثاني والأربعون', 43: 'الثالث والأربعون', 44: 'الرابع والأربعون', 45: 'الخامس والأربعون',
+            46: 'السادس والأربعون', 47: 'السابع والأربعون', 48: 'الثامن والأربعون', 49: 'التاسع والأربعون', 50: 'الخمسون'
+        }
+        return ranks.get(rn, f'الترتيب {rn}')
+
+    @property
+    def rank_display(self):
+        """عرض الترتيب متبوعاً بإجمالي الدارسين، مثل: الأول / 17"""
+        rn = self.rank_number
+        if not rn:
+            return '-'
+        return f"{self.rank_arabic_text} / {self.total_enrolled_count}"
+
+    @property
+    def grade_symbol(self):
+        """رمز التقدير (أ، ب، ج، د، هـ) المطابق لشهادات المعهد العسكري"""
+        pct = float(self.percentage or 0.0)
+        if pct >= 85:
+            return '(أ)'
+        elif pct >= 75:
+            return '(ب)'
+        elif pct >= 65:
+            return '(ج)'
+        elif pct >= 50:
+            return '(د)'
+        else:
+            return '(هـ)'
+
 
 def has_trainee_passed_course(trainee, course):
     """
@@ -811,6 +880,20 @@ class CertificateSettings(models.Model):
         max_length=20,
         default='#FF0000',
         verbose_name='لون عنوان الشهادة'
+    )
+    basic_cert_title = models.CharField(
+        max_length=200,
+        default='شهادة دورة حاسوب أساسية',
+        verbose_name='عنوان الشهادة الأساسية'
+    )
+    advanced_cert_title = models.CharField(
+        max_length=200,
+        default='شهادة دورة حاسوب متقدمة',
+        verbose_name='عنوان الشهادة المتقدمة'
+    )
+    default_certificate_note = models.TextField(
+        default='بدأ الدورة بدون معلومات، بذل مجهوداً أهله للحصول على هذا التقدير، مواظب ومشارك، مهتم وطموح.',
+        verbose_name='نص الملحوظة الافتراضي للشهادة'
     )
 
     # الموقع الأيمن (قائد جناح التعليم)

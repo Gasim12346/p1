@@ -179,7 +179,10 @@
                         <th rowspan="2" style="min-width: 110px;" class="bg-success bg-opacity-10 text-dark">
                             التقدير
                         </th>
-                        <th rowspan="2" style="width: 10%;">الشهادة</th>
+                        <th rowspan="2" style="min-width: 170px;" class="bg-primary bg-opacity-10 text-dark">
+                            ملحوظة الشهادة
+                        </th>
+                        <th rowspan="2" style="width: 115px;">الشهادة</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -283,13 +286,55 @@
                                 {% endif %}
                             </td>
 
-                            <!-- زر الشهادة الفردية -->
+                            <!-- ملحوظة الشهادة (متاحة للتعديل دائماً) -->
+                            <td class="p-2" style="min-width: 170px;">
+                                <input type="text" 
+                                       name="cert_note_{{ en.trainee.military_number }}"
+                                       class="form-control form-control-sm cert-note-input"
+                                       placeholder="اكتب الملحوظة هنا..."
+                                       value="{{ en.certificate_note }}"
+                                       title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
+                            </td>
+
+                            <!-- خيارات الشهادة للدارس -->
                             <td class="text-center cert-cell">
                                 {% if en.has_complete_data_and_grades %}
-                                    <a href="{% url 'training:certificate' en.id %}" target="_blank" class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="استخراج شهادة التقدير الرسمية للدارس">
-                                        <i class="bi bi-award-fill text-dark"></i>
-                                        <span>الشهادة</span>
-                                    </a>
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-warning dropdown-toggle fw-bold text-dark px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="خيارات إصدار الشهادة">
+                                            <i class="bi bi-award-fill text-dark"></i>
+                                            <span>الشهادة</span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate' en.id %}" target="_blank">
+                                                    <i class="bi bi-award-fill text-warning fs-5"></i>
+                                                    <div>
+                                                        <strong>شهادة التقدير الرسمية</strong>
+                                                        <div class="text-muted small">النموذج العرضي الرسمي</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider my-1"></li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=basic" target="_blank">
+                                                    <i class="bi bi-file-earmark-text text-primary fs-5"></i>
+                                                    <div>
+                                                        <strong>شهادة أساسية</strong>
+                                                        <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=advanced" target="_blank">
+                                                    <i class="bi bi-trophy text-success fs-5"></i>
+                                                    <div>
+                                                        <strong>شهادة متقدمة</strong>
+                                                        <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 {% else %}
                                     <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
                                         <i class="bi bi-lock-fill text-secondary"></i>
@@ -300,7 +345,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="{{ subjects|length|add:7 }}" class="text-center py-5 text-muted">
+                            <td colspan="{{ subjects|length|add:8 }}" class="text-center py-5 text-muted">
                                 لا يوجد دارسون مسجلون في هذه الدورة.
                             </td>
                         </tr>
@@ -325,9 +370,17 @@
                 {% if is_locked %}
                     <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
                         <i class="bi bi-lock-fill fs-5"></i>
-                        <span>الدرجات معتمدة ومقفلة. التعديل محصور بمدير النظام (Admin) فقط.</span>
+                        <span>الدرجات معتمدة ومقفلة. يمكنك تعديل ملحوظات الشهادات وحفظها أدناه.</span>
                     </div>
+                    <button type="submit" name="save_notes" value="1" class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                        <span>حفظ وتحديث ملحوظات الشهادات</span>
+                    </button>
                 {% else %}
+                    <button type="submit" name="save_notes" value="1" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" title="حفظ ملحوظات الشهادات فقط">
+                        <i class="bi bi-pencil-square"></i>
+                        <span>حفظ الملحوظات</span>
+                    </button>
                     {% if is_supervisor_or_admin and session.status != 'completed' %}
                         {% if is_fully_graded %}
                             <button type="submit" name="mark_completed" value="1" class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">

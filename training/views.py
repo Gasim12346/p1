@@ -1155,6 +1155,28 @@ def results_entry_view(request, session_id):
     is_session_supervisor = bool(user_inst and session.supervisor_id == user_inst.military_number)
     is_sup = is_supervisor_user(request.user) or is_session_supervisor or is_admin_user(request.user)
 
+    # معالجة حفظ ملحوظات الشهادة (متاحة في أي وقت حتى بعد اعتماد النتيجة وقفلها)
+    if request.method == 'POST' and 'save_notes' in request.POST:
+        updated_notes_count = 0
+        for en in enrollments:
+            num = en.trainee.military_number
+            if f'cert_note_{num}' in request.POST:
+                new_note = request.POST.get(f'cert_note_{num}', '').strip()
+                if en.certificate_note != new_note:
+                    en.certificate_note = new_note
+                    en.save(update_fields=['certificate_note'])
+                    updated_notes_count += 1
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.GRADES,
+            description=f"تحديث ملحوظات الشهادة لدارسي دورة '{session.course.name}' (دفعة: {session.session_code})",
+            target_model="CourseSession",
+            target_id=session.id
+        )
+        messages.success(request, 'تم حفظ وتحديث ملحوظات الشهادات لجميع الدارسين بنجاح.')
+        return redirect('training:results_entry', session_id=session.id)
+
     # معالجة حفظ الدرجات
     if request.method == 'POST' and 'save_grades' in request.POST:
         # إذا كانت الدورة معتمدة ومكتملة، لا يُسمح بتعديل درجاتها إلا لمدير النظام
@@ -1191,8 +1213,11 @@ def results_entry_view(request, session_id):
                 )
                 return redirect('training:results_entry', session_id=session.id)
 
-            # احتساب النتائج للجميع واعتماد الدورة
+            # احتساب النتائج للجميع واعتماد الدورة مع حفظ أي ملحوظات مدخلة
             for en in enrollments:
+                num = en.trainee.military_number
+                if f'cert_note_{num}' in request.POST:
+                    en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
                 en.calculate_results()
             session.status = 'completed'
             session.save()
@@ -1233,6 +1258,8 @@ def results_entry_view(request, session_id):
             else:
                 for en in enrollments:
                     num = en.trainee.military_number
+                    if f'cert_note_{num}' in request.POST:
+                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
                     for sub in subjects:
                         if sub.id in allowed_subject_ids:
                             grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
@@ -1248,6 +1275,8 @@ def results_entry_view(request, session_id):
                     # تحديث احتساب النتيجة إن اكتملت جميع المواد والمواظبة
                     if en.grades.filter(score__isnull=False).count() == len(subjects) and en.attendance_score is not None:
                         en.calculate_results()
+                    else:
+                        en.save(update_fields=['certificate_note'])
 
                 log_activity(
                     request=request,
@@ -1304,6 +1333,9 @@ def results_entry_view(request, session_id):
             else:
                 for en in enrollments:
                     data = parsed_data[en.id]
+                    num = en.trainee.military_number
+                    if f'cert_note_{num}' in request.POST:
+                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
                     en.attendance_score = data['attendance']
                     for sub, score in data['subjects']:
                         TraineeSubjectGrade.objects.update_or_create(
@@ -1426,6 +1458,82 @@ def certificate_view(request, enrollment_id):
 
 
 @login_required
+def certificate_detailed_view(request, enrollment_id):
+    """استخراج وعرض الشهادة التفصيلية (أساسية أو متقدمة) للدارس مع كشف الدرجات والترتيب والملحوظة"""
+    enrollment = get_object_or_404(
+        CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
+        pk=enrollment_id
+    )
+
+    # التحقق الصارم والشامل: هل اكتملت كافة البيانات والدرجات؟
+    if not enrollment.has_complete_data_and_grades:
+        missing_reasons = []
+        if not enrollment.trainee.military_number or not enrollment.trainee.name:
+            missing_reasons.append("بيانات الدارس الأساسية (النمرة والاسم)")
+        if not enrollment.current_rank or not enrollment.current_rank.strip():
+            missing_reasons.append("الرتبة العسكرية للدارس")
+        if not enrollment.current_unit or not enrollment.current_unit.strip():
+            missing_reasons.append("الوحدة العسكرية للدارس")
+        if not enrollment.session.start_date or not enrollment.session.end_date:
+            missing_reasons.append("تواريخ انعقاد الدورة")
+        
+        total_subjects = enrollment.session.course.subjects.count()
+        graded_count = enrollment.grades.count()
+        if total_subjects == 0:
+            missing_reasons.append("تعريف مفردات المواد الدراسية للدورة")
+        elif graded_count < total_subjects:
+            missing_reasons.append(f"درجات المواد (تم رصد {graded_count} من أصل {total_subjects} مادة)")
+        
+        if not enrollment.is_graded:
+            missing_reasons.append("حفظ واعتماد النتيجة النهائية")
+
+        reasons_text = "، ".join(missing_reasons) if missing_reasons else "عدم اكتمال رصد البيانات والدرجات"
+
+        messages.error(
+            request,
+            f'تنبيه نظام الشهادات: لا يمكن إظهار أو استخراج الشهادة للدارس "{enrollment.current_rank or ""} / {enrollment.trainee.name}" لعدم اكتمال جميع البيانات والدرجات المطلوبة ({reasons_text}). يرجى استكمالها أولاً لإصدار الشهادة.'
+        )
+        return redirect('training:results_entry', session_id=enrollment.session.id)
+
+    cert_settings = CertificateSettings.get_settings()
+    cert_type = request.GET.get('type', 'basic').lower()
+    
+    if cert_type == 'advanced':
+        page_title = cert_settings.advanced_cert_title
+        cert_badge = 'شهادة دورة حاسوب متقدمة'
+    else:
+        page_title = cert_settings.basic_cert_title
+        cert_badge = 'شهادة دورة حاسوب أساسية'
+
+    # تجهيز درجات المواد
+    subjects = list(enrollment.session.course.subjects.all())
+    grades_map = {g.subject_id: g.score for g in enrollment.grades.all()}
+    subjects_data = []
+    for sub in subjects:
+        score = grades_map.get(sub.id, 0.0)
+        subjects_data.append({
+            'name': sub.name,
+            'max_grade': sub.max_grade,
+            'score': score
+        })
+
+    note_text = enrollment.certificate_note.strip() if enrollment.certificate_note else cert_settings.default_certificate_note
+
+    return render(request, 'training/certificate_detailed.html', {
+        'enrollment': enrollment,
+        'trainee': enrollment.trainee,
+        'session': enrollment.session,
+        'course': enrollment.session.course,
+        'cert_settings': cert_settings,
+        'cert_type': cert_type,
+        'page_title': page_title,
+        'cert_badge': cert_badge,
+        'subjects_data': subjects_data,
+        'note_text': note_text,
+    })
+
+
+@login_required
 def session_results_sheet_view(request, session_id):
     """كشف النتيجة العام والمعتمد للدورة المنعقدة بالكامل للطباعة والتصدير"""
     session = get_object_or_404(
@@ -1475,6 +1583,8 @@ def trainee_transcript_view(request, military_number):
                 'is_graded': en.is_graded,
                 'has_complete_data': en.has_complete_data_and_grades,
                 'cert_url': reverse('training:certificate', args=[en.id]),
+                'cert_basic_url': f"{reverse('training:certificate_detailed', args=[en.id])}?type=basic",
+                'cert_advanced_url': f"{reverse('training:certificate_detailed', args=[en.id])}?type=advanced",
             })
         return JsonResponse({
             'success': True,

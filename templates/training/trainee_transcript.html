@@ -152,10 +152,42 @@
                         </td>
                         <td class="text-center">
                             {% if en.has_complete_data_and_grades %}
-                                <a href="{% url 'training:certificate' en.id %}" target="_blank" class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1" title="استخراج وطباعة شهادة التقدير الرسمية لهذه الدورة">
-                                    <i class="bi bi-printer-fill"></i>
-                                    <span>طباعة الشهادة</span>
-                                </a>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="خيارات إصدار الشهادة">
+                                        <i class="bi bi-printer-fill"></i>
+                                        <span>طباعة الشهادة</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                                        <li>
+                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate' en.id %}" target="_blank">
+                                                <i class="bi bi-award-fill text-warning fs-5"></i>
+                                                <div>
+                                                    <strong>شهادة التقدير الرسمية</strong>
+                                                    <div class="text-muted small">النموذج العرضي الرسمي</div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=basic" target="_blank">
+                                                <i class="bi bi-file-earmark-text text-primary fs-5"></i>
+                                                <div>
+                                                    <strong>شهادة أساسية</strong>
+                                                    <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=advanced" target="_blank">
+                                                <i class="bi bi-trophy text-success fs-5"></i>
+                                                <div>
+                                                    <strong>شهادة متقدمة</strong>
+                                                    <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             {% else %}
                                 <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
                                     <i class="bi bi-lock-fill text-secondary"></i>

@@ -464,12 +464,25 @@
                                         {{ cert_form.header_line_2 }}
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label fw-bold small">كلمة عنوان الشهادة</label>
+                                        <label class="form-label fw-bold small">كلمة عنوان الشهادة (التقدير الرسمية)</label>
                                         {{ cert_form.cert_title }}
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold small">لون عنوان الشهادة</label>
                                         {{ cert_form.cert_title_color }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small">عنوان الشهادة الأساسية (التفصيلية)</label>
+                                        {{ cert_form.basic_cert_title }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small">عنوان الشهادة المتقدمة (التفصيلية)</label>
+                                        {{ cert_form.advanced_cert_title }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold small">نص الملحوظة الافتراضي للشهادة</label>
+                                        {{ cert_form.default_certificate_note }}
+                                        <div class="form-text text-muted small">هذا النص يظهر تلقائياً في الشهادة الأساسية والمتقدمة لأي دارس مالم يتم تخصيص ملحوظة خاصة به في صفحة رصد النتائج.</div>
                                     </div>
                                 </div>
 

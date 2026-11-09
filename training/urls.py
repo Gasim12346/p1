@@ -32,6 +32,7 @@ urlpatterns = [
     path('results/session/<int:session_id>/', views.results_entry_view, name='results_entry'),
     path('results/session/<int:session_id>/sheet/', views.session_results_sheet_view, name='session_results_sheet'),
     path('results/certificate/<int:enrollment_id>/', views.certificate_view, name='certificate'),
+    path('results/certificate/<int:enrollment_id>/detailed/', views.certificate_detailed_view, name='certificate_detailed'),
 
     # القسم 6: المصادقة وتسجيل الدخول والخروج
     path('login/', views.login_view, name='login'),

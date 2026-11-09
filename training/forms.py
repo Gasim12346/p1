@@ -650,6 +650,9 @@ class CertificateSettingsForm(forms.ModelForm):
             'header_line_2',
             'cert_title',
             'cert_title_color',
+            'basic_cert_title',
+            'advanced_cert_title',
+            'default_certificate_note',
             'right_signer_rank',
             'right_signer_name',
             'right_signer_title',
@@ -686,6 +689,19 @@ class CertificateSettingsForm(forms.ModelForm):
             'cert_title_color': forms.TextInput(attrs={
                 'class': 'form-control form-control-color w-100',
                 'type': 'color'
+            }),
+            'basic_cert_title': forms.TextInput(attrs={
+                'class': 'form-control fw-bold',
+                'placeholder': 'شهادة دورة حاسوب أساسية'
+            }),
+            'advanced_cert_title': forms.TextInput(attrs={
+                'class': 'form-control fw-bold',
+                'placeholder': 'شهادة دورة حاسوب متقدمة'
+            }),
+            'default_certificate_note': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'بدأ الدورة بدون معلومات، بذل مجهوداً أهله للحصول على هذا التقدير، مواظب ومشارك، مهتم وطموح.'
             }),
             'right_signer_rank': forms.TextInput(attrs={
                 'class': 'form-control',

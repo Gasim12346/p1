@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from training.models import (
     UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
-    TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor
+    TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
+    CertificateSettings
 )
 
 
@@ -1657,6 +1658,145 @@ class TraineeExtendedDataTests(TestCase):
         self.assertEqual(t.relatives.count(), 1)
         r1 = t.relatives.first()
         self.assertEqual(r1.name, 'علي حسن')
+
+
+class CertificateOptionsAndNoteTests(TestCase):
+    """اختبارات الشهادات المتعددة (الأساسية، المتقدمة، التقدير) والملحوظات المخصصة"""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username='admin_cert',
+            password='Password123!',
+            email='admin_cert@test.com'
+        )
+        self.category = CourseCategory.objects.create(name='دورات حاسوب')
+        self.course = Course.objects.create(
+            name='دورة حاسوب أساسية',
+            category=self.category,
+            attendance_max_grade=10.0
+        )
+        self.subject1 = Subject.objects.create(
+            course=self.course,
+            name='مقدمة وتشغيل',
+            max_grade=100.0
+        )
+        self.subject2 = Subject.objects.create(
+            course=self.course,
+            name='معالجة النصوص',
+            max_grade=100.0
+        )
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='BATCH-50',
+            start_date=date(2026, 9, 13),
+            end_date=date(2026, 10, 13),
+            status='in_progress',
+            attendance_max_grade=10.0
+        )
+        self.trainee = Trainee.objects.create(
+            military_number='29803',
+            name='محمد عبدالجليل خلف الله',
+            category='officer',
+            unit='إدارة الشئون المالية',
+            force='القوات البرية',
+            batch=6
+        )
+        self.enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='رائد محاسب',
+            current_unit='إدارة الشئون المالية',
+            current_force='القوات البرية',
+            attendance_score=10.0,
+            certificate_note='ملحوظة تجريبية خاصة بالدارس'
+        )
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.subject1, score=100.0)
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.subject2, score=100.0)
+        self.enrollment.calculate_results()
+
+    def test_rank_and_grade_symbol_properties(self):
+        """اختبار حساب الترتيب ورمز التقدير بشكل سليم"""
+        self.assertEqual(self.enrollment.rank_number, 1)
+        self.assertEqual(self.enrollment.rank_arabic_text, 'الأول')
+        self.assertEqual(self.enrollment.grade_symbol, '(أ)')
+        self.assertIn('الأول', self.enrollment.rank_display)
+
+    def test_basic_and_advanced_certificate_detailed_view(self):
+        """اختبار فتح الشهادة التفصيلية الأساسية والمتقدمة والتأكد من البيانات"""
+        self.client.login(username='admin_cert', password='Password123!')
+        
+        # الشهادة الأساسية
+        url_basic = reverse('training:certificate_detailed', args=[self.enrollment.id]) + '?type=basic'
+        res_basic = self.client.get(url_basic)
+        self.assertEqual(res_basic.status_code, 200)
+        self.assertContains(res_basic, 'شهادة دورة حاسوب أساسية')
+        self.assertContains(res_basic, '29803')
+        self.assertContains(res_basic, 'محمد عبدالجليل خلف الله')
+        self.assertContains(res_basic, 'ملحوظة تجريبية خاصة بالدارس')
+        self.assertContains(res_basic, 'مقدمة وتشغيل')
+        self.assertContains(res_basic, 'السلوك والمواظبة')
+
+        # الشهادة المتقدمة
+        url_adv = reverse('training:certificate_detailed', args=[self.enrollment.id]) + '?type=advanced'
+        res_adv = self.client.get(url_adv)
+        self.assertEqual(res_adv.status_code, 200)
+        self.assertContains(res_adv, 'شهادة دورة حاسوب متقدمة')
+
+    def test_save_notes_even_when_session_is_locked(self):
+        """اختبار إمكانية تعديل وحفظ ملحوظة الشهادة حتى بعد اعتماد وإقفال الدورة"""
+        self.client.login(username='admin_cert', password='Password123!')
+        self.session.status = 'completed'
+        self.session.save()
+
+        url = reverse('training:results_entry', args=[self.session.id])
+        post_data = {
+            'save_notes': '1',
+            f'cert_note_{self.trainee.military_number}': 'ملحوظة جديدة بعد اعتماد النتيجة'
+        }
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        self.enrollment.refresh_from_db()
+        self.assertEqual(self.enrollment.certificate_note, 'ملحوظة جديدة بعد اعتماد النتيجة')
+
+    def test_customize_certificate_titles_in_admin(self):
+        """اختبار تخصيص عناوين الشهادات الأساسية والمتقدمة والملحوظة الافتراضية من لوحة الإدارة"""
+        self.client.login(username='admin_cert', password='Password123!')
+        url = reverse('training:certificate_settings_update')
+        cert = CertificateSettings.get_settings()
+
+        post_data = {
+            'bismillah_text': cert.bismillah_text,
+            'header_line_1': cert.header_line_1,
+            'header_line_2': cert.header_line_2,
+            'cert_title': cert.cert_title,
+            'cert_title_color': cert.cert_title_color,
+            'basic_cert_title': 'شهادة دورة حاسوب أساسية مخصصة',
+            'advanced_cert_title': 'شهادة دورة ذكاء اصطناعي متقدمة',
+            'default_certificate_note': 'أظهر كفاءة ممتازة واجتهاداً كبيراً.',
+            'right_signer_rank': cert.right_signer_rank,
+            'right_signer_name': cert.right_signer_name,
+            'right_signer_title': cert.right_signer_title,
+            'left_signer_rank': cert.left_signer_rank,
+            'left_signer_name': cert.left_signer_name,
+            'left_signer_title': cert.left_signer_title,
+            'center_approval_prefix': cert.center_approval_prefix,
+            'center_signer_rank': cert.center_signer_rank,
+            'center_signer_name': cert.center_signer_name,
+            'center_signer_title': cert.center_signer_title,
+            'station_text': cert.station_text,
+            'seal_notice': cert.seal_notice,
+            'logo_height_mm': cert.logo_height_mm,
+        }
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        cert.refresh_from_db()
+        self.assertEqual(cert.basic_cert_title, 'شهادة دورة حاسوب أساسية مخصصة')
+        self.assertEqual(cert.advanced_cert_title, 'شهادة دورة ذكاء اصطناعي متقدمة')
+        self.assertEqual(cert.default_certificate_note, 'أظهر كفاءة ممتازة واجتهاداً كبيراً.')
+
 
 
 
