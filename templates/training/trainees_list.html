@@ -111,9 +111,11 @@
                     <th style="min-width: 140px;">النمرة (مفتاح أساسي)</th>
                     <th style="min-width: 110px;">التصنيف</th>
                     <th style="min-width: 190px;">الاسم الكامل</th>
+                    <th style="min-width: 100px;">الدفعة</th>
+                    <th style="min-width: 170px;">السكن ورقم الهاتف</th>
                     <th style="min-width: 140px;">الوحدة</th>
                     <th style="min-width: 90px;">القوة</th>
-                    <th style="min-width: 140px; text-align: center;">الإجراءات</th>
+                    <th style="min-width: 180px; text-align: center;">الإجراءات</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,10 +160,37 @@
                             <small class="text-muted">تاريخ التسجيل: {{ trainee.created_at|date:"Y-m-d" }}</small>
                         </td>
 
+                        <!-- الدفعة -->
+                        <td>
+                            {% if trainee.batch %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border font-monospace px-3 py-2 rounded-pill fw-bold">
+                                    دفعة {{ trainee.batch }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- السكن ورقم الهاتف -->
+                        <td>
+                            {% if trainee.phone %}
+                                <div class="fw-bold text-dark font-monospace small">
+                                    <i class="bi bi-telephone-fill text-success me-1"></i>{{ trainee.phone }}
+                                </div>
+                            {% endif %}
+                            {% if trainee.residence_city or trainee.residence_state or trainee.residence_neighborhood %}
+                                <div class="small text-muted text-truncate" style="max-width: 200px;" title="{{ trainee.full_address }}">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ trainee.residence_city|default:trainee.residence_state }} {% if trainee.residence_neighborhood %}- {{ trainee.residence_neighborhood }}{% endif %}
+                                </div>
+                            {% elif not trainee.phone %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+
                         <!-- الوحدة -->
                         <td>
                             <span class="text-secondary fw-semibold">
-                                <i class="bi bi-geo-alt text-muted me-1"></i>{{ trainee.unit|default:"-" }}
+                                <i class="bi bi-building text-muted me-1"></i>{{ trainee.unit|default:"-" }}
                             </span>
                         </td>
 
@@ -175,6 +204,9 @@
                         <!-- الإجراءات -->
                         <td class="text-center">
                             <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 px-2 py-1 me-1 text-dark" data-bs-toggle="modal" data-bs-target="#traineeDetailModal_{{ trainee.military_number }}" title="عرض تفاصيل السكن وأقرب الأقربين">
+                                    <i class="bi bi-card-text text-primary"></i> تفاصيل
+                                </button>
                                 <a href="{% url 'training:trainee_transcript' trainee.military_number %}" class="btn btn-sm btn-outline-info rounded-2 px-2 py-1 me-1 text-dark" title="السجل التدريبي وشهادات الدارس">
                                     <i class="bi bi-mortarboard-fill text-primary"></i> الدورات
                                 </a>
@@ -191,7 +223,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5">
+                        <td colspan="8" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-inbox text-muted" style="font-size: 3.5rem;"></i>
                                 <h5 class="fw-bold text-dark mt-3">لا توجد بيانات مطابقة</h5>
@@ -208,16 +240,139 @@
     </div>
 </div>
 
+<!-- Modals for Trainee Details -->
+{% for trainee in trainees %}
+<div class="modal fade" id="traineeDetailModal_{{ trainee.military_number }}" tabindex="-1" aria-labelledby="traineeDetailModalLabel_{{ trainee.military_number }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge fs-4 text-warning"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="traineeDetailModalLabel_{{ trainee.military_number }}">
+                            {{ trainee.name }}
+                        </h5>
+                        <small class="text-white-50">نمرة: {{ trainee.military_number }} • دفعة: {{ trainee.batch|default:"-" }}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- بطاقة السكن والاتصال -->
+                <div class="card border-0 bg-light rounded-3 p-3 mb-4">
+                    <h6 class="fw-bold text-primary mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt-fill"></i> تفاصيل السكن وبيانات الاتصال
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">رقم الهاتف:</span>
+                            <strong class="font-monospace fs-6">{{ trainee.phone|default:"غير مسجل" }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">الدفعة:</span>
+                            <strong>{{ trainee.batch|default:"غير محدد" }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">التصنيف:</span>
+                            <strong>{{ trainee.get_category_display }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">الولاية:</span>
+                            <strong>{{ trainee.residence_state|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">المدينة:</span>
+                            <strong>{{ trainee.residence_city|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block">الحي:</span>
+                            <strong>{{ trainee.residence_neighborhood|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted d-block">المربع / الحارة:</span>
+                            <strong>{{ trainee.residence_block|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted d-block">رقم المنزل:</span>
+                            <strong>{{ trainee.residence_house_number|default:"-" }}</strong>
+                        </div>
+                        <div class="col-12 mt-2 pt-2 border-top">
+                            <span class="text-muted d-block">العنوان الكامل:</span>
+                            <span class="fw-semibold text-dark">{{ trainee.full_address }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- جدول أقرب الأقربين (4 أقارب) -->
+                <div>
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center justify-content-between">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="bi bi-people-fill text-warning"></i> أقرب الأقربين (4 أقارب للتواصل وحالات الطوارئ)
+                        </span>
+                        <span class="badge bg-warning text-dark">{{ trainee.relatives.count }} من 4 مسجلين</span>
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle small mb-0">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th style="width: 8%;">#</th>
+                                    <th style="width: 27%;">اسم القريب</th>
+                                    <th style="width: 20%;">صلة القرابة</th>
+                                    <th style="width: 20%;">رقم الهاتف</th>
+                                    <th style="width: 25%;">مكان السكن / العنوان</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in trainee.get_four_relatives %}
+                                    {% if r %}
+                                        <tr>
+                                            <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                                            <td><strong class="text-dark">{{ r.name|default:"-" }}</strong></td>
+                                            <td><span class="badge bg-light text-dark border">{{ r.kinship|default:"-" }}</span></td>
+                                            <td><span class="font-monospace text-primary fw-bold">{{ r.phone|default:"-" }}</span></td>
+                                            <td>{{ r.address|default:"-" }}</td>
+                                        </tr>
+                                    {% else %}
+                                        <tr class="text-muted opacity-50">
+                                            <td class="text-center">{{ forloop.counter }}</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-4">
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">إغلاق</button>
+                {% if is_registrar %}
+                    <a href="{% url 'training:trainee_edit' trainee.military_number %}" class="btn btn-primary rounded-3 px-4">
+                        <i class="bi bi-pencil-fill me-1"></i> تعديل بيانات الدارس
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <!-- Modal: Add New Trainee -->
 <div class="modal fade" id="addTraineeModal" tabindex="-1" aria-labelledby="addTraineeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4">
                 <div class="d-flex align-items-center gap-2">
                     <div class="bg-white bg-opacity-20 p-2 rounded-3">
                         <i class="bi bi-person-plus-fill fs-5 text-white"></i>
                     </div>
-                    <h5 class="modal-title fw-bold" id="addTraineeModalLabel">إدخال وحفظ بيانات دارس جديد</h5>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="addTraineeModalLabel">إدخال وحفظ بيانات دارس جديد</h5>
+                        <small class="opacity-90">تسجيل البيانات الأساسية، الدفعة، تفاصيل السكن، وأقرب الأقربين (4 أقارب)</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
@@ -226,28 +381,181 @@
                 {% csrf_token %}
                 <input type="hidden" name="add_trainee" value="1">
                 
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <!-- النمرة -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
-                            {{ form.military_number }}
+                <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+                    <!-- القسم 1: البيانات الأساسية -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-primary rounded-circle p-2"><i class="bi bi-person-vcard fs-6"></i></span>
+                            <h6 class="fw-bold text-dark mb-0">1. البيانات الأساسية للدارس</h6>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
+                                {{ form.military_number }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
+                                <select name="category" id="categorySelect" class="form-select form-select-lg" required>
+                                    <option value="officer" selected>ضباط</option>
+                                    <option value="nco">ضباط صف</option>
+                                    <option value="civilian">مدنيين</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold text-dark">الدفعة (رقمي)</label>
+                                {{ form.batch }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 2: بيانات السكن ورقم الهاتف -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success rounded-circle p-2"><i class="bi bi-geo-alt-fill fs-6"></i></span>
+                            <h6 class="fw-bold text-dark mb-0">2. بيانات السكن ورقم الهاتف</h6>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">رقم الهاتف</label>
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الولاية</label>
+                                {{ form.residence_state }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">المدينة</label>
+                                {{ form.residence_city }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الحي</label>
+                                {{ form.residence_neighborhood }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">المربع / الحارة</label>
+                                {{ form.residence_block }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">رقم المنزل</label>
+                                {{ form.residence_house_number }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 3: أقرب الأقربين (4 أقارب) -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-people-fill fs-6"></i></span>
+                                <h6 class="fw-bold text-dark mb-0">3. أقرب الأقربين (4 أقارب للتواصل وحالات الطوارئ)</h6>
+                            </div>
+                            <span class="badge bg-light text-muted border">4 أقارب</span>
                         </div>
 
-                        <!-- التصنيف -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
-                            <select name="category" id="categorySelect" class="form-select form-select-lg" required>
-                                <option value="officer" selected>ضباط</option>
-                                <option value="nco">ضباط صف</option>
-                                <option value="civilian">مدنيين</option>
-                            </select>
-                        </div>
+                        <div class="row g-3">
+                            <!-- القريب 1 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-1-circle-fill me-1"></i> القريب الأول (الأساسي)</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_1_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_1_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_1_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_1_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <!-- الاسم الكامل -->
-                        <div class="col-12">
-                            <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
-                            {{ form.name }}
+                            <!-- القريب 2 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-2-circle-fill me-1"></i> القريب الثاني</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_2_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_2_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_2_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_2_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القريب 3 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-3-circle-fill me-1"></i> القريب الثالث</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_3_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_3_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_3_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_3_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القريب 4 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-4-circle-fill me-1"></i> القريب الرابع</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_4_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_4_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_4_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_4_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

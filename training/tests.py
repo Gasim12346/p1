@@ -1532,6 +1532,134 @@ class UserRankAndUnitListTests(TestCase):
         self.assertEqual(target.profile.unit, 'سلاح المدرعات')
 
 
+class TraineeExtendedDataTests(TestCase):
+    """
+    اختبارات تسجيل وتعديل الدارس مع الحقول الموسعة:
+    - الدفعة (رقمي)
+    - السكن (الولاية، المدينة، الحي، المربع/الحارة، رقم المنزل)
+    - رقم الهاتف
+    - أقرب الأقربين (4 أقارب)
+    """
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='registrar_user_test',
+            password='Password123!',
+            is_staff=True,
+            is_superuser=True
+        )
+        self.admin_profile, _ = UserProfile.objects.get_or_create(user=self.admin)
+        self.admin_profile.role = UserRole.ADMIN
+        self.admin_profile.can_write = True
+        self.admin_profile.save()
+
+    def test_create_trainee_with_batch_residence_phone_and_four_relatives(self):
+        self.client.login(username='registrar_user_test', password='Password123!')
+        url = reverse('training:trainees_list')
+
+        post_data = {
+            'add_trainee': '1',
+            'military_number': '998877',
+            'category': 'officer',
+            'name': 'خالد محمد إبراهيم',
+            'batch': '25',
+            'phone': '0912345678',
+            'residence_state': 'الخرطوم',
+            'residence_city': 'بحري',
+            'residence_neighborhood': 'الصافية',
+            'residence_block': 'مربع 3',
+            'residence_house_number': '12',
+            # القريب 1
+            'relative_1_name': 'محمد إبراهيم علي',
+            'relative_1_kinship': 'والد',
+            'relative_1_phone': '0911111111',
+            'relative_1_address': 'الصافية مربع 3',
+            # القريب 2
+            'relative_2_name': 'فاطمة أحمد',
+            'relative_2_kinship': 'والدة',
+            'relative_2_phone': '0922222222',
+            'relative_2_address': 'الصافية مربع 3',
+            # القريب 3
+            'relative_3_name': 'أحمد محمد إبراهيم',
+            'relative_3_kinship': 'أخ',
+            'relative_3_phone': '0933333333',
+            'relative_3_address': 'بحري الشعبية',
+            # القريب 4
+            'relative_4_name': 'عمر إبراهيم علي',
+            'relative_4_kinship': 'عم',
+            'relative_4_phone': '0944444444',
+            'relative_4_address': 'الخرطوم العمارات',
+        }
+
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        from training.models import Trainee
+        t = Trainee.objects.filter(military_number='998877').first()
+        self.assertIsNotNone(t)
+        self.assertEqual(t.name, 'خالد محمد إبراهيم')
+        self.assertEqual(t.batch, 25)
+        self.assertEqual(t.phone, '0912345678')
+        self.assertEqual(t.residence_state, 'الخرطوم')
+        self.assertEqual(t.residence_city, 'بحري')
+        self.assertEqual(t.residence_neighborhood, 'الصافية')
+        self.assertEqual(t.residence_block, 'مربع 3')
+        self.assertEqual(t.residence_house_number, '12')
+        self.assertIn('بحري', t.full_address)
+
+        # التحقق من الأقارب الـ 4
+        self.assertEqual(t.relatives.count(), 4)
+        r1 = t.relatives.get(order=1)
+        self.assertEqual(r1.name, 'محمد إبراهيم علي')
+        self.assertEqual(r1.kinship, 'والد')
+        self.assertEqual(r1.phone, '0911111111')
+
+        r4 = t.relatives.get(order=4)
+        self.assertEqual(r4.name, 'عمر إبراهيم علي')
+        self.assertEqual(r4.kinship, 'عم')
+
+    def test_edit_trainee_batch_residence_and_relatives(self):
+        from training.models import Trainee
+        t = Trainee.objects.create(
+            military_number='776655',
+            category='nco',
+            name='ياسر علي حسن',
+            batch=18,
+            phone='0987654321',
+            residence_city='أم درمان'
+        )
+        self.client.login(username='registrar_user_test', password='Password123!')
+        url = reverse('training:trainee_edit', kwargs={'military_number': t.military_number})
+
+        edit_data = {
+            'category': 'nco',
+            'name': 'ياسر علي حسن (معدل)',
+            'batch': '20',
+            'phone': '0911223344',
+            'residence_state': 'الخرطوم',
+            'residence_city': 'أم درمان',
+            'residence_neighborhood': 'المهندسين',
+            'residence_block': 'حارة 5',
+            'residence_house_number': '88',
+            'relative_1_name': 'علي حسن',
+            'relative_1_kinship': 'والد',
+            'relative_1_phone': '0900000001',
+            'relative_1_address': 'أم درمان',
+        }
+        res = self.client.post(url, edit_data)
+        self.assertEqual(res.status_code, 302)
+
+        t.refresh_from_db()
+        self.assertEqual(t.name, 'ياسر علي حسن (معدل)')
+        self.assertEqual(t.batch, 20)
+        self.assertEqual(t.phone, '0911223344')
+        self.assertEqual(t.residence_neighborhood, 'المهندسين')
+        self.assertEqual(t.relatives.count(), 1)
+        r1 = t.relatives.first()
+        self.assertEqual(r1.name, 'علي حسن')
+
+
+
 
 
 

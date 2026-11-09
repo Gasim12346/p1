@@ -37,6 +37,48 @@ class Trainee(models.Model):
         max_length=200,
         verbose_name='الاسم الكامل'
     )
+    batch = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='الدفعة (رقمي)'
+    )
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+        default='',
+        verbose_name='رقم الهاتف'
+    )
+    # حقول السكن
+    residence_state = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='الولاية'
+    )
+    residence_city = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='المدينة'
+    )
+    residence_neighborhood = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='الحي'
+    )
+    residence_block = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='المربع / الحارة'
+    )
+    residence_house_number = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name='رقم المنزل'
+    )
     unit = models.CharField(
         max_length=150,
         blank=True,
@@ -65,6 +107,76 @@ class Trainee(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.military_number})"
+
+    @property
+    def full_address(self):
+        """تجميع تفاصيل السكن بصيغة نصية واضحة"""
+        parts = []
+        if self.residence_state:
+            parts.append(f"الولاية: {self.residence_state}")
+        if self.residence_city:
+            parts.append(f"المدينة: {self.residence_city}")
+        if self.residence_neighborhood:
+            parts.append(f"الحي: {self.residence_neighborhood}")
+        if self.residence_block:
+            parts.append(f"المربع/الحارة: {self.residence_block}")
+        if self.residence_house_number:
+            parts.append(f"منزل: {self.residence_house_number}")
+        return " - ".join(parts) if parts else "غير محدد"
+
+    def get_four_relatives(self):
+        """إرجاع قائمة بالأقارب الـ 4، وتعبئة البواقي بكائنات فارغة لعرضها في الشاشات"""
+        existing = {r.order: r for r in self.relatives.all()[:4]}
+        result = []
+        for i in range(1, 5):
+            result.append(existing.get(i, None))
+        return result
+
+
+class TraineeRelative(models.Model):
+    """أقرب الأقربين للدارس (جهات الاتصال في حالات الطوارئ - حتى 4 أقارب)"""
+    trainee = models.ForeignKey(
+        Trainee,
+        on_delete=models.CASCADE,
+        related_name='relatives',
+        verbose_name='الدارس'
+    )
+    order = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name='الترتيب (1-4)'
+    )
+    name = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='اسم القريب'
+    )
+    kinship = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='صلة القرابة'
+    )
+    phone = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name='رقم الهاتف'
+    )
+    address = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        verbose_name='مكان السكن / العنوان'
+    )
+
+    class Meta:
+        verbose_name = 'قريب دارس'
+        verbose_name_plural = 'أقرب الأقربين'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"{self.name} ({self.kinship}) - دارس: {self.trainee.name}"
 
 
 class InstructorCategory(models.TextChoices):

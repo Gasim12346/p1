@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-3">
                 <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
@@ -17,7 +17,10 @@
             <div class="card-header bg-primary text-white py-3 px-4 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-pencil-square fs-5"></i>
-                    <h5 class="fw-bold mb-0">تعديل بيانات الدارس: {{ trainee.name }}</h5>
+                    <div>
+                        <h5 class="fw-bold mb-0">تعديل بيانات الدارس: {{ trainee.name }}</h5>
+                        <small class="opacity-90">تحديث البيانات الأساسية، الدفعة، تفاصيل السكن، وأقرب الأقربين (4 أقارب)</small>
+                    </div>
                 </div>
                 <span class="badge bg-white text-primary font-monospace px-3 py-2 rounded-pill">
                     النمرة: {{ trainee.military_number }}
@@ -27,28 +30,188 @@
             <form method="post">
                 {% csrf_token %}
                 <div class="card-body p-4">
-                    <div class="row g-3">
-                        <!-- النمرة (غير قابلة للتغيير لأنها المفتاح الأساسي) -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">النمرة (مفتاح أساسي)</label>
-                            <input type="text" class="form-control form-control-lg bg-light font-monospace" value="{{ trainee.military_number }}" disabled>
-                            <div class="form-text small text-muted">النمرة هي المفتاح الأساسي للدارس ولا يتم تعديلها.</div>
+                    <!-- القسم 1: البيانات الأساسية -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-primary rounded-circle p-2"><i class="bi bi-person-vcard fs-6"></i></span>
+                            <h6 class="fw-bold text-dark mb-0">1. البيانات الأساسية للدارس</h6>
+                        </div>
+                        <div class="row g-3">
+                            <!-- النمرة (غير قابلة للتغيير لأنها المفتاح الأساسي) -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark">النمرة (مفتاح أساسي)</label>
+                                <input type="text" class="form-control form-control-lg bg-light font-monospace" value="{{ trainee.military_number }}" disabled>
+                                <div class="form-text small text-muted">النمرة هي المفتاح الأساسي للدارس ولا تتغير.</div>
+                            </div>
+
+                            <!-- التصنيف -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
+                                <select name="category" id="editCategorySelect" class="form-select form-select-lg" required>
+                                    <option value="officer" {% if trainee.category == 'officer' %}selected{% endif %}>ضباط</option>
+                                    <option value="nco" {% if trainee.category == 'nco' %}selected{% endif %}>ضباط صف</option>
+                                    <option value="civilian" {% if trainee.category == 'civilian' %}selected{% endif %}>مدنيين</option>
+                                </select>
+                            </div>
+
+                            <!-- الاسم الكامل -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+
+                            <!-- الدفعة -->
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold text-dark">الدفعة (رقمي)</label>
+                                {{ form.batch }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 2: بيانات السكن ورقم الهاتف -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success rounded-circle p-2"><i class="bi bi-geo-alt-fill fs-6"></i></span>
+                            <h6 class="fw-bold text-dark mb-0">2. بيانات السكن ورقم الهاتف</h6>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">رقم الهاتف</label>
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الولاية</label>
+                                {{ form.residence_state }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">المدينة</label>
+                                {{ form.residence_city }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">الحي</label>
+                                {{ form.residence_neighborhood }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">المربع / الحارة</label>
+                                {{ form.residence_block }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-dark">رقم المنزل</label>
+                                {{ form.residence_house_number }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 3: أقرب الأقربين (4 أقارب) -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-people-fill fs-6"></i></span>
+                                <h6 class="fw-bold text-dark mb-0">3. أقرب الأقربين (4 أقارب للتواصل وحالات الطوارئ)</h6>
+                            </div>
+                            <span class="badge bg-light text-muted border">4 أقارب</span>
                         </div>
 
-                        <!-- التصنيف -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
-                            <select name="category" id="editCategorySelect" class="form-select form-select-lg" required>
-                                <option value="officer" {% if trainee.category == 'officer' %}selected{% endif %}>ضباط</option>
-                                <option value="nco" {% if trainee.category == 'nco' %}selected{% endif %}>ضباط صف</option>
-                                <option value="civilian" {% if trainee.category == 'civilian' %}selected{% endif %}>مدنيين</option>
-                            </select>
-                        </div>
+                        <div class="row g-3">
+                            <!-- القريب 1 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-1-circle-fill me-1"></i> القريب الأول (الأساسي)</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_1_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_1_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_1_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_1_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <!-- الاسم الكامل -->
-                        <div class="col-12">
-                            <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
-                            {{ form.name }}
+                            <!-- القريب 2 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-2-circle-fill me-1"></i> القريب الثاني</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_2_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_2_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_2_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_2_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القريب 3 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-3-circle-fill me-1"></i> القريب الثالث</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_3_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_3_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_3_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_3_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القريب 4 -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                    <div class="fw-bold text-primary mb-2 small"><i class="bi bi-4-circle-fill me-1"></i> القريب الرابع</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                            {{ form.relative_4_name }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                            {{ form.relative_4_kinship }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                            {{ form.relative_4_phone }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                            {{ form.relative_4_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

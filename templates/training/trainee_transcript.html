@@ -22,10 +22,10 @@
                 <h4 class="fw-bold mb-0">{{ trainee.name }}</h4>
                 <div class="small opacity-90 mt-1">
                     <span>النمرة: <strong class="font-monospace">{{ trainee.military_number }}</strong></span>
-                    <span class="mx-2">•</span>
-                    <span>الوحدة: <strong>{{ trainee.unit }}</strong></span>
-                    <span class="mx-2">•</span>
-                    <span>القوة: <strong>{{ trainee.force }}</strong></span>
+                    {% if trainee.batch %}<span class="mx-2">•</span><span>الدفعة: <strong class="badge bg-white text-primary rounded-pill px-2">دفعة {{ trainee.batch }}</strong></span>{% endif %}
+                    {% if trainee.phone %}<span class="mx-2">•</span><span>الهاتف: <strong class="font-monospace">{{ trainee.phone }}</strong></span>{% endif %}
+                    {% if trainee.unit %}<span class="mx-2">•</span><span>الوحدة: <strong>{{ trainee.unit }}</strong></span>{% endif %}
+                    {% if trainee.force %}<span class="mx-2">•</span><span>القوة: <strong>{{ trainee.force }}</strong></span>{% endif %}
                 </div>
             </div>
         </div>
@@ -38,6 +38,55 @@
             {% else %}
                 <span class="badge badge-civilian fs-6 px-3 py-2 rounded-pill">مدنيين</span>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- بطاقة تفاصيل السكن وأقرب الأقربين -->
+    <div class="card-body bg-light p-3 border-top">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="bg-white rounded-3 p-3 border h-100">
+                    <h6 class="fw-bold text-primary mb-2 d-flex align-items-center gap-2 small">
+                        <i class="bi bi-geo-alt-fill text-danger"></i> بيانات السكن والإقامة
+                    </h6>
+                    <div class="small text-dark">
+                        <div><strong>العنوان:</strong> {{ trainee.full_address }}</div>
+                        {% if trainee.residence_state or trainee.residence_city %}
+                            <div class="text-muted mt-1">
+                                <span>الولاية: {{ trainee.residence_state|default:"-" }}</span> •
+                                <span>المدينة: {{ trainee.residence_city|default:"-" }}</span> •
+                                <span>الحي: {{ trainee.residence_neighborhood|default:"-" }}</span> •
+                                <span>المربع/الحارة: {{ trainee.residence_block|default:"-" }}</span> •
+                                <span>المنزل: {{ trainee.residence_house_number|default:"-" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="bg-white rounded-3 p-3 border h-100">
+                    <h6 class="fw-bold text-warning mb-2 d-flex align-items-center gap-2 small">
+                        <i class="bi bi-people-fill text-warning"></i> أقرب الأقربين للطوارئ ({{ trainee.relatives.count }} من 4)
+                    </h6>
+                    <div class="small">
+                        {% if trainee.relatives.exists %}
+                            <div class="row g-1">
+                                {% for r in trainee.relatives.all %}
+                                    <div class="col-sm-6">
+                                        <div class="p-1 border rounded bg-light">
+                                            <strong class="text-dark">{{ r.name }}</strong>
+                                            <span class="text-muted small">({{ r.kinship|default:"قريب" }})</span>
+                                            {% if r.phone %}<div class="font-monospace text-primary" style="font-size: 0.8rem;"><i class="bi bi-telephone me-1"></i>{{ r.phone }}</div>{% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">لم يتم تسجيل أقرباء بعد.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

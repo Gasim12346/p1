@@ -163,18 +163,25 @@ def trainees_list_view(request):
     else:
         form = TraineeForm()
 
-    trainees = Trainee.objects.all()
+    trainees = Trainee.objects.all().prefetch_related('relatives', 'enrollments')
 
     if category_filter in [TraineeCategory.OFFICER, TraineeCategory.NCO, TraineeCategory.CIVILIAN]:
         trainees = trainees.filter(category=category_filter)
 
     if search_query:
-        trainees = trainees.filter(
+        search_filter = (
             Q(name__icontains=search_query) |
             Q(military_number__icontains=search_query) |
             Q(unit__icontains=search_query) |
-            Q(force__icontains=search_query)
+            Q(force__icontains=search_query) |
+            Q(phone__icontains=search_query) |
+            Q(residence_state__icontains=search_query) |
+            Q(residence_city__icontains=search_query) |
+            Q(residence_neighborhood__icontains=search_query)
         )
+        if search_query.isdigit():
+            search_filter |= Q(batch=int(search_query))
+        trainees = trainees.filter(search_filter).distinct()
 
     counts = {
         'all': Trainee.objects.count(),
