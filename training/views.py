@@ -1981,10 +1981,12 @@ def user_edit_view(request, user_id):
         }
         form = UserEditForm(instance=target_user, initial=initial_data)
 
+    instructors = Instructor.objects.filter(is_active=True).order_by('name')
     return render(request, 'admin_portal/user_edit.html', {
         'form': form,
         'target_user': target_user,
         'profile': profile,
+        'instructors': instructors,
     })
 
 

@@ -1333,6 +1333,118 @@ class UserRolePermissionsTest(TestCase):
         self.assertIn('تفريغ وحذف سجل النشاط', clear_log.description)
 
 
+class UserRankAndUnitListTests(TestCase):
+    """اختبارات قوائم الرتبة والوحدة المنسدلة في إدارة المستخدمين"""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='admin_list_tester',
+            password='Password123!',
+            email='admin_list@example.com'
+        )
+        profile, _ = UserProfile.objects.get_or_create(user=self.admin)
+        profile.role = UserRole.ADMIN
+        profile.can_manage_users = True
+        profile.can_view = True
+        profile.can_add = True
+        profile.can_edit = True
+        profile.can_delete = True
+        profile.save()
+
+    def test_user_creation_with_rank_and_unit_from_list(self):
+        """التحقق من إنشاء مستخدم باختيار الرتبة والوحدة من القائمة المنسدلة"""
+        self.client.login(username='admin_list_tester', password='Password123!')
+        url = reverse('training:user_create')
+
+        post_data = {
+            'username': 'officer_user',
+            'password': 'Password123!',
+            'first_name': 'عمر',
+            'last_name': 'الفاروق',
+            'role': UserRole.REGISTRAR,
+            'military_number': '556677',
+            'rank': 'رائد',
+            'unit': 'سلاح الإشارة',
+            'phone': '0912345678',
+            'is_active': 'on',
+            'can_view': 'on',
+            'can_add': 'on',
+            'can_edit': 'on',
+        }
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        user = User.objects.get(username='officer_user')
+        self.assertEqual(user.profile.rank, 'رائد')
+        self.assertEqual(user.profile.unit, 'سلاح الإشارة')
+        self.assertEqual(user.profile.military_number, '556677')
+
+    def test_user_creation_with_custom_rank_and_unit(self):
+        """التحقق من حفظ الرتبة والوحدة المخصصة عند اختيار أخرى"""
+        self.client.login(username='admin_list_tester', password='Password123!')
+        url = reverse('training:user_create')
+
+        post_data = {
+            'username': 'custom_rank_user',
+            'password': 'Password123!',
+            'first_name': 'طارق',
+            'last_name': 'زياد',
+            'role': UserRole.INSTRUCTOR,
+            'military_number': '998877',
+            'rank': '__custom__',
+            'custom_rank': 'عقيد ركن طيار',
+            'unit': '__custom__',
+            'custom_unit': 'كتيبة الصيانة الإلكترونية الخاصة',
+            'is_active': 'on',
+            'can_grade': 'on',
+        }
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+
+        user = User.objects.get(username='custom_rank_user')
+        self.assertEqual(user.profile.rank, 'عقيد ركن طيار')
+        self.assertEqual(user.profile.unit, 'كتيبة الصيانة الإلكترونية الخاصة')
+
+    def test_user_edit_form_choices_and_save(self):
+        """التحقق من تعديل رتبة ووحدة المستخدم عبر شاشة التعديل"""
+        target = User.objects.create_user(username='edit_target', password='Password123!')
+        target_prof, _ = UserProfile.objects.get_or_create(user=target)
+        target_prof.role = UserRole.REGULAR
+        target_prof.rank = 'نقيب'
+        target_prof.unit = 'سلاح المشاة'
+        target_prof.save()
+
+        self.client.login(username='admin_list_tester', password='Password123!')
+        url = reverse('training:user_edit', kwargs={'user_id': target.id})
+
+        # فحص وجود خيارات الرتب والوحدات في صفحة التعديل
+        get_res = self.client.get(url)
+        self.assertEqual(get_res.status_code, 200)
+        self.assertContains(get_res, 'editUserRankSelect')
+        self.assertContains(get_res, 'editUserUnitSelect')
+
+        # تعديل الرتبة والوحدة
+        post_data = {
+            'first_name': 'معدل',
+            'last_name': 'الاسم',
+            'email': 'target@example.com',
+            'role': UserRole.REGULAR,
+            'military_number': '112233',
+            'rank': 'مقدم',
+            'unit': 'سلاح المدرعات',
+            'phone': '0999999999',
+            'is_active': 'on',
+            'can_view': 'on',
+        }
+        post_res = self.client.post(url, post_data)
+        self.assertEqual(post_res.status_code, 302)
+
+        target.refresh_from_db()
+        self.assertEqual(target.profile.rank, 'مقدم')
+        self.assertEqual(target.profile.unit, 'سلاح المدرعات')
+
+
+
 
 
 

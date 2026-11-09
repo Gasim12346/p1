@@ -36,6 +36,117 @@ CIVILIAN_TITLES = [
     'إداري',
 ]
 
+# خيارات القوائم المنسدلة للرتب والوحدات في نماذج المستخدمين
+MILITARY_RANK_CHOICES = [
+    ('', '-- اختر الرتبة --'),
+    ('رتب الضباط', [
+        ('ملازم', 'ملازم'),
+        ('ملازم أول', 'ملازم أول'),
+        ('نقيب', 'نقيب'),
+        ('رائد', 'رائد'),
+        ('مقدم', 'مقدم'),
+        ('عقيد', 'عقيد'),
+        ('عميد', 'عميد'),
+        ('لواء', 'لواء'),
+        ('فريق', 'فريق'),
+        ('فريق أول', 'فريق أول'),
+    ]),
+    ('رتب ضباط الصف والجنود', [
+        ('جندي', 'جندي'),
+        ('وكيل عريف', 'وكيل عريف'),
+        ('عريف', 'عريف'),
+        ('رقيب', 'رقيب'),
+        ('رقيب أول', 'رقيب أول'),
+        ('مساعد', 'مساعد'),
+        ('مساعد أول', 'مساعد أول'),
+    ]),
+    ('الوظائف والرتب المدنية', [
+        ('موظف مدني', 'موظف مدني'),
+        ('أخصائي', 'أخصائي'),
+        ('باحث', 'باحث'),
+        ('مهندس', 'مهندس'),
+        ('فني', 'فني'),
+        ('إداري', 'إداري'),
+    ]),
+    ('خيارات مخصصة', [
+        ('__custom__', 'رتبة أخرى (كتابة يدوية)...'),
+    ]),
+]
+
+MILITARY_UNIT_CHOICES = [
+    ('', '-- اختر الوحدة / الفرع --'),
+    ('الأسلحة والقيادات العامة', [
+        ('جناح التعليم', 'جناح التعليم'),
+        ('سلاح المشاة', 'سلاح المشاة'),
+        ('سلاح المدرعات', 'سلاح المدرعات'),
+        ('سلاح المدفعية', 'سلاح المدفعية'),
+        ('سلاح الإشارة', 'سلاح الإشارة'),
+        ('سلاح المهندسين', 'سلاح المهندسين'),
+        ('سلاح الصيانة', 'سلاح الصيانة'),
+        ('سلاح النقل', 'سلاح النقل'),
+        ('الشرطة العسكرية', 'الشرطة العسكرية'),
+        ('شعبة الاستخبارات العسكرية', 'شعبة الاستخبارات العسكرية'),
+        ('لواء القوات الخاصة', 'لواء القوات الخاصة'),
+        ('إدارة العمليات الحربية', 'إدارة العمليات الحربية'),
+        ('إدارة التدريب', 'إدارة التدريب'),
+        ('إدارة نظم المعلومات والحاسب الآلي', 'إدارة نظم المعلومات والحاسب الآلي'),
+        ('الإدارة المالية والمحاسبة', 'الإدارة المالية والمحاسبة'),
+        ('هيئة الإمداد والتموين', 'هيئة الإمداد والتموين'),
+        ('قيادة القوات البرية', 'قيادة القوات البرية'),
+    ]),
+    ('القوات الجوية', [
+        ('قاعدة وادي سيدنا الجوية', 'قاعدة وادي سيدنا الجوية'),
+        ('قاعدة الشهيد مختار الجوية', 'قاعدة الشهيد مختار الجوية'),
+        ('قاعدة الأبيض الجوية', 'قاعدة الأبيض الجوية'),
+        ('قاعدة مروي الجوية', 'قاعدة مروي الجوية'),
+        ('جناح المقاتلات', 'جناح المقاتلات'),
+        ('جناح النقل الجوي', 'جناح النقل الجوي'),
+        ('جناح المروحيات', 'جناح المروحيات'),
+        ('مجمع صيانة الطيران', 'مجمع صيانة الطيران'),
+        ('الملاحة والمراقبة الجوية', 'الملاحة والمراقبة الجوية'),
+        ('إدارة نظم المعلومات الجوية', 'إدارة نظم المعلومات الجوية'),
+        ('الإدارة المالية الجوية', 'الإدارة المالية الجوية'),
+        ('كلية القوات الجوية', 'كلية القوات الجوية'),
+        ('قيادة القوات الجوية', 'قيادة القوات الجوية'),
+    ]),
+    ('القوات البحرية', [
+        ('قاعدة بورتسودان البحرية', 'قاعدة بورتسودان البحرية'),
+        ('قاعدة فلامنجو البحرية', 'قاعدة فلامنجو البحرية'),
+        ('أسطول الزوارق والسفن', 'أسطول الزوارق والسفن'),
+        ('لواء المشاة البحرية', 'لواء المشاة البحرية'),
+        ('جناح الضفادع البشرية', 'جناح الضفادع البشرية'),
+        ('ورش الصيانة البحرية', 'ورش الصيانة البحرية'),
+        ('إدارة نظم المعلومات البحرية', 'إدارة نظم المعلومات البحرية'),
+        ('الإدارة المالية البحرية', 'الإدارة المالية البحرية'),
+        ('جناح الاتصالات الساحلية', 'جناح الاتصالات الساحلية'),
+        ('مركز تدريب القوات البحرية', 'مركز تدريب القوات البحرية'),
+        ('قيادة القوات البحرية', 'قيادة القوات البحرية'),
+    ]),
+    ('قوات الدفاع الجوي', [
+        ('لواء الصواريخ م/ط', 'لواء الصواريخ م/ط'),
+        ('كتائب المدفعية م/ط', 'كتائب المدفعية م/ط'),
+        ('مراكز الرادارات والإنذار المبكر', 'مراكز الرادارات والإنذار المبكر'),
+        ('قيادة السيطرة والتوجيه', 'قيادة السيطرة والتوجيه'),
+        ('الحرب الإلكترونية', 'الحرب الإلكترونية'),
+        ('سلاح الإشارة للدفاع الجوي', 'سلاح الإشارة للدفاع الجوي'),
+        ('ورش الصيانة الفنية للدفاع الجوي', 'ورش الصيانة الفنية للدفاع الجوي'),
+        ('مركز تدريب الدفاع الجوي', 'مركز تدريب الدفاع الجوي'),
+        ('قيادة قوات الدفاع الجوي', 'قيادة قوات الدفاع الجوي'),
+    ]),
+    ('المعاهد والكليات والمستشفيات العسكرية', [
+        ('معهد نظم المعلومات', 'معهد نظم المعلومات'),
+        ('الكلية الحربية', 'الكلية الحربية'),
+        ('جامعة كرري', 'جامعة كرري'),
+        ('أكاديمية نميري العسكرية العليا', 'أكاديمية نميري العسكرية العليا'),
+        ('معهد اللغات العسكري', 'معهد اللغات العسكري'),
+        ('السلاح الطبي / المستشفى العسكري', 'السلاح الطبي / المستشفى العسكري'),
+        ('مستشفى علياء التخصصي', 'مستشفى علياء التخصصي'),
+    ]),
+    ('خيارات مخصصة', [
+        ('__custom__', 'وحدة أخرى (كتابة يدوية)...'),
+    ]),
+]
+
 
 class TraineeForm(forms.ModelForm):
     class Meta:
@@ -634,12 +745,18 @@ class UserCreateForm(forms.ModelForm):
     rank = forms.CharField(
         label='الرتبة',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مثال: نقيب، رائد'})
+        widget=forms.Select(
+            choices=MILITARY_RANK_CHOICES,
+            attrs={'class': 'form-select', 'id': 'createUserRankSelect', 'onchange': 'toggleUserCustomRank("createUser")'}
+        )
     )
     unit = forms.CharField(
         label='الوحدة / الفرع',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مثال: جناح التعليم'})
+        widget=forms.Select(
+            choices=MILITARY_UNIT_CHOICES,
+            attrs={'class': 'form-select', 'id': 'createUserUnitSelect', 'onchange': 'toggleUserCustomUnit("createUser")'}
+        )
     )
     phone = forms.CharField(
         label='رقم الهاتف',
@@ -701,6 +818,20 @@ class UserCreateForm(forms.ModelForm):
             raise forms.ValidationError('اسم المستخدم هذا مسجل مسبقاً، الرجاء اختيار اسم آخر.')
         return username
 
+    def clean_rank(self):
+        val = self.cleaned_data.get('rank', '').strip()
+        custom_val = self.data.get('custom_rank', '').strip()
+        if val == '__custom__':
+            return custom_val
+        return val
+
+    def clean_unit(self):
+        val = self.cleaned_data.get('unit', '').strip()
+        custom_val = self.data.get('custom_unit', '').strip()
+        if val == '__custom__':
+            return custom_val
+        return val
+
 
 class UserEditForm(forms.ModelForm):
     """نموذج تعديل بيانات وصلاحيات وكلمة مرور المستخدم"""
@@ -724,12 +855,18 @@ class UserEditForm(forms.ModelForm):
     rank = forms.CharField(
         label='الرتبة',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.Select(
+            choices=MILITARY_RANK_CHOICES,
+            attrs={'class': 'form-select', 'id': 'editUserRankSelect', 'onchange': 'toggleUserCustomRank("editUser")'}
+        )
     )
     unit = forms.CharField(
         label='الوحدة / الفرع',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.Select(
+            choices=MILITARY_UNIT_CHOICES,
+            attrs={'class': 'form-select', 'id': 'editUserUnitSelect', 'onchange': 'toggleUserCustomUnit("editUser")'}
+        )
     )
     phone = forms.CharField(
         label='رقم الهاتف',
@@ -779,6 +916,40 @@ class UserEditForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '••••••••'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # إذا كانت الرتبة الحالية للمستخدم مخصصة وغير موجودة في الخيارات القياسية، نضيفها للخيارات
+        current_rank = self.initial.get('rank') or (self.instance.profile.rank if hasattr(self.instance, 'profile') else '')
+        if current_rank:
+            all_ranks = [opt[0] for grp in MILITARY_RANK_CHOICES for opt in (grp[1] if isinstance(grp[1], (list, tuple)) else [(grp[0], grp[1])])]
+            if current_rank not in all_ranks:
+                choices = list(self.fields['rank'].widget.choices)
+                choices.append(('رتب مسجلة مسبقاً', [(current_rank, current_rank)]))
+                self.fields['rank'].widget.choices = choices
+
+        # إذا كانت الوحدة الحالية للمستخدم مخصصة وغير موجودة في الخيارات القياسية، نضيفها للخيارات
+        current_unit = self.initial.get('unit') or (self.instance.profile.unit if hasattr(self.instance, 'profile') else '')
+        if current_unit:
+            all_units = [opt[0] for grp in MILITARY_UNIT_CHOICES for opt in (grp[1] if isinstance(grp[1], (list, tuple)) else [(grp[0], grp[1])])]
+            if current_unit not in all_units:
+                choices = list(self.fields['unit'].widget.choices)
+                choices.append(('وحدات مسجلة مسبقاً', [(current_unit, current_unit)]))
+                self.fields['unit'].widget.choices = choices
+
+    def clean_rank(self):
+        val = self.cleaned_data.get('rank', '').strip()
+        custom_val = self.data.get('custom_rank', '').strip()
+        if val == '__custom__':
+            return custom_val
+        return val
+
+    def clean_unit(self):
+        val = self.cleaned_data.get('unit', '').strip()
+        custom_val = self.data.get('custom_unit', '').strip()
+        if val == '__custom__':
+            return custom_val
+        return val
 
     class Meta:
         model = User

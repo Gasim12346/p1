@@ -55,10 +55,12 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">الرتبة</label>
                             {{ form.rank }}
+                            <input type="text" name="custom_rank" id="editUserCustomRank" class="form-control form-control-sm mt-2" style="display: none;" placeholder="اكتب الرتبة يدوياً...">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">الوحدة</label>
                             {{ form.unit }}
+                            <input type="text" name="custom_unit" id="editUserCustomUnit" class="form-control form-control-sm mt-2" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً...">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold small">رقم الهاتف</label>
@@ -178,8 +180,107 @@
 
 {% block extra_js %}
 <script>
+// إظهار أو إخفاء حقل كتابة الرتبة يدوياً عند اختيار خيار أخرى
+function toggleUserCustomRank(prefix) {
+    const sel = document.getElementById(prefix + 'RankSelect');
+    const custom = document.getElementById(prefix + 'CustomRank');
+    if (!sel || !custom) return;
+    if (sel.value === '__custom__') {
+        custom.style.display = 'block';
+        custom.focus();
+    } else {
+        custom.style.display = 'none';
+        custom.value = '';
+    }
+}
+
+// إظهار أو إخفاء حقل كتابة الوحدة يدوياً عند اختيار خيار أخرى
+function toggleUserCustomUnit(prefix) {
+    const sel = document.getElementById(prefix + 'UnitSelect');
+    const custom = document.getElementById(prefix + 'CustomUnit');
+    if (!sel || !custom) return;
+    if (sel.value === '__custom__') {
+        custom.style.display = 'block';
+        custom.focus();
+    } else {
+        custom.style.display = 'none';
+        custom.value = '';
+    }
+}
+
+const INSTRUCTORS_DATA_MAP = {
+    {% for inst in instructors %}
+    "{{ inst.id }}": {
+        "military_number": "{{ inst.military_number|escapejs }}",
+        "rank": "{{ inst.rank|escapejs }}",
+        "unit": "{{ inst.unit|default:''|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.querySelector('select[name="role"]');
+    const instSelect = document.querySelector('select[name="instructor"]');
+
+    if (instSelect) {
+        instSelect.addEventListener('change', function() {
+            const instId = this.value;
+            if (instId && INSTRUCTORS_DATA_MAP[instId]) {
+                const data = INSTRUCTORS_DATA_MAP[instId];
+                const milInput = document.querySelector('input[name="military_number"]');
+                const rankSelect = document.getElementById('editUserRankSelect');
+                const unitSelect = document.getElementById('editUserUnitSelect');
+                const customRank = document.getElementById('editUserCustomRank');
+                const customUnit = document.getElementById('editUserCustomUnit');
+
+                if (milInput && data.military_number) {
+                    milInput.value = data.military_number;
+                }
+
+                if (rankSelect && data.rank) {
+                    let foundRank = false;
+                    for (let i = 0; i < rankSelect.options.length; i++) {
+                        if (rankSelect.options[i].value === data.rank) {
+                            rankSelect.selectedIndex = i;
+                            foundRank = true;
+                            break;
+                        }
+                    }
+                    if (!foundRank) {
+                        rankSelect.value = '__custom__';
+                        if (customRank) {
+                            customRank.style.display = 'block';
+                            customRank.value = data.rank;
+                        }
+                    } else if (customRank) {
+                        customRank.style.display = 'none';
+                        customRank.value = '';
+                    }
+                }
+
+                if (unitSelect && data.unit) {
+                    let foundUnit = false;
+                    for (let i = 0; i < unitSelect.options.length; i++) {
+                        if (unitSelect.options[i].value === data.unit) {
+                            unitSelect.selectedIndex = i;
+                            foundUnit = true;
+                            break;
+                        }
+                    }
+                    if (!foundUnit) {
+                        unitSelect.value = '__custom__';
+                        if (customUnit) {
+                            customUnit.style.display = 'block';
+                            customUnit.value = data.unit;
+                        }
+                    } else if (customUnit) {
+                        customUnit.style.display = 'none';
+                        customUnit.value = '';
+                    }
+                }
+            }
+        });
+    }
     const manageEl = document.getElementById('edit_perm_manage_users');
     const viewEl = document.getElementById('edit_perm_view');
     const addEl = document.getElementById('edit_perm_add');
