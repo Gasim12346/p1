@@ -21,14 +21,18 @@
                 <small class="opacity-75">{{ session.session_code }} • تصنيف: {{ session.course.category.name }}</small>
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <a href="{% url 'training:results_entry' session.id %}" class="btn btn-warning fw-bold text-dark rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
                 <i class="bi bi-award-fill"></i>
                 <span>رصد درجات هذه الدورة</span>
             </a>
-            <button type="button" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addExtraTraineesModal">
-                <i class="bi bi-person-plus-fill"></i>
-                <span>إلحاق دارسين إضافيين</span>
+            <button type="button" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1 border" data-bs-toggle="modal" data-bs-target="#addExtraTraineesModal" onclick="switchAddTraineeTab('existing')">
+                <i class="bi bi-people-fill text-primary"></i>
+                <span>إلحاق دارسين (من قاعدة البيانات)</span>
+            </button>
+            <button type="button" class="btn btn-white fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1 border" style="background: #ffffff; color: #047857;" data-bs-toggle="modal" data-bs-target="#addExtraTraineesModal" onclick="switchAddTraineeTab('new')">
+                <i class="bi bi-person-plus-fill text-success"></i>
+                <span>+ إضافة دارس جديد</span>
             </button>
         </div>
     </div>
@@ -148,12 +152,20 @@
 
 <!-- Enrolled Trainees List & Rank/Unit Editing -->
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-        <div>
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-person-lines-fill text-primary"></i>
-                قائمة الدارسين وتعديل الرتب والوحدات
-            </h5>
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-person-lines-fill text-primary"></i>
+            قائمة الدارسين وتعديل الرتب والوحدات
+        </h5>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addExtraTraineesModal" onclick="switchAddTraineeTab('existing')">
+                <i class="bi bi-people-fill"></i>
+                <span>إلحاق من قاعدة البيانات</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addExtraTraineesModal" onclick="switchAddTraineeTab('new')">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>+ إضافة دارس جديد</span>
+            </button>
         </div>
     </div>
 
@@ -346,177 +358,511 @@
     </form>
 </div>
 
-<!-- Modal: Add Extra Trainees -->
+<!-- Modal: Add / Register Trainees -->
 <div class="modal fade" id="addExtraTraineesModal" tabindex="-1" aria-labelledby="addExtraTraineesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white py-3 px-4">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-plus-fill fs-5"></i>
-                    <h5 class="modal-title fw-bold" id="addExtraTraineesModalLabel">إلحاق دارسين إضافيين بهذه الدورة</h5>
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                        <i class="bi bi-person-vcard fs-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="addExtraTraineesModalLabel">إضافة وإلحاق الدارسين بالدورة التدريبية</h5>
+                        <small class="opacity-90">يمكنك إلحاق دارسين مسجلين في قاعدة البيانات أو تسجيل دارس جديد كلياً وحفظه بالنظام</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
 
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <input type="hidden" name="add_extra_trainees" value="1">
+            <!-- Tabs Nav -->
+            <div class="p-3 bg-light border-bottom">
+                <ul class="nav nav-pills nav-fill gap-2" id="addTraineesPills" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold py-2 px-3 rounded-pill d-flex align-items-center justify-content-center gap-2" id="tab-modal-existing" data-bs-toggle="pill" data-bs-target="#pane-modal-existing" type="button" role="tab">
+                            <i class="bi bi-people-fill fs-5"></i>
+                            <span>1. إلحاق من الدارسين المسجلين في قاعدة البيانات</span>
+                            <span class="badge bg-primary text-white rounded-pill ms-1">{{ available_trainees|length }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-2 px-3 rounded-pill d-flex align-items-center justify-content-center gap-2" id="tab-modal-new" data-bs-toggle="pill" data-bs-target="#pane-modal-new" type="button" role="tab">
+                            <i class="bi bi-person-plus-fill fs-5"></i>
+                            <span>2. تسجيل طالب جديد وحفظه في قاعدة البيانات</span>
+                            <span class="badge bg-success text-white rounded-pill ms-1">تسجيل جديد</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
-                <div class="modal-body p-4">
-                    {% if available_trainees %}
-                        <!-- Filter toolbar inside modal -->
-                        <div class="bg-light p-2 rounded-3 mb-3 border">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-sm-5">
-                                    <input type="text" id="modalSearchInput" class="form-control form-control-sm" placeholder="بحث بالاسم أو النمرة..." oninput="applyModalFilters()">
+            <div class="tab-content" id="addTraineesPillsContent">
+                <!-- ========================================================
+                     TAB 1: إلحاق من دارسي قاعدة البيانات الحاليين
+                     ======================================================== -->
+                <div class="tab-pane fade show active" id="pane-modal-existing" role="tabpanel">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="add_extra_trainees" value="1">
+
+                        <div class="modal-body p-4">
+                            {% if available_trainees %}
+                                <!-- Filter toolbar inside modal -->
+                                <div class="bg-light p-2 rounded-3 mb-3 border">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-sm-5">
+                                            <input type="text" id="modalSearchInput" class="form-control form-control-sm" placeholder="بحث بالاسم أو النمرة..." oninput="applyModalFilters()">
+                                        </div>
+                                        <div class="col-sm-7">
+                                            <div class="d-flex flex-wrap justify-content-sm-end gap-1">
+                                                <button type="button" class="btn btn-sm btn-dark active py-0 px-2" id="btn-modal-all" onclick="filterModalByCat('all', this)">مشتركة</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" id="btn-modal-officer" onclick="filterModalByCat('officer', this)">ضباط</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" id="btn-modal-nco" onclick="filterModalByCat('nco', this)">ضباط صف</button>
+                                                <button type="button" class="btn btn-sm btn-outline-purple py-0 px-2" style="color: #7e22ce; border-color: #7e22ce;" id="btn-modal-civilian" onclick="filterModalByCat('civilian', this)">مدنيين</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-sm-7">
-                                    <div class="d-flex flex-wrap justify-content-sm-end gap-1">
-                                        <button type="button" class="btn btn-sm btn-dark active py-0 px-2" id="btn-modal-all" onclick="filterModalByCat('all', this)">مشتركة</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" id="btn-modal-officer" onclick="filterModalByCat('officer', this)">ضباط</button>
-                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" id="btn-modal-nco" onclick="filterModalByCat('nco', this)">ضباط صف</button>
-                                        <button type="button" class="btn btn-sm btn-outline-purple py-0 px-2" style="color: #7e22ce; border-color: #7e22ce;" id="btn-modal-civilian" onclick="filterModalByCat('civilian', this)">مدنيين</button>
+
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                                        <thead class="bg-light text-muted small">
+                                            <tr>
+                                                <th style="min-width: 45px;">تحديد</th>
+                                                <th style="min-width: 100px;">النمرة</th>
+                                                <th style="min-width: 150px;">الاسم</th>
+                                                <th style="min-width: 80px;">التصنيف</th>
+                                                <th style="min-width: 140px;">الرتبة</th>
+                                                <th style="min-width: 140px;">القوة</th>
+                                                <th style="min-width: 170px;">الوحدة</th>
+                                                <th style="min-width: 140px;">تاريخ أمر التحرك</th>
+                                                <th style="min-width: 200px;">صورة scan لأمر التحرك</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for t in available_trainees %}
+                                                <tr class="modal-trainee-row {% if t.military_number in passed_trainees_for_session %}table-light opacity-75{% endif %}" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}">
+                                                    <td class="text-center">
+                                                        {% if t.military_number in passed_trainees_for_session %}
+                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2" style="font-size: 0.72rem;" title="اجتاز هذه الدورة بنجاح مسبقاً (محظور)">
+                                                                <i class="bi bi-shield-x me-1"></i>ناجح مسبقاً
+                                                            </span>
+                                                        {% else %}
+                                                            <input type="checkbox" name="extra_trainees" value="{{ t.military_number }}" class="form-check-input" style="width: 18px; height: 18px;">
+                                                        {% endif %}
+                                                    </td>
+                                                    <td><span class="badge bg-light text-dark border">{{ t.military_number }}</span></td>
+                                                    <td>
+                                                        <strong>{{ t.name }}</strong>
+                                                        {% if t.military_number in passed_trainees_for_session %}
+                                                            <small class="text-danger d-block fw-bold" style="font-size: 0.75rem;">
+                                                                اجتاز الدورة مسبقاً (محظور إعادة التسجيل)
+                                                            </small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if t.category == 'officer' %}
+                                                            <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
+                                                        {% elif t.category == 'nco' %}
+                                                            <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
+                                                        {% else %}
+                                                            <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <!-- الرتبة -->
+                                                    <td>
+                                                        <input type="hidden" name="extra_rank_{{ t.military_number }}" id="extra_final_rank_{{ t.military_number }}" value="">
+                                                        <select id="extra_rank_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleExtraRankSelect('{{ t.military_number }}')">
+                                                            <option value="">-- اختر الرتبة --</option>
+                                                            {% if t.category == 'officer' %}
+                                                                <option value="ملازم">ملازم</option>
+                                                                <option value="ملازم أول">ملازم أول</option>
+                                                                <option value="نقيب">نقيب</option>
+                                                                <option value="رائد">رائد</option>
+                                                                <option value="مقدم">مقدم</option>
+                                                                <option value="عقيد">عقيد</option>
+                                                                <option value="عميد">عميد</option>
+                                                                <option value="لواء">لواء</option>
+                                                                <option value="فريق">فريق</option>
+                                                                <option value="فريق أول">فريق أول</option>
+                                                            {% elif t.category == 'nco' %}
+                                                                <option value="جندي">جندي</option>
+                                                                <option value="وكيل عريف">وكيل عريف</option>
+                                                                <option value="عريف">عريف</option>
+                                                                <option value="رقيب">رقيب</option>
+                                                                <option value="رقيب أول">رقيب أول</option>
+                                                                <option value="مساعد">مساعد</option>
+                                                                <option value="مساعد أول">مساعد أول</option>
+                                                            {% else %}
+                                                                <option value="موظف">موظف</option>
+                                                                <option value="مهندس">مهندس</option>
+                                                                <option value="إداري">إداري</option>
+                                                                <option value="فني">فني</option>
+                                                                <option value="محاسب">محاسب</option>
+                                                                <option value="أخصائي">أخصائي</option>
+                                                                <option value="باحث">باحث</option>
+                                                                <option value="مستشار">مستشار</option>
+                                                                <option value="كاتب">كاتب</option>
+                                                            {% endif %}
+                                                            <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
+                                                        </select>
+                                                        <input type="text" id="extra_custom_rank_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncExtraRank('{{ t.military_number }}')">
+                                                    </td>
+                                                    <!-- القوة -->
+                                                    <td>
+                                                        <select name="extra_force_{{ t.military_number }}" id="extra_force_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleExtraForceChange('{{ t.military_number }}')">
+                                                            <option value="">-- اختر القوة --</option>
+                                                            <option value="القوات البرية" {% if t.force == 'القوات البرية' %}selected{% endif %}>القوات البرية</option>
+                                                            <option value="القوات البحرية" {% if t.force == 'القوات البحرية' %}selected{% endif %}>القوات البحرية</option>
+                                                            <option value="القوات الجوية" {% if t.force == 'القوات الجوية' %}selected{% endif %}>القوات الجوية</option>
+                                                            <option value="قوات الدفاع الجوي" {% if t.force == 'قوات الدفاع الجوي' %}selected{% endif %}>قوات الدفاع الجوي</option>
+                                                        </select>
+                                                    </td>
+                                                    <!-- الوحدة -->
+                                                    <td>
+                                                        <input type="hidden" name="extra_unit_{{ t.military_number }}" id="extra_final_unit_{{ t.military_number }}" value="{{ t.unit|default:'' }}">
+                                                        <select id="extra_unit_select_{{ t.military_number }}" class="form-select form-select-sm bg-light" data-initial-unit="{{ t.unit|default:'' }}" onchange="handleExtraUnitSelect('{{ t.military_number }}')" disabled>
+                                                            <option value="">-- اختر القوة أولاً --</option>
+                                                        </select>
+                                                        <input type="text" id="extra_custom_unit_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="syncExtraUnit('{{ t.military_number }}')">
+                                                    </td>
+                                                    <!-- تاريخ أمر التحرك -->
+                                                    <td>
+                                                        <input type="date" name="extra_movement_order_date_{{ t.military_number }}" class="form-control form-control-sm">
+                                                    </td>
+                                                    <!-- صورة أمر التحرك -->
+                                                    <td>
+                                                        <input type="file" name="extra_movement_order_file_{{ t.military_number }}" class="form-control form-control-sm" accept="image/*,.pdf">
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            <tr id="modalNoMatchRow" style="display: none;">
+                                                <td colspan="9" class="text-center py-4 text-muted">
+                                                    لا توجد نتائج مطابقة للتصنيف أو البحث.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    جميع الدارسين المسجلين بالنظام ملتحقون بالفعل بهذه الدورة!
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4">
+                            <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+                            {% if available_trainees %}
+                                <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm">
+                                    <i class="bi bi-person-check-fill me-1"></i> إلحاق الدارسين المحددين بالدورة
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ========================================================
+                     TAB 2: تسجيل طالب جديد وحفظه في قاعدة البيانات وإلحاقه
+                     ======================================================== -->
+                <div class="tab-pane fade" id="pane-modal-new" role="tabpanel">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="register_and_enroll_new_trainee" value="1">
+
+                        <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
+                            <!-- تنبيه توضيحي -->
+                            <div class="alert alert-success bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 d-flex align-items-center gap-2 mb-4 py-2 text-dark">
+                                <i class="bi bi-shield-check fs-5 text-success"></i>
+                                <div class="small">
+                                    <strong>تسجيل فوري:</strong> سيتم حفظ بيانات هذا الدارس الجديد مباشرة في قاعدة البيانات العامة للنظام، مع إلحاقه بهذه الدورة التدريبية فوراً.
+                                </div>
+                            </div>
+
+                            <!-- القسم 1: البيانات الأساسية للدارس -->
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                    <span class="badge bg-primary rounded-circle p-2"><i class="bi bi-person-vcard fs-6"></i></span>
+                                    <h6 class="fw-bold text-dark mb-0">1. البيانات الأساسية للدارس</h6>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold text-dark">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
+                                        {{ trainee_form.military_number }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold text-dark">التصنيف <span class="text-danger">*</span></label>
+                                        <select name="category" id="new_trainee_category" class="form-select form-select-lg" required onchange="handleNewTraineeCategoryChange()">
+                                            <option value="officer" selected>ضباط</option>
+                                            <option value="nco">ضباط صف</option>
+                                            <option value="civilian">مدنيين</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">الاسم الكامل <span class="text-danger">*</span></label>
+                                        {{ trainee_form.name }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-bold text-dark">الدفعة (رقمي)</label>
+                                        {{ trainee_form.batch }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القسم 2: الرتبة والقوة والوحدة وأمر التحرك للدورة -->
+                            <div class="mb-4 bg-light p-3 rounded-4 border">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                    <span class="badge bg-success rounded-circle p-2"><i class="bi bi-shield-fill-check fs-6"></i></span>
+                                    <h6 class="fw-bold text-dark mb-0">2. الرتبة والقوة والوحدة وأمر التحرك للدورة</h6>
+                                </div>
+                                <div class="row g-3">
+                                    <!-- الرتبة -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">الرتبة في الدورة</label>
+                                        <input type="hidden" name="new_rank" id="new_final_rank" value="">
+                                        <select id="new_rank_select" class="form-select form-select-lg" onchange="handleNewRankSelect()">
+                                            <option value="">-- اختر الرتبة --</option>
+                                        </select>
+                                        <input type="text" id="new_custom_rank" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncNewRank()">
+                                    </div>
+
+                                    <!-- القوة -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">القوة العسكرية</label>
+                                        <select name="new_force" id="new_force_select" class="form-select form-select-lg" onchange="handleNewForceChange()">
+                                            <option value="">-- اختر القوة --</option>
+                                            <option value="القوات البرية" selected>القوات البرية</option>
+                                            <option value="القوات البحرية">القوات البحرية</option>
+                                            <option value="القوات الجوية">القوات الجوية</option>
+                                            <option value="قوات الدفاع الجوي">قوات الدفاع الجوي</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- الوحدة -->
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">الوحدة التابعة</label>
+                                        <input type="hidden" name="new_unit" id="new_final_unit" value="">
+                                        <select id="new_unit_select" class="form-select form-select-lg" onchange="handleNewUnitSelect()">
+                                            <option value="">-- اختر الوحدة من القائمة --</option>
+                                        </select>
+                                        <input type="text" id="new_custom_unit" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="syncNewUnit()">
+                                    </div>
+
+                                    <!-- تاريخ أمر التحرك -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-dark">تاريخ أمر التحرك الخاص بالدارس</label>
+                                        <input type="date" name="new_movement_order_date" class="form-control form-control-lg">
+                                        <div class="form-text text-muted small">تاريخ الأمر المعتمد للتحرك إلى هذه الدورة التدريبية.</div>
+                                    </div>
+
+                                    <!-- صورة أمر التحرك -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-dark">صورة scan لأمر التحرك (Scan)</label>
+                                        <input type="file" name="new_movement_order_file" class="form-control form-control-lg" accept="image/*,.pdf">
+                                        <div class="form-text text-muted small">إرفاق المستند الضوئي أو صورة أمر التحرك الخاص بالدارس.</div>
+                                    </div>
+
+                                    <!-- خيار الإلحاق بالدورة -->
+                                    <div class="col-12 mt-2">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="enroll_in_session" value="1" id="enrollInSessionCheck" checked style="width: 2.2rem; height: 1.2rem;">
+                                            <label class="form-check-label fw-bold text-success me-2" for="enrollInSessionCheck">
+                                                إلحاق الدارس بهذه الدورة التدريبية فوراً بعد حفظه في قاعدة البيانات
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القسم 3: بيانات السكن ورقم الهاتف -->
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                    <span class="badge bg-secondary rounded-circle p-2"><i class="bi bi-geo-alt-fill fs-6"></i></span>
+                                    <h6 class="fw-bold text-dark mb-0">3. بيانات السكن ورقم الهاتف</h6>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">رقم الهاتف</label>
+                                        {{ trainee_form.phone }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">
+                                            <i class="bi bi-map text-primary me-1"></i> الولاية
+                                        </label>
+                                        <input type="hidden" name="residence_state" id="new_final_residence_state" value="">
+                                        <select id="new_state_select" class="form-select form-select-lg" onchange="handleNewStateChange()">
+                                            <option value="">-- اختر الولاية من القائمة --</option>
+                                            <option value="الخرطوم">ولاية الخرطوم</option>
+                                            <option value="الجزيرة">ولاية الجزيرة</option>
+                                            <option value="البحر الأحمر">ولاية البحر الأحمر</option>
+                                            <option value="كسلا">ولاية كسلا</option>
+                                            <option value="القضارف">ولاية القضارف</option>
+                                            <option value="سنار">ولاية سنار</option>
+                                            <option value="النيل الأبيض">ولاية النيل الأبيض</option>
+                                            <option value="النيل الأزرق">ولاية النيل الأزرق</option>
+                                            <option value="نهر النيل">ولاية نهر النيل</option>
+                                            <option value="الشمالية">الولاية الشمالية</option>
+                                            <option value="شمال كردفان">ولاية شمال كردفان</option>
+                                            <option value="جنوب كردفان">ولاية جنوب كردفان</option>
+                                            <option value="غرب كردفان">ولاية غرب كردفان</option>
+                                            <option value="شمال دارفور">ولاية شمال دارفور</option>
+                                            <option value="جنوب دارفور">ولاية جنوب دارفور</option>
+                                            <option value="غرب دارفور">ولاية غرب دارفور</option>
+                                            <option value="وسط دارفور">ولاية وسط دارفور</option>
+                                            <option value="شرق دارفور">ولاية شرق دارفور</option>
+                                            <option value="__custom__">✍️ ولاية أخرى (كتابة يدوية)</option>
+                                        </select>
+                                        <input type="text" id="new_custom_state" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم الولاية يدوياً" oninput="syncNewState()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">
+                                            <i class="bi bi-buildings text-primary me-1"></i> المدينة
+                                        </label>
+                                        <input type="hidden" name="residence_city" id="new_final_residence_city" value="">
+                                        <select id="new_city_select" class="form-select form-select-lg bg-light" onchange="handleNewCityChange()" disabled>
+                                            <option value="">-- اختر الولاية أولاً لعرض مدنها --</option>
+                                        </select>
+                                        <input type="text" id="new_custom_city" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم المدينة يدوياً" oninput="syncNewCity()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">الحي</label>
+                                        {{ trainee_form.residence_neighborhood }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">المربع / الحارة</label>
+                                        {{ trainee_form.residence_block }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold text-dark">رقم المنزل</label>
+                                        {{ trainee_form.residence_house_number }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- القسم 4: أقرب الأقربين (4 أقارب) -->
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-people-fill fs-6"></i></span>
+                                        <h6 class="fw-bold text-dark mb-0">4. أقرب الأقربين (4 أقارب للتواصل وحالات الطوارئ)</h6>
+                                    </div>
+                                    <span class="badge bg-light text-muted border">4 أقارب</span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <!-- القريب 1 -->
+                                    <div class="col-12">
+                                        <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                            <div class="fw-bold text-primary mb-2 small"><i class="bi bi-1-circle-fill me-1"></i> القريب الأول (الأساسي)</div>
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                                    {{ trainee_form.relative_1_name }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                                    {{ trainee_form.relative_1_kinship }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                                    {{ trainee_form.relative_1_phone }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                                    {{ trainee_form.relative_1_address }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- القريب 2 -->
+                                    <div class="col-12">
+                                        <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                            <div class="fw-bold text-primary mb-2 small"><i class="bi bi-2-circle-fill me-1"></i> القريب الثاني</div>
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                                    {{ trainee_form.relative_2_name }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                                    {{ trainee_form.relative_2_kinship }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                                    {{ trainee_form.relative_2_phone }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                                    {{ trainee_form.relative_2_address }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- القريب 3 -->
+                                    <div class="col-12">
+                                        <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                            <div class="fw-bold text-primary mb-2 small"><i class="bi bi-3-circle-fill me-1"></i> القريب الثالث</div>
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                                    {{ trainee_form.relative_3_name }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                                    {{ trainee_form.relative_3_kinship }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                                    {{ trainee_form.relative_3_phone }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                                    {{ trainee_form.relative_3_address }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- القريب 4 -->
+                                    <div class="col-12">
+                                        <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                            <div class="fw-bold text-primary mb-2 small"><i class="bi bi-4-circle-fill me-1"></i> القريب الرابع</div>
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                                    {{ trainee_form.relative_4_name }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                                    {{ trainee_form.relative_4_kinship }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                                    {{ trainee_form.relative_4_phone }}
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                                    {{ trainee_form.relative_4_address }}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
-                            <table class="table table-hover align-middle mb-0 text-nowrap">
-                                <thead class="bg-light text-muted small">
-                                    <tr>
-                                        <th style="min-width: 45px;">تحديد</th>
-                                        <th style="min-width: 100px;">النمرة</th>
-                                        <th style="min-width: 150px;">الاسم</th>
-                                        <th style="min-width: 80px;">التصنيف</th>
-                                        <th style="min-width: 140px;">الرتبة</th>
-                                        <th style="min-width: 140px;">القوة</th>
-                                        <th style="min-width: 170px;">الوحدة</th>
-                                        <th style="min-width: 140px;">تاريخ أمر التحرك</th>
-                                        <th style="min-width: 200px;">صورة scan لأمر التحرك</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for t in available_trainees %}
-                                        <tr class="modal-trainee-row {% if t.military_number in passed_trainees_for_session %}table-light opacity-75{% endif %}" data-category="{{ t.category }}" data-search="{{ t.name }} {{ t.military_number }} {{ t.force }} {{ t.unit }}">
-                                            <td class="text-center">
-                                                {% if t.military_number in passed_trainees_for_session %}
-                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2" style="font-size: 0.72rem;" title="اجتاز هذه الدورة بنجاح مسبقاً (محظور)">
-                                                        <i class="bi bi-shield-x me-1"></i>ناجح مسبقاً
-                                                    </span>
-                                                {% else %}
-                                                    <input type="checkbox" name="extra_trainees" value="{{ t.military_number }}" class="form-check-input" style="width: 18px; height: 18px;">
-                                                {% endif %}
-                                            </td>
-                                            <td><span class="badge bg-light text-dark border">{{ t.military_number }}</span></td>
-                                            <td>
-                                                <strong>{{ t.name }}</strong>
-                                                {% if t.military_number in passed_trainees_for_session %}
-                                                    <small class="text-danger d-block fw-bold" style="font-size: 0.75rem;">
-                                                        اجتاز الدورة مسبقاً (محظور إعادة التسجيل)
-                                                    </small>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if t.category == 'officer' %}
-                                                    <span class="badge badge-officer px-2 py-1 rounded-pill">ضباط</span>
-                                                {% elif t.category == 'nco' %}
-                                                    <span class="badge badge-nco px-2 py-1 rounded-pill">ضباط صف</span>
-                                                {% else %}
-                                                    <span class="badge badge-civilian px-2 py-1 rounded-pill">مدنيين</span>
-                                                {% endif %}
-                                            </td>
-                                            <!-- الرتبة -->
-                                            <td>
-                                                <input type="hidden" name="extra_rank_{{ t.military_number }}" id="extra_final_rank_{{ t.military_number }}" value="">
-                                                <select id="extra_rank_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleExtraRankSelect('{{ t.military_number }}')">
-                                                    <option value="">-- اختر الرتبة --</option>
-                                                    {% if t.category == 'officer' %}
-                                                        <option value="ملازم">ملازم</option>
-                                                        <option value="ملازم أول">ملازم أول</option>
-                                                        <option value="نقيب">نقيب</option>
-                                                        <option value="رائد">رائد</option>
-                                                        <option value="مقدم">مقدم</option>
-                                                        <option value="عقيد">عقيد</option>
-                                                        <option value="عميد">عميد</option>
-                                                        <option value="لواء">لواء</option>
-                                                        <option value="فريق">فريق</option>
-                                                        <option value="فريق أول">فريق أول</option>
-                                                    {% elif t.category == 'nco' %}
-                                                        <option value="جندي">جندي</option>
-                                                        <option value="وكيل عريف">وكيل عريف</option>
-                                                        <option value="عريف">عريف</option>
-                                                        <option value="رقيب">رقيب</option>
-                                                        <option value="رقيب أول">رقيب أول</option>
-                                                        <option value="مساعد">مساعد</option>
-                                                        <option value="مساعد أول">مساعد أول</option>
-                                                    {% else %}
-                                                        <option value="موظف">موظف</option>
-                                                        <option value="مهندس">مهندس</option>
-                                                        <option value="إداري">إداري</option>
-                                                        <option value="فني">فني</option>
-                                                        <option value="محاسب">محاسب</option>
-                                                        <option value="أخصائي">أخصائي</option>
-                                                        <option value="باحث">باحث</option>
-                                                        <option value="مستشار">مستشار</option>
-                                                        <option value="كاتب">كاتب</option>
-                                                    {% endif %}
-                                                    <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
-                                                </select>
-                                                <input type="text" id="extra_custom_rank_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncExtraRank('{{ t.military_number }}')">
-                                            </td>
-                                            <!-- القوة -->
-                                            <td>
-                                                <select name="extra_force_{{ t.military_number }}" id="extra_force_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleExtraForceChange('{{ t.military_number }}')">
-                                                    <option value="">-- اختر القوة --</option>
-                                                    <option value="القوات البرية" {% if t.force == 'القوات البرية' %}selected{% endif %}>القوات البرية</option>
-                                                    <option value="القوات البحرية" {% if t.force == 'القوات البحرية' %}selected{% endif %}>القوات البحرية</option>
-                                                    <option value="القوات الجوية" {% if t.force == 'القوات الجوية' %}selected{% endif %}>القوات الجوية</option>
-                                                    <option value="قوات الدفاع الجوي" {% if t.force == 'قوات الدفاع الجوي' %}selected{% endif %}>قوات الدفاع الجوي</option>
-                                                </select>
-                                            </td>
-                                            <!-- الوحدة -->
-                                            <td>
-                                                <input type="hidden" name="extra_unit_{{ t.military_number }}" id="extra_final_unit_{{ t.military_number }}" value="{{ t.unit|default:'' }}">
-                                                <select id="extra_unit_select_{{ t.military_number }}" class="form-select form-select-sm bg-light" data-initial-unit="{{ t.unit|default:'' }}" onchange="handleExtraUnitSelect('{{ t.military_number }}')" disabled>
-                                                    <option value="">-- اختر القوة أولاً --</option>
-                                                </select>
-                                                <input type="text" id="extra_custom_unit_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب اسم الوحدة يدوياً" oninput="syncExtraUnit('{{ t.military_number }}')">
-                                            </td>
-                                            <!-- تاريخ أمر التحرك -->
-                                            <td>
-                                                <input type="date" name="extra_movement_order_date_{{ t.military_number }}" class="form-control form-control-sm">
-                                            </td>
-                                            <!-- صورة أمر التحرك -->
-                                            <td>
-                                                <input type="file" name="extra_movement_order_file_{{ t.military_number }}" class="form-control form-control-sm" accept="image/*,.pdf">
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                    <tr id="modalNoMatchRow" style="display: none;">
-                                        <td colspan="9" class="text-center py-4 text-muted">
-                                            لا توجد نتائج مطابقة للتصنيف أو البحث.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4 d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-success rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>حفظ الدارس بقاعدة البيانات وإلحاقه بالدورة</span>
+                            </button>
                         </div>
-                    {% else %}
-                        <div class="text-center py-4 text-muted">
-                            جميع الدارسين المسجلين بالنظام ملتحقون بالفعل بهذه الدورة!
-                        </div>
-                    {% endif %}
+                    </form>
                 </div>
-
-                <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4">
-                    <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-                    {% if available_trainees %}
-                        <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm">
-                            إلحاق الدارسين المحددين
-                        </button>
-                    {% endif %}
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -1035,8 +1381,254 @@
         }
     }
 
+    // ==========================================
+    // إدارة تسجيل طالب جديد في قاعدة البيانات (Tab 2)
+    // ==========================================
+    const RANKS_BY_CATEGORY = {
+        'officer': ['ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول'],
+        'nco': ['جندي', 'وكيل عريف', 'عريف', 'رقيب', 'رقيب أول', 'مساعد', 'مساعد أول'],
+        'civilian': ['موظف', 'مهندس', 'إداري', 'فني', 'محاسب', 'أخصائي', 'باحث', 'مستشار', 'كاتب']
+    };
+
+    const SUDAN_STATES_CITIES = {
+        'الخرطوم': ['الخرطوم', 'أم درمان', 'بحري', 'شرق النيل', 'جبل أولياء'],
+        'الجزيرة': ['ود مدني', 'المناقل', 'الحصاحيصا', 'الكاملين', 'رفاعة', 'طابت', 'أم القرى', '24 القرشي', 'المسلمية'],
+        'البحر الأحمر': ['بورتسودان', 'سواكن', 'سنكات', 'طوكر', 'جبيت', 'حلايب', 'درديب'],
+        'كسلا': ['كسلا', 'حلفا الجديدة', 'خشم القربة', 'أروما', 'همشكوريب', 'ود الحليو', 'تلكوك'],
+        'القضارف': ['القضارف', 'الفاو', 'القلابات', 'الحواتة', 'دوكة', 'الرهد', 'الفشقة'],
+        'سنار': ['سنجة', 'سنار', 'الدندر', 'السوكي', 'أبو حجار', 'مايرنو', 'الدالي والمزموم'],
+        'النيل الأبيض': ['ربك', 'كوستي', 'الدويم', 'القطينة', 'تندلتي', 'الجبلين', 'أم رميتة', 'قلي'],
+        'النيل الأزرق': ['الدمازين', 'الروصيرص', 'باو', 'الكرمك', 'قيسان', 'التضامن'],
+        'نهر النيل': ['الدامر', 'عطبرة', 'شندي', 'بربر', 'المتمة', 'أبو حمد', 'البحيرة'],
+        'الشمالية': ['دنقلا', 'مروي', 'الدبة', 'وادي حلفا', 'كرمة', 'القولد', 'البرقيق'],
+        'شمال كردفان': ['الأبيض', 'أم روابة', 'بارا', 'الرهد', 'سودري', 'جبرة الشيخ', 'غرب بارا'],
+        'جنوب كردفان': ['كادقلي', 'الدلنج', 'تلودي', 'هبيلا', 'الليري', 'رشاد', 'أبو جبيهة', 'العباسية'],
+        'غرب كردفان': ['الفولة', 'النهود', 'بابنوسة', 'المجلد', 'غبيش', 'أبو زبد', 'ود بندة'],
+        'شمال دارفور': ['الفاشر', 'كتم', 'مليط', 'كبكابية', 'أم كدادة', 'طويلة', 'سرف عمرة'],
+        'جنوب دارفور': ['نيالا', 'كاس', 'برام', 'تلس', 'عد الفرسان', 'رهيد البردي', 'قريضة'],
+        'غرب دارفور': ['الجنينة', 'كلبس', 'سربا', 'بيضة', 'كرينك', 'هبيلا'],
+        'وسط دارفور': ['زالنجي', 'وادي صالح', 'نيرتتي', 'قارسلا', 'مكجر', 'بندسي', 'أزوم'],
+        'شرق دارفور': ['الضعين', 'عديلة', 'عسلاية', 'بحر العرب', 'أبو كارنكا', 'الفردوس']
+    };
+
+    function switchAddTraineeTab(tab) {
+        if (tab === 'new') {
+            const newTabBtn = document.getElementById('tab-modal-new');
+            if (newTabBtn) {
+                const t = new bootstrap.Tab(newTabBtn);
+                t.show();
+            }
+        } else {
+            const existTabBtn = document.getElementById('tab-modal-existing');
+            if (existTabBtn) {
+                const t = new bootstrap.Tab(existTabBtn);
+                t.show();
+            }
+        }
+    }
+
+    function handleNewTraineeCategoryChange() {
+        const catSelect = document.getElementById('new_trainee_category');
+        const rankSelect = document.getElementById('new_rank_select');
+        const customRankInput = document.getElementById('new_custom_rank');
+        const finalRankInput = document.getElementById('new_final_rank');
+        if (!catSelect || !rankSelect) return;
+
+        const cat = catSelect.value;
+        const ranks = RANKS_BY_CATEGORY[cat] || [];
+
+        rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
+        ranks.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            opt.textContent = r;
+            rankSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
+        rankSelect.appendChild(customOpt);
+
+        if (customRankInput) customRankInput.style.display = 'none';
+        if (finalRankInput) finalRankInput.value = '';
+    }
+
+    function handleNewRankSelect() {
+        const rankSelect = document.getElementById('new_rank_select');
+        const customRankInput = document.getElementById('new_custom_rank');
+        const finalRankInput = document.getElementById('new_final_rank');
+        if (!rankSelect || !finalRankInput) return;
+
+        if (rankSelect.value === '__custom__') {
+            if (customRankInput) {
+                customRankInput.style.display = 'block';
+                customRankInput.focus();
+                finalRankInput.value = customRankInput.value.trim();
+            }
+        } else {
+            if (customRankInput) customRankInput.style.display = 'none';
+            finalRankInput.value = rankSelect.value;
+        }
+    }
+
+    function syncNewRank() {
+        const customRankInput = document.getElementById('new_custom_rank');
+        const finalRankInput = document.getElementById('new_final_rank');
+        if (customRankInput && finalRankInput) {
+            finalRankInput.value = customRankInput.value.trim();
+        }
+    }
+
+    function handleNewForceChange() {
+        const forceSelect = document.getElementById('new_force_select');
+        const unitSelect = document.getElementById('new_unit_select');
+        const customUnitInput = document.getElementById('new_custom_unit');
+        const finalUnitInput = document.getElementById('new_final_unit');
+        if (!forceSelect || !unitSelect) return;
+
+        const force = forceSelect.value;
+        const units = FORCE_UNITS[force] || [];
+
+        unitSelect.innerHTML = '<option value="">-- اختر الوحدة من القائمة --</option>';
+        units.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u;
+            opt.textContent = u;
+            unitSelect.appendChild(opt);
+        });
+
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '✍️ وحدة أخرى (كتابة يدوية)';
+        unitSelect.appendChild(customOpt);
+
+        if (customUnitInput) customUnitInput.style.display = 'none';
+        if (finalUnitInput) finalUnitInput.value = '';
+    }
+
+    function handleNewUnitSelect() {
+        const unitSelect = document.getElementById('new_unit_select');
+        const customUnitInput = document.getElementById('new_custom_unit');
+        const finalUnitInput = document.getElementById('new_final_unit');
+        if (!unitSelect || !finalUnitInput) return;
+
+        if (unitSelect.value === '__custom__') {
+            if (customUnitInput) {
+                customUnitInput.style.display = 'block';
+                customUnitInput.focus();
+                finalUnitInput.value = customUnitInput.value.trim();
+            }
+        } else {
+            if (customUnitInput) customUnitInput.style.display = 'none';
+            finalUnitInput.value = unitSelect.value;
+        }
+    }
+
+    function syncNewUnit() {
+        const customUnitInput = document.getElementById('new_custom_unit');
+        const finalUnitInput = document.getElementById('new_final_unit');
+        if (customUnitInput && finalUnitInput) {
+            finalUnitInput.value = customUnitInput.value.trim();
+        }
+    }
+
+    function handleNewStateChange() {
+        const stateSelect = document.getElementById('new_state_select');
+        const customStateInput = document.getElementById('new_custom_state');
+        const finalStateInput = document.getElementById('new_final_residence_state');
+        const citySelect = document.getElementById('new_city_select');
+        const customCityInput = document.getElementById('new_custom_city');
+        const finalCityInput = document.getElementById('new_final_residence_city');
+        if (!stateSelect || !finalStateInput) return;
+
+        const stateVal = stateSelect.value;
+        if (stateVal === '__custom__') {
+            if (customStateInput) {
+                customStateInput.style.display = 'block';
+                customStateInput.focus();
+                finalStateInput.value = customStateInput.value.trim();
+            }
+            if (citySelect) {
+                citySelect.innerHTML = '<option value="">-- اختر المدينة --</option><option value="__custom__">✍️ كتابة اسم المدينة يدوياً</option>';
+                citySelect.disabled = false;
+                citySelect.classList.remove('bg-light');
+                citySelect.value = '__custom__';
+                handleNewCityChange();
+            }
+        } else if (!stateVal) {
+            if (customStateInput) customStateInput.style.display = 'none';
+            finalStateInput.value = '';
+            if (citySelect) {
+                citySelect.innerHTML = '<option value="">-- اختر الولاية أولاً لعرض مدنها --</option>';
+                citySelect.disabled = true;
+                citySelect.classList.add('bg-light');
+            }
+            if (customCityInput) customCityInput.style.display = 'none';
+            if (finalCityInput) finalCityInput.value = '';
+        } else {
+            if (customStateInput) customStateInput.style.display = 'none';
+            finalStateInput.value = stateVal;
+            if (citySelect) {
+                citySelect.disabled = false;
+                citySelect.classList.remove('bg-light');
+                citySelect.innerHTML = '<option value="">-- اختر المدينة --</option>';
+                const cities = SUDAN_STATES_CITIES[stateVal] || [];
+                cities.forEach(city => {
+                    const opt = document.createElement('option');
+                    opt.value = city;
+                    opt.textContent = city;
+                    citySelect.appendChild(opt);
+                });
+                const customOpt = document.createElement('option');
+                customOpt.value = '__custom__';
+                customOpt.textContent = '✍️ مدينة أخرى (كتابة يدوية)';
+                citySelect.appendChild(customOpt);
+            }
+            if (customCityInput) customCityInput.style.display = 'none';
+            if (finalCityInput) finalCityInput.value = '';
+        }
+    }
+
+    function handleNewCityChange() {
+        const citySelect = document.getElementById('new_city_select');
+        const customCityInput = document.getElementById('new_custom_city');
+        const finalCityInput = document.getElementById('new_final_residence_city');
+        if (!citySelect || !finalCityInput) return;
+
+        const cityVal = citySelect.value;
+        if (cityVal === '__custom__') {
+            if (customCityInput) {
+                customCityInput.style.display = 'block';
+                customCityInput.focus();
+                finalCityInput.value = customCityInput.value.trim();
+            }
+        } else {
+            if (customCityInput) customCityInput.style.display = 'none';
+            finalCityInput.value = cityVal;
+        }
+    }
+
+    function syncNewState() {
+        const customStateInput = document.getElementById('new_custom_state');
+        const finalStateInput = document.getElementById('new_final_residence_state');
+        if (customStateInput && finalStateInput) {
+            finalStateInput.value = customStateInput.value.trim();
+        }
+    }
+
+    function syncNewCity() {
+        const customCityInput = document.getElementById('new_custom_city');
+        const finalCityInput = document.getElementById('new_final_residence_city');
+        if (customCityInput && finalCityInput) {
+            finalCityInput.value = customCityInput.value.trim();
+        }
+    }
+
     // تهيئة القوائم عند التحميل
     document.addEventListener('DOMContentLoaded', function() {
+        handleNewTraineeCategoryChange();
+        handleNewForceChange();
         const forceSelects = document.querySelectorAll('[id^="force_select_"]');
         forceSelects.forEach(fs => {
             const num = fs.id.replace('force_select_', '');

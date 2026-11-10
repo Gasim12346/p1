@@ -848,6 +848,73 @@ def course_session_manage_view(request, session_id):
             messages.success(request, f'تم إلحاق {added} دارس إضافي بالدورة بنجاح.')
         return redirect('training:course_session_manage', session_id=session.id)
 
+    # تسجيل دارس جديد وحفظه في قاعدة البيانات وإلحاقه بالدورة
+    if request.method == 'POST' and 'register_and_enroll_new_trainee' in request.POST:
+        if not is_registrar_user(request.user):
+            messages.error(request, 'عفواً، تسجيل وإضافة دارس جديد محصورة بمسجل البيانات أو مدير النظام.')
+            return redirect('training:course_session_manage', session_id=session.id)
+
+        trainee_form = TraineeForm(request.POST)
+        if trainee_form.is_valid():
+            military_num = trainee_form.cleaned_data['military_number']
+            if Trainee.objects.filter(military_number=military_num).exists():
+                messages.error(request, f'النمرة "{military_num}" مسجلة مسبقاً لدارس آخر! الرجاء استخدام نمرة فريدة.')
+            elif Instructor.objects.filter(military_number=military_num).exists():
+                messages.error(request, f'النمرة العسكرية "{military_num}" مسجلة مسبقاً في النظام كمعلم في هيئة التدريس! لا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
+            else:
+                new_trainee = trainee_form.save(commit=False)
+                new_rank = request.POST.get('new_rank', '').strip()
+                new_force = request.POST.get('new_force', '').strip()
+                new_unit = request.POST.get('new_unit', '').strip()
+                mov_date = request.POST.get('new_movement_order_date', '').strip()
+                mov_file = request.FILES.get('new_movement_order_file')
+                enroll_now = request.POST.get('enroll_in_session') == '1'
+
+                if new_force:
+                    new_trainee.force = new_force
+                if new_unit:
+                    new_trainee.unit = new_unit
+                new_trainee.save()
+                trainee_form.save_relatives(new_trainee)
+
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.CREATE,
+                    action_category=ActivityCategory.TRAINEES,
+                    description=f"إضافة دارس جديد وحفظه بقاعدة البيانات: {new_trainee.name} (نمرة: {military_num})",
+                    target_model="Trainee",
+                    target_id=military_num
+                )
+
+                if enroll_now:
+                    CourseEnrollment.objects.create(
+                        session=session,
+                        trainee=new_trainee,
+                        current_rank=new_rank,
+                        current_force=new_force or new_trainee.force,
+                        current_unit=new_unit or new_trainee.unit,
+                        movement_order_date=mov_date if mov_date else None,
+                        movement_order_file=mov_file if mov_file else None
+                    )
+                    log_activity(
+                        request=request,
+                        action_type=ActivityAction.CREATE,
+                        action_category=ActivityCategory.SESSIONS,
+                        description=f"إلحاق الدارس {new_trainee.name} بالدورة {session.session_code}",
+                        target_model="CourseEnrollment",
+                        target_id=str(session.id)
+                    )
+                    messages.success(request, f'تم تسجيل بيانات الدارس "{new_trainee.name}" في قاعدة البيانات وإلحاقه بالدورة بنجاح.')
+                else:
+                    messages.success(request, f'تم حفظ بيانات الدارس "{new_trainee.name}" في قاعدة البيانات بنجاح.')
+
+                return redirect('training:course_session_manage', session_id=session.id)
+        else:
+            for field, errors in trainee_form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+            return redirect('training:course_session_manage', session_id=session.id)
+
     # إزالة دارس من الدورة
     if request.method == 'POST' and 'remove_trainee_id' in request.POST:
         if not is_admin_user(request.user):
@@ -897,6 +964,7 @@ def course_session_manage_view(request, session_id):
         'instructors': instructors,
         'session_subject_instructors': session_subject_instructors,
         'passed_trainees_for_session': passed_trainees_for_session,
+        'trainee_form': TraineeForm(),
     }
     return render(request, 'training/course_session_manage.html', context)
 

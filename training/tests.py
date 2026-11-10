@@ -724,6 +724,58 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         self.assertEqual(str(enrollment.movement_order_date), '2026-01-05')
         self.assertTrue(bool(enrollment.movement_order_file))
 
+    def test_register_and_enroll_new_trainee_from_session_manage(self):
+        """التحقق من تسجيل دارس جديد في قاعدة البيانات وإلحاقه فوراً بالدورة التدريبية"""
+        self.client.login(username='admin_inst', password='Password123!')
+        from training.models import CourseSession, CourseEnrollment, Trainee
+        session = CourseSession.objects.create(
+            course=self.course,
+            session_code='دفعة تجربة التسجيل',
+            start_date='2026-02-01',
+            end_date='2026-04-01',
+            status='active'
+        )
+        manage_url = reverse('training:course_session_manage', kwargs={'session_id': session.id})
+        new_num = '99887766'
+        res = self.client.post(manage_url, {
+            'register_and_enroll_new_trainee': '1',
+            'military_number': new_num,
+            'category': 'officer',
+            'name': 'الدارس الجديد التجريبي',
+            'batch': '50',
+            'phone': '0912345678',
+            'residence_state': 'الخرطوم',
+            'residence_city': 'أم درمان',
+            'residence_neighborhood': 'الملازمين',
+            'residence_block': 'مربع 1',
+            'residence_house_number': '12',
+            'relative_1_name': 'محمد التجريبي',
+            'relative_1_kinship': 'والد',
+            'relative_1_phone': '0999999999',
+            'relative_1_address': 'أم درمان',
+            'new_rank': 'نقيب',
+            'new_force': 'القوات البرية',
+            'new_unit': 'سلاح الإشارة',
+            'new_movement_order_date': '2026-02-02',
+            'enroll_in_session': '1'
+        })
+        self.assertEqual(res.status_code, 302)
+        # التحقق من حفظ الدارس بقاعدة البيانات
+        trainee = Trainee.objects.filter(military_number=new_num).first()
+        self.assertIsNotNone(trainee)
+        self.assertEqual(trainee.name, 'الدارس الجديد التجريبي')
+        self.assertEqual(trainee.batch, 50)
+        self.assertEqual(trainee.residence_state, 'الخرطوم')
+        self.assertEqual(trainee.residence_city, 'أم درمان')
+        self.assertEqual(trainee.relatives.count(), 1)
+        # التحقق من إلحاقه بالدورة
+        enrollment = CourseEnrollment.objects.filter(session=session, trainee=trainee).first()
+        self.assertIsNotNone(enrollment)
+        self.assertEqual(enrollment.current_rank, 'نقيب')
+        self.assertEqual(enrollment.current_force, 'القوات البرية')
+        self.assertEqual(enrollment.current_unit, 'سلاح الإشارة')
+        self.assertEqual(str(enrollment.movement_order_date), '2026-02-02')
+
 
 class BusinessConstraintsTests(TestCase):
     """
