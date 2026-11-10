@@ -608,6 +608,21 @@ class CourseEnrollment(models.Model):
         default='',
         verbose_name='ملحوظة الشهادة'
     )
+    is_dropped = models.BooleanField(
+        default=False,
+        verbose_name='تم قطع الدورة'
+    )
+    drop_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name='سبب قطع الدورة'
+    )
+    dropped_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='تاريخ ووقت قطع الدورة'
+    )
 
     class Meta:
         verbose_name = 'تسجيل دارس بالدورة'
@@ -628,6 +643,10 @@ class CourseEnrollment(models.Model):
         4. اكتمال جميع المواد الدراسية للدورة ورصد درجاتها بالكامل.
         5. اعتماد النتيجة وحساب المجموع والنسبة.
         """
+        # 0. التحقق من عدم قطع الدورة عن الدارس
+        if self.is_dropped:
+            return False
+
         # 1. التحقق من بيانات الدارس الأساسية
         if not self.trainee:
             return False

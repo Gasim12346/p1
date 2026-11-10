@@ -1903,6 +1903,105 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(cert.advanced_cert_title, 'شهادة دورة ذكاء اصطناعي متقدمة')
         self.assertEqual(cert.default_certificate_note, 'أظهر كفاءة ممتازة واجتهاداً كبيراً.')
 
+    def test_results_center_archive_only_completed_sessions(self):
+        """التحقق من أن السجل التاريخي لا يعرض إلا الدورات المعتمدة والمكتملة فقط"""
+        self.client.login(username='admin_cert', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف التحقق من الاعتماد')
+        course = Course.objects.create(name='دورة اختبار الاعتماد', category=cat)
+
+        completed_session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-COMPLETED-01',
+            start_date=datetime.date(2026, 1, 1),
+            end_date=datetime.date(2026, 1, 15),
+            status='completed'
+        )
+        active_session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-ACTIVE-01',
+            start_date=datetime.date(2026, 2, 1),
+            end_date=datetime.date(2026, 2, 15),
+            status='active'
+        )
+
+        res = self.client.get(reverse('training:results_center'), {'tab': 'archive'})
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(completed_session, res.context['archive_sessions'])
+        self.assertNotIn(active_session, res.context['archive_sessions'])
+
+    def test_drop_and_restore_trainee_flow(self):
+        """التحقق من إجراء قطع الدورة للدارس وحجبه عن الرصد والشهادات ثم إمكانية إلغاء القطع"""
+        self.client.login(username='admin_cert', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession, Trainee, CourseEnrollment
+        import datetime
+
+        cat = CourseCategory.objects.create(name='تصنيف فحص القطع')
+        course = Course.objects.create(name='دورة فحص قطع الدورة', category=cat)
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='BATCH-DROP-01',
+            start_date=datetime.date(2026, 1, 1),
+            end_date=datetime.date(2026, 1, 20),
+            status='active'
+        )
+        trainee = Trainee.objects.create(
+            name='طالب اختبار القطع',
+            military_number='777666',
+            category='officer',
+            unit='سلاح الصيانة',
+            force='القوات البرية'
+        )
+        enrollment = CourseEnrollment.objects.create(
+            session=session,
+            trainee=trainee,
+            current_rank='ملازم',
+            current_unit='سلاح الصيانة'
+        )
+
+        # 1. فحص تنفيذ إجراء قطع الدورة
+        drop_url = reverse('training:course_session_manage', kwargs={'session_id': session.id})
+        res_drop = self.client.post(drop_url, {
+            'action': 'drop_trainee',
+            'enrollment_id': enrollment.id,
+            'drop_reason': 'أسباب انضباطية وسفر طارئ'
+        })
+        self.assertEqual(res_drop.status_code, 302)
+
+        enrollment.refresh_from_db()
+        self.assertTrue(enrollment.is_dropped)
+        self.assertEqual(enrollment.drop_reason, 'أسباب انضباطية وسفر طارئ')
+        self.assertIsNotNone(enrollment.dropped_at)
+
+        # 2. التأكد من استبعاد الدارس المقطوع عن جدول رصد الدرجات النشط في صفحة الرصد
+        res_entry = self.client.get(reverse('training:results_entry', kwargs={'session_id': session.id}))
+        self.assertEqual(res_entry.status_code, 200)
+        self.assertNotIn(enrollment, res_entry.context['enrollments'])
+        self.assertIn(enrollment, res_entry.context['dropped_enrollments'])
+        self.assertEqual(res_entry.context['dropped_count'], 1)
+
+        # 3. التأكد من منع استخراج الشهادات للدارس المقطوعة دورته
+        res_cert = self.client.get(reverse('training:certificate', kwargs={'enrollment_id': enrollment.id}))
+        self.assertEqual(res_cert.status_code, 302)
+
+        res_cert_detail = self.client.get(reverse('training:certificate_detailed', kwargs={'enrollment_id': enrollment.id}), {'type': 'basic'})
+        self.assertEqual(res_cert_detail.status_code, 302)
+
+        # 4. فحص إلغاء قطع الدورة واستعادة الدارس
+        res_restore = self.client.post(drop_url, {
+            'action': 'restore_trainee',
+            'enrollment_id': enrollment.id
+        })
+        self.assertEqual(res_restore.status_code, 302)
+
+        enrollment.refresh_from_db()
+        self.assertFalse(enrollment.is_dropped)
+        self.assertEqual(enrollment.drop_reason, '')
+        self.assertIsNone(enrollment.dropped_at)
+
+
 
 
 

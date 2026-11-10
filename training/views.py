@@ -915,6 +915,51 @@ def course_session_manage_view(request, session_id):
                     messages.error(request, error)
             return redirect('training:course_session_manage', session_id=session.id)
 
+    # معالجة قطع الدورة عن الدارس
+    if request.method == 'POST' and ('drop_trainee' in request.POST or request.POST.get('action') == 'drop_trainee'):
+        if not is_registrar_user(request.user) and not is_admin_user(request.user):
+            messages.error(request, 'عفواً، قطع الدورة عن الدارس محصور بالمسجل أو مدير النظام.')
+            return redirect('training:course_session_manage', session_id=session.id)
+        enrollment_id = request.POST.get('enrollment_id')
+        enrollment = get_object_or_404(CourseEnrollment, pk=enrollment_id, session=session)
+        reason = request.POST.get('drop_reason', '').strip()
+        enrollment.is_dropped = True
+        enrollment.drop_reason = reason
+        enrollment.dropped_at = timezone.now()
+        enrollment.save(update_fields=['is_dropped', 'drop_reason', 'dropped_at'])
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.SESSIONS,
+            description=f"قطع الدورة عن الدارس {enrollment.trainee.name} ({enrollment.trainee.military_number}) في دورة {session.course.name} ({session.session_code})",
+            target_model="CourseEnrollment",
+            target_id=str(enrollment.id)
+        )
+        messages.success(request, f'تم قطع الدورة عن الدارس "{enrollment.trainee.name}" بنجاح، وتم منعه من الدخول إلى الدورة وحجب نتيجته وتفاصيله.')
+        return redirect('training:course_session_manage', session_id=session.id)
+
+    # معالجة إلغاء قطع الدورة (إعادة تفعيل الدارس في الدورة)
+    if request.method == 'POST' and ('restore_trainee' in request.POST or request.POST.get('action') == 'restore_trainee'):
+        if not is_registrar_user(request.user) and not is_admin_user(request.user):
+            messages.error(request, 'عفواً، إعادة تفعيل الدارس محصورة بالمسجل أو مدير النظام.')
+            return redirect('training:course_session_manage', session_id=session.id)
+        enrollment_id = request.POST.get('enrollment_id')
+        enrollment = get_object_or_404(CourseEnrollment, pk=enrollment_id, session=session)
+        enrollment.is_dropped = False
+        enrollment.drop_reason = ''
+        enrollment.dropped_at = None
+        enrollment.save(update_fields=['is_dropped', 'drop_reason', 'dropped_at'])
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.SESSIONS,
+            description=f"إلغاء قطع الدورة وإعادة تفعيل الدارس {enrollment.trainee.name} في دورة {session.course.name}",
+            target_model="CourseEnrollment",
+            target_id=str(enrollment.id)
+        )
+        messages.success(request, f'تم إلغاء قطع الدورة وإعادة تفعيل الدارس "{enrollment.trainee.name}" في الدورة بنجاح.')
+        return redirect('training:course_session_manage', session_id=session.id)
+
     # إزالة دارس من الدورة
     if request.method == 'POST' and 'remove_trainee_id' in request.POST:
         if not is_admin_user(request.user):
@@ -965,6 +1010,7 @@ def course_session_manage_view(request, session_id):
         'session_subject_instructors': session_subject_instructors,
         'passed_trainees_for_session': passed_trainees_for_session,
         'trainee_form': TraineeForm(),
+        'is_registrar': is_registrar_user(request.user) or is_admin_user(request.user),
     }
     return render(request, 'training/course_session_manage.html', context)
 
@@ -1098,12 +1144,12 @@ def results_center_view(request):
     archive_status = request.GET.get('archive_status', '').strip()
     archive_session_id = request.GET.get('archive_session_id', '').strip() or request.GET.get('session_id', '').strip()
 
-    historical_enrollments = CourseEnrollment.objects.filter(is_graded=True).select_related(
+    historical_enrollments = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).select_related(
         'trainee', 'session', 'session__course', 'session__course__category'
     ).order_by('-session__start_date', '-percentage')
 
-    # دورات السجل التاريخي الشامل
-    archive_sessions = CourseSession.objects.select_related(
+    # دورات السجل التاريخي الشامل (المعتمدة فقط)
+    archive_sessions = CourseSession.objects.filter(status='completed').select_related(
         'course', 'course__category', 'supervisor'
     ).prefetch_related(
         'enrollments', 'enrollments__trainee', 'enrollments__grades'
@@ -1171,11 +1217,11 @@ def results_center_view(request):
     available_years = sorted(list(db_years), reverse=True)
 
     # إحصائيات عامة للنتائج
-    total_graded = CourseEnrollment.objects.filter(is_graded=True).count()
-    excellent_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=85).count()
-    vgood_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=75, percentage__lt=85).count()
-    good_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=65, percentage__lt=75).count()
-    pass_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
+    total_graded = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).count()
+    excellent_count = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=85).count()
+    vgood_count = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=75, percentage__lt=85).count()
+    good_count = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=65, percentage__lt=75).count()
+    pass_count = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50, percentage__lt=65).count()
 
     # تحديد التبويب النشط بناءً على المعاملات
     active_tab = 'archive' if (
@@ -1192,7 +1238,7 @@ def results_center_view(request):
     selected_archive_is_locked = False
 
     if archive_session_id and active_tab == 'archive':
-        selected_archive_session = CourseSession.objects.filter(pk=archive_session_id).select_related(
+        selected_archive_session = CourseSession.objects.filter(pk=archive_session_id, status='completed').select_related(
             'course', 'course__category', 'supervisor'
         ).prefetch_related(
             'course__subjects', 'subject_instructors__instructor',
@@ -1201,7 +1247,7 @@ def results_center_view(request):
 
         if selected_archive_session:
             selected_archive_subjects = list(selected_archive_session.course.subjects.all())
-            selected_archive_enrollments = selected_archive_session.enrollments.select_related('trainee').prefetch_related('grades').all()
+            selected_archive_enrollments = selected_archive_session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
             selected_archive_total_possible = (selected_archive_session.course.total_max_marks or 0) + (selected_archive_session.attendance_max_grade or 0)
             selected_archive_is_locked = (selected_archive_session.status == 'completed' and not is_admin_user(request.user))
 
@@ -1255,7 +1301,8 @@ def results_entry_view(request, session_id):
         pk=session_id
     )
     subjects = list(session.course.subjects.all())
-    enrollments = session.enrollments.select_related('trainee').prefetch_related('grades').all()
+    enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
+    dropped_enrollments = session.enrollments.filter(is_dropped=True).select_related('trainee').all()
 
     # خريطة المعلمين المسندين لمواد الدورة
     subject_instructors_map = {
@@ -1550,6 +1597,8 @@ def results_entry_view(request, session_id):
         'is_fully_graded': is_fully_graded,
         'missing_grades_count': missing_grades_count,
         'from_tab': request.GET.get('from', '').strip(),
+        'dropped_enrollments': dropped_enrollments,
+        'dropped_count': dropped_enrollments.count(),
     }
     return render(request, 'training/results_entry.html', context)
 
@@ -1561,6 +1610,10 @@ def certificate_view(request, enrollment_id):
         CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
         pk=enrollment_id
     )
+
+    if enrollment.is_dropped:
+        messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن تظهر نتيجته أو شهادته.')
+        return redirect('training:results_center')
 
     # التحقق الصارم والشامل: هل اكتملت كافة البيانات والدرجات؟
     if not enrollment.has_complete_data_and_grades:
@@ -1609,6 +1662,10 @@ def certificate_detailed_view(request, enrollment_id):
         CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
         pk=enrollment_id
     )
+
+    if enrollment.is_dropped:
+        messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن تظهر نتيجته أو شهادته.')
+        return redirect('training:results_center')
 
     # التحقق الصارم والشامل: هل اكتملت كافة البيانات والدرجات؟
     if not enrollment.has_complete_data_and_grades:
@@ -1686,7 +1743,7 @@ def session_results_sheet_view(request, session_id):
         pk=session_id
     )
     subjects = list(session.course.subjects.all())
-    enrollments = session.enrollments.select_related('trainee').prefetch_related('grades').order_by('-total_score')
+    enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').order_by('-total_score')
 
     grades_map = {}
     for en in enrollments:
@@ -1704,7 +1761,7 @@ def session_results_sheet_view(request, session_id):
 def trainee_transcript_view(request, military_number):
     """السجل الأكاديمي التاريخي الكامل لدارس محدد مع دعم الاسترجاع كـ JSON للنوافذ المنبثقة"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
-    enrollments = trainee.enrollments.select_related(
+    enrollments = trainee.enrollments.filter(is_dropped=False).select_related(
         'session', 'session__course', 'session__course__category'
     ).prefetch_related('grades__subject').order_by('-session__start_date')
 

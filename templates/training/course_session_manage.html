@@ -215,12 +215,12 @@
                         <th style="min-width: 190px;">الوحدة في الدورة</th>
                         <th style="min-width: 160px;">تاريخ أمر التحرك</th>
                         <th style="min-width: 220px;">صورة scan لأمر التحرك</th>
-                        <th style="min-width: 80px; text-align: center;">إجراء</th>
+                        <th style="min-width: 140px; text-align: center;">إجراءات الدارس</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for en in enrollments %}
-                        <tr class="manage-row" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_force }} {{ en.current_unit }}">
+                        <tr class="manage-row {% if en.is_dropped %}table-danger bg-opacity-10{% endif %}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_force }} {{ en.current_unit }}">
                             <td>{{ forloop.counter }}</td>
                             <td>
                                 <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
@@ -229,6 +229,11 @@
                             </td>
                             <td>
                                 <strong class="text-dark d-block">{{ en.trainee.name }}</strong>
+                                {% if en.is_dropped %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 small mt-1">
+                                        <i class="bi bi-slash-circle me-1"></i>مقطوع عن الدورة
+                                    </span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if en.trainee.category == 'officer' %}
@@ -314,16 +319,29 @@
                                     </div>
                                 {% endif %}
                             </td>
-                            <!-- حذف من الدورة -->
+                            <!-- إجراءات الدارس (قطع الدورة / استعادة / إزالة) -->
                             <td class="text-center">
-                                {% if is_admin and not en.is_graded %}
-                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="إزالة من الدورة" onclick="confirmRemoveTrainee('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                {% elif en.is_graded %}
-                                    <span class="badge bg-light text-muted border px-2 py-1" title="لا يمكن إزالة دارس له نتائج معتمدة"><i class="bi bi-lock-fill text-secondary"></i> معتمد</span>
+                                {% if en.is_dropped %}
+                                    <div class="d-flex flex-column align-items-center gap-1">
+                                        <span class="badge bg-danger py-1 px-2 rounded-pill shadow-sm" title="سبب القطع: {{ en.drop_reason|default:'لم يحدد' }}">
+                                            <i class="bi bi-slash-circle me-1"></i>تم قطع الدورة
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small fw-bold mt-1" title="إلغاء قطع الدورة وإعادة تفعيل الدارس" onclick="openRestoreModal('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> إلغاء القطع
+                                        </button>
+                                    </div>
                                 {% else %}
-                                    <span class="text-muted small">-</span>
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <button type="button" class="btn btn-sm btn-danger py-1 px-2 rounded-2 fw-bold shadow-sm d-inline-flex align-items-center gap-1" title="قطع الدورة عن الدارس ومنعه من الدخول وحجب نتيجته" onclick="openDropModal('{{ en.id }}', '{{ en.trainee.name|escapejs }}', '{{ en.trainee.military_number|escapejs }}')">
+                                            <i class="bi bi-slash-circle"></i>
+                                            <span>قطع الدورة</span>
+                                        </button>
+                                        {% if is_admin and not en.is_graded %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-2" title="إزالة من الدورة نهائياً" onclick="confirmRemoveTrainee('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 {% endif %}
                             </td>
                         </tr>
@@ -965,10 +983,98 @@
     {% csrf_token %}
     <input type="hidden" name="remove_trainee_id" id="removeTraineeInput">
 </form>
+
+<!-- Modal: تأكيد قطع الدورة عن الدارس -->
+<div class="modal fade" id="dropTraineeModal" tabindex="-1" aria-labelledby="dropTraineeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3 px-4">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="dropTraineeModalLabel">
+                    <i class="bi bi-slash-circle-fill fs-4"></i>
+                    <span>تأكيد قطع الدورة عن الدارس</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="drop_trainee" value="1">
+                <input type="hidden" name="enrollment_id" id="dropEnrollmentId">
+                <div class="modal-body p-4 bg-light">
+                    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-3">
+                        <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>تنبيه إداري:</div>
+                        <div>أنت على وشك قطع الدورة عن الدارس: <strong id="dropTraineeName" class="text-dark">---</strong> (النمرة: <span id="dropTraineeNum" class="font-monospace text-dark">---</span>).</div>
+                        <div class="small mt-2 text-danger-emphasis">
+                            الغرض من هذا الإجراء: <strong>منع الطالب من الدخول إلى الدورة، وعدم إظهار نتيجته وتفاصيله ودرجاته وشهاداته نهائياً</strong> في كشوفات ورصد الدورة والشهادات.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">سبب أو ملحوظة قطع الدورة (اختياري)</label>
+                        <input type="text" name="drop_reason" class="form-control" placeholder="مثال: انقطاع، ظروف صحية، أمر تحرك، أمر إداري...">
+                    </div>
+                </div>
+                <div class="modal-footer bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-secondary px-3 rounded-2 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger px-4 rounded-2 fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-slash-circle"></i>
+                        <span>تأكيد قطع الدورة</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: تأكيد إلغاء قطع الدورة -->
+<div class="modal fade" id="restoreTraineeModal" tabindex="-1" aria-labelledby="restoreTraineeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-success text-white py-3 px-4">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="restoreTraineeModalLabel">
+                    <i class="bi bi-arrow-counterclockwise fs-4"></i>
+                    <span>إلغاء قطع الدورة وإعادة تفعيل الدارس</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="restore_trainee" value="1">
+                <input type="hidden" name="enrollment_id" id="restoreEnrollmentId">
+                <div class="modal-body p-4 bg-light">
+                    <p class="mb-0 fs-6">
+                        هل تريد بالتأكيد إلغاء قطع الدورة وإعادة تفعيل الدارس <strong id="restoreTraineeName" class="text-dark">---</strong> في هذه الدورة؟
+                    </p>
+                </div>
+                <div class="modal-footer bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-secondary px-3 rounded-2 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success px-4 rounded-2 fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-check-circle"></i>
+                        <span>تأكيد إعادة التفعيل</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    function openDropModal(enrollmentId, traineeName, traineeNum) {
+        document.getElementById('dropEnrollmentId').value = enrollmentId;
+        document.getElementById('dropTraineeName').textContent = traineeName;
+        document.getElementById('dropTraineeNum').textContent = traineeNum;
+        const modalEl = document.getElementById('dropTraineeModal');
+        new bootstrap.Modal(modalEl).show();
+    }
+
+    function openRestoreModal(enrollmentId, traineeName) {
+        document.getElementById('restoreEnrollmentId').value = enrollmentId;
+        document.getElementById('restoreTraineeName').textContent = traineeName;
+        const modalEl = document.getElementById('restoreTraineeModal');
+        new bootstrap.Modal(modalEl).show();
+    }
+
     function confirmRemoveTrainee(enrollmentId, name) {
         if (confirm(`هل أنت متأكد من إزالة الدارس "${name}" من هذه الدورة؟`)) {
             document.getElementById('removeTraineeInput').value = enrollmentId;
