@@ -1088,16 +1088,26 @@ def results_center_view(request):
     if session_year and session_year.isdigit():
         sessions = sessions.filter(start_date__year=int(session_year))
 
-    # فلاتر تبويب السجل التاريخي للنتائج والشهادات
-    search_query = request.GET.get('q', '').strip()
+    # فلاتر تبويب السجل التاريخي للنتائج والشهادات (عرض الدورات التدريبية في السجل التاريخي)
+    search_query = request.GET.get('q', '').strip() or request.GET.get('archive_q', '').strip()
     grade_filter = request.GET.get('grade', '').strip()
     trainee_cat_filter = request.GET.get('trainee_category', '').strip()
     selected_session_filter = request.GET.get('session_filter', '').strip()
-    year_filter = request.GET.get('year', '').strip()
+    year_filter = request.GET.get('year', '').strip() or request.GET.get('archive_year', '').strip()
+    archive_cat = request.GET.get('archive_cat', '').strip()
+    archive_status = request.GET.get('archive_status', '').strip()
+    archive_session_id = request.GET.get('archive_session_id', '').strip() or request.GET.get('session_id', '').strip()
 
     historical_enrollments = CourseEnrollment.objects.filter(is_graded=True).select_related(
         'trainee', 'session', 'session__course', 'session__course__category'
     ).order_by('-session__start_date', '-percentage')
+
+    # دورات السجل التاريخي الشامل
+    archive_sessions = CourseSession.objects.select_related(
+        'course', 'course__category', 'supervisor'
+    ).prefetch_related(
+        'enrollments', 'enrollments__trainee', 'enrollments__grades'
+    ).all().order_by('-start_date', '-id')
 
     if is_instructor_user(request.user) and not is_admin_user(request.user):
         inst = get_user_instructor(request.user)
@@ -1106,8 +1116,10 @@ def results_center_view(request):
                 instructor=inst
             ).values_list('session_id', flat=True).distinct()
             historical_enrollments = historical_enrollments.filter(session_id__in=teaching_session_ids)
+            archive_sessions = archive_sessions.filter(id__in=teaching_session_ids)
         else:
             historical_enrollments = historical_enrollments.none()
+            archive_sessions = archive_sessions.none()
 
     if search_query:
         historical_enrollments = historical_enrollments.filter(
@@ -1118,18 +1130,36 @@ def results_center_view(request):
             Q(session__course__name__icontains=search_query) |
             Q(session__session_code__icontains=search_query)
         )
+        archive_sessions = archive_sessions.filter(
+            Q(course__name__icontains=search_query) |
+            Q(session_code__icontains=search_query) |
+            Q(course__category__name__icontains=search_query) |
+            Q(enrollments__trainee__name__icontains=search_query) |
+            Q(enrollments__trainee__military_number__icontains=search_query) |
+            Q(enrollments__current_unit__icontains=search_query) |
+            Q(enrollments__current_rank__icontains=search_query)
+        ).distinct()
+
+    if archive_cat:
+        archive_sessions = archive_sessions.filter(course__category_id=archive_cat)
 
     if grade_filter:
         historical_enrollments = historical_enrollments.filter(grade_label__icontains=grade_filter)
 
     if trainee_cat_filter:
         historical_enrollments = historical_enrollments.filter(trainee__category=trainee_cat_filter)
+        archive_sessions = archive_sessions.filter(enrollments__trainee__category=trainee_cat_filter).distinct()
 
     if selected_session_filter:
         historical_enrollments = historical_enrollments.filter(session_id=selected_session_filter)
+        archive_sessions = archive_sessions.filter(id=selected_session_filter)
 
     if year_filter and year_filter.isdigit():
         historical_enrollments = historical_enrollments.filter(session__start_date__year=int(year_filter))
+        archive_sessions = archive_sessions.filter(start_date__year=int(year_filter))
+
+    if archive_status:
+        archive_sessions = archive_sessions.filter(status=archive_status)
 
     # قائمة السنوات الميلادية المتاحة للفلترة
     from datetime import datetime
@@ -1148,10 +1178,36 @@ def results_center_view(request):
     pass_count = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
 
     # تحديد التبويب النشط بناءً على المعاملات
-    active_tab = 'archive' if (search_query or grade_filter or trainee_cat_filter or selected_session_filter or year_filter or request.GET.get('tab') == 'archive') else 'sessions'
+    active_tab = 'archive' if (
+        search_query or grade_filter or trainee_cat_filter or selected_session_filter or
+        year_filter or archive_cat or archive_status or archive_session_id or
+        request.GET.get('tab') == 'archive'
+    ) else 'sessions'
+
+    # التحقق مما إذا تم طلب عرض دورة محددة ضمن السجل التاريخي
+    selected_archive_session = None
+    selected_archive_subjects = []
+    selected_archive_enrollments = []
+    selected_archive_total_possible = 0
+    selected_archive_is_locked = False
+
+    if archive_session_id and active_tab == 'archive':
+        selected_archive_session = CourseSession.objects.filter(pk=archive_session_id).select_related(
+            'course', 'course__category', 'supervisor'
+        ).prefetch_related(
+            'course__subjects', 'subject_instructors__instructor',
+            'enrollments__trainee', 'enrollments__grades'
+        ).first()
+
+        if selected_archive_session:
+            selected_archive_subjects = list(selected_archive_session.course.subjects.all())
+            selected_archive_enrollments = selected_archive_session.enrollments.select_related('trainee').prefetch_related('grades').all()
+            selected_archive_total_possible = (selected_archive_session.course.total_max_marks or 0) + (selected_archive_session.attendance_max_grade or 0)
+            selected_archive_is_locked = (selected_archive_session.status == 'completed' and not is_admin_user(request.user))
 
     context = {
         'sessions': sessions,
+        'archive_sessions': archive_sessions,
         'all_sessions': CourseSession.objects.select_related('course').all(),
         'categories': categories,
         'historical_enrollments': historical_enrollments,
@@ -1161,11 +1217,20 @@ def results_center_view(request):
         'session_status': session_status,
         'session_year': session_year,
         'search_query': search_query,
+        'archive_q': search_query,
+        'archive_cat': archive_cat,
+        'archive_status': archive_status,
         'grade_filter': grade_filter,
         'trainee_cat_filter': trainee_cat_filter,
         'session_filter': selected_session_filter,
         'year_filter': year_filter,
+        'archive_year': year_filter,
         'active_tab': active_tab,
+        'selected_archive_session': selected_archive_session,
+        'selected_archive_subjects': selected_archive_subjects,
+        'selected_archive_enrollments': selected_archive_enrollments,
+        'selected_archive_total_possible': selected_archive_total_possible,
+        'selected_archive_is_locked': selected_archive_is_locked,
         'stats': {
             'total': total_graded,
             'excellent': excellent_count,
@@ -1243,7 +1308,11 @@ def results_entry_view(request, session_id):
             target_id=session.id
         )
         messages.success(request, 'تم حفظ وتحديث ملحوظات الشهادات لجميع الدارسين بنجاح.')
-        return redirect('training:results_entry', session_id=session.id)
+        from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
+        redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
+        if from_param:
+            redirect_url += f'?from={from_param}'
+        return redirect(redirect_url)
 
     # معالجة حفظ الدرجات
     if request.method == 'POST' and 'save_grades' in request.POST:
@@ -1298,7 +1367,11 @@ def results_entry_view(request, session_id):
                 target_id=session.id
             )
             messages.success(request, f'تم اعتماد وإقفال نتيجة دورة "{session.course.name}" بنجاح بعد اكتمال رصد كافة المواد من هيئة التدريس.')
-            return redirect('training:results_entry', session_id=session.id)
+            from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
+            redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
+            if from_param:
+                redirect_url += f'?from={from_param}'
+            return redirect(redirect_url)
 
         # حفظ وتحديث الدرجات
         validation_errors = []
@@ -1426,7 +1499,11 @@ def results_entry_view(request, session_id):
                 )
 
                 messages.success(request, f'تم حفظ وتحديث الدرجات في دورة "{session.course.name}" بنجاح.')
-                return redirect('training:results_entry', session_id=session.id)
+                from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
+                redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
+                if from_param:
+                    redirect_url += f'?from={from_param}'
+                return redirect(redirect_url)
 
     # تجهيز بيانات درجات المواد لكل دارس بشكل مباشر ومتقن للعرض
     for en in enrollments:
@@ -1472,8 +1549,8 @@ def results_entry_view(request, session_id):
         'is_supervisor_or_admin': is_sup,
         'is_fully_graded': is_fully_graded,
         'missing_grades_count': missing_grades_count,
+        'from_tab': request.GET.get('from', '').strip(),
     }
-    return render(request, 'training/results_entry.html', context)
     return render(request, 'training/results_entry.html', context)
 
 

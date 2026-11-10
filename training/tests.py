@@ -217,6 +217,60 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(res_arch_2025.status_code, 200)
         self.assertEqual(len(res_arch_2025.context['historical_enrollments']), 0)
 
+    def test_results_center_archive_courses_and_students_view(self):
+        """التحقق من عرض الدورات في تبويب السجل التاريخي والوصول لطلبة ونتائج الدورة"""
+        self.client.login(username='user_test', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession, Trainee, CourseEnrollment
+
+        cat = CourseCategory.objects.create(name="تصنيف أرشيف تجريبي")
+        course = Course.objects.create(name="دورة اختبار السجل التاريخي", category=cat)
+        session = CourseSession.objects.create(
+            course=course,
+            session_code="دفعة-سجل-01",
+            start_date="2026-01-01",
+            end_date="2026-01-20",
+            status="completed"
+        )
+        trainee = Trainee.objects.create(
+            name="دارس أرشيف تجريبي",
+            military_number="99887766",
+            category="officer",
+            unit="جناح الأرشيف",
+            force="القوات البرية"
+        )
+        CourseEnrollment.objects.create(
+            session=session,
+            trainee=trainee,
+            current_rank="نقيب",
+            current_unit="جناح الأرشيف",
+            is_graded=True,
+            total_score=95,
+            percentage=95.0,
+            grade_label="ممتاز (أ)"
+        )
+
+        # 1. فتح تبويب السجل التاريخي والتأكد من ظهور الدورات في archive_sessions
+        res_arch = self.client.get(reverse('training:results_center'), {'tab': 'archive'})
+        self.assertEqual(res_arch.status_code, 200)
+        self.assertIn('archive_sessions', res_arch.context)
+        self.assertIn(session, res_arch.context['archive_sessions'])
+        self.assertContains(res_arch, "دورة اختبار السجل التاريخي")
+        self.assertContains(res_arch, "دفعة-سجل-01")
+
+        # 2. فحص الدخول لصفحة رصد ونتائج الدورة مع معامل from=archive
+        res_entry = self.client.get(reverse('training:results_entry', kwargs={'session_id': session.id}), {'from': 'archive'})
+        self.assertEqual(res_entry.status_code, 200)
+        self.assertContains(res_entry, "العودة إلى السجل التاريخي")
+        self.assertContains(res_entry, "دارس أرشيف تجريبي")
+        self.assertContains(res_entry, "99887766")
+
+        # 3. فحص عرض الدورة مباشرة داخل السجل التاريخي عبر session_id
+        res_inline = self.client.get(reverse('training:results_center'), {'tab': 'archive', 'session_id': session.id})
+        self.assertEqual(res_inline.status_code, 200)
+        self.assertEqual(res_inline.context['selected_archive_session'], session)
+        self.assertContains(res_inline, "العودة إلى قائمة الدورات في السجل التاريخي")
+        self.assertContains(res_inline, "دارس أرشيف تجريبي")
+
     def test_login_open_redirect_protection(self):
         """التحقق من حظر التوجيه المفتوح Open Redirect ومنع التوجيه لروابط خارجية خبيثة"""
         # 1. محاولة تسجيل دخول بتوجيه خارجي احتيالي //evil.com

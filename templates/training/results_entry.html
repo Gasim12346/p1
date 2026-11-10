@@ -25,8 +25,14 @@
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-2">
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a></li>
-        <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }}</li>
+        <li class="breadcrumb-item">
+            {% if from_tab == 'archive' %}
+                <a href="{% url 'training:results_center' %}?tab=archive" class="text-decoration-none">النتيجة والشهادات (السجل التاريخي)</a>
+            {% else %}
+                <a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a>
+            {% endif %}
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }} ({{ session.session_code }})</li>
     </ol>
 </nav>
 
@@ -49,7 +55,18 @@
             </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
+            {% if from_tab == 'archive' %}
+                <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-right"></i>
+                    <span>العودة إلى السجل التاريخي</span>
+                </a>
+            {% else %}
+                <a href="{% url 'training:results_center' %}" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-right"></i>
+                    <span>العودة لقائمة الدورات</span>
+                </a>
+            {% endif %}
             <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
                 <i class="bi bi-printer-fill"></i>
                 <span>طباعة كشف النتيجة العام</span>
@@ -99,6 +116,7 @@
 <form method="post" id="gradesForm">
     {% csrf_token %}
     <input type="hidden" name="save_grades" value="1">
+    <input type="hidden" name="from" value="{{ from_tab }}">
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
         <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
