@@ -380,8 +380,7 @@
                     </td>
                     <td>
                         <span class="field-label">التواريخ:</span>
-                        <span>من {{ enrollment.session.start_date|date:"d/m/Y" }}م إلى {{
-                            enrollment.session.end_date|date:"d/m/Y" }}م</span>
+                        <span>من {{ enrollment.session.start_date|date:"d/m/Y" }}م إلى {{ enrollment.session.end_date|date:"d/m/Y" }}م</span>
                     </td>
                 </tr>
             </table>
@@ -480,7 +479,7 @@
             <div class="cert-footer">
                 <div class="footer-meta-row">
                     <div>المحطة: {{ cert_settings.station_text }}</div>
-                    <div>التاريخ: &nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; / {% now "Y" %}م</div>
+                    <div>التاريخ: من {{ enrollment.session.start_date|date:"d/m/Y" }}م إلى {{ enrollment.session.end_date|date:"d/m/Y" }}م</div>
                 </div>
 
                 <!-- Grading Scale Mini Table -->

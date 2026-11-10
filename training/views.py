@@ -2378,14 +2378,13 @@ def certificate_settings_update_view(request):
             cert_settings.right_logo = None
             cert_settings.save()
             messages.success(request, 'تمت إعادة تعيين الشعار الأيمن للشهادة إلى الشعار الافتراضي (صقر الجديان).')
-            return redirect('training:admin_dashboard')
-
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
         # إعادة تعيين اللوغو الأيسر إذا طلب
         if 'reset_left_logo' in request.POST:
             cert_settings.left_logo = None
             cert_settings.save()
             messages.success(request, 'تمت إعادة تعيين الشعار الأيسر للشهادة إلى الشعار الافتراضي (شعار نظم المعلومات).')
-            return redirect('training:admin_dashboard')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
 
         form = CertificateSettingsForm(request.POST, request.FILES, instance=cert_settings)
         if form.is_valid():
@@ -2402,7 +2401,7 @@ def certificate_settings_update_view(request):
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
-    return redirect('training:admin_dashboard')
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
 
 
 # =====================================================================

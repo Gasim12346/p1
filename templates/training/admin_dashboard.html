@@ -446,9 +446,37 @@
                             <form method="post" action="{% url 'training:certificate_settings_update' %}">
                                 {% csrf_token %}
 
-                                <!-- 1. الترويسة والعناوين -->
+                                <!-- 1. تخصيص وإعدادات الشهادة التفصيلية الأساسية والمتقدمة (كشف الدرجات والترتيب والملحوظة) -->
+                                <div class="p-3 mb-4 rounded-3 border-2 border-primary bg-primary bg-opacity-10">
+                                    <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom border-primary border-opacity-25 d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-file-earmark-text-fill fs-5"></i>
+                                            <span>1. تخصيص الشهادة التفصيلية الأساسية والمتقدمة (طولية A4)</span>
+                                        </div>
+                                        <span class="badge bg-primary text-white">النموذج الطولي المعتمد</span>
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-dark">عنوان الشهادة الأساسية (التفصيلية)</label>
+                                            {{ cert_form.basic_cert_title }}
+                                            <div class="form-text text-muted small">العنوان الرسمي أعلى الشهادة الأساسية (افتراضياً: شهادة دورة حاسوب أساسية).</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-dark">عنوان الشهادة المتقدمة (التفصيلية)</label>
+                                            {{ cert_form.advanced_cert_title }}
+                                            <div class="form-text text-muted small">العنوان الرسمي أعلى الشهادة المتقدمة (افتراضياً: شهادة دورة حاسوب متقدمة).</div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold small text-dark">نص الملحوظة الافتراضي للشهادة التفصيلية</label>
+                                            {{ cert_form.default_certificate_note }}
+                                            <div class="form-text text-muted small">يظهر هذا النص تلقائياً أسفل كشف درجات المواد لأي دارس مالم يتم كتابة ملحوظة مخصصة له من صفحة رصد درجات الدورة.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. الترويسة والعناوين -->
                                 <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom">
-                                    <i class="bi bi-type-h1 me-1"></i> 1. ترويسة وعناوين الشهادة
+                                    <i class="bi bi-type-h1 me-1"></i> 2. ترويسة وعناوين الشهادة
                                 </h6>
                                 <div class="row g-3 mb-4">
                                     <div class="col-12">
@@ -581,16 +609,145 @@
                 <div class="col-12 col-xl-5">
                     <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 90px;">
                         <div class="card-header bg-white border-bottom p-3">
-                            <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fw-bold text-dark">
                                     <i class="bi bi-eye-fill text-primary me-1"></i> معاينة حية لشكل الشهادة
                                 </span>
-                                <span class="badge bg-success bg-opacity-10 text-success">مطابق للأصل الرسمي</span>
+                                <span class="badge bg-success bg-opacity-10 text-success">تحديث فوري</span>
+                            </div>
+                            <!-- أزرار التبديل الفوري بين معاينة الشهادة التفصيلية وشهادة التقدير -->
+                            <div class="btn-group btn-group-sm w-100 shadow-sm rounded-3 overflow-hidden" role="group">
+                                <button type="button" class="btn btn-primary fw-bold py-2" id="btnPreviewDetailed" onclick="switchCertPreview('detailed')">
+                                    <i class="bi bi-file-earmark-text-fill me-1"></i> الشهادة التفصيلية الأساسية
+                                </button>
+                                <button type="button" class="btn btn-outline-primary fw-bold py-2" id="btnPreviewLandscape" onclick="switchCertPreview('landscape')">
+                                    <i class="bi bi-award-fill me-1"></i> شهادة التقدير الرسمية
+                                </button>
                             </div>
                         </div>
                         <div class="card-body p-3">
-                            <div class="cert-preview-box text-center">
-                                
+                            <!-- 1. المعاينة الحية للشهادة التفصيلية الأساسية (طولية A4) -->
+                            <div id="previewDetailedCert" style="background: #ffffff; border: 3px double #000000; padding: 14px 10px; font-family: 'Amiri', 'Traditional Arabic', serif; color: #000; font-size: 0.73rem;">
+                                <!-- الترويسة والعنوان -->
+                                <div class="text-center mb-2">
+                                    <div style="font-size: 0.82rem; font-weight: bold; text-decoration: underline; line-height: 1.3;">{{ cert_settings.header_line_1 }}</div>
+                                    <div style="font-size: 0.78rem; font-weight: bold; text-decoration: underline; line-height: 1.3;">{{ cert_settings.header_line_2 }}</div>
+                                    <div style="font-size: 0.95rem; font-weight: 800; text-decoration: underline; margin-top: 3px; line-height: 1.3;">{{ cert_settings.basic_cert_title }}</div>
+                                </div>
+
+                                <!-- جدول بيانات الدارس -->
+                                <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 0.65rem;">
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>البطاقة:</strong> 235402384</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>الرتبة:</strong> مقدم</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>الاسم:</strong> علي احمد النيل</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>الوحدة:</strong> سلاح الاشارة</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>رقم الدورة:</strong> (13)</td>
+                                        <td style="border: 1px solid #000; padding: 2px 4px; text-align: center;"><strong>التواريخ:</strong> من 02/11/2026م إلى 18/11/2026م</td>
+                                    </tr>
+                                </table>
+
+                                <!-- جدول التقدير والترتيب -->
+                                <div class="d-flex justify-content-center mb-2">
+                                    <table style="width: 58%; border-collapse: collapse; font-size: 0.66rem; text-align: center;">
+                                        <tr style="font-weight: bold; background: #fafafa;">
+                                            <th style="border: 1px solid #000; padding: 2px;">التقدير</th>
+                                            <th style="border: 1px solid #000; padding: 2px;">الترتيب</th>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 3px; font-weight: 800; font-size: 0.8rem;">(أ)</td>
+                                            <td style="border: 1px solid #000; padding: 3px;">
+                                                <div style="border-bottom: 1px solid #000; font-weight: bold;">الأول</div>
+                                                <div style="font-weight: bold;">17</div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- جدول كشف الدرجات التفصيلي -->
+                                <table style="width: 88%; margin: 0 auto 6px auto; border-collapse: collapse; font-size: 0.63rem; text-align: center;">
+                                    <thead>
+                                        <tr style="font-weight: bold; background: #fafafa;">
+                                            <th rowspan="2" style="border: 1px solid #000; width: 50%; padding: 2px;">المــــــواد</th>
+                                            <th colspan="2" style="border: 1px solid #000; width: 50%; padding: 2px;">الدرجـــــات</th>
+                                        </tr>
+                                        <tr style="font-weight: bold; background: #fafafa;">
+                                            <th style="border: 1px solid #000; width: 25%; padding: 1px;">قصوى</th>
+                                            <th style="border: 1px solid #000; width: 25%; padding: 1px;">متحصل عليها</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 2px 3px;">مقدمة وتشغيل</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">100</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">90</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 2px 3px;">معالجة النصوص</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">100</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">95</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 2px 3px;">السلوك والمواظبة</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">10</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">10</td>
+                                        </tr>
+                                        <tr style="font-weight: bold; background: #fafafa;">
+                                            <td style="border: 1px solid #000; padding: 2px 3px;">مجموع الدرجات</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">210</td>
+                                            <td style="border: 1px solid #000; padding: 2px;">195</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <!-- نص الملحوظة -->
+                                <div style="text-align: right; margin-bottom: 6px; font-size: 0.65rem; padding: 0 4px; line-height: 1.4;">
+                                    <span style="font-weight: bold; text-decoration: underline;">ملحوظة:</span>
+                                    <span>{{ cert_settings.default_certificate_note }}</span>
+                                </div>
+
+                                <!-- التوقيعات الثلاثة -->
+                                <div class="row g-1 text-center" style="font-size: 0.63rem; font-weight: bold; margin-bottom: 5px;">
+                                    <div class="col-6 text-end pe-2">
+                                        <div>{{ cert_settings.right_signer_rank }}</div>
+                                        <div style="font-size: 0.68rem;">{{ cert_settings.right_signer_name }}</div>
+                                        <div class="text-muted" style="font-size: 0.58rem;">{{ cert_settings.right_signer_title }}</div>
+                                    </div>
+                                    <div class="col-6 text-start ps-2">
+                                        <div>{{ cert_settings.left_signer_rank }}</div>
+                                        <div style="font-size: 0.68rem;">{{ cert_settings.left_signer_name }}</div>
+                                        <div class="text-muted" style="font-size: 0.58rem;">{{ cert_settings.left_signer_title }}</div>
+                                    </div>
+                                    <div class="col-12 mt-1">
+                                        <div>{{ cert_settings.center_signer_rank }}</div>
+                                        <div style="font-size: 0.7rem;">{{ cert_settings.center_signer_name }}</div>
+                                        <div class="text-muted" style="font-size: 0.58rem;">{{ cert_settings.center_signer_title }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- التذييل والمقياس -->
+                                <div class="d-flex justify-content-between align-items-center pt-1 border-top" style="font-size: 0.62rem; font-weight: bold;">
+                                    <span>المحطة: {{ cert_settings.station_text }}</span>
+                                    <span>التاريخ: من 02/11/2026م إلى 18/11/2026م</span>
+                                </div>
+                                <table style="width: 78%; margin: 3px auto 2px auto; border-collapse: collapse; font-size: 0.56rem; text-align: center;">
+                                    <tr style="font-weight: bold;">
+                                        <td style="border: 1px solid #000; padding: 1px;">ممتاز (أ)</td>
+                                        <td style="border: 1px solid #000; padding: 1px;">جيد جداً (ب)</td>
+                                        <td style="border: 1px solid #000; padding: 1px;">جيد (ج)</td>
+                                        <td style="border: 1px solid #000; padding: 1px;">مقبول (د)</td>
+                                        <td style="border: 1px solid #000; padding: 1px;">راسب (هـ)</td>
+                                    </tr>
+                                </table>
+                                <div style="font-size: 0.58rem; font-weight: bold; text-align: center; color: #198754; margin-top: 1px;">
+                                    {{ cert_settings.seal_notice }}
+                                </div>
+                            </div>
+
+                            <!-- 2. المعاينة الحية لشهادة التقدير الرسمية (العرضية) -->
+                            <div id="previewLandscapeCert" class="cert-preview-box text-center" style="display: none;">
                                 <!-- Top Bar with Logos -->
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <img src="{% static 'img/sudan_crest.png' %}" alt="شعار السودان" style="height: 38px; width: auto;">
@@ -643,7 +800,7 @@
                             <div class="mt-3 text-center">
                                 <small class="text-muted">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    جميع التغييرات التي تحفظها هنا تنعكس مباشرة وفوراً على أي شهادة يتم فتحها أو طباعتها.
+                                    جميع التغييرات التي تحفظها هنا تنعكس فوراً ومباشرة على الشهادات عند فتحها أو طباعتها.
                                 </small>
                             </div>
                         </div>
@@ -759,4 +916,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchCertPreview(type) {
+        const detailed = document.getElementById('previewDetailedCert');
+        const landscape = document.getElementById('previewLandscapeCert');
+        const btnDetailed = document.getElementById('btnPreviewDetailed');
+        const btnLandscape = document.getElementById('btnPreviewLandscape');
+        if (type === 'detailed') {
+            if (detailed) detailed.style.display = 'block';
+            if (landscape) landscape.style.display = 'none';
+            if (btnDetailed) { btnDetailed.classList.add('active', 'btn-primary'); btnDetailed.classList.remove('btn-outline-primary'); }
+            if (btnLandscape) { btnLandscape.classList.remove('active', 'btn-primary'); btnLandscape.classList.add('btn-outline-primary'); }
+        } else {
+            if (detailed) detailed.style.display = 'none';
+            if (landscape) landscape.style.display = 'block';
+            if (btnDetailed) { btnDetailed.classList.remove('active', 'btn-primary'); btnDetailed.classList.add('btn-outline-primary'); }
+            if (btnLandscape) { btnLandscape.classList.add('active', 'btn-primary'); btnLandscape.classList.remove('btn-outline-primary'); }
+        }
+    }
+</script>
 {% endblock %}
