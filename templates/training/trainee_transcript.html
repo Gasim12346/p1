@@ -152,42 +152,15 @@
                         </td>
                         <td class="text-center">
                             {% if en.has_complete_data_and_grades %}
-                                <div class="dropdown d-inline-block">
-                                    <button class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="خيارات إصدار الشهادة">
-                                        <i class="bi bi-printer-fill"></i>
-                                        <span>طباعة الشهادة</span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow">
-                                        <li>
-                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate' en.id %}" target="_blank">
-                                                <i class="bi bi-award-fill text-warning fs-5"></i>
-                                                <div>
-                                                    <strong>شهادة التقدير الرسمية</strong>
-                                                    <div class="text-muted small">النموذج العرضي الرسمي</div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider my-1"></li>
-                                        <li>
-                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=basic" target="_blank">
-                                                <i class="bi bi-file-earmark-text text-primary fs-5"></i>
-                                                <div>
-                                                    <strong>شهادة أساسية</strong>
-                                                    <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'training:certificate_detailed' en.id %}?type=advanced" target="_blank">
-                                                <i class="bi bi-trophy text-success fs-5"></i>
-                                                <div>
-                                                    <strong>شهادة متقدمة</strong>
-                                                    <div class="text-muted small">شاملة كشف الدرجات والترتيب والملحوظة</div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                <button type="button" 
+                                        class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
+                                        onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}?type=basic', '{% url 'training:certificate_detailed' en.id %}?type=advanced', '{{ trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#certChoiceModal"
+                                        title="خيارات استخراج وطباعة الشهادة">
+                                    <i class="bi bi-printer-fill"></i>
+                                    <span>طباعة الشهادة</span>
+                                </button>
                             {% else %}
                                 <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
                                     <i class="bi bi-lock-fill text-secondary"></i>
@@ -207,4 +180,145 @@
         </table>
     </div>
 </div>
+
+<!-- Modal: خيارات إصدار الشهادات للدارس -->
+<div class="modal fade" id="certChoiceModal" tabindex="-1" aria-labelledby="certChoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white py-3 px-4">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="certChoiceModalLabel">
+                    <i class="bi bi-award-fill text-warning fs-4"></i>
+                    <span>خيارات استخراج وطباعة الشهادة</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-light">
+                <!-- بيانات الدارس المحددة -->
+                <div class="bg-white p-3 rounded-3 border shadow-sm mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">بيانات الدارس المعتمدة بالدورة:</div>
+                            <div id="certModalStudentInfo" class="fs-6 text-dark mt-1">
+                                <!-- يتم ملؤها ديناميكياً -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-ui-checks-grid text-primary me-1"></i>
+                    يرجى اختيار نموذج الشهادة المطلوب استخراجه:
+                </h6>
+
+                <div class="row g-3">
+                    <!-- الخيار 1: شهادة التقدير الرسمية -->
+                    <div class="col-12">
+                        <a href="#" id="certLinkOfficial" target="_blank" class="card border-2 border-warning text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-warning text-dark p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                    <i class="bi bi-award-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                                        <span>1. شهادة التقدير الرسمية</span>
+                                        <span class="badge bg-warning text-dark">عرضية A4</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد لإكمال الدورة مع التقدير العام وشعارات القوات المسلحة.</div>
+                                </div>
+                            </div>
+                            <div class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                                <span>فتح وطباعة</span>
+                                <i class="bi bi-box-arrow-up-left"></i>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- الخيار 2: الشهادة الأساسية التفصيلية -->
+                    <div class="col-12">
+                        <a href="#" id="certLinkBasic" target="_blank" class="card border-2 border-primary text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                                        <span>2. شهادة دورة حاسوب أساسية (تفصيلية)</span>
+                                        <span class="badge bg-primary text-white">طولية A4</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">النموذج الطولي المعتمد شامل كشف درجات المواد، الترتيب، والملحوظة الخاصة.</div>
+                                </div>
+                            </div>
+                            <div class="btn btn-primary fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                                <span>فتح وطباعة</span>
+                                <i class="bi bi-box-arrow-up-left"></i>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- الخيار 3: الشهادة المتقدمة التفصيلية -->
+                    <div class="col-12">
+                        <a href="#" id="certLinkAdv" target="_blank" class="card border-2 border-success text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                    <i class="bi bi-trophy-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                                        <span>3. شهادة دورة حاسوب متقدمة (تفصيلية)</span>
+                                        <span class="badge bg-success text-white">طولية A4</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">النموذج الطولي المعتمد للدورات المتقدمة شامل كشف درجات المواد، الترتيب، والملحوظة الخاصة.</div>
+                                </div>
+                            </div>
+                            <div class="btn btn-success fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                                <span>فتح وطباعة</span>
+                                <i class="bi bi-box-arrow-up-left"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>تفتح كل شهادة في نافذة مستقلة مهيأة للطباعة المباشرة بصيغة A4.</span>
+                <button type="button" class="btn btn-secondary px-4 fw-bold rounded-2" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // فتح نافذة اختيار الشهادات للدارس
+    function openCertificateModal(officialUrl, basicUrl, advUrl, name, rank, num, unit, grade) {
+        const infoEl = document.getElementById('certModalStudentInfo');
+        if (infoEl) {
+            infoEl.innerHTML = `<strong>${rank || ''} / ${name || ''}</strong> <span class="text-muted small ms-2">(النمرة: ${num || ''} | الوحدة: ${unit || ''} | التقدير: <span class="badge bg-success">${grade || ''}</span>)</span>`;
+        }
+        const linkOfficial = document.getElementById('certLinkOfficial');
+        if (linkOfficial) linkOfficial.href = officialUrl;
+
+        const linkBasic = document.getElementById('certLinkBasic');
+        if (linkBasic) linkBasic.href = basicUrl;
+
+        const linkAdv = document.getElementById('certLinkAdv');
+        if (linkAdv) linkAdv.href = advUrl;
+
+        const modalEl = document.getElementById('certChoiceModal');
+        if (modalEl) {
+            if (window.bootstrap && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else {
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                document.body.classList.add('modal-open');
+            }
+        }
+    }
+</script>
 {% endblock %}
