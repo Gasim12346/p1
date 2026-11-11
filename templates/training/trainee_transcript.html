@@ -154,7 +154,7 @@
                             {% if en.has_complete_data_and_grades %}
                                 <button type="button" 
                                         class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
-                                        onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}?type=basic', '{% url 'training:certificate_detailed' en.id %}?type=advanced', '{{ trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
+                                        onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{{ trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
                                         data-bs-toggle="modal" 
                                         data-bs-target="#certChoiceModal"
                                         title="خيارات استخراج وطباعة الشهادة">
@@ -237,7 +237,7 @@
                         </a>
                     </div>
 
-                    <!-- الخيار 2: الشهادة الأساسية التفصيلية -->
+                    <!-- الخيار 2: شهادة التفاصيل -->
                     <div class="col-12">
                         <a href="#" id="certLinkBasic" target="_blank" class="card border-2 border-primary text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
                             <div class="d-flex align-items-center gap-3">
@@ -246,35 +246,13 @@
                                 </div>
                                 <div>
                                     <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
-                                        <span>2. شهادة دورة حاسوب أساسية (تفصيلية)</span>
+                                        <span>2. شهادة التفاصيل (كشف الدرجات والترتيب)</span>
                                         <span class="badge bg-primary text-white">طولية A4</span>
                                     </div>
-                                    <div class="text-muted small mt-1">النموذج الطولي المعتمد شامل كشف درجات المواد، الترتيب، والملحوظة الخاصة.</div>
+                                    <div class="text-muted small mt-1">النموذج المعتمد شامل كشف درجات المواد، الترتيب العام، والملحوظة الخاصة.</div>
                                 </div>
                             </div>
                             <div class="btn btn-primary fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
-                                <span>فتح وطباعة</span>
-                                <i class="bi bi-box-arrow-up-left"></i>
-                            </div>
-                        </a>
-                    </div>
-
-                    <!-- الخيار 3: الشهادة المتقدمة التفصيلية -->
-                    <div class="col-12">
-                        <a href="#" id="certLinkAdv" target="_blank" class="card border-2 border-success text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-success text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
-                                    <i class="bi bi-trophy-fill"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
-                                        <span>3. شهادة دورة حاسوب متقدمة (تفصيلية)</span>
-                                        <span class="badge bg-success text-white">طولية A4</span>
-                                    </div>
-                                    <div class="text-muted small mt-1">النموذج الطولي المعتمد للدورات المتقدمة شامل كشف درجات المواد، الترتيب، والملحوظة الخاصة.</div>
-                                </div>
-                            </div>
-                            <div class="btn btn-success fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
                                 <span>فتح وطباعة</span>
                                 <i class="bi bi-box-arrow-up-left"></i>
                             </div>
@@ -295,7 +273,22 @@
 {% block extra_js %}
 <script>
     // فتح نافذة اختيار الشهادات للدارس
-    function openCertificateModal(officialUrl, basicUrl, advUrl, name, rank, num, unit, grade) {
+    function openCertificateModal(officialUrl, detailUrl, arg3, arg4, arg5, arg6, arg7, arg8) {
+        let name, rank, num, unit, grade;
+        if (typeof arg5 === 'undefined' || typeof arg6 === 'undefined') {
+            name = arg3;
+            rank = arg4;
+            num = arg5;
+            unit = arg6;
+            grade = arg7;
+        } else {
+            name = arg4;
+            rank = arg5;
+            num = arg6;
+            unit = arg7;
+            grade = arg8;
+        }
+
         const infoEl = document.getElementById('certModalStudentInfo');
         if (infoEl) {
             infoEl.innerHTML = `<strong>${rank || ''} / ${name || ''}</strong> <span class="text-muted small ms-2">(النمرة: ${num || ''} | الوحدة: ${unit || ''} | التقدير: <span class="badge bg-success">${grade || ''}</span>)</span>`;
@@ -304,10 +297,7 @@
         if (linkOfficial) linkOfficial.href = officialUrl;
 
         const linkBasic = document.getElementById('certLinkBasic');
-        if (linkBasic) linkBasic.href = basicUrl;
-
-        const linkAdv = document.getElementById('certLinkAdv');
-        if (linkAdv) linkAdv.href = advUrl;
+        if (linkBasic) linkBasic.href = detailUrl;
 
         const modalEl = document.getElementById('certChoiceModal');
         if (modalEl) {

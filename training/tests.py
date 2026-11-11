@@ -1828,26 +1828,26 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(self.enrollment.grade_symbol, '(أ)')
         self.assertIn('الأول', self.enrollment.rank_display)
 
-    def test_basic_and_advanced_certificate_detailed_view(self):
-        """اختبار فتح الشهادة التفصيلية الأساسية والمتقدمة والتأكد من البيانات"""
+    def test_detailed_and_official_certificate_view(self):
+        """اختبار فتح شهادة التفاصيل وشهادة التقدير الرسمية والتأكد من البيانات"""
         self.client.login(username='admin_cert', password='Password123!')
         
-        # الشهادة الأساسية
-        url_basic = reverse('training:certificate_detailed', args=[self.enrollment.id]) + '?type=basic'
-        res_basic = self.client.get(url_basic)
-        self.assertEqual(res_basic.status_code, 200)
-        self.assertContains(res_basic, 'شهادة دورة حاسوب أساسية')
-        self.assertContains(res_basic, '29803')
-        self.assertContains(res_basic, 'محمد عبدالجليل خلف الله')
-        self.assertContains(res_basic, 'ملحوظة تجريبية خاصة بالدارس')
-        self.assertContains(res_basic, 'مقدمة وتشغيل')
-        self.assertContains(res_basic, 'السلوك والمواظبة')
+        # شهادة التفاصيل
+        url_detailed = reverse('training:certificate_detailed', args=[self.enrollment.id])
+        res_detailed = self.client.get(url_detailed)
+        self.assertEqual(res_detailed.status_code, 200)
+        self.assertContains(res_detailed, 'شهادة دورة حاسوب أساسية')
+        self.assertContains(res_detailed, '29803')
+        self.assertContains(res_detailed, 'محمد عبدالجليل خلف الله')
+        self.assertContains(res_detailed, 'ملحوظة تجريبية خاصة بالدارس')
+        self.assertContains(res_detailed, 'مقدمة وتشغيل')
+        self.assertContains(res_detailed, 'السلوك والمواظبة')
 
-        # الشهادة المتقدمة
-        url_adv = reverse('training:certificate_detailed', args=[self.enrollment.id]) + '?type=advanced'
-        res_adv = self.client.get(url_adv)
-        self.assertEqual(res_adv.status_code, 200)
-        self.assertContains(res_adv, 'شهادة دورة حاسوب متقدمة')
+        # شهادة التقدير الرسمية
+        url_official = reverse('training:certificate', args=[self.enrollment.id])
+        res_official = self.client.get(url_official)
+        self.assertEqual(res_official.status_code, 200)
+        self.assertContains(res_official, 'محمد عبدالجليل خلف الله')
 
     def test_save_notes_even_when_session_is_locked(self):
         """اختبار إمكانية تعديل وحفظ ملحوظة الشهادة حتى بعد اعتماد وإقفال الدورة"""
@@ -1867,7 +1867,7 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(self.enrollment.certificate_note, 'ملحوظة جديدة بعد اعتماد النتيجة')
 
     def test_customize_certificate_titles_in_admin(self):
-        """اختبار تخصيص عناوين الشهادات الأساسية والمتقدمة والملحوظة الافتراضية من لوحة الإدارة"""
+        """اختبار تخصيص عنوان شهادة التفاصيل والملحوظة الافتراضية من لوحة الإدارة"""
         self.client.login(username='admin_cert', password='Password123!')
         url = reverse('training:certificate_settings_update')
         cert = CertificateSettings.get_settings()
@@ -1879,7 +1879,6 @@ class CertificateOptionsAndNoteTests(TestCase):
             'cert_title': cert.cert_title,
             'cert_title_color': cert.cert_title_color,
             'basic_cert_title': 'شهادة دورة حاسوب أساسية مخصصة',
-            'advanced_cert_title': 'شهادة دورة ذكاء اصطناعي متقدمة',
             'default_certificate_note': 'أظهر كفاءة ممتازة واجتهاداً كبيراً.',
             'right_signer_rank': cert.right_signer_rank,
             'right_signer_name': cert.right_signer_name,
@@ -1900,7 +1899,6 @@ class CertificateOptionsAndNoteTests(TestCase):
 
         cert.refresh_from_db()
         self.assertEqual(cert.basic_cert_title, 'شهادة دورة حاسوب أساسية مخصصة')
-        self.assertEqual(cert.advanced_cert_title, 'شهادة دورة ذكاء اصطناعي متقدمة')
         self.assertEqual(cert.default_certificate_note, 'أظهر كفاءة ممتازة واجتهاداً كبيراً.')
 
     def test_results_center_archive_only_completed_sessions(self):
@@ -1986,7 +1984,7 @@ class CertificateOptionsAndNoteTests(TestCase):
         res_cert = self.client.get(reverse('training:certificate', kwargs={'enrollment_id': enrollment.id}))
         self.assertEqual(res_cert.status_code, 302)
 
-        res_cert_detail = self.client.get(reverse('training:certificate_detailed', kwargs={'enrollment_id': enrollment.id}), {'type': 'basic'})
+        res_cert_detail = self.client.get(reverse('training:certificate_detailed', kwargs={'enrollment_id': enrollment.id}))
         self.assertEqual(res_cert_detail.status_code, 302)
 
         # 4. فحص إلغاء قطع الدورة واستعادة الدارس

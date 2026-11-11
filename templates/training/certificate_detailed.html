@@ -314,20 +314,6 @@
             <span>طباعة الشهادة (A4)</span>
         </button>
 
-        {% if cert_type == 'basic' %}
-        <a href="?type=advanced"
-            class="btn btn-outline-light text-dark bg-white fw-bold px-3 shadow-sm d-flex align-items-center gap-2">
-            <i class="bi bi-arrow-repeat text-success"></i>
-            <span>التبديل إلى: الشهادة المتقدمة</span>
-        </a>
-        {% else %}
-        <a href="?type=basic"
-            class="btn btn-outline-light text-dark bg-white fw-bold px-3 shadow-sm d-flex align-items-center gap-2">
-            <i class="bi bi-arrow-repeat text-primary"></i>
-            <span>التبديل إلى: الشهادة الأساسية</span>
-        </a>
-        {% endif %}
-
         <a href="{% url 'training:certificate' enrollment.id %}" target="_blank"
             class="btn btn-warning text-dark fw-bold px-3 shadow-sm d-flex align-items-center gap-2"
             title="فتح شهادة التقدير الرسمية العرضية">

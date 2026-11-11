@@ -903,12 +903,7 @@ class CertificateSettings(models.Model):
     basic_cert_title = models.CharField(
         max_length=200,
         default='شهادة دورة حاسوب أساسية',
-        verbose_name='عنوان الشهادة الأساسية'
-    )
-    advanced_cert_title = models.CharField(
-        max_length=200,
-        default='شهادة دورة حاسوب متقدمة',
-        verbose_name='عنوان الشهادة المتقدمة'
+        verbose_name='عنوان شهادة التفاصيل'
     )
     default_certificate_note = models.TextField(
         default='بدأ الدورة بدون معلومات، بذل مجهوداً أهله للحصول على هذا التقدير، مواظب ومشارك، مهتم وطموح.',

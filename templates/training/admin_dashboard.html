@@ -446,28 +446,23 @@
                             <form method="post" action="{% url 'training:certificate_settings_update' %}">
                                 {% csrf_token %}
 
-                                <!-- 1. تخصيص وإعدادات الشهادة التفصيلية الأساسية والمتقدمة (كشف الدرجات والترتيب والملحوظة) -->
+                                <!-- 1. تخصيص وإعدادات شهادة التفاصيل (كشف الدرجات والترتيب والملحوظة) -->
                                 <div class="p-3 mb-4 rounded-3 border-2 border-primary bg-primary bg-opacity-10">
                                     <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom border-primary border-opacity-25 d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="bi bi-file-earmark-text-fill fs-5"></i>
-                                            <span>1. تخصيص الشهادة التفصيلية الأساسية والمتقدمة (طولية A4)</span>
+                                            <span>1. تخصيص شهادة التفاصيل (طولية A4)</span>
                                         </div>
                                         <span class="badge bg-primary text-white">النموذج الطولي المعتمد</span>
                                     </h6>
                                     <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold small text-dark">عنوان الشهادة الأساسية (التفصيلية)</label>
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold small text-dark">عنوان شهادة التفاصيل</label>
                                             {{ cert_form.basic_cert_title }}
-                                            <div class="form-text text-muted small">العنوان الرسمي أعلى الشهادة الأساسية (افتراضياً: شهادة دورة حاسوب أساسية).</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold small text-dark">عنوان الشهادة المتقدمة (التفصيلية)</label>
-                                            {{ cert_form.advanced_cert_title }}
-                                            <div class="form-text text-muted small">العنوان الرسمي أعلى الشهادة المتقدمة (افتراضياً: شهادة دورة حاسوب متقدمة).</div>
+                                            <div class="form-text text-muted small">العنوان الرسمي المعتمد أعلى شهادة التفاصيل (افتراضياً: شهادة دورة حاسوب أساسية).</div>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label fw-bold small text-dark">نص الملحوظة الافتراضي للشهادة التفصيلية</label>
+                                            <label class="form-label fw-bold small text-dark">نص الملحوظة الافتراضي لشهادة التفاصيل</label>
                                             {{ cert_form.default_certificate_note }}
                                             <div class="form-text text-muted small">يظهر هذا النص تلقائياً أسفل كشف درجات المواد لأي دارس مالم يتم كتابة ملحوظة مخصصة له من صفحة رصد درجات الدورة.</div>
                                         </div>
@@ -498,19 +493,6 @@
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold small">لون عنوان الشهادة</label>
                                         {{ cert_form.cert_title_color }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small">عنوان الشهادة الأساسية (التفصيلية)</label>
-                                        {{ cert_form.basic_cert_title }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small">عنوان الشهادة المتقدمة (التفصيلية)</label>
-                                        {{ cert_form.advanced_cert_title }}
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold small">نص الملحوظة الافتراضي للشهادة</label>
-                                        {{ cert_form.default_certificate_note }}
-                                        <div class="form-text text-muted small">هذا النص يظهر تلقائياً في الشهادة الأساسية والمتقدمة لأي دارس مالم يتم تخصيص ملحوظة خاصة به في صفحة رصد النتائج.</div>
                                     </div>
                                 </div>
 

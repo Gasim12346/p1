@@ -1698,14 +1698,8 @@ def certificate_detailed_view(request, enrollment_id):
         return redirect('training:results_entry', session_id=enrollment.session.id)
 
     cert_settings = CertificateSettings.get_settings()
-    cert_type = request.GET.get('type', 'basic').lower()
-    
-    if cert_type == 'advanced':
-        page_title = cert_settings.advanced_cert_title
-        cert_badge = 'شهادة دورة حاسوب متقدمة'
-    else:
-        page_title = cert_settings.basic_cert_title
-        cert_badge = 'شهادة دورة حاسوب أساسية'
+    page_title = cert_settings.basic_cert_title
+    cert_badge = 'شهادة التفاصيل'
 
     # تجهيز درجات المواد
     subjects = list(enrollment.session.course.subjects.all())
@@ -1727,7 +1721,6 @@ def certificate_detailed_view(request, enrollment_id):
         'session': enrollment.session,
         'course': enrollment.session.course,
         'cert_settings': cert_settings,
-        'cert_type': cert_type,
         'page_title': page_title,
         'cert_badge': cert_badge,
         'subjects_data': subjects_data,
@@ -1785,8 +1778,8 @@ def trainee_transcript_view(request, military_number):
                 'is_graded': en.is_graded,
                 'has_complete_data': en.has_complete_data_and_grades,
                 'cert_url': reverse('training:certificate', args=[en.id]),
-                'cert_basic_url': f"{reverse('training:certificate_detailed', args=[en.id])}?type=basic",
-                'cert_advanced_url': f"{reverse('training:certificate_detailed', args=[en.id])}?type=advanced",
+                'cert_basic_url': reverse('training:certificate_detailed', args=[en.id]),
+                'cert_advanced_url': reverse('training:certificate_detailed', args=[en.id]),
             })
         return JsonResponse({
             'success': True,
