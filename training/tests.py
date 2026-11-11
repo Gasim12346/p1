@@ -2074,6 +2074,76 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(data['next_number'], '1')
         self.assertTrue(data['is_special'])
 
+    def test_quick_add_subject_api_and_integration(self):
+        """التحقق من إضافة مادة دراسية سريعة عبر API للدورة وربطها بالدورة المنعقدة وظهورها في صفحة الإنشاء"""
+        cat = CourseCategory.objects.create(name='دورات حاسوب عامة')
+        course = Course.objects.create(
+            name='دورة برمجة متقدمة',
+            category=cat,
+            course_number='PROG-200'
+        )
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='1',
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 30)
+        )
+
+        api_url = reverse('training:api_add_course_subject')
+
+        # 1. مستخدم غير مسجل / غير مصرح
+        self.client.logout()
+        res_anon = self.client.post(api_url, {'course_id': course.id, 'name': 'بايثون'})
+        self.assertEqual(res_anon.status_code, 302)
+
+        # مستخدم عادي ليس مسجل أو أدمن
+        reg_user = User.objects.create_user(username='regular_subject_user', password='Password123!')
+        reg_user.profile.role = UserRole.REGULAR
+        reg_user.profile.save()
+        self.client.force_login(reg_user)
+        res_forbidden = self.client.post(api_url, {'course_id': course.id, 'name': 'بايثون'})
+        self.assertEqual(res_forbidden.status_code, 403)
+
+        # 2. مستخدم مسجل / أدمن يضيف مادة بنجاح
+        self.client.force_login(self.admin)
+        res_success = self.client.post(api_url, {
+            'course_id': course.id,
+            'session_id': session.id,
+            'name': 'بايثون متقدم',
+            'credit_hours': '15',
+            'max_grade': '100'
+        })
+        self.assertEqual(res_success.status_code, 200)
+        data = res_success.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['subject']['name'], 'بايثون متقدم')
+        self.assertEqual(data['subject']['credit_hours'], 15)
+        self.assertEqual(data['subject']['max_grade'], 100.0)
+
+        # التحقق من حفظ المادة في قاعدة البيانات
+        sub = Subject.objects.get(name='بايثون متقدم', course=course)
+        self.assertEqual(sub.credit_hours, 15)
+
+        # التحقق من الربط التلقائي بالدورة المنعقدة
+        self.assertTrue(SessionSubjectInstructor.objects.filter(session=session, subject=sub).exists())
+
+        # 3. محاولة إضافة مادة مكررة بنفس الاسم
+        res_dup = self.client.post(api_url, {
+            'course_id': course.id,
+            'name': 'بايثون متقدم',
+        })
+        self.assertEqual(res_dup.status_code, 400)
+        self.assertIn('مضافة مسبقاً', res_dup.json()['message'])
+
+        # 4. فحص صفحة إنشاء دورة جديدة وتأكد وجود زر إضافة مادة وقائمة المواد
+        create_page_res = self.client.get(reverse('training:course_session_create'))
+        self.assertEqual(create_page_res.status_code, 200)
+        content = create_page_res.content.decode('utf-8')
+        self.assertIn('إضافة مادة لهذه الدورة', content)
+        self.assertIn('quickAddSubjectModal', content)
+        self.assertIn('بايثون متقدم', content)
+
+
 
 
 

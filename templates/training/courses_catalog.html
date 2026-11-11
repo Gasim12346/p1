@@ -405,6 +405,25 @@
                         <strong>الدورة المستهدفة:</strong> <span class="text-primary fw-bold">{{ selected_course.name }}</span>
                     </div>
 
+                    <!-- اقتراحات سريعة لمواد شائعة -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-2">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                            اقتراحات سريعة لمواد شائعة (انقر للإدراج التلقائي):
+                        </label>
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('بوربوينت', 10, 100)">+ باوربوينت</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('وورد', 10, 100)">+ وورد</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('إكسل', 10, 100)">+ إكسل</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('مقدمة وتشغيل', 10, 100)">+ مقدمة وتشغيل</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('طباعة عربي', 10, 100)">+ طباعة عربي</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('طباعة إنجليزي', 10, 100)">+ طباعة إنجليزي</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('إنترنت ومراسلات', 10, 100)">+ إنترنت ومراسلات</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('أكسس (قواعد بيانات)', 10, 100)">+ أكسس</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="fillSubjectQuickCatalog('أمن معلومات', 10, 100)">+ أمن معلومات</button>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-bold text-dark">اسم المادة الدراسية <span class="text-danger">*</span></label>
@@ -439,6 +458,17 @@
 
 {% block extra_js %}
 <script>
+    function fillSubjectQuickCatalog(name, hours, grade) {
+        const modal = document.getElementById('addSubjectModal');
+        if (!modal) return;
+        const nameInput = modal.querySelector('[name="name"]');
+        const hoursInput = modal.querySelector('[name="credit_hours"]');
+        const gradeInput = modal.querySelector('[name="max_grade"]');
+        if (nameInput) nameInput.value = name;
+        if (hoursInput && hours) hoursInput.value = hours;
+        if (gradeInput && grade) gradeInput.value = grade;
+    }
+
     // Smooth auto-scroll for mobile devices when category or course is selected
     document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth < 992) {

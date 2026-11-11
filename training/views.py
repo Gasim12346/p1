@@ -620,6 +620,101 @@ def api_get_next_course_number_view(request):
     })
 
 
+@login_required
+def api_add_course_subject_view(request):
+    """
+    إضافة مادة دراسية جديدة لدورة تدريبية عبر نافذة سريعة (AJAX)
+    متاحة لمسجل البيانات ومدير النظام.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'طريقة الطلب غير مسموح بها.'}, status=405)
+
+    if not (is_registrar_user(request.user) or is_admin_user(request.user)):
+        return JsonResponse({
+            'success': False,
+            'message': 'عفواً، إضافة مواد دراسية جديدة محصورة بمسجل البيانات أو مدير النظام.'
+        }, status=403)
+
+    course_id = request.POST.get('course_id') or request.GET.get('course_id')
+    name = (request.POST.get('name') or '').strip()
+    credit_hours_raw = request.POST.get('credit_hours', '10')
+    max_grade_raw = request.POST.get('max_grade', '100')
+    code = (request.POST.get('code') or '').strip()
+    session_id = request.POST.get('session_id')
+
+    if not course_id:
+        return JsonResponse({'success': False, 'message': 'يرجى تحديد الدورة التدريبية أولاً.'}, status=400)
+    if not name:
+        return JsonResponse({'success': False, 'message': 'يرجى إدخال اسم المادة الدراسية.'}, status=400)
+
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'الدورة التدريبية المحددة غير موجودة.'}, status=404)
+
+    # التحقق من عدم تكرار اسم المادة في هذه الدورة
+    if Subject.objects.filter(course=course, name__iexact=name).exists():
+        return JsonResponse({'success': False, 'message': f'المادة "{name}" مضافة مسبقاً لهذه الدورة.'}, status=400)
+
+    try:
+        credit_hours = int(credit_hours_raw)
+        if credit_hours < 0:
+            credit_hours = 0
+    except (ValueError, TypeError):
+        credit_hours = 10
+
+    try:
+        max_grade = float(max_grade_raw)
+        if max_grade <= 0:
+            max_grade = 100.0
+    except (ValueError, TypeError):
+        max_grade = 100.0
+
+    if not code:
+        code = Subject.generate_unique_code(course)
+
+    subject = Subject.objects.create(
+        course=course,
+        name=name,
+        code=code,
+        credit_hours=credit_hours,
+        max_grade=max_grade
+    )
+
+    # إذا تم تمرير دورة منعقدة حالية، نربط المادة بها فوراً
+    if session_id:
+        try:
+            session = CourseSession.objects.get(pk=session_id)
+            SessionSubjectInstructor.objects.get_or_create(
+                session=session,
+                subject=subject,
+                defaults={'instructor': None}
+            )
+        except CourseSession.DoesNotExist:
+            pass
+
+    log_activity(
+        request=request,
+        action_type=ActivityAction.CREATE,
+        action_category=ActivityCategory.COURSES,
+        description=f"إضافة مادة دراسية سريعة: {subject.name} (كود: {subject.code} - عظمى: {subject.max_grade}) لدورة {course.name}",
+        target_model="Subject",
+        target_id=subject.id
+    )
+
+    return JsonResponse({
+        'success': True,
+        'message': f'تمت إضافة مادة "{subject.name}" بنجاح وتوليد كودها التلقائي ({subject.code}).',
+        'subject': {
+            'id': subject.id,
+            'code': subject.code,
+            'name': subject.name,
+            'credit_hours': subject.credit_hours,
+            'max_grade': float(subject.max_grade),
+        }
+    })
+
+
 @registrar_required
 def course_session_create_view(request):
     """

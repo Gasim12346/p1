@@ -15,6 +15,7 @@ urlpatterns = [
 
     # القسم 3: الدورات ومفرداتها
     path('courses/', views.courses_catalog_view, name='courses_catalog'),
+    path('courses/api/add-subject/', views.api_add_course_subject_view, name='api_add_course_subject'),
     path('courses/<int:course_id>/edit/', views.course_edit_view, name='course_edit'),
     path('courses/<int:course_id>/delete/', views.course_delete_view, name='course_delete'),
     path('subjects/<int:subject_id>/edit/', views.subject_edit_view, name='subject_edit'),

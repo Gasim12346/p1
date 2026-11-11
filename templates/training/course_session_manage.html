@@ -102,10 +102,16 @@
                 </small>
             </div>
         </div>
-        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#editTeachersModal">
-            <i class="bi bi-pencil-square"></i>
-            <span>تعديل المشرف والمعلمين</span>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#quickAddSubjectManageModal">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>إضافة مادة لهذه الدورة</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#editTeachersModal">
+                <i class="bi bi-pencil-square"></i>
+                <span>تعديل المشرف والمعلمين</span>
+            </button>
+        </div>
     </div>
 
     <div class="table-responsive">
@@ -881,6 +887,97 @@
                     </form>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة منبثقة: إضافة مادة دراسية جديدة للدورة المنعقدة -->
+<div class="modal fade" id="quickAddSubjectManageModal" tabindex="-1" aria-labelledby="quickAddSubjectManageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-success text-white py-3 px-4 rounded-top-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-plus-circle-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="quickAddSubjectManageModalLabel">إضافة مادة دراسية جديدة للدورة</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            
+            <form id="quickAddSubjectManageForm" onsubmit="event.preventDefault(); submitQuickAddSubjectManage();">
+                <div class="modal-body p-4">
+                    <div class="alert alert-success bg-opacity-10 border border-success border-opacity-25 py-2 px-3 fw-bold mb-3 d-flex align-items-center gap-2 small text-success">
+                        <i class="bi bi-mortarboard-fill fs-6"></i>
+                        <span>الدورة المستهدفة:</span>
+                        <span class="text-dark">{{ session.course.name }} (رقم: {{ session.session_code }})</span>
+                    </div>
+
+                    <!-- اقتراحات سريعة لمواد شائعة -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-2">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                            اقتراحات سريعة لمواد شائعة (انقر للإدراج التلقائي):
+                        </label>
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('بوربوينت', 10, 100)">
+                                + باوربوينت
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('وورد', 10, 100)">
+                                + وورد
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('إكسل', 10, 100)">
+                                + إكسل
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('مقدمة وتشغيل', 10, 100)">
+                                + مقدمة وتشغيل
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('طباعة عربي', 10, 100)">
+                                + طباعة عربي
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('طباعة إنجليزي', 10, 100)">
+                                + طباعة إنجليزي
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('إنترنت ومراسلات', 10, 100)">
+                                + إنترنت ومراسلات
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('أكسس (قواعد بيانات)', 10, 100)">
+                                + أكسس
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 small" onclick="selectQuickSubjectManage('أمن معلومات', 10, 100)">
+                                + أمن معلومات
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark">
+                                اسم المادة الدراسية <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="quickSubjectManageName" class="form-control form-control-lg" placeholder="مثال: وورد، إكسل، باوربوينت..." required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">عدد الساعات <span class="text-danger">*</span></label>
+                            <input type="number" id="quickSubjectManageHours" class="form-control" value="10" min="0" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark">الدرجة العظمى <span class="text-danger">*</span></label>
+                            <input type="number" id="quickSubjectManageGrade" class="form-control" value="100" min="1" step="0.5" required>
+                        </div>
+                    </div>
+
+                    <div id="quickSubjectManageAlert" class="alert alert-danger py-2 px-3 small mt-3 d-none"></div>
+                </div>
+
+                <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-1" id="btnSubmitQuickSubjectManage" onclick="submitQuickAddSubjectManage()">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>حفظ وإضافة المادة للدورة</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1729,6 +1826,89 @@
         if (customCityInput && finalCityInput) {
             finalCityInput.value = customCityInput.value.trim();
         }
+    }
+
+    // إدراج اسم المادة تلقائياً في إدارة الدورة
+    function selectQuickSubjectManage(name, hours, maxGrade) {
+        const nameInput = document.getElementById('quickSubjectManageName');
+        const hoursInput = document.getElementById('quickSubjectManageHours');
+        const gradeInput = document.getElementById('quickSubjectManageGrade');
+
+        if (nameInput) nameInput.value = name;
+        if (hoursInput && hours !== undefined) hoursInput.value = hours;
+        if (gradeInput && maxGrade !== undefined) gradeInput.value = maxGrade;
+    }
+
+    // إرسال المادة الجديدة وحفظها للدورة التدريبية والدورة المنعقدة
+    function submitQuickAddSubjectManage() {
+        const nameInput = document.getElementById('quickSubjectManageName');
+        const hoursInput = document.getElementById('quickSubjectManageHours');
+        const gradeInput = document.getElementById('quickSubjectManageGrade');
+        const alertEl = document.getElementById('quickSubjectManageAlert');
+        const submitBtn = document.getElementById('btnSubmitQuickSubjectManage');
+
+        const courseId = "{{ session.course.id }}";
+        const sessionId = "{{ session.id }}";
+        const name = nameInput ? nameInput.value.trim() : '';
+        const creditHours = hoursInput ? hoursInput.value : '10';
+        const maxGrade = gradeInput ? gradeInput.value : '100';
+
+        if (!name) {
+            if (alertEl) {
+                alertEl.textContent = 'يرجى إدخال اسم المادة الدراسية.';
+                alertEl.classList.remove('d-none');
+            }
+            if (nameInput) nameInput.focus();
+            return;
+        }
+
+        if (alertEl) alertEl.classList.add('d-none');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارٍ الحفظ...';
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const formData = new FormData();
+        formData.append('course_id', courseId);
+        formData.append('session_id', sessionId);
+        formData.append('name', name);
+        formData.append('credit_hours', creditHours);
+        formData.append('max_grade', maxGrade);
+
+        fetch("{% url 'training:api_add_course_subject' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>حفظ وإضافة المادة للدورة</span>';
+                }
+                if (alertEl) {
+                    alertEl.textContent = data.message || 'حدث خطأ أثناء إضافة المادة.';
+                    alertEl.classList.remove('d-none');
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error adding subject:', err);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>حفظ وإضافة المادة للدورة</span>';
+            }
+            if (alertEl) {
+                alertEl.textContent = 'حدث خطأ في الاتصال بالخادم، يرجى إعادة المحاولة.';
+                alertEl.classList.remove('d-none');
+            }
+        });
     }
 
     // تهيئة القوائم عند التحميل
