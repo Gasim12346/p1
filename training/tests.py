@@ -1999,6 +1999,82 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(enrollment.drop_reason, '')
         self.assertIsNone(enrollment.dropped_at)
 
+    def test_auto_course_session_numbering_rules(self):
+        """التحقق من قواعد ترقيم الدورات: دورة المرشد لا تتكرر، والدورة الخاصة تتكرر وتبدأ كل سنة من 1"""
+        self.client.login(username='admin_cert', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession
+        from training.views import calculate_next_course_session_code
+        import datetime
+
+        # 1. اختبار دورة المرشد: لا تتكرر أبداً وتزيد تراكمياً عبر السنوات
+        cat_guide = CourseCategory.objects.create(name='دورات مرشد معتمدة')
+        course_guide = Course.objects.create(name='دورة المرشد البرمجية', category=cat_guide)
+
+        # أول انعقاد في 2025
+        num1 = calculate_next_course_session_code(course_guide, datetime.date(2025, 1, 1))
+        self.assertEqual(num1, '1')
+        CourseSession.objects.create(
+            course=course_guide,
+            session_code='1',
+            start_date=datetime.date(2025, 1, 1),
+            end_date=datetime.date(2025, 2, 1)
+        )
+
+        # انعقاد تالٍ في 2025
+        num2 = calculate_next_course_session_code(course_guide, datetime.date(2025, 5, 1))
+        self.assertEqual(num2, '2')
+        CourseSession.objects.create(
+            course=course_guide,
+            session_code='2',
+            start_date=datetime.date(2025, 5, 1),
+            end_date=datetime.date(2025, 6, 1)
+        )
+
+        # انعقاد في سنة جديدة 2026: دورة المرشد لا تتكرر ولا تتصفر
+        num3 = calculate_next_course_session_code(course_guide, datetime.date(2026, 1, 1))
+        self.assertEqual(num3, '3')
+
+        # 2. اختبار الدورة الخاصة: تتكرر سنوياً وتبدأ كل بداية سنة من الرقم 1
+        cat_special = CourseCategory.objects.create(name='دورات خاصة أمنية')
+        course_special = Course.objects.create(name='دورة خاصة لحماية الشبكات', category=cat_special)
+
+        # سنة 2025: أول دورة تبدأ من 1
+        num_sp_2025_1 = calculate_next_course_session_code(course_special, datetime.date(2025, 3, 1))
+        self.assertEqual(num_sp_2025_1, '1')
+        CourseSession.objects.create(
+            course=course_special,
+            session_code='1',
+            start_date=datetime.date(2025, 3, 1),
+            end_date=datetime.date(2025, 4, 1)
+        )
+
+        # سنة 2025: ثاني دورة تكون 2
+        num_sp_2025_2 = calculate_next_course_session_code(course_special, datetime.date(2025, 8, 1))
+        self.assertEqual(num_sp_2025_2, '2')
+        CourseSession.objects.create(
+            course=course_special,
+            session_code='2',
+            start_date=datetime.date(2025, 8, 1),
+            end_date=datetime.date(2025, 9, 1)
+        )
+
+        # بداية سنة جديدة 2026: الدورة الخاصة تتكرر وتبدأ من 1 مجدداً
+        num_sp_2026_1 = calculate_next_course_session_code(course_special, datetime.date(2026, 1, 10))
+        self.assertEqual(num_sp_2026_1, '1')
+
+        # فحص استعلام API لرقم الدورة التالي
+        api_url = reverse('training:api_next_course_number')
+        res_api = self.client.get(api_url, {
+            'course_id': course_special.id,
+            'start_date': '2026-02-15'
+        })
+        self.assertEqual(res_api.status_code, 200)
+        data = res_api.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['next_number'], '1')
+        self.assertTrue(data['is_special'])
+
+
 
 
 

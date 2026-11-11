@@ -23,6 +23,7 @@ urlpatterns = [
     # القسم 4: الدورات المنعقدة (انعقاد الدورات وربط الدارسين)
     path('sessions/', views.course_sessions_view, name='course_sessions'),
     path('sessions/create/', views.course_session_create_view, name='course_session_create'),
+    path('sessions/api/next-number/', views.api_get_next_course_number_view, name='api_next_course_number'),
     path('sessions/<int:session_id>/manage/', views.course_session_manage_view, name='course_session_manage'),
     path('sessions/<int:session_id>/edit/', views.course_session_edit_view, name='course_session_edit'),
     path('sessions/<int:session_id>/delete/', views.course_session_delete_view, name='course_session_delete'),

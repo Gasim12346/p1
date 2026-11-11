@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import datetime, date, timedelta
 from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
@@ -543,6 +543,83 @@ def course_sessions_view(request):
     })
 
 
+def calculate_next_course_session_code(course, start_date=None):
+    """
+    احتساب رقم الدورة التالي تلقائياً وفق القواعد:
+    1. دورات المرشد: ترقيم تراكمي مستمر لا يتكرر أبداً ولا يتصفر بالسنة (أعلى رقم سابق للدورة + 1).
+    2. الدورات الخاصة: ترقيم يتكرر سنوياً، بحيث تبدأ الدورة في كل بداية سنة من الرقم 1 (أعلى رقم في تلك السنة للدورة + 1).
+    """
+    import re
+    from datetime import date
+    if not course:
+        return '1'
+
+    # التحقق من تصنيف الدورة (دورات خاصة مقابل دورات مرشد)
+    is_special = False
+    if course.category and 'خاص' in course.category.name:
+        is_special = True
+
+    if is_special:
+        target_year = None
+        if start_date:
+            if hasattr(start_date, 'year'):
+                target_year = start_date.year
+            elif isinstance(start_date, str) and start_date.strip():
+                try:
+                    parts = start_date.strip().split('-')
+                    if len(parts) >= 1 and len(parts[0]) == 4:
+                        target_year = int(parts[0])
+                    else:
+                        from django.utils.dateparse import parse_date
+                        parsed = parse_date(start_date.strip())
+                        if parsed:
+                            target_year = parsed.year
+                except Exception:
+                    pass
+        if not target_year:
+            target_year = date.today().year
+
+        sessions = CourseSession.objects.filter(course=course, start_date__year=target_year)
+    else:
+        # دورات المرشد لا تتكرر: ترقيم مستمر لا يعاد تصفيره بحسب السنة
+        sessions = CourseSession.objects.filter(course=course)
+
+    max_num = 0
+    for s in sessions:
+        if s.session_code:
+            numbers = re.findall(r'\d+', str(s.session_code))
+            for n in numbers:
+                try:
+                    val = int(n)
+                    if val > max_num:
+                        max_num = val
+                except ValueError:
+                    pass
+
+    return str(max_num + 1)
+
+
+@login_required
+def api_get_next_course_number_view(request):
+    """إرجاع رقم الدورة التالي تلقائياً بناءً على الدورة وتاريخ الانعقاد والتصنيف"""
+    course_id = request.GET.get('course_id')
+    start_date_str = request.GET.get('start_date')
+    if not course_id:
+        return JsonResponse({'success': False, 'error': 'course_id مطلوب'})
+
+    course = get_object_or_404(Course.objects.select_related('category'), pk=course_id)
+    next_number = calculate_next_course_session_code(course, start_date_str)
+    is_special = bool(course.category and 'خاص' in course.category.name)
+
+    return JsonResponse({
+        'success': True,
+        'next_number': next_number,
+        'is_special': is_special,
+        'category_name': course.category.name if course.category else '',
+        'course_name': course.name,
+    })
+
+
 @registrar_required
 def course_session_create_view(request):
     """
@@ -560,6 +637,15 @@ def course_session_create_view(request):
         session_code = request.POST.get('session_code', '').strip()
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
+
+        # توليد رقم الدورة تلقائياً إذا تُرك الحقل فارغاً
+        if not session_code and course_id:
+            try:
+                c_obj = Course.objects.select_related('category').get(pk=course_id)
+                session_code = calculate_next_course_session_code(c_obj, start_date)
+            except Course.DoesNotExist:
+                pass
+
         movement_order_date = request.POST.get('movement_order_date', '').strip()
         movement_order_file = request.FILES.get('movement_order_file')
         status = request.POST.get('status', 'active')
@@ -579,7 +665,7 @@ def course_session_create_view(request):
                 missing_movement.append(f'"{t_obj.name}" ({num})' if t_obj else num)
 
         if not course_id or not session_code or not start_date or not end_date:
-            messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، رمز الدفعة، تاريخ البداية والنهاية).')
+            messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، رقم الدورة، تاريخ البداية والنهاية).')
         elif not selected_trainee_nums:
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
         elif missing_movement:
@@ -714,12 +800,23 @@ def course_session_create_view(request):
                 for s in c.subjects.all()
             ]
 
+    # خريطة الأرقام التلقائية التالية لكل دورة وفق قواعد الترقيم المعتمدة
+    courses_next_numbers_map = {}
+    for cat in categories:
+        for c in cat.courses.all():
+            courses_next_numbers_map[str(c.id)] = {
+                'next_number': calculate_next_course_session_code(c, date.today()),
+                'is_special': bool(c.category and 'خاص' in c.category.name),
+                'category_name': c.category.name if c.category else '',
+            }
+
     return render(request, 'training/course_session_create.html', {
         'categories': categories,
         'trainees': trainees,
         'instructors': instructors,
         'courses_subjects_json': json.dumps(courses_subjects_map, ensure_ascii=False),
         'trainees_passed_json': json.dumps(trainees_passed_map, ensure_ascii=False),
+        'courses_next_numbers_json': json.dumps(courses_next_numbers_map, ensure_ascii=False),
         'officer_count': officer_count,
         'nco_count': nco_count,
         'civilian_count': civilian_count,

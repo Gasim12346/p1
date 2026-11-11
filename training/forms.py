@@ -577,7 +577,7 @@ class CourseSessionForm(forms.ModelForm):
         }
         labels = {
             'course': 'الدورة التدريبية *',
-            'session_code': 'رمز الدفعة / رقم الانعقاد *',
+            'session_code': 'رقم الدورة *',
             'start_date': 'تاريخ البداية *',
             'end_date': 'تاريخ النهاية *',
             'movement_order_date': 'تاريخ أمر التحرك *',

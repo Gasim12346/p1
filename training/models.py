@@ -421,8 +421,8 @@ class CourseSession(models.Model):
     )
     session_code = models.CharField(
         max_length=100,
-        verbose_name='رمز الانعقاد / الدفعة',
-        help_text='مثال: دفعة 14 أو دورة 2026/1'
+        verbose_name='رقم الدورة',
+        help_text='رقم الدورة (توليد تلقائي معتمد)'
     )
     start_date = models.DateField(
         verbose_name='تاريخ بداية الدورة'

@@ -65,7 +65,7 @@
                     <div class="col-md-5">
                         <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span
                                 class="text-danger">*</span></label>
-                        <select name="course" id="courseSelector" class="form-select form-select-lg" required onchange="renderCourseSubjects(this.value); updatePassedTraineesRestrictions();">
+                        <select name="course" id="courseSelector" class="form-select form-select-lg" required onchange="renderCourseSubjects(this.value); updatePassedTraineesRestrictions(); autoFillCourseNumber(this.value);">
                             <option value="" disabled selected>--- اختر تصنيف الدورة أولاً ---</option>
                             {% for cat in categories %}
                             {% for c in cat.courses.all %}
@@ -77,18 +77,26 @@
                         </select>
                     </div>
 
-                    <!-- رمز الدفعة -->
+                    <!-- رقم الدورة (توليد وإدخال تلقائي معتمد) -->
                     <div class="col-md-3">
-                        <label class="form-label fw-bold text-dark">رمز الدفعة <span class="text-danger">*</span></label>
-                        <input type="text" name="session_code" id="sessionCode" class="form-control form-control-lg"
-                            placeholder="مثال: الدفعة 21 - 2026" required>
+                        <label class="form-label fw-bold text-dark d-flex align-items-center justify-content-between">
+                            <span>رقم الدورة <span class="text-danger">*</span></span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2 fw-normal" style="font-size: 0.75rem;">
+                                <i class="bi bi-magic me-1"></i>تلقائي
+                            </span>
+                        </label>
+                        <input type="text" name="session_code" id="sessionCode" class="form-control form-control-lg fw-bold text-primary"
+                            placeholder="يتم التحديد تلقائياً..." required>
+                        <div class="form-text small text-muted" id="sessionCodeHint">
+                            يتم احتساب رقم الدورة تلقائياً بمجرد اختيار الدورة التدريبية.
+                        </div>
                     </div>
 
                     <!-- تاريخ البداية -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span
                                 class="text-danger">*</span></label>
-                        <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required>
+                        <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required onchange="onStartDateChange()">
                     </div>
 
                     <!-- تاريخ النهاية -->
@@ -172,7 +180,7 @@
                     <span class="badge bg-success text-white px-3 py-1 rounded-pill mb-1">بيانات الدورة المحددة</span>
                     <h5 class="fw-bold text-dark mb-1" id="summaryCourseName">-</h5>
                     <div class="text-muted small">
-                        الدفعة: <strong id="summarySessionCode" class="text-dark">-</strong> •
+                        رقم الدورة: <strong id="summarySessionCode" class="text-dark">-</strong> •
                         فترة الانعقاد: <span id="summaryDates">-</span> •
                         مشرف الدورة: <strong id="summarySupervisor" class="text-primary">-</strong>
                     </div>
@@ -468,9 +476,10 @@
 
 {% block extra_js %}
 <script>
-    // بيانات المواد الدراسية وقائمة المعلمين وسجل النجاح المسبق
+    // بيانات المواد الدراسية وقائمة المعلمين وسجل النجاح المسبق وخريطة أرقام الدورات التلقائية
     const COURSES_SUBJECTS = JSON.parse('{{ courses_subjects_json|default:"{}"|escapejs }}');
     const TRAINEES_PASSED = JSON.parse('{{ trainees_passed_json|default:"{}"|escapejs }}');
+    const COURSES_NEXT_NUMBERS = JSON.parse('{{ courses_next_numbers_json|default:"{}"|escapejs }}');
     const INSTRUCTORS_LIST = [
         {% for inst in instructors %}
         {
@@ -480,6 +489,80 @@
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ];
+
+    // التوليد والتعبئة التلقائية لرقم الدورة وفق قواعد الترقيم المعتمدة
+    function autoFillCourseNumber(courseId) {
+        const sessionCodeInput = document.getElementById('sessionCode');
+        const hintEl = document.getElementById('sessionCodeHint');
+        const startDateInput = document.getElementById('startDate');
+        if (!sessionCodeInput) return;
+
+        const cid = String(courseId || '');
+        if (!cid) {
+            sessionCodeInput.value = '';
+            if (hintEl) hintEl.textContent = 'يتم احتساب رقم الدورة تلقائياً بمجرد اختيار الدورة التدريبية.';
+            return;
+        }
+
+        const data = COURSES_NEXT_NUMBERS[cid];
+        const startDateVal = startDateInput ? startDateInput.value : '';
+
+        // إذا كانت الدورة خاصة وتم تحديد تاريخ البداية مسبقاً، استعلم الرقم الدقيق لسنة التاريخ
+        if (data && data.is_special && startDateVal) {
+            fetchNextNumberFromApi(cid, startDateVal);
+            return;
+        }
+
+        if (data) {
+            sessionCodeInput.value = data.next_number;
+            if (hintEl) {
+                if (data.is_special) {
+                    hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدورة لهذه السنة يبدأ من (${data.next_number}) ويتكرر سنوياً.</span>`;
+                } else {
+                    hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد: ترقيم تراكمي مستمر غير مكرر (${data.next_number}).</span>`;
+                }
+            }
+        } else {
+            fetchNextNumberFromApi(cid, startDateVal);
+        }
+    }
+
+    // استعلام رقم الدورة التالي عبر API عند تغيير تاريخ بداية الدورة
+    function fetchNextNumberFromApi(courseId, startDateVal) {
+        const sessionCodeInput = document.getElementById('sessionCode');
+        const hintEl = document.getElementById('sessionCodeHint');
+        if (!courseId) return;
+
+        const url = `{% url 'training:api_next_course_number' %}?course_id=${encodeURIComponent(courseId)}&start_date=${encodeURIComponent(startDateVal || '')}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    sessionCodeInput.value = res.next_number;
+                    if (hintEl) {
+                        if (res.is_special) {
+                            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدورة لهذه السنة يبدأ من (${res.next_number}) ويتكرر سنوياً.</span>`;
+                        } else {
+                            hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد: ترقيم تراكمي مستمر غير مكرر (${res.next_number}).</span>`;
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('Error fetching next course number:', err));
+    }
+
+    // عند تغيير تاريخ بداية الدورة، إذا كانت الدورة خاصة يتم إعادة احتساب رقم الدورة لسنة التاريخ الجديد
+    function onStartDateChange() {
+        const courseSelector = document.getElementById('courseSelector');
+        const startDateInput = document.getElementById('startDate');
+        if (!courseSelector || !courseSelector.value) return;
+
+        const cid = String(courseSelector.value);
+        const data = COURSES_NEXT_NUMBERS[cid];
+        if (data && data.is_special) {
+            fetchNextNumberFromApi(cid, startDateInput.value);
+        }
+    }
 
     // عرض مواد الدورة وتوليد قوائم اختيار المعلم لكل مادة
     function renderCourseSubjects(courseId) {
@@ -575,7 +658,7 @@
             return;
         }
         if (!sessionCode.value.trim()) {
-            alert('يرجى إدخال رمز الدفعة (مثال: الدفعة 21 - 2026).');
+            alert('يرجى التأكد من رقم الدورة التدريبية.');
             sessionCode.focus();
             return;
         }
@@ -644,10 +727,12 @@
             courseSelect.value = firstMatch.value;
             renderCourseSubjects(firstMatch.value);
             updatePassedTraineesRestrictions();
+            autoFillCourseNumber(firstMatch.value);
         } else {
             courseSelect.selectedIndex = 0;
             renderCourseSubjects(null);
             updatePassedTraineesRestrictions();
+            autoFillCourseNumber(null);
         }
     }
 
