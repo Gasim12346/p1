@@ -17,6 +17,16 @@
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     }
+    .grade-display-box {
+        min-width: 70px;
+        max-width: 85px;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
 </style>
 {% endblock %}
 
@@ -83,7 +93,7 @@
         <div class="row g-3 text-center align-items-center">
             <div class="col-6 col-md-3">
                 <small class="text-muted d-block">إجمالي درجات المواد</small>
-                <strong class="text-dark fs-5">{{ session.course.total_max_marks }}</strong>
+                <strong class="text-dark fs-5">{{ subjects_total_max }}</strong>
             </div>
             <div class="col-6 col-md-3">
                 <small class="text-muted d-block">درجة المواظبة والسلوك العظمى</small>
@@ -267,48 +277,56 @@
                             <!-- درجات المواد -->
                             {% for item in en.subjects_data %}
                                 <td class="text-center p-2">
-                                    {% if is_instructor_only and item.subject.id not in allowed_subject_ids %}
-                                        <input type="text" 
-                                               class="form-control grade-input subject-grade mx-auto bg-light text-muted border-dashed"
-                                               value="{% if item.score is not None %}{{ item.score|unlocalize }}{% else %}-{% endif %}"
-                                               disabled readonly
-                                               title="خاصة بمعلم المادة ({{ item.subject.instructor_name }})">
-                                    {% else %}
+                                    {% if item.subject.id in allowed_subject_ids and not is_locked %}
                                         <input type="number" 
                                                name="grade_{{ en.trainee.military_number }}_{{ item.subject.id }}"
-                                               class="form-control grade-input subject-grade mx-auto"
+                                               class="form-control grade-input subject-grade mx-auto text-center"
                                                min="0" 
                                                max="{{ item.subject.max_grade|unlocalize }}" 
                                                step="0.5"
                                                data-max="{{ item.subject.max_grade|unlocalize }}"
                                                placeholder="-"
                                                {% if item.score is not None %}value="{{ item.score|unlocalize }}"{% endif %}
-                                               {% if is_locked %}disabled readonly{% endif %}
                                                oninput="calculateRow(this, true)">
+                                    {% else %}
+                                        <div class="grade-display-box mx-auto py-1 px-2 rounded-2 bg-light border text-center font-monospace readonly-subject-grade" 
+                                             data-score="{% if item.score is not None %}{{ item.score|unlocalize }}{% endif %}"
+                                             data-max="{{ item.subject.max_grade|unlocalize }}"
+                                             title="{% if item.subject.instructor_name %}معلم المادة: {{ item.subject.instructor_name }}{% else %}لم يحدد معلم{% endif %}">
+                                            {% if item.score is not None %}
+                                                <strong class="text-dark">{{ item.score|unlocalize }}</strong>
+                                            {% else %}
+                                                <span class="text-muted small">-</span>
+                                            {% endif %}
+                                        </div>
                                     {% endif %}
                                 </td>
                             {% endfor %}
 
                             <!-- درجة المواظبة -->
                             <td class="text-center p-2">
-                                {% if is_instructor_only %}
-                                    <input type="text" 
-                                           class="form-control grade-input attendance-grade mx-auto bg-light text-muted"
-                                           value="{% if en.is_graded or en.attendance_score %}{{ en.attendance_score|unlocalize }}{% else %}-{% endif %}"
-                                           disabled readonly
-                                           title="رصد درجة المواظبة محصور بمشرف الدورة أو مدير النظام">
-                                {% else %}
+                                {% if can_edit_attendance and not is_locked %}
                                     <input type="number" 
                                            name="att_{{ en.trainee.military_number }}"
-                                           class="form-control grade-input attendance-grade mx-auto border-primary"
+                                           class="form-control grade-input attendance-grade mx-auto border-primary text-center"
                                            min="0" 
                                            max="{{ session.attendance_max_grade|unlocalize }}" 
                                            step="0.5"
                                            data-max="{{ session.attendance_max_grade|unlocalize }}"
                                            placeholder="-"
-                                           {% if en.is_graded or en.attendance_score %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
-                                           {% if is_locked %}disabled readonly{% endif %}
+                                           {% if en.attendance_score is not None %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
                                            oninput="calculateRow(this, true)">
+                                {% else %}
+                                    <div class="grade-display-box mx-auto py-1 px-2 rounded-2 bg-light border text-center font-monospace readonly-attendance-grade"
+                                         data-score="{% if en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% endif %}"
+                                         data-max="{{ session.attendance_max_grade|unlocalize }}"
+                                         title="رصد درجة المواظبة محصور بمشرف الدورة أو مدير النظام">
+                                        {% if en.attendance_score is not None %}
+                                            <strong class="text-primary">{{ en.attendance_score|unlocalize }}</strong>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </div>
                                 {% endif %}
                             </td>
 
@@ -418,23 +436,23 @@
                         <i class="bi bi-pencil-square"></i>
                         <span>حفظ الملحوظات</span>
                     </button>
-                    {% if is_supervisor_or_admin and session.status != 'completed' %}
+                    {% if can_approve_results and session.status != 'completed' %}
                         {% if is_fully_graded %}
                             <button type="submit" name="mark_completed" value="1" class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
                                 <i class="bi bi-patch-check-fill fs-5"></i>
                                 <span>اعتماد نتيجة الدورة نهائياً</span>
                             </button>
                         {% else %}
-                            <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين">
+                            <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة">
                                 <i class="bi bi-hourglass-split text-warning"></i>
                                 <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
                             </button>
                         {% endif %}
                     {% endif %}
 
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                    <button type="submit" name="save_grades" value="1" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
                         <i class="bi bi-save2-fill"></i>
-                        <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% else %}حفظ ورصد جميع الدرجات{% endif %}</span>
+                        <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
                     </button>
                 {% endif %}
             </div>
@@ -444,9 +462,9 @@
     <!-- Mobile Sticky Save Bar -->
     {% if not is_locked %}
         <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
-            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
+            <button type="submit" name="save_grades" value="1" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
                 <i class="bi bi-save2-fill"></i>
-                <span>حفظ ورصد جميع الدرجات</span>
+                <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
             </button>
         </div>
     {% endif %}
@@ -547,15 +565,18 @@
 
     // حساب درجات الصف لحظياً عند الكتابة مع التحقق الصارم من الحدود
     function calculateRow(inputElement, isUserEdit = false) {
-        const row = inputElement.closest('tr');
+        const row = inputElement.classList.contains('student-row') ? inputElement : inputElement.closest('tr');
         if (!row) return;
 
-        const subjectInputs = row.querySelectorAll('.subject-grade');
+        const editableSubjectInputs = row.querySelectorAll('input.subject-grade');
+        const readonlySubjectBoxes = row.querySelectorAll('.readonly-subject-grade');
+
         let subjectsTotal = 0;
         let allSubjectsFilled = true;
         let hasInvalidInput = false;
 
-        subjectInputs.forEach(input => {
+        // 1. حساب وتحقق من المواد القابلة للتعديل
+        editableSubjectInputs.forEach(input => {
             const valStr = input.value.trim();
             const maxVal = parseFloat(input.getAttribute('data-max')) || 0;
             if (valStr === '') {
@@ -577,30 +598,56 @@
             }
         });
 
-        // درجة المواظبة
-        const attInput = row.querySelector('.attendance-grade');
-        const attValStr = attInput ? attInput.value.trim() : '';
-        const attMaxVal = attInput ? (parseFloat(attInput.getAttribute('data-max')) || 0) : 0;
-        let attVal = 0;
-        if (attValStr !== '') {
-            attVal = parseFloat(attValStr);
-            if (isNaN(attVal) || attVal < 0 || attVal > attMaxVal) {
-                hasInvalidInput = true;
+        // 2. قراءة درجات المواد الأخرى المعروضة للقراءة فقط
+        readonlySubjectBoxes.forEach(box => {
+            const scoreStr = (box.getAttribute('data-score') || '').trim();
+            if (scoreStr === '') {
                 allSubjectsFilled = false;
-                if (attInput) {
-                    attInput.classList.add('is-invalid', 'border-danger', 'bg-danger-subtle');
-                    attInput.title = `تنبيه: درجة المواظبة يجب أن تكون بين 0 و ${attMaxVal}`;
-                }
             } else {
-                if (attInput) {
-                    attInput.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
-                    attInput.removeAttribute('title');
+                const scoreVal = parseFloat(scoreStr);
+                if (!isNaN(scoreVal) && scoreVal >= 0) {
+                    subjectsTotal += scoreVal;
+                } else {
+                    allSubjectsFilled = false;
                 }
             }
-        } else {
-            if (attInput) {
+        });
+
+        // 3. حساب درجة المواظبة والسلوك
+        const attInput = row.querySelector('input.attendance-grade');
+        const attReadonly = row.querySelector('.readonly-attendance-grade');
+        let attVal = 0;
+        let attFilled = false;
+
+        if (attInput) {
+            const attValStr = attInput.value.trim();
+            const attMaxVal = parseFloat(attInput.getAttribute('data-max')) || 0;
+            if (attValStr === '') {
+                attFilled = false;
                 attInput.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
                 attInput.removeAttribute('title');
+            } else {
+                const parsedAtt = parseFloat(attValStr);
+                if (isNaN(parsedAtt) || parsedAtt < 0 || parsedAtt > attMaxVal) {
+                    hasInvalidInput = true;
+                    attFilled = false;
+                    attInput.classList.add('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    attInput.title = `تنبيه: درجة المواظبة يجب أن تكون بين 0 و ${attMaxVal}`;
+                } else {
+                    attInput.classList.remove('is-invalid', 'border-danger', 'bg-danger-subtle');
+                    attInput.removeAttribute('title');
+                    attVal = parsedAtt;
+                    attFilled = true;
+                }
+            }
+        } else if (attReadonly) {
+            const attScoreStr = (attReadonly.getAttribute('data-score') || '').trim();
+            if (attScoreStr !== '') {
+                const parsedAtt = parseFloat(attScoreStr);
+                if (!isNaN(parsedAtt) && parsedAtt >= 0) {
+                    attVal = parsedAtt;
+                    attFilled = true;
+                }
             }
         }
 
@@ -622,22 +669,24 @@
             return;
         }
 
-        // إذا لم تكتمل درجات جميع المواد، لا نعطي أي درجة افتراضية، ونقفل الشهادة فوراً!
-        if (!allSubjectsFilled || subjectInputs.length === 0) {
+        const totalSubjectsCount = editableSubjectInputs.length + readonlySubjectBoxes.length;
+
+        // إذا لم تكتمل درجات جميع المواد أو المواظبة
+        if (!allSubjectsFilled || !attFilled || totalSubjectsCount === 0) {
             if (totalCell) totalCell.innerHTML = `<span class="text-muted small">قيد الرصد</span>`;
             if (percentageCell) percentageCell.innerHTML = `<span class="text-muted small">-</span>`;
             if (gradeCell) {
                 gradeCell.innerHTML = `<span class="badge bg-light text-secondary border px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>غير مكتمل</span>`;
             }
             if (certCell) {
-                certCell.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد إكمال جميع درجات المواد وحفظها"><i class="bi bi-lock-fill text-secondary"></i><span>غير مكتمل</span></span>`;
+                certCell.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال رصد كافة درجات المواد والمواظبة"><i class="bi bi-lock-fill text-secondary"></i><span>غير مكتمل</span></span>`;
             }
             return;
         }
 
         // إذا تم تعديل الدرجات من قبل المستخدم، يجب التنبيه بضرورة الحفظ أولاً
         if (isUserEdit && certCell) {
-            certCell.innerHTML = `<span class="badge bg-warning bg-opacity-25 text-dark border px-2 py-1 d-inline-flex align-items-center gap-1" title="يرجى الضغط على زر حفظ ورصد الدرجات بالأسفل لاعتماد النتيجة أولاً"><i class="bi bi-clock-history text-warning me-1"></i><span>يرجى الحفظ</span></span>`;
+            certCell.innerHTML = `<span class="badge bg-warning bg-opacity-25 text-dark border px-2 py-1 d-inline-flex align-items-center gap-1" title="يرجى الضغط على زر حفظ الدرجات بالأسفل لاعتماد النتيجة"><i class="bi bi-clock-history text-warning me-1"></i><span>يرجى الحفظ</span></span>`;
         }
 
         // المجموع الكلي المكتسب
@@ -685,10 +734,16 @@
         const gradesForm = document.getElementById('gradesForm');
         if (gradesForm) {
             gradesForm.addEventListener('submit', function(e) {
-                let firstInvalid = null;
-                const allInputs = gradesForm.querySelectorAll('.grade-input');
+                // إذا كان الضغط على حفظ الملحوظات فقط، لا داعي للتحقق من الدرجات
+                const activeSubmitter = e.submitter;
+                if (activeSubmitter && activeSubmitter.name === 'save_notes') {
+                    return;
+                }
 
-                allInputs.forEach(input => {
+                let firstInvalid = null;
+                const activeInputs = gradesForm.querySelectorAll('input.grade-input:not([disabled]):not([readonly])');
+
+                activeInputs.forEach(input => {
                     const valStr = input.value.trim();
                     if (valStr !== '') {
                         const val = parseFloat(valStr);
@@ -710,8 +765,7 @@
 
         const rows = document.querySelectorAll('.student-row');
         rows.forEach(row => {
-            const firstInput = row.querySelector('.grade-input');
-            if (firstInput) calculateRow(firstInput, false);
+            calculateRow(row, false);
         });
     });
 

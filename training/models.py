@@ -355,6 +355,14 @@ class Subject(models.Model):
         related_name='subjects',
         verbose_name='الدورة'
     )
+    session = models.ForeignKey(
+        'CourseSession',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='custom_session_subjects',
+        verbose_name='خاص بالدورة المنعقدة'
+    )
     code = models.CharField(
         max_length=50,
         unique=True,
@@ -387,18 +395,23 @@ class Subject(models.Model):
             raise ValidationError({'max_grade': 'الدرجة العظمى للمادة يجب أن تكون أكبر من صفر.'})
 
     @classmethod
-    def generate_unique_code(cls, course):
+    def generate_unique_code(cls, course, session=None):
         course_num = (course.course_number or f"C{course.id}").strip().replace(" ", "-")
+        if session:
+            sess_code = str(session.session_code or session.id).strip().replace(" ", "-")
+            prefix = f"{course_num}-S{sess_code}"
+        else:
+            prefix = course_num
         count = cls.objects.filter(course=course).count() + 1
-        candidate = f"{course_num}-{count:02d}"
+        candidate = f"{prefix}-{count:02d}"
         while cls.objects.filter(code=candidate).exists():
             count += 1
-            candidate = f"{course_num}-{count:02d}"
+            candidate = f"{prefix}-{count:02d}"
         return candidate
 
     def save(self, *args, **kwargs):
         if not self.code and self.course_id:
-            self.code = self.generate_unique_code(self.course)
+            self.code = self.generate_unique_code(self.course, session=self.session)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -492,10 +505,42 @@ class CourseSession(models.Model):
     def __str__(self):
         return f"{self.course.name} - {self.session_code} ({self.start_date})"
 
+    def get_subjects(self):
+        """
+        إرجاع قائمة المواد الدراسية الخاصة بهذه الدورة المنعقدة بالتحديد دون غيرها:
+        1. إذا كان للدورة تعيينات مواد في SessionSubjectInstructor، تعتمد تلك المواد المسندة.
+        2. وإذا كانت هناك مواد مخصصة منشأة لهذه الدورة (session=self)، تدرج أيضاً.
+        3. وإذا كانت دورة تاريخية قديمة بدون تعيينات معلمين ولها درجات سابقة، تعتمد مواد درجاتها لحماية تاريخها.
+        4. وإلا تعتمد المواد العامة للمقرر (التي لا تتبع دورات منعقدة أخرى).
+        """
+        # 1. إذا كان للدورة تعيينات مواد مسندة
+        if self.subject_instructors.exists():
+            assigned_subjects = [si.subject for si in self.subject_instructors.select_related('subject').all()]
+            custom_subjects = list(self.custom_session_subjects.exclude(id__in=[s.id for s in assigned_subjects]))
+            return assigned_subjects + custom_subjects
+
+        # 2. إذا كانت هناك مواد مخصصة للدورة المنعقدة
+        custom_subjects = list(self.custom_session_subjects.all())
+        if custom_subjects:
+            return custom_subjects
+
+        # 3. إذا كانت دورة قديمة بدون تعيينات ولها درجات سابقة مرصودة
+        graded_ids = list(TraineeSubjectGrade.objects.filter(
+            enrollment__session=self,
+            score__isnull=False
+        ).values_list('subject_id', flat=True).distinct())
+        if graded_ids:
+            return list(Subject.objects.filter(id__in=graded_ids))
+
+        # 4. الدورات الجديدة التي لم تعين موادها بعد: تعتمد المواد العامة للمقرر
+        return list(self.course.subjects.filter(session__isnull=True))
+
     @property
     def total_possible_score(self):
-        subjects_total = sum(s.max_grade for s in self.course.subjects.all())
-        return float(subjects_total) + float(self.attendance_max_grade)
+        subjects = self.get_subjects()
+        subjects_total = sum(s.max_grade for s in subjects)
+        att = self.attendance_max_grade if self.attendance_max_grade is not None else (self.course.attendance_max_grade or Decimal('0.00'))
+        return float(subjects_total) + float(att)
 
 
 class SessionSubjectInstructor(models.Model):
@@ -671,12 +716,13 @@ class CourseEnrollment(models.Model):
         if not self.session.start_date or not self.session.end_date:
             return False
 
-        # 4. التحقق من اكتمال درجات جميع المواد
-        total_subjects = self.session.course.subjects.count()
+        # 4. التحقق من اكتمال درجات جميع المواد الخاصة بهذه الدورة المنعقدة
+        session_subjects = self.session.get_subjects()
+        total_subjects = len(session_subjects)
         if total_subjects == 0:
             return False  # لا يمكن إصدار شهادة لدورة بدون مواد دراسية
 
-        actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self))
+        actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self, subject__in=session_subjects))
         graded_count = len(actual_grades)
         if graded_count < total_subjects:
             return False  # المواد غير مكتملة الرصد
@@ -711,11 +757,12 @@ class CourseEnrollment(models.Model):
         50 - 64  : مقبول (د)
         أقل من 50: دون المستوى / راسب
         """
-        total_subjects = self.session.course.subjects.count()
-        actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self))
+        session_subjects = self.session.get_subjects()
+        total_subjects = len(session_subjects)
+        actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self, subject__in=session_subjects))
         graded_count = len(actual_grades)
 
-        # إذا كانت الدورة بدون مواد أو لم تكتمل درجات جميع المواد
+        # إذا كانت الدورة بدون مواد أو لم تكتمل درجات جميع المواد الخاصة بهذه الدورة
         if total_subjects == 0 or graded_count < total_subjects:
             self.is_graded = False
             self.total_score = 0.0

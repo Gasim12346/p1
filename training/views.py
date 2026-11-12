@@ -292,7 +292,9 @@ def courses_catalog_view(request):
 
     courses = []
     if selected_category:
-        courses = selected_category.courses.annotate(subjects_count=Count('subjects')).all()
+        courses = selected_category.courses.annotate(
+            subjects_count=Count('subjects', filter=Q(subjects__session__isnull=True))
+        ).all()
 
     course_id = request.GET.get('course_id')
     selected_course = None
@@ -303,7 +305,7 @@ def courses_catalog_view(request):
 
     subjects = []
     if selected_course:
-        subjects = selected_course.subjects.all()
+        subjects = selected_course.subjects.filter(session__isnull=True)
 
     if request.method == 'POST' and 'add_course' in request.POST:
         if not is_registrar_user(request.user):
@@ -642,19 +644,38 @@ def api_add_course_subject_view(request):
     code = (request.POST.get('code') or '').strip()
     session_id = request.POST.get('session_id')
 
-    if not course_id:
-        return JsonResponse({'success': False, 'message': 'يرجى تحديد الدورة التدريبية أولاً.'}, status=400)
+    target_session = None
+    if session_id:
+        try:
+            target_session = CourseSession.objects.select_related('course').get(pk=session_id)
+            course = target_session.course
+        except CourseSession.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'الدورة المنعقدة المحددة غير موجودة.'}, status=404)
+    else:
+        if not course_id:
+            return JsonResponse({'success': False, 'message': 'يرجى تحديد الدورة التدريبية أولاً.'}, status=400)
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'الدورة التدريبية المحددة غير موجودة.'}, status=404)
+
     if not name:
         return JsonResponse({'success': False, 'message': 'يرجى إدخال اسم المادة الدراسية.'}, status=400)
 
-    try:
-        course = Course.objects.get(pk=course_id)
-    except Course.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'الدورة التدريبية المحددة غير موجودة.'}, status=404)
-
-    # التحقق من عدم تكرار اسم المادة في هذه الدورة
-    if Subject.objects.filter(course=course, name__iexact=name).exists():
-        return JsonResponse({'success': False, 'message': f'المادة "{name}" مضافة مسبقاً لهذه الدورة.'}, status=400)
+    # التحقق من عدم التكرار:
+    if target_session:
+        # فحص عدم تكرار المادة في هذه الدورة المنعقدة بالتحديد
+        already_in_session = (
+            target_session.subject_instructors.filter(subject__name__iexact=name).exists() or
+            Subject.objects.filter(course=course, session=target_session, name__iexact=name).exists() or
+            Subject.objects.filter(course=course, session__isnull=True, name__iexact=name).exists()
+        )
+        if already_in_session:
+            return JsonResponse({'success': False, 'message': f'المادة "{name}" مضافة مسبقاً في هذه الدورة المنعقدة (رقم: {target_session.session_code}).'}, status=400)
+    else:
+        # فحص عدم تكرار المادة في الدورة التدريبية
+        if Subject.objects.filter(course=course, name__iexact=name).exists():
+            return JsonResponse({'success': False, 'message': f'المادة "{name}" مضافة مسبقاً في هذه الدورة.'}, status=400)
 
     try:
         credit_hours = int(credit_hours_raw)
@@ -671,40 +692,40 @@ def api_add_course_subject_view(request):
         max_grade = 100.0
 
     if not code:
-        code = Subject.generate_unique_code(course)
+        code = Subject.generate_unique_code(course, session=target_session)
 
+    # إنشاء المادة: إذا حُددت دورة منعقدة تُحفظ المادة حصرياً لها دون أن تظهر في أي دورة أخرى
     subject = Subject.objects.create(
         course=course,
+        session=target_session,
         name=name,
         code=code,
         credit_hours=credit_hours,
         max_grade=max_grade
     )
 
-    # إذا تم تمرير دورة منعقدة حالية، نربط المادة بها فوراً
-    if session_id:
-        try:
-            session = CourseSession.objects.get(pk=session_id)
-            SessionSubjectInstructor.objects.get_or_create(
-                session=session,
-                subject=subject,
-                defaults={'instructor': None}
-            )
-        except CourseSession.DoesNotExist:
-            pass
+    if target_session:
+        SessionSubjectInstructor.objects.create(
+            session=target_session,
+            subject=subject,
+            instructor=None
+        )
 
+    log_desc = f"إضافة مادة دراسية خاصة بالدورة المنعقدة {target_session.session_code}: {subject.name} (كود: {subject.code})" if target_session else f"إضافة مادة دراسية عامة: {subject.name} (كود: {subject.code}) لدورة {course.name}"
     log_activity(
         request=request,
         action_type=ActivityAction.CREATE,
         action_category=ActivityCategory.COURSES,
-        description=f"إضافة مادة دراسية سريعة: {subject.name} (كود: {subject.code} - عظمى: {subject.max_grade}) لدورة {course.name}",
+        description=log_desc,
         target_model="Subject",
         target_id=subject.id
     )
 
+    msg = f'تمت إضافة مادة "{subject.name}" بنجاح خاصة بالدورة رقم ({target_session.session_code}) فقط ولن تظهر في أي دورة أخرى.' if target_session else f'تمت إضافة مادة "{subject.name}" بنجاح وتوليد كودها التلقائي ({subject.code}).'
+
     return JsonResponse({
         'success': True,
-        'message': f'تمت إضافة مادة "{subject.name}" بنجاح وتوليد كودها التلقائي ({subject.code}).',
+        'message': msg,
         'subject': {
             'id': subject.id,
             'code': subject.code,
@@ -802,8 +823,8 @@ def course_session_create_view(request):
                     notes=notes
                 )
 
-                # تعيين المعلمين لمواد الدورة
-                for sub in course.subjects.all():
+                # تعيين المعلمين لمواد الدورة العامة
+                for sub in course.subjects.filter(session__isnull=True):
                     teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
                     inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
                     SessionSubjectInstructor.objects.create(
@@ -892,7 +913,7 @@ def course_session_create_view(request):
                     'credit_hours': s.credit_hours,
                     'max_grade': float(s.max_grade),
                 }
-                for s in c.subjects.all()
+                for s in c.subjects.filter(session__isnull=True)
             ]
 
     # خريطة الأرقام التلقائية التالية لكل دورة وفق قواعد الترقيم المعتمدة
@@ -944,7 +965,9 @@ def course_session_manage_view(request, session_id):
         session.supervisor = Instructor.objects.filter(military_number=new_sup_num).first() if new_sup_num else None
         session.save(update_fields=['supervisor'])
 
-        for sub in session.course.subjects.all():
+        # تحديث المواد المسندة أو إنشاؤها إن لم تكن مسندة بعد
+        session_subjects = session.get_subjects()
+        for sub in session_subjects:
             t_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
             inst = Instructor.objects.filter(military_number=t_num).first() if t_num else None
             SessionSubjectInstructor.objects.update_or_create(
@@ -953,6 +976,42 @@ def course_session_manage_view(request, session_id):
                 defaults={'instructor': inst}
             )
         messages.success(request, 'تم حفظ وتحديث بيانات مشرف الدورة ومعلمي المواد الدراسية بنجاح.')
+        return redirect('training:course_session_manage', session_id=session.id)
+
+    # إزالة مادة من هذه الدورة المنعقدة بالتحديد
+    if request.method == 'POST' and 'remove_session_subject_id' in request.POST:
+        if not is_registrar_user(request.user) and not is_admin_user(request.user):
+            messages.error(request, 'عفواً، إزالة المواد من الدورة محصورة بمسجل البيانات أو مدير النظام.')
+            return redirect('training:course_session_manage', session_id=session.id)
+        
+        target_sub_id = request.POST.get('remove_session_subject_id')
+        ssi = get_object_or_404(SessionSubjectInstructor, session=session, subject_id=target_sub_id)
+        sub = ssi.subject
+
+        # التحقق من عدم وجود درجات مرصودة لهذه المادة في هذه الدورة
+        has_grades = TraineeSubjectGrade.objects.filter(
+            enrollment__session=session,
+            subject=sub,
+            score__isnull=False
+        ).exists()
+        if has_grades:
+            messages.error(request, f'تعذر إزالة مادة "{sub.name}" من هذه الدورة لوجود درجات مرصودة بالفعل لدارسي الدورة بها.')
+            return redirect('training:course_session_manage', session_id=session.id)
+
+        sub_name = sub.name
+        ssi.delete()
+        if sub.session_id == session.id:
+            sub.delete()
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.DELETE,
+            action_category=ActivityCategory.COURSES,
+            description=f"إزالة مادة '{sub_name}' من الدورة المنعقدة {session.session_code}",
+            target_model="SessionSubjectInstructor",
+            target_id=str(session.id)
+        )
+        messages.success(request, f'تم إزالة مادة "{sub_name}" من هذه الدورة المنعقدة بنجاح دون التأثير على أي دورات أخرى.')
         return redirect('training:course_session_manage', session_id=session.id)
 
     # تحديث الرتب والقوة والوحدات للدارسين المسجلين
@@ -1188,9 +1247,11 @@ def course_session_manage_view(request, session_id):
 
     instructors = Instructor.objects.filter(is_active=True).order_by('name')
     session_subject_instructors = list(session.subject_instructors.select_related('subject', 'instructor').all())
-    assigned_subject_ids = {a.subject_id for a in session_subject_instructors}
-    for sub in session.course.subjects.all():
-        if sub.id not in assigned_subject_ids:
+    # إذا كانت دورة منعقدة جديدة تماماً ولم تُعيّن لها مواد بعد ولم تكن دورة مرصودة النتائج:
+    # نقوم بتهيئة موادها المبدئية من المواد العامة للمقرر فقط
+    if not session_subject_instructors and not session.enrollments.filter(is_graded=True).exists():
+        initial_subjects = session.course.subjects.filter(session__isnull=True)
+        for sub in initial_subjects:
             assign = SessionSubjectInstructor.objects.create(session=session, subject=sub, instructor=None)
             session_subject_instructors.append(assign)
 
@@ -1438,9 +1499,9 @@ def results_center_view(request):
         ).first()
 
         if selected_archive_session:
-            selected_archive_subjects = list(selected_archive_session.course.subjects.all())
+            selected_archive_subjects = selected_archive_session.get_subjects()
             selected_archive_enrollments = selected_archive_session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
-            selected_archive_total_possible = (selected_archive_session.course.total_max_marks or 0) + (selected_archive_session.attendance_max_grade or 0)
+            selected_archive_total_possible = selected_archive_session.total_possible_score
             selected_archive_is_locked = (selected_archive_session.status == 'completed' and not is_admin_user(request.user))
 
     context = {
@@ -1492,7 +1553,7 @@ def results_entry_view(request, session_id):
         .prefetch_related('course__subjects', 'subject_instructors__instructor'),
         pk=session_id
     )
-    subjects = list(session.course.subjects.all())
+    subjects = session.get_subjects()
     enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
     dropped_enrollments = session.enrollments.filter(is_dropped=True).select_related('trainee').all()
 
@@ -1505,27 +1566,46 @@ def results_entry_view(request, session_id):
         sub.assigned_instructor = subject_instructors_map.get(sub.id)
         sub.instructor_name = sub.assigned_instructor.name if sub.assigned_instructor else 'لم يحدد'
 
-    # تحديد دور وصلاحية المستخدم الحالي
-    is_inst = is_instructor_user(request.user) and not is_admin_user(request.user)
-    inst = get_user_instructor(request.user) if is_inst else None
-    allowed_subject_ids = None
-
-    if is_inst:
-        if not inst:
-            messages.error(request, 'عفواً، حسابك غير مرتبط بملف معلم معتمد في هيئة التدريس.')
-            return redirect('training:results_center')
-        
-        allowed_subject_ids = set(
-            session.subject_instructors.filter(instructor=inst).values_list('subject_id', flat=True)
-        )
-        if not allowed_subject_ids:
-            messages.error(request, 'عفواً، لست مكلفاً بتدريس أي مادة في هذه الدورة المنعقدة.')
-            return redirect('training:results_center')
-
-    # فحص صلاحية الإشراف: إما دوره مشرف، أو محدد كمشرف لهذه الدورة، أو مدير نظام
+    # تحديد أدوار وصلاحيات المستخدم الحالي بدقة
+    is_admin = is_admin_user(request.user)
     user_inst = get_user_instructor(request.user)
     is_session_supervisor = bool(user_inst and session.supervisor_id == user_inst.military_number)
-    is_sup = is_supervisor_user(request.user) or is_session_supervisor or is_admin_user(request.user)
+    is_sup = is_supervisor_user(request.user) or is_session_supervisor
+    is_inst = is_instructor_user(request.user) and not is_admin
+
+    # تحديد المواد المصرح للمستخدم برصد وتعديل درجاتها
+    allowed_subject_ids = set()
+    if is_admin:
+        # مدير النظام يملك صلاحية التحكم الكامل
+        allowed_subject_ids = {sub.id for sub in subjects}
+        can_edit_attendance = True
+        can_approve_results = True
+    elif is_inst:
+        if not user_inst:
+            messages.error(request, 'عفواً، حسابك غير مرتبط بملف معلم معتمد في هيئة التدريس.')
+            return redirect('training:results_center')
+
+        # المواد التي كلف بتدريسها هذا المعلم فقط
+        allowed_subject_ids = set(
+            session.subject_instructors.filter(instructor=user_inst).values_list('subject_id', flat=True)
+        )
+        # إذا كان المعلم هو نفسه مشرف الدورة: يملك أيضاً صلاحية المواظبة والاعتماد
+        can_edit_attendance = is_session_supervisor
+        can_approve_results = is_session_supervisor
+
+        if not allowed_subject_ids and not is_session_supervisor:
+            messages.error(request, 'عفواً، لست مكلفاً بتدريس أي مادة في هذه الدورة المنعقدة.')
+            return redirect('training:results_center')
+    elif is_sup:
+        # مشرف الدورة: يرى مواد الدورة للعرض فقط (لا يعدل درجات مواد المعلمين)، ويرصد المواظبة ويعتمد النتيجة
+        allowed_subject_ids = set()  # المشرف لا يعدل درجات المواد
+        can_edit_attendance = True
+        can_approve_results = True
+    else:
+        # مسجل بيانات
+        allowed_subject_ids = set()
+        can_edit_attendance = is_registrar_user(request.user)
+        can_approve_results = False
 
     # معالجة حفظ ملحوظات الشهادة (متاحة في أي وقت حتى بعد اعتماد النتيجة وقفلها)
     if request.method == 'POST' and 'save_notes' in request.POST:
@@ -1553,16 +1633,16 @@ def results_entry_view(request, session_id):
             redirect_url += f'?from={from_param}'
         return redirect(redirect_url)
 
-    # معالجة حفظ الدرجات
-    if request.method == 'POST' and 'save_grades' in request.POST:
+    # معالجة حفظ الدرجات والاعتماد
+    if request.method == 'POST' and ('save_grades' in request.POST or 'mark_completed' in request.POST):
         # إذا كانت الدورة معتمدة ومكتملة، لا يُسمح بتعديل درجاتها إلا لمدير النظام
-        if session.status == 'completed' and not is_admin_user(request.user):
+        if session.status == 'completed' and not is_admin:
             messages.error(request, 'إجراء محظور: نتائج هذه الدورة معتمدة ومقفلة، وتعديل الدرجات محصور بمدير النظام (Admin) فقط.')
             return redirect('training:results_entry', session_id=session.id)
 
         # التحقق من طلب الاعتماد (mark_completed)
         if 'mark_completed' in request.POST:
-            if not is_sup:
+            if not can_approve_results:
                 messages.error(request, 'إجراء محظور: اعتماد نتائج الدورة نهائياً محصور بمشرف الدورة أو مدير النظام فقط.')
                 return redirect('training:results_entry', session_id=session.id)
 
@@ -1578,14 +1658,26 @@ def results_entry_view(request, session_id):
             total_required_grades = len(enrollments) * len(subjects)
             total_recorded_grades = TraineeSubjectGrade.objects.filter(
                 enrollment__session=session,
+                enrollment__is_dropped=False,
+                subject__in=subjects,
                 score__isnull=False
             ).count()
             missing_count = total_required_grades - total_recorded_grades
+
+            # التحقق أيضاً من رصد درجة المواظبة لجميع الدارسين
+            missing_att = enrollments.filter(attendance_score__isnull=True).count()
 
             if missing_count > 0:
                 messages.error(
                     request,
                     f'لا يمكن اعتماد النتيجة نهائياً لوجود مواد لم يتم رصد درجاتها بعد من قبل المعلمين لكافة الدارسين (المتبقي: {missing_count} درجة غير مرصودة). يرجى اكتمال رصد كافة درجات المواد أولاً.'
+                )
+                return redirect('training:results_entry', session_id=session.id)
+
+            if missing_att > 0:
+                messages.error(
+                    request,
+                    f'لا يمكن اعتماد النتيجة نهائياً لوجود دارسين لم تُرصد لهم درجة المواظبة والسلوك بعد (المتبقي: {missing_att} دارس). يرجى رصد المواظبة أولاً.'
                 )
                 return redirect('training:results_entry', session_id=session.id)
 
@@ -1615,80 +1707,11 @@ def results_entry_view(request, session_id):
         # حفظ وتحديث الدرجات
         validation_errors = []
 
-        if is_inst:
-            # المعلم يرصد مواده المكلف بها فقط ولا يحذف بقية المواد أو المواظبة
-            for en in enrollments:
-                num = en.trainee.military_number
-                for sub in subjects:
-                    if sub.id in allowed_subject_ids:
-                        grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
-                        if grade_raw != '':
-                            try:
-                                score = float(grade_raw)
-                                if score < 0:
-                                    validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
-                                elif score > float(sub.max_grade):
-                                    validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" ({score}) تتجاوز الحد الأقصى للمادة ({sub.max_grade}).')
-                            except ValueError:
-                                validation_errors.append(f'درجة مادة "{sub.name}" المدخلة للدارس "{en.trainee.name}" غير صالحة ({grade_raw}).')
-
-            if validation_errors:
-                for err in validation_errors[:10]:
-                    messages.error(request, err)
-            else:
-                for en in enrollments:
-                    num = en.trainee.military_number
-                    if f'cert_note_{num}' in request.POST:
-                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
-                    for sub in subjects:
-                        if sub.id in allowed_subject_ids:
-                            grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
-                            if grade_raw != '':
-                                score = float(grade_raw)
-                                TraineeSubjectGrade.objects.update_or_create(
-                                    enrollment=en,
-                                    subject=sub,
-                                    defaults={'score': score}
-                                )
-                            else:
-                                TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
-                    # تحديث احتساب النتيجة إن اكتملت جميع المواد والمواظبة
-                    if en.grades.filter(score__isnull=False).count() == len(subjects) and en.attendance_score is not None:
-                        en.calculate_results()
-                    else:
-                        en.save(update_fields=['certificate_note'])
-
-                log_activity(
-                    request=request,
-                    action_type=ActivityAction.GRADE_ENTRY,
-                    action_category=ActivityCategory.GRADES,
-                    description=f"رصد وحفظ درجات مادة/مواد مكلف بها في دورة '{session.course.name}' (دفعة: {session.session_code}) لعدد {len(enrollments)} دارس",
-                    target_model="CourseSession",
-                    target_id=session.id
-                )
-
-                messages.success(request, f'تم حفظ ورصد درجات المواد المكلف بها في دورة "{session.course.name}" بنجاح.')
-                return redirect('training:results_entry', session_id=session.id)
-
-        else:
-            # مشرف الدورة أو الأدمن أو مسجل البيانات: رصد درجات المواظبة والمواد
-            parsed_data = {}
-            for en in enrollments:
-                num = en.trainee.military_number
-                att_raw = request.POST.get(f'att_{num}', '').strip()
-                att_val = 0.0
-                if att_raw != '':
-                    try:
-                        att_val = float(att_raw)
-                        if att_val < 0:
-                            validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
-                        elif att_val > float(session.attendance_max_grade):
-                            validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" ({att_val}) تتجاوز الحد الأقصى ({session.attendance_max_grade}).')
-                    except ValueError:
-                        validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" غير صالحة ({att_raw}).')
-
-                subject_grades_to_save = []
-                for sub in subjects:
+        # 1. التحقق من درجات المواد المسموح للمستخدم بتعديلها فقط
+        for en in enrollments:
+            num = en.trainee.military_number
+            for sub in subjects:
+                if sub.id in allowed_subject_ids:
                     grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
                     if grade_raw != '':
                         try:
@@ -1697,52 +1720,75 @@ def results_entry_view(request, session_id):
                                 validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
                             elif score > float(sub.max_grade):
                                 validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" ({score}) تتجاوز الحد الأقصى للمادة ({sub.max_grade}).')
-                            else:
-                                subject_grades_to_save.append((sub, score))
                         except ValueError:
                             validation_errors.append(f'درجة مادة "{sub.name}" المدخلة للدارس "{en.trainee.name}" غير صالحة ({grade_raw}).')
 
-                parsed_data[en.id] = {
-                    'attendance': att_val,
-                    'subjects': subject_grades_to_save,
-                }
+            # 2. التحقق من درجة المواظبة إذا كان مصرحاً له برصدها
+            if can_edit_attendance:
+                att_raw = request.POST.get(f'att_{num}', '').strip()
+                if att_raw != '':
+                    try:
+                        att_val = float(att_raw)
+                        if att_val < 0:
+                            validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
+                        elif att_val > float(session.attendance_max_grade):
+                            validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" ({att_val}) تتجاوز الحد الأقصى للمواظبة ({session.attendance_max_grade}).')
+                    except ValueError:
+                        validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" غير صالحة ({att_raw}).')
 
-            if validation_errors:
-                for err in validation_errors[:10]:
-                    messages.error(request, err)
+        if validation_errors:
+            for err in validation_errors[:10]:
+                messages.error(request, err)
+        else:
+            # تطبيق الحفظ على الحقول المصرح بها فقط دون المساس بدرجات المواد الأخرى
+            for en in enrollments:
+                num = en.trainee.military_number
+
+                # حفظ الملحوظة
+                if f'cert_note_{num}' in request.POST:
+                    en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
+
+                # حفظ درجات المواد المسموح بها لهذا المعلم أو الأدمن
+                for sub in subjects:
+                    if sub.id in allowed_subject_ids:
+                        grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
+                        if grade_raw != '':
+                            score = float(grade_raw)
+                            TraineeSubjectGrade.objects.update_or_create(
+                                enrollment=en,
+                                subject=sub,
+                                defaults={'score': score}
+                            )
+                        else:
+                            TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
+
+                # حفظ درجة المواظبة إذا كان مصرحاً له
+                if can_edit_attendance:
+                    att_raw = request.POST.get(f'att_{num}', '').strip()
+                    en.attendance_score = float(att_raw) if att_raw != '' else None
+
+                # إذا اكتملت جميع درجات المواد والمواظبة، يتم احتساب النتيجة تلقائياً
+                total_recorded = en.grades.filter(score__isnull=False, subject__in=subjects).count()
+                if total_recorded == len(subjects) and en.attendance_score is not None:
+                    en.calculate_results()
+                else:
+                    en.is_graded = False
+                    en.save(update_fields=['attendance_score', 'certificate_note', 'is_graded'])
+
+            # رسالة نجاح واضحة حسب طبيعة الحفظ
+            if allowed_subject_ids and not can_edit_attendance:
+                msg = f'تم حفظ ورصد درجات المواد المكلف بها بنجاح.'
+            elif can_edit_attendance and not allowed_subject_ids:
+                msg = f'تم حفظ وتحديث درجات المواظبة والملحوظات بنجاح دون تعديل درجات المواد.'
             else:
-                for en in enrollments:
-                    data = parsed_data[en.id]
-                    num = en.trainee.military_number
-                    if f'cert_note_{num}' in request.POST:
-                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
-                    en.attendance_score = data['attendance']
-                    for sub, score in data['subjects']:
-                        TraineeSubjectGrade.objects.update_or_create(
-                            enrollment=en,
-                            subject=sub,
-                            defaults={'score': score}
-                        )
-                    if en.grades.filter(score__isnull=False).count() == len(subjects):
-                        en.calculate_results()
-                    else:
-                        en.save()
+                msg = f'تم حفظ ورصد الدرجات بنجاح.'
 
-                log_activity(
-                    request=request,
-                    action_type=ActivityAction.GRADE_ENTRY,
-                    action_category=ActivityCategory.GRADES,
-                    description=f"رصد وحفظ درجات ومواظبة دورة '{session.course.name}' (دفعة: {session.session_code}) لعدد {len(enrollments)} دارس",
-                    target_model="CourseSession",
-                    target_id=session.id
-                )
-
-                messages.success(request, f'تم حفظ وتحديث الدرجات في دورة "{session.course.name}" بنجاح.')
-                from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
-                redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
-                if from_param:
-                    redirect_url += f'?from={from_param}'
-                return redirect(redirect_url)
+            messages.success(request, msg)
+            from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
+            redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
+            if from_param:
+                redirect_url += f'?from={from_param}'
+            return redirect(redirect_url)
 
     # تجهيز بيانات درجات المواد لكل دارس بشكل مباشر ومتقن للعرض
     for en in enrollments:
@@ -1768,26 +1814,35 @@ def results_entry_view(request, session_id):
 
     is_locked = (session.status == 'completed' and not is_admin_user(request.user))
 
-    # فحص اكتمال رصد كافة درجات المواد
+    # فحص اكتمال رصد كافة درجات المواد والمواظبة
+    subjects_total_max = sum(s.max_grade for s in subjects)
     total_required = len(enrollments) * len(subjects)
     total_graded = TraineeSubjectGrade.objects.filter(
         enrollment__session=session,
+        enrollment__is_dropped=False,
+        subject__in=subjects,
         score__isnull=False
     ).count()
     missing_grades_count = total_required - total_graded
-    is_fully_graded = (missing_grades_count == 0 and len(subjects) > 0 and enrollments.exists())
+    missing_att_count = enrollments.filter(attendance_score__isnull=True).count()
+    is_fully_graded = (missing_grades_count == 0 and missing_att_count == 0 and len(subjects) > 0 and enrollments.exists())
 
     context = {
         'session': session,
         'subjects': subjects,
+        'subjects_total_max': subjects_total_max,
         'enrollments': enrollments,
         'total_possible_score': session.total_possible_score,
         'is_locked': is_locked,
         'is_instructor_only': is_inst,
+        'user_inst': user_inst,
         'allowed_subject_ids': allowed_subject_ids or set(),
-        'is_supervisor_or_admin': is_sup,
+        'is_supervisor_or_admin': is_sup or is_admin,
+        'can_edit_attendance': can_edit_attendance,
+        'can_approve_results': can_approve_results,
         'is_fully_graded': is_fully_graded,
         'missing_grades_count': missing_grades_count,
+        'missing_att_count': missing_att_count,
         'from_tab': request.GET.get('from', '').strip(),
         'dropped_enrollments': dropped_enrollments,
         'dropped_count': dropped_enrollments.count(),
@@ -1819,8 +1874,9 @@ def certificate_view(request, enrollment_id):
         if not enrollment.session.start_date or not enrollment.session.end_date:
             missing_reasons.append("تواريخ انعقاد الدورة")
         
-        total_subjects = enrollment.session.course.subjects.count()
-        graded_count = enrollment.grades.count()
+        session_subjects = enrollment.session.get_subjects()
+        total_subjects = len(session_subjects)
+        graded_count = enrollment.grades.filter(subject__in=session_subjects).count()
         if total_subjects == 0:
             missing_reasons.append("تعريف مفردات المواد الدراسية للدورة")
         elif graded_count < total_subjects:
@@ -1871,8 +1927,9 @@ def certificate_detailed_view(request, enrollment_id):
         if not enrollment.session.start_date or not enrollment.session.end_date:
             missing_reasons.append("تواريخ انعقاد الدورة")
         
-        total_subjects = enrollment.session.course.subjects.count()
-        graded_count = enrollment.grades.count()
+        session_subjects = enrollment.session.get_subjects()
+        total_subjects = len(session_subjects)
+        graded_count = enrollment.grades.filter(subject__in=session_subjects).count()
         if total_subjects == 0:
             missing_reasons.append("تعريف مفردات المواد الدراسية للدورة")
         elif graded_count < total_subjects:
@@ -1894,7 +1951,7 @@ def certificate_detailed_view(request, enrollment_id):
     cert_badge = 'شهادة التفاصيل'
 
     # تجهيز درجات المواد
-    subjects = list(enrollment.session.course.subjects.all())
+    subjects = enrollment.session.get_subjects()
     grades_map = {g.subject_id: g.score for g in enrollment.grades.all()}
     subjects_data = []
     for sub in subjects:
@@ -1927,7 +1984,7 @@ def session_results_sheet_view(request, session_id):
         CourseSession.objects.select_related('course', 'course__category').prefetch_related('course__subjects'),
         pk=session_id
     )
-    subjects = list(session.course.subjects.all())
+    subjects = session.get_subjects()
     enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').order_by('-total_score')
 
     grades_map = {}

@@ -311,7 +311,7 @@ class AuthenticationAndSecurityTests(TestCase):
 
     def test_results_entry_rejects_negative_or_exceeding_grades(self):
         """التحقق من رفض الدرجات السالبة والدرجات التي تتجاوز الحد الأقصى للمادة أو المواظبة"""
-        self.client.login(username='user_test', password='Password123!')
+        self.client.login(username='admin_test', password='Password123!')
         from training.models import CourseCategory, Course, CourseSession, Trainee, CourseEnrollment, Subject, TraineeSubjectGrade
         import datetime
 
@@ -2135,13 +2135,241 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(res_dup.status_code, 400)
         self.assertIn('مضافة مسبقاً', res_dup.json()['message'])
 
-        # 4. فحص صفحة إنشاء دورة جديدة وتأكد وجود زر إضافة مادة وقائمة المواد
+        # 4. فحص صفحة إنشاء دورة جديدة وتأكد وجود زر إضافة مادة
         create_page_res = self.client.get(reverse('training:course_session_create'))
         self.assertEqual(create_page_res.status_code, 200)
         content = create_page_res.content.decode('utf-8')
         self.assertIn('إضافة مادة لهذه الدورة', content)
         self.assertIn('quickAddSubjectModal', content)
-        self.assertIn('بايثون متقدم', content)
+
+    def test_session_subject_isolation_across_multiple_sessions(self):
+        """التحقق التام من عزل المواد المضافة لدورة معينة (مثل الدورة 75) وعدم ظهورها في أي دورة محفوظة أخرى"""
+        cat = CourseCategory.objects.create(name='دورات القيادة العامة')
+        course = Course.objects.create(name='إدارة متقدمة تجريبية', category=cat, course_number='MGT-100')
+        sub_base = Subject.objects.create(course=course, name='مبادئ إدارة أساسية', max_grade=100)
+
+        # دورتان منعقدتان لنفس المقرر: دورة 74 ودورة 75
+        session_74 = CourseSession.objects.create(
+            course=course, session_code='74',
+            start_date=date(2026, 1, 1), end_date=date(2026, 1, 30)
+        )
+        SessionSubjectInstructor.objects.create(session=session_74, subject=sub_base)
+
+        session_75 = CourseSession.objects.create(
+            course=course, session_code='75',
+            start_date=date(2026, 2, 1), end_date=date(2026, 2, 28)
+        )
+        SessionSubjectInstructor.objects.create(session=session_75, subject=sub_base)
+
+        # إضافة مادة خاصة بالدورة 75 فقط عبر API
+        self.client.force_login(self.admin)
+        api_url = reverse('training:api_add_course_subject')
+        res = self.client.post(api_url, {
+            'course_id': course.id,
+            'session_id': session_75.id,
+            'name': 'تخطيط استراتيجي خاص 75',
+            'credit_hours': '20',
+            'max_grade': '100'
+        })
+        self.assertEqual(res.status_code, 200)
+
+        # التحقق من أن المادة تتبع الدورة 75 حصرياً
+        sub_75 = Subject.objects.get(name='تخطيط استراتيجي خاص 75')
+        self.assertEqual(sub_75.session_id, session_75.id)
+
+        # الدورة 75 تحتوي على المادتين
+        sub_names_75 = [s.name for s in session_75.get_subjects()]
+        self.assertIn('مبادئ إدارة أساسية', sub_names_75)
+        self.assertIn('تخطيط استراتيجي خاص 75', sub_names_75)
+
+        # الدورة 74 (الدورة الأخرى المحفوظة) لا تحتوي على المادة المضافة في الدورة 75 إطلاقاً!
+        sub_names_74 = [s.name for s in session_74.get_subjects()]
+        self.assertIn('مبادئ إدارة أساسية', sub_names_74)
+        self.assertNotIn('تخطيط استراتيجي خاص 75', sub_names_74)
+
+        # فحص صفحة رصد درجات الدورة 74 والتأكد من عدم ظهور المادة الخاصة بالدورة 75
+        res_grades_74 = self.client.get(reverse('training:results_entry', kwargs={'session_id': session_74.id}))
+        self.assertEqual(res_grades_74.status_code, 200)
+        self.assertNotIn('تخطيط استراتيجي خاص 75', res_grades_74.content.decode('utf-8'))
+
+        # فحص دليل ومفردات الدورات العام والتأكد من عدم ظهور مادة الدورة 75 في الخطة العامة
+        res_cat = self.client.get(reverse('training:courses_catalog') + f'?category_id={cat.id}&course_id={course.id}')
+        self.assertEqual(res_cat.status_code, 200)
+        self.assertNotIn('تخطيط استراتيجي خاص 75', res_cat.content.decode('utf-8'))
+
+        # إزالة المادة الخاصة من الدورة 75
+        manage_url = reverse('training:course_session_manage', kwargs={'session_id': session_75.id})
+        res_del = self.client.post(manage_url, {'remove_session_subject_id': sub_75.id})
+        self.assertEqual(res_del.status_code, 302)
+        sub_names_75_after = [s.name for s in session_75.get_subjects()]
+        self.assertNotIn('تخطيط استراتيجي خاص 75', sub_names_75_after)
+
+    def test_teacher_grades_assigned_subject_while_others_empty_and_supervisor_workflow(self):
+        """
+        التحقق من:
+        1. تمكن المعلم من رصد درجات مواده فقط وحفظها بنجاح حتى مع بقاء درجات المعلمين الآخرين والمواظبة فارغة.
+        2. عدم ظهور أي أخطاء أو إلزام للمعلم بملء مواد غيره.
+        3. تمكن مشرف الدورة من الاطلاع على الدورة ورصد المواظبة، مع حظر تعديله على درجات المواد التخصصية للمعلمين.
+        4. تمكن المشرف من اعتماد النتيجة بعد اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة.
+        """
+        cat = CourseCategory.objects.create(name='دورات الذكاء الاصطناعي')
+        course = Course.objects.create(name='دورة برمجة متقدمة', category=cat)
+        sub_ml = Subject.objects.create(course=course, name='تعلم الآلة', max_grade=100)
+        sub_it = Subject.objects.create(course=course, name='شبكات حاسوب', max_grade=100)
+
+        inst_ml = Instructor.objects.create(
+            military_number='112233',
+            name='معلم تعلم الآلة',
+            rank='نقيب',
+            unit='سلاح الإشارة'
+        )
+        user_ml = User.objects.create_user(username='teacher_ml', password='Password123!')
+        user_ml.profile.role = UserRole.INSTRUCTOR
+        user_ml.profile.instructor = inst_ml
+        user_ml.profile.military_number = inst_ml.military_number
+        user_ml.profile.save()
+
+        inst_it = Instructor.objects.create(
+            military_number='445566',
+            name='معلم الشبكات',
+            rank='رائد',
+            unit='سلاح الصيانة'
+        )
+        user_it = User.objects.create_user(username='teacher_it', password='Password123!')
+        user_it.profile.role = UserRole.INSTRUCTOR
+        user_it.profile.instructor = inst_it
+        user_it.profile.military_number = inst_it.military_number
+        user_it.profile.save()
+
+        inst_sup = Instructor.objects.create(
+            military_number='778899',
+            name='مشرف الدورة الأكاديمي',
+            rank='مقدم',
+            unit='قيادة المعهد'
+        )
+        user_sup = User.objects.create_user(username='supervisor_user', password='Password123!')
+        user_sup.profile.role = UserRole.SUPERVISOR
+        user_sup.profile.instructor = inst_sup
+        user_sup.profile.military_number = inst_sup.military_number
+        user_sup.profile.save()
+
+        session = CourseSession.objects.create(
+            course=course,
+            session_code='دورة 78 - اختبار الصلاحيات',
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 30),
+            attendance_max_grade=20.0,
+            supervisor=inst_sup,
+            status='active'
+        )
+
+        SessionSubjectInstructor.objects.create(session=session, subject=sub_ml, instructor=inst_ml)
+        SessionSubjectInstructor.objects.create(session=session, subject=sub_it, instructor=inst_it)
+
+        trainee = Trainee.objects.create(
+            military_number='999001',
+            name='دارس تجربة الصلاحيات',
+            category=TraineeCategory.OFFICER,
+            unit='لواء المدرعات'
+        )
+        enrollment = CourseEnrollment.objects.create(
+            session=session,
+            trainee=trainee,
+            current_rank='ملازم أول',
+            current_unit='لواء المدرعات'
+        )
+
+        url = reverse('training:results_entry', kwargs={'session_id': session.id})
+
+        # 1. تسجيل دخول معلم مادة تعلم الآلة
+        self.client.login(username='teacher_ml', password='Password123!')
+        res_get_ml = self.client.get(url)
+        self.assertEqual(res_get_ml.status_code, 200)
+        html_ml = res_get_ml.content.decode('utf-8')
+        # المادة المكلف بها تظهر كحقل إدخال
+        self.assertIn(f'name="grade_{trainee.military_number}_{sub_ml.id}"', html_ml)
+        # مادة المعلم الآخر لا تظهر كحقل إدخال إطلاقاً
+        self.assertNotIn(f'name="grade_{trainee.military_number}_{sub_it.id}"', html_ml)
+        # المواظبة لا تظهر كحقل إدخال للمعلم
+        self.assertNotIn(f'name="att_{trainee.military_number}"', html_ml)
+
+        # المعلم يحفظ درجات مادته بنجاح دون الحاجة لملء مادة غيره
+        res_post_ml = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub_ml.id}': '85.0',
+        })
+        self.assertEqual(res_post_ml.status_code, 302)
+
+        # التحقق من حفظ درجة المادة
+        g_ml = TraineeSubjectGrade.objects.filter(enrollment=enrollment, subject=sub_ml).first()
+        self.assertIsNotNone(g_ml)
+        self.assertEqual(float(g_ml.score), 85.0)
+
+        # التحقق من أن حالة الدارس لم تُعتمد بعد لأن باقي المواد قيد الرصد
+        enrollment.refresh_from_db()
+        self.assertFalse(enrollment.is_graded)
+
+        # 2. تسجيل دخول مشرف الدورة
+        self.client.login(username='supervisor_user', password='Password123!')
+        res_get_sup = self.client.get(url)
+        self.assertEqual(res_get_sup.status_code, 200)
+        html_sup = res_get_sup.content.decode('utf-8')
+        # مواد المعلمين تظهر للعرض فقط للمشرف ولا يمكن تعديلها كحقول
+        self.assertNotIn(f'name="grade_{trainee.military_number}_{sub_ml.id}"', html_sup)
+        self.assertNotIn(f'name="grade_{trainee.military_number}_{sub_it.id}"', html_sup)
+        # حقل المواظبة متاح للمشرف
+        self.assertIn(f'name="att_{trainee.military_number}"', html_sup)
+
+        # محاولة تعديل درجة مادة من قبل المشرف (محظورة ويتم تجاهلها) مع رصد المواظبة
+        res_post_sup = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub_ml.id}': '20.0',
+            f'att_{trainee.military_number}': '18.0',
+            f'cert_note_{trainee.military_number}': 'ملحوظة تجريبية من المشرف',
+        })
+        self.assertEqual(res_post_sup.status_code, 302)
+
+        # درجة المادة لم تتغير وظلت كما وضعها المعلم
+        g_ml.refresh_from_db()
+        self.assertEqual(float(g_ml.score), 85.0)
+
+        # المواظبة والملحوظة تم حفظهما بنجاح
+        enrollment.refresh_from_db()
+        self.assertEqual(float(enrollment.attendance_score), 18.0)
+        self.assertEqual(enrollment.certificate_note, 'ملحوظة تجريبية من المشرف')
+
+        # محاولة اعتماد الدورة قبل اكتمال درجات المعلم الآخر (مرفوضة)
+        res_mark_incomplete = self.client.post(url, {
+            'mark_completed': '1',
+        })
+        self.assertEqual(res_mark_incomplete.status_code, 302)
+        session.refresh_from_db()
+        self.assertEqual(session.status, 'active')
+
+        # 3. تسجيل دخول معلم الشبكات ورصد درجته
+        self.client.login(username='teacher_it', password='Password123!')
+        res_post_it = self.client.post(url, {
+            'save_grades': '1',
+            f'grade_{trainee.military_number}_{sub_it.id}': '90.0',
+        })
+        self.assertEqual(res_post_it.status_code, 302)
+        g_it = TraineeSubjectGrade.objects.filter(enrollment=enrollment, subject=sub_it).first()
+        self.assertIsNotNone(g_it)
+        self.assertEqual(float(g_it.score), 90.0)
+
+        # 4. تسجيل دخول المشرف واعتماد النتيجة نهائياً بعد اكتمال جميع الدرجات
+        self.client.login(username='supervisor_user', password='Password123!')
+        res_mark_complete = self.client.post(url, {
+            'mark_completed': '1',
+        })
+        self.assertEqual(res_mark_complete.status_code, 302)
+        session.refresh_from_db()
+        self.assertEqual(session.status, 'completed')
+
+        enrollment.refresh_from_db()
+        self.assertTrue(enrollment.is_graded)
+        self.assertEqual(float(enrollment.total_score), 193.0)
+        self.assertEqual(enrollment.grade_label, 'ممتاز (أ)')
 
 
 
