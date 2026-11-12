@@ -1,10 +1,45 @@
 from decimal import Decimal
 from django import forms
+from django.core.validators import validate_email
 from django.contrib.auth.models import User
 from .models import (
     Instructor, Trainee, TraineeCategory, CourseCategory, Course, Subject, CourseSession,
     CertificateSettings, SystemSettings, UserProfile, UserRole
 )
+
+
+def validate_and_clean_phone(phone_val, field_label='رقم الهاتف'):
+    """
+    التحقق الصارم من قيود رقم الهاتف:
+    - يقبل أرقاماً فقط (0-9).
+    - يشترط أن يتكون من 10 أرقام بالضبط.
+    """
+    if not phone_val:
+        return ''
+    cleaned = str(phone_val).strip()
+    if not cleaned:
+        return ''
+    if not cleaned.isdigit():
+        raise forms.ValidationError(f'{field_label} يجب أن يحتوي على أرقام فقط دون مسافات أو أحرف أو رموز.')
+    if len(cleaned) != 10:
+        raise forms.ValidationError(f'{field_label} يجب أن يتكون من 10 أرقام بالضبط (المدخل حالياً: {len(cleaned)} أرقام).')
+    return cleaned
+
+
+def validate_and_clean_email(email_val, field_label='البريد الإلكتروني'):
+    """
+    التحقق الصارم من صحة عنوان البريد الإلكتروني.
+    """
+    if not email_val:
+        return ''
+    cleaned = str(email_val).strip()
+    if not cleaned:
+        return ''
+    try:
+        validate_email(cleaned)
+    except forms.ValidationError:
+        raise forms.ValidationError('يرجى إدخال عنوان بريد إلكتروني صحيح (مثال: name@domain.com).')
+    return cleaned
 
 # ثوابت الرتب العسكرية والمدنية المحددة بدقة
 OFFICER_RANKS = [
@@ -166,8 +201,14 @@ class TraineeForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg font-monospace',
-            'placeholder': 'رقم هاتف الدارس (مثال: 0912345678)',
+            'placeholder': 'مثال: 0912345678 (10 أرقام)',
             'type': 'tel',
+            'maxlength': '10',
+            'minlength': '10',
+            'pattern': r'\d{10}',
+            'inputmode': 'numeric',
+            'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط',
+            'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
         }),
         label='رقم الهاتف'
     )
@@ -217,25 +258,25 @@ class TraineeForm(forms.ModelForm):
     # القريب 1
     relative_1_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'اسم القريب الأول'}), label='اسم القريب الأول')
     relative_1_kinship = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'صلة القرابة (مثال: والد، أخ)'}), label='صلة القرابة')
-    relative_1_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف'}), label='رقم الهاتف')
+    relative_1_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف (10 أرقام)', 'type': 'tel', 'maxlength': '10', 'minlength': '10', 'pattern': r'\d{10}', 'inputmode': 'numeric', 'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط', 'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"}), label='رقم الهاتف')
     relative_1_address = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مكان السكن / العنوان'}), label='السكن / العنوان')
 
     # القريب 2
     relative_2_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'اسم القريب الثاني'}), label='اسم القريب الثاني')
     relative_2_kinship = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'صلة القرابة (مثال: والدة، زوجة)'}), label='صلة القرابة')
-    relative_2_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف'}), label='رقم الهاتف')
+    relative_2_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف (10 أرقام)', 'type': 'tel', 'maxlength': '10', 'minlength': '10', 'pattern': r'\d{10}', 'inputmode': 'numeric', 'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط', 'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"}), label='رقم الهاتف')
     relative_2_address = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مكان السكن / العنوان'}), label='السكن / العنوان')
 
     # القريب 3
     relative_3_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'اسم القريب الثالث'}), label='اسم القريب الثالث')
     relative_3_kinship = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'صلة القرابة (مثال: عم، خال)'}), label='صلة القرابة')
-    relative_3_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف'}), label='رقم الهاتف')
+    relative_3_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف (10 أرقام)', 'type': 'tel', 'maxlength': '10', 'minlength': '10', 'pattern': r'\d{10}', 'inputmode': 'numeric', 'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط', 'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"}), label='رقم الهاتف')
     relative_3_address = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مكان السكن / العنوان'}), label='السكن / العنوان')
 
     # القريب 4
     relative_4_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'اسم القريب الرابع'}), label='اسم القريب الرابع')
     relative_4_kinship = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'صلة القرابة'}), label='صلة القرابة')
-    relative_4_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف'}), label='رقم الهاتف')
+    relative_4_phone = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control font-monospace', 'placeholder': 'رقم الهاتف (10 أرقام)', 'type': 'tel', 'maxlength': '10', 'minlength': '10', 'pattern': r'\d{10}', 'inputmode': 'numeric', 'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط', 'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"}), label='رقم الهاتف')
     relative_4_address = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مكان السكن / العنوان'}), label='السكن / العنوان')
 
     class Meta:
@@ -302,6 +343,21 @@ class TraineeForm(forms.ModelForm):
         if Instructor.objects.filter(military_number=number).exists():
             raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً في النظام كمعلم، ولا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
         return number
+
+    def clean_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف الدارس')
+
+    def clean_relative_1_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('relative_1_phone'), 'هاتف القريب الأول')
+
+    def clean_relative_2_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('relative_2_phone'), 'هاتف القريب الثاني')
+
+    def clean_relative_3_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('relative_3_phone'), 'هاتف القريب الثالث')
+
+    def clean_relative_4_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('relative_4_phone'), 'هاتف القريب الرابع')
 
     def save(self, commit=True):
         trainee = super().save(commit=commit)
@@ -373,8 +429,15 @@ class InstructorForm(forms.ModelForm):
                 'placeholder': 'الوحدة'
             }),
             'phone': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'placeholder': 'رقم الهاتف (اختياري)'
+                'class': 'form-control form-control-lg font-monospace',
+                'placeholder': 'مثال: 0912345678 (10 أرقام)',
+                'type': 'tel',
+                'maxlength': '10',
+                'minlength': '10',
+                'pattern': r'\d{10}',
+                'inputmode': 'numeric',
+                'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط',
+                'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
@@ -404,6 +467,9 @@ class InstructorForm(forms.ModelForm):
         if Trainee.objects.filter(military_number=number).exists():
             raise forms.ValidationError(f'النمرة العسكرية "{number}" مسجلة مسبقاً في النظام كدارس، ولا يجوز تكرار النمرة العسكرية بين المعلمين والدارسين.')
         return number
+
+    def clean_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف المعلم')
 
 
 class CourseForm(forms.ModelForm):
@@ -890,6 +956,12 @@ class UserCreateForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'اسم العائلة'})
     )
+    email = forms.EmailField(
+        label='البريد الإلكتروني',
+        required=False,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'name@example.com'}),
+        error_messages={'invalid': 'يرجى إدخال عنوان بريد إلكتروني صحيح (مثال: name@domain.com).'}
+    )
     role = forms.ChoiceField(
         label='نوع وصلاحية المستخدم *',
         choices=UserRole.choices,
@@ -926,7 +998,17 @@ class UserCreateForm(forms.ModelForm):
     phone = forms.CharField(
         label='رقم الهاتف',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '09xxxxxxx'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control font-monospace',
+            'placeholder': 'مثال: 0912345678 (10 أرقام)',
+            'type': 'tel',
+            'maxlength': '10',
+            'minlength': '10',
+            'pattern': r'\d{10}',
+            'inputmode': 'numeric',
+            'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط',
+            'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+        })
     )
     is_active = forms.BooleanField(
         label='حساب مفعل ونشط',
@@ -975,7 +1057,13 @@ class UserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'first_name', 'last_name', 'is_active']
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'is_active']
+
+    def clean_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+
+    def clean_email(self):
+        return validate_and_clean_email(self.cleaned_data.get('email'))
 
     def clean_username(self):
         username = self.cleaned_data['username'].strip()
@@ -1036,7 +1124,17 @@ class UserEditForm(forms.ModelForm):
     phone = forms.CharField(
         label='رقم الهاتف',
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control font-monospace',
+            'placeholder': 'مثال: 0912345678 (10 أرقام)',
+            'type': 'tel',
+            'maxlength': '10',
+            'minlength': '10',
+            'pattern': r'\d{10}',
+            'inputmode': 'numeric',
+            'title': 'رقم الهاتف يجب أن يتكون من 10 أرقام فقط',
+            'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+        })
     )
 
     # أذونات وصلاحيات كخيارات صح (Checkboxes) بأسلوب ويندوز
@@ -1116,13 +1214,19 @@ class UserEditForm(forms.ModelForm):
             return custom_val
         return val
 
+    def clean_phone(self):
+        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+
+    def clean_email(self):
+        return validate_and_clean_email(self.cleaned_data.get('email'))
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'name@example.com'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {

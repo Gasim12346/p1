@@ -12,6 +12,12 @@ numeric_only_validator = RegexValidator(
     message='النمرة يجب أن تحتوي على أرقام فقط بدون أحرف أو رموز (0-9).'
 )
 
+# قيد إلزامي: رقم الهاتف يتكون من 10 أرقام فقط
+phone_10_digits_validator = RegexValidator(
+    regex=r'^\d{10}$',
+    message='رقم الهاتف يجب أن يتكون من 10 أرقام فقط دون مسافات أو رموز.'
+)
+
 
 class TraineeCategory(models.TextChoices):
     OFFICER = 'officer', 'ضباط'
@@ -46,6 +52,7 @@ class Trainee(models.Model):
         max_length=30,
         blank=True,
         default='',
+        validators=[phone_10_digits_validator],
         verbose_name='رقم الهاتف'
     )
     # حقول السكن
@@ -161,6 +168,7 @@ class TraineeRelative(models.Model):
         max_length=50,
         blank=True,
         default='',
+        validators=[phone_10_digits_validator],
         verbose_name='رقم الهاتف'
     )
     address = models.CharField(
@@ -222,6 +230,7 @@ class Instructor(models.Model):
         max_length=50,
         blank=True,
         default='',
+        validators=[phone_10_digits_validator],
         verbose_name='رقم الهاتف'
     )
     is_active = models.BooleanField(
@@ -1210,6 +1219,7 @@ class UserProfile(models.Model):
         max_length=50,
         blank=True,
         null=True,
+        validators=[phone_10_digits_validator],
         verbose_name='رقم الهاتف'
     )
 

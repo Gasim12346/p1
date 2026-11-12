@@ -2372,6 +2372,133 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(enrollment.grade_label, 'ممتاز (أ)')
 
 
+class PhoneAndEmailValidationTests(TestCase):
+    """اختبارات التحقق الصارم من قيود رقم الهاتف (10 أرقام فقط) والبريد الإلكتروني (صيغة صحيحة)"""
+
+    def test_trainee_phone_validation_ten_digits_only(self):
+        from training.forms import TraineeForm
+        data = {
+            'military_number': '12345678',
+            'category': 'officer',
+            'name': 'دارس اختبار الهاتف',
+            'phone': '0912345678',  # 10 أرقام صحيحة
+        }
+        form = TraineeForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+
+        # 1. إدخال أقل من 10 أرقام (9 أرقام)
+        data['phone'] = '091234567'
+        form_short = TraineeForm(data=data)
+        self.assertFalse(form_short.is_valid())
+        self.assertIn('phone', form_short.errors)
+        self.assertIn('10 أرقام', form_short.errors['phone'][0])
+
+        # 2. إدخال أكثر من 10 أرقام (11 رقماً)
+        data['phone'] = '09123456789'
+        form_long = TraineeForm(data=data)
+        self.assertFalse(form_long.is_valid())
+        self.assertIn('phone', form_long.errors)
+
+        # 3. إدخال حروف أو رموز
+        data['phone'] = '091234567a'
+        form_letters = TraineeForm(data=data)
+        self.assertFalse(form_letters.is_valid())
+        self.assertIn('phone', form_letters.errors)
+
+        # 4. ترك الحقل فارغاً (مسموح لأنه اختياري)
+        data['phone'] = ''
+        form_empty = TraineeForm(data=data)
+        self.assertTrue(form_empty.is_valid())
+
+    def test_trainee_relative_phone_validation(self):
+        from training.forms import TraineeForm
+        data = {
+            'military_number': '88776655',
+            'category': 'nco',
+            'name': 'دارس أقارب الهاتف',
+            'relative_1_name': 'محمد علي',
+            'relative_1_kinship': 'أخ',
+            'relative_1_phone': '0123456789',  # 10 أرقام
+        }
+        form = TraineeForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+
+        # هاتف قريب 9 أرقام
+        data['relative_1_phone'] = '012345678'
+        form_invalid = TraineeForm(data=data)
+        self.assertFalse(form_invalid.is_valid())
+        self.assertIn('relative_1_phone', form_invalid.errors)
+
+    def test_instructor_phone_validation(self):
+        from training.forms import InstructorForm
+        data = {
+            'military_number': '33221100',
+            'category': 'officer',
+            'rank': 'نقيب',
+            'name': 'معلم اختبار الهاتف',
+            'phone': '0987654321',  # 10 أرقام
+        }
+        form = InstructorForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+
+        # إدخال رقم هاتف غير صالح (8 أرقام)
+        data['phone'] = '09876543'
+        form_invalid = InstructorForm(data=data)
+        self.assertFalse(form_invalid.is_valid())
+        self.assertIn('phone', form_invalid.errors)
+
+    def test_user_create_and_edit_phone_and_email_validation(self):
+        from training.forms import UserCreateForm, UserEditForm
+        # 1. إنشاء مستخدم ببريد صالح وهاتف 10 أرقام
+        create_data = {
+            'username': 'phone_user_test',
+            'password': 'Password123!',
+            'first_name': 'مستخدم',
+            'last_name': 'تجربة',
+            'email': 'valid.user@example.com',
+            'role': 'regular',
+            'phone': '0911223344',
+            'is_active': True,
+        }
+        form_create = UserCreateForm(data=create_data)
+        self.assertTrue(form_create.is_valid(), form_create.errors)
+
+        # بريد إلكتروني غير صالح
+        create_data['email'] = 'invalid-email-format'
+        form_bad_email = UserCreateForm(data=create_data)
+        self.assertFalse(form_bad_email.is_valid())
+        self.assertIn('email', form_bad_email.errors)
+
+        # هاتف غير صالح (حروف)
+        create_data['email'] = 'valid@example.com'
+        create_data['phone'] = '09112233aa'
+        form_bad_phone = UserCreateForm(data=create_data)
+        self.assertFalse(form_bad_phone.is_valid())
+        self.assertIn('phone', form_bad_phone.errors)
+
+        # 2. فحص نموذج تعديل المستخدم
+        user = User.objects.create_user(username='edit_test_u', password='Password123!', email='old@example.com')
+        edit_data = {
+            'first_name': 'معدل',
+            'last_name': 'تجريبي',
+            'email': 'not-an-email',
+            'role': 'regular',
+            'phone': '12345',  # 5 أرقام
+            'is_active': True,
+        }
+        form_edit = UserEditForm(data=edit_data, instance=user)
+        self.assertFalse(form_edit.is_valid())
+        self.assertIn('email', form_edit.errors)
+        self.assertIn('phone', form_edit.errors)
+
+        # تصحيح البيانات
+        edit_data['email'] = 'corrected@example.com'
+        edit_data['phone'] = '0123456789'
+        form_edit_ok = UserEditForm(data=edit_data, instance=user)
+        self.assertTrue(form_edit_ok.is_valid(), form_edit_ok.errors)
+
+
+
 
 
 
