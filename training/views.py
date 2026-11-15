@@ -2014,9 +2014,36 @@ def movement_order_view(request, enrollment_id):
             any(r in (enrollment.current_rank or '') for r in ['ملازم', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'])
         )
 
-    destination_unit = (enrollment.current_unit or '').strip()
+    # الوحدة المسجل بها الدارس في الدورة
+    destination_unit = (enrollment.current_unit or (enrollment.trainee.unit if enrollment.trainee else '') or '').strip()
     if not destination_unit:
-        destination_unit = order_settings.to_location_default
+        destination_unit = (order_settings.to_location_default or 'شعبة التدريب').strip()
+
+    # تجهيز التعليمات الإدارية ديناميكياً لتوجيه الدارس لوحدته المسجل بها ومقابلة رئيس وحدته
+    raw_admin = (order_settings.admin_instructions or '').strip()
+    if '{unit}' in raw_admin:
+        admin_instructions = raw_admin.replace('{unit}', destination_unit)
+    else:
+        import re
+        pattern = r'شعبـ*ة\s+التدريب'
+        if re.search(pattern, raw_admin):
+            admin_instructions = re.sub(pattern, destination_unit, raw_admin)
+        else:
+            admin_instructions = f"بموجب هذا الأمر وجب عليك / عليكم مغادرة معهد نظم المعلومات والإحصاء والتوجه الي {destination_unit} وعند وصولك / وصولكم عليك / عليكم مقابلة السيد رئيس {destination_unit} لأخذ التعليمات الاخيرة منه ."
+
+    # تجهيز نسخة إلى (1) ديناميكياً لتوجيهها للسيد رئيس وحدة الدارس
+    raw_copy_1 = (order_settings.copy_to_1 or '').strip()
+    if '{unit}' in raw_copy_1:
+        copy_to_1 = raw_copy_1.replace('{unit}', destination_unit)
+    else:
+        import re
+        pattern = r'شعبـ*ة\s+التدريب'
+        if re.search(pattern, raw_copy_1):
+            copy_to_1 = re.sub(pattern, destination_unit, raw_copy_1)
+        elif 'رئيس' in raw_copy_1:
+            copy_to_1 = f"السيد / رئيس {destination_unit}"
+        else:
+            copy_to_1 = f"السيد / رئيس {destination_unit}"
 
     purpose = f"{order_settings.purpose_prefix}{enrollment.session.course.name}"
     movement_date = enrollment.movement_order_date or enrollment.session.end_date
@@ -2032,6 +2059,9 @@ def movement_order_view(request, enrollment_id):
         'order_settings': order_settings,
         'is_officer': is_officer,
         'destination_unit': destination_unit,
+        'admin_instructions': admin_instructions,
+        'copy_to_1': copy_to_1,
+        'copy_to_2': order_settings.copy_to_2,
         'purpose': purpose,
         'movement_date': movement_date,
         'current_year': current_year,

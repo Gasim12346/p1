@@ -1382,6 +1382,7 @@
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold text-dark">نص التعليمات الإدارية</label>
                                                 {{ movement_form.admin_instructions }}
+                                                <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>يمكنك استخدام <code>{unit}</code> كمتغير ليتم استبداله تلقائياً باسم وحدة الدارس المسجل بها ومقابلة رئيس وحدته.</div>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold text-dark">نص إقرار الشهادة للدارس المسافر</label>
@@ -1416,6 +1417,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label small fw-bold text-dark">نسخة إلى (1)</label>
                                                 {{ movement_form.copy_to_1 }}
+                                                <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>يمكنك كتابة <code>السيد / رئيس {unit}</code> لتوجيه النسخة لوحدة الدارس آلياً.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label small fw-bold text-dark">نسخة إلى (2)</label>
@@ -1436,7 +1438,7 @@
                                                     {% if movement_settings.watermark_url %}
                                                         <img src="{{ movement_settings.watermark_url }}" alt="Watermark" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                                     {% else %}
-                                                        <img src="{% static 'img/movement_order_watermark.jpg' %}" alt="Default Watermark" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                        <img src="{% static 'img/movement_order_watermark.png' %}" alt="Default Watermark" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                                     {% endif %}
                                                 </div>
                                                 <div class="small text-muted mt-1">
@@ -1510,16 +1512,16 @@
                                 <div id="previewMovementPaper" style="background: #ffffff; border: 1px solid #d1d5db; box-shadow: 0 4px 15px rgba(0,0,0,0.08); padding: 16px 14px; font-family: 'Amiri', 'Traditional Arabic', serif; color: #000; font-size: 0.72rem; position: relative; overflow: hidden; min-height: 520px; display: flex; flex-direction: column; justify-content: space-between;">
 
                                     <!-- العلامة المائية بالمعاينة -->
-                                    <div style="position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; pointer-events: none; z-index: 1; display: flex; align-items: center; justify-content: center;">
+                                    <div style="position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; pointer-events: none; z-index: 0; display: flex; align-items: center; justify-content: center;">
                                         {% if movement_settings.watermark_url %}
-                                            <img id="previewMovWatermarkImg" src="{{ movement_settings.watermark_url }}" alt="Watermark" style="width: 100%; height: 100%; object-fit: contain; opacity: {{ movement_settings.watermark_opacity|default:'0.15' }};">
+                                            <img id="previewMovWatermarkImg" src="{{ movement_settings.watermark_url }}" alt="Watermark" style="width: 100%; height: 100%; object-fit: contain; opacity: {{ movement_settings.watermark_opacity|default:'0.12' }}; mix-blend-mode: multiply;">
                                         {% else %}
-                                            <img id="previewMovWatermarkImg" src="{% static 'img/movement_order_watermark.jpg' %}" alt="Watermark" style="width: 100%; height: 100%; object-fit: contain; opacity: {{ movement_settings.watermark_opacity|default:'0.15' }};">
+                                            <img id="previewMovWatermarkImg" src="{% static 'img/movement_order_watermark.png' %}" alt="Watermark" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;">
                                         {% endif %}
                                     </div>
 
                                     <!-- المحتوى -->
-                                    <div style="position: relative; z-index: 2;">
+                                    <div style="position: relative; z-index: 2; background: transparent;">
                                         <div class="text-center">
                                             <div id="previewMovBismillah" style="font-size: 0.76rem;">{{ movement_settings.bismillah_text }}</div>
                                             <div id="previewMovSecurity" style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">{{ movement_settings.security_label }}</div>
@@ -1533,8 +1535,8 @@
                                         <!-- سطر بيانات الدارس الضابط -->
                                         <div id="previewMovOfficerLine" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
                                             <div class="d-flex justify-content-between">
-                                                <span>ملازم تقني / علي أحمد النيل</span>
                                                 <span>رقم البطاقة : 235402384</span>
+                                                <span>ملازم تقني / علي أحمد النيل</span>
                                             </div>
                                         </div>
 
@@ -3387,7 +3389,11 @@
             const targetEl = document.getElementById(item.targetId);
             if (inputEl && targetEl) {
                 inputEl.addEventListener('input', function() {
-                    targetEl.textContent = this.value;
+                    let val = this.value;
+                    if (item.name === 'admin_instructions' || item.name === 'copy_to_1') {
+                        val = val.replace(/\{unit\}/g, 'سلاح الإشارة');
+                    }
+                    targetEl.textContent = val;
                 });
             }
         });

@@ -2551,18 +2551,34 @@ class MovementOrderTests(TestCase):
         self.assertIn('بموجب هذا الأمر', settings.admin_instructions)
 
     def test_movement_order_view_for_officer(self):
-        """فحص استخراج أمر التحرك لدارس ضابط والتأكد من مطابقة نموذج الضابط"""
+        """فحص استخراج أمر التحرك لدارس ضابط والتأكد من مطابقة نموذج الضابط وتوجيه الوحدة وتقديم رقم البطاقة"""
         self.client.login(username='admin_mov', password='Password123!')
         url = reverse('training:movement_order', args=[self.officer_enrollment.id])
         res = self.client.get(url)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.context['is_officer'])
+        self.assertEqual(res.context['destination_unit'], 'سلاح الإشارة')
+        self.assertIn('سلاح الإشارة', res.context['admin_instructions'])
+        self.assertIn('سلاح الإشارة', res.context['copy_to_1'])
+
         content = res.content.decode('utf-8')
         self.assertIn('علي أحمد النيل', content)
         self.assertIn('رقم البطاقة', content)
         self.assertIn('1234567890', content)
         self.assertIn('محظور', content)
         self.assertIn('أمر تــــحـــــرك', content)
+
+        # التأكد من أن رقم البطاقة يسبق الاسم في ترتيب العرض داخل سطر بيانات الدارس الضابط
+        idx_line = content.find('officer-line')
+        idx_table = content.find('details-table', idx_line)
+        officer_line = content[idx_line:idx_table]
+        card_idx = officer_line.find('رقم البطاقة')
+        name_idx = officer_line.find('علي أحمد النيل')
+        self.assertTrue(0 <= card_idx < name_idx, "يجب أن يسبق رقم البطاقة اسم الدارس في نموذج الضابط")
+
+        # التأكد من ظهور العلامة المائية الشفافة وخاصية المزج خلف النص
+        self.assertIn('movement_order_watermark.png', content)
+        self.assertIn('mix-blend-mode: multiply', content)
 
     def test_movement_order_view_for_nco(self):
         """فحص استخراج أمر التحرك لدارس ضابط صف والتأكد من مطابقة نموذج ضابط الصف"""

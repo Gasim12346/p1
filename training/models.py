@@ -1143,7 +1143,7 @@ class MovementOrderSettings(models.Model):
         verbose_name='التصديق'
     )
     admin_instructions = models.TextField(
-        default='بموجب هذا الأمر وجب عليك / عليكم مغادرة معهد نظم المعلومات والإحصاء والتوجه الي شعبة التدريب وعند وصولك / وصولكم عليك / عليكم مقابلة السيد رئيس شعبة التدريب لأخذ التعليمات الاخيرة منه .',
+        default='بموجب هذا الأمر وجب عليك / عليكم مغادرة معهد نظم المعلومات والإحصاء والتوجه الي {unit} وعند وصولك / وصولكم عليك / عليكم مقابلة السيد رئيس {unit} لأخذ التعليمات الاخيرة منه .',
         verbose_name='نص التعليمات الإدارية'
     )
     certificate_declaration = models.TextField(
@@ -1172,7 +1172,7 @@ class MovementOrderSettings(models.Model):
     )
     copy_to_1 = models.CharField(
         max_length=250,
-        default='السيد / رئيس شعبـــــــــة التدريب',
+        default='السيد / رئيس {unit}',
         verbose_name='نسخة إلى (1)'
     )
     copy_to_2 = models.CharField(
