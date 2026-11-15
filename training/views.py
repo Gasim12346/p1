@@ -15,13 +15,14 @@ from .models import (
     Instructor, SessionSubjectInstructor,
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade,
-    CertificateSettings, SystemSettings, UserProfile, UserRole,
+    CertificateSettings, MovementOrderSettings, SystemSettings, UserProfile, UserRole,
     has_trainee_passed_course,
     ActivityLog, ActivityAction, ActivityCategory, log_activity
 )
 from .forms import (
     InstructorForm, TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
     UserLoginForm, CourseCategoryForm, CertificateSettingsForm,
+    MovementOrderSettingsForm, OFFICER_RANKS,
     SystemSettingsForm, UserCreateForm, UserEditForm, AdminLoginForm
 )
 
@@ -1978,6 +1979,67 @@ def certificate_detailed_view(request, enrollment_id):
 
 
 @login_required
+def movement_order_view(request, enrollment_id):
+    """
+    استخراج وعرض أمر التحرك الرسمي المعتمد للدارس (ضابط أو ضابط صف) للطباعة
+    متاح بعد رصد درجات الدورة واعتمادها.
+    """
+    enrollment = get_object_or_404(
+        CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
+        pk=enrollment_id
+    )
+
+    if enrollment.is_dropped:
+        messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن يتم استخراج أمر تحرك له.')
+        return redirect('training:results_center')
+
+    # التحقق من اعتماد واكتمال الدورة والدرجات
+    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
+        if not enrollment.has_complete_data_and_grades:
+            messages.warning(request, 'تنبيه: لا يمكن استخراج أمر التحرك إلا بعد اكتمال رصد كافة درجات الدورة واعتمادها.')
+            return redirect('training:results_entry', session_id=enrollment.session.id)
+
+    order_settings = MovementOrderSettings.get_settings()
+
+    # تحديد نوع أمر التحرك (ضابط أو ضابط صف) مع إمكانية التبديل عبر الرابط
+    type_param = request.GET.get('type', '').strip().lower()
+    if type_param == 'officer':
+        is_officer = True
+    elif type_param == 'nco':
+        is_officer = False
+    else:
+        is_officer = (
+            enrollment.trainee.category == TraineeCategory.OFFICER or
+            (enrollment.current_rank in OFFICER_RANKS) or
+            any(r in (enrollment.current_rank or '') for r in ['ملازم', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'])
+        )
+
+    destination_unit = (enrollment.current_unit or '').strip()
+    if not destination_unit:
+        destination_unit = order_settings.to_location_default
+
+    purpose = f"{order_settings.purpose_prefix}{enrollment.session.course.name}"
+    movement_date = enrollment.movement_order_date or enrollment.session.end_date
+
+    page_title = f"أمر تحرك - {enrollment.trainee.name}"
+    current_year = timezone.now().year
+
+    return render(request, 'training/movement_order.html', {
+        'enrollment': enrollment,
+        'trainee': enrollment.trainee,
+        'session': enrollment.session,
+        'course': enrollment.session.course,
+        'order_settings': order_settings,
+        'is_officer': is_officer,
+        'destination_unit': destination_unit,
+        'purpose': purpose,
+        'movement_date': movement_date,
+        'current_year': current_year,
+        'page_title': page_title,
+    })
+
+
+@login_required
 def session_results_sheet_view(request, session_id):
     """كشف النتيجة العام والمعتمد للدورة المنعقدة بالكامل للطباعة والتصدير"""
     session = get_object_or_404(
@@ -2028,6 +2090,7 @@ def trainee_transcript_view(request, military_number):
                 'has_complete_data': en.has_complete_data_and_grades,
                 'cert_url': reverse('training:certificate', args=[en.id]),
                 'cert_basic_url': reverse('training:certificate_detailed', args=[en.id]),
+                'movement_order_url': reverse('training:movement_order', args=[en.id]),
                 'cert_advanced_url': reverse('training:certificate_detailed', args=[en.id]),
             })
         return JsonResponse({
@@ -2230,6 +2293,10 @@ def admin_dashboard_view(request):
     cert_settings = CertificateSettings.get_settings()
     cert_form = CertificateSettingsForm(instance=cert_settings)
 
+    # 7-ب. إعدادات وتخصيص أمر التحرك الرسمي
+    movement_settings = MovementOrderSettings.get_settings()
+    movement_form = MovementOrderSettingsForm(instance=movement_settings)
+
     # 8. إعدادات وهوية وألوان وشعار النظام بالكامل
     system_settings = SystemSettings.get_settings()
     system_form = SystemSettingsForm(instance=system_settings)
@@ -2387,6 +2454,9 @@ def admin_dashboard_view(request):
         # Certificate Settings
         'cert_settings': cert_settings,
         'cert_form': cert_form,
+        # Movement Order Settings
+        'movement_settings': movement_settings,
+        'movement_form': movement_form,
         # System Branding & Themes
         'system_settings': system_settings,
         'system_form': system_form,
@@ -2846,6 +2916,39 @@ def certificate_settings_update_view(request):
                 for error in errors:
                     messages.error(request, error)
     return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
+
+
+# =====================================================================
+# تخصيص وتعديل إعدادات ونصوص أمر التحرك الرسمي
+# =====================================================================
+@admin_access_required
+def movement_order_settings_update_view(request):
+    """حفظ التعديلات على شكل وبيانات ونصوص وتوقيعات أمر التحرك الرسمي"""
+    movement_settings = MovementOrderSettings.get_settings()
+    if request.method == 'POST':
+        # إعادة تعيين العلامة المائية إذا طلب
+        if 'reset_watermark' in request.POST:
+            movement_settings.watermark_image = None
+            movement_settings.save()
+            messages.success(request, 'تمت إعادة تعيين العلامة المائية لأمر التحرك إلى الشعار الافتراضي بنجاح.')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-movement-order")
+
+        form = MovementOrderSettingsForm(request.POST, request.FILES, instance=movement_settings)
+        if form.is_valid():
+            form.save()
+            log_activity(
+                request=request,
+                action_type=ActivityAction.UPDATE,
+                action_category=ActivityCategory.SETTINGS,
+                description="تحديث إعدادات وتنسيقات ونصوص أمر التحرك الرسمي",
+                target_model="MovementOrderSettings"
+            )
+            messages.success(request, 'تم حفظ وتحديث إعدادات ونصوص أمر التحرك بنجاح. ستنعكس فوراً على جميع أوامر التحرك.')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-movement-order")
 
 
 # =====================================================================

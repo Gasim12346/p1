@@ -1081,6 +1081,139 @@ class CertificateSettings(models.Model):
         return None
 
 
+class MovementOrderSettings(models.Model):
+    """إعدادات وتخصيص قالب ونصوص أمر التحرك الرسمي المعتمد"""
+    bismillah_text = models.CharField(
+        max_length=200,
+        default='بسم الله الرحمن الرحيم',
+        verbose_name='البسملة'
+    )
+    security_label = models.CharField(
+        max_length=100,
+        default='محظور',
+        verbose_name='درجة السرية'
+    )
+    order_title = models.CharField(
+        max_length=150,
+        default='أمر تــــحـــــرك',
+        verbose_name='عنوان الأمر'
+    )
+    issuing_authority_text = models.TextField(
+        default='الصادر بأمر سيادة العقيد مهندس المعز علي محمد خير حامل وسام الدفاع الذهبي ، نوط الواجب ، وسام الانجاز العسكري ، الخدمة الطويلة الممتازة ، وقائد معهد نظم المعلومات والإحصاء.',
+        verbose_name='نص ديباجة الصدور (الآمر)'
+    )
+    from_location = models.CharField(
+        max_length=250,
+        default='معهد نــظـــــم المعلومات والاحصاء',
+        verbose_name='الجهة المتحرك منها (مـن)'
+    )
+    to_location_default = models.CharField(
+        max_length=250,
+        default='شعبـــــــــــــــــــة التدريب',
+        verbose_name='الجهة المتحرك إليها الافتراضية (إلـى)'
+    )
+    arms_default = models.CharField(
+        max_length=150,
+        default='لا يكـــــــــــــــــــــــــــــــــن',
+        verbose_name='السلاح'
+    )
+    ammunition_default = models.CharField(
+        max_length=150,
+        default='لا يكـــــــــــــــــــــــــــــــــن',
+        verbose_name='الذخيرة'
+    )
+    purpose_prefix = models.CharField(
+        max_length=100,
+        default='انتهاء ',
+        verbose_name='بادئة الغرض'
+    )
+    clothing_instructions = models.CharField(
+        max_length=250,
+        default='حســــــــــــب التعليمــــــــــــــــات',
+        verbose_name='اللبس'
+    )
+    travel_means = models.CharField(
+        max_length=250,
+        default='بالمتاحـــــــــــــــــــــــــــــــــــــة',
+        verbose_name='وسيلة السفر'
+    )
+    ratification_text = models.CharField(
+        max_length=250,
+        default='السيد قائد معهد نظم المعلومات والاحصاء',
+        verbose_name='التصديق'
+    )
+    admin_instructions = models.TextField(
+        default='بموجب هذا الأمر وجب عليك / عليكم مغادرة معهد نظم المعلومات والإحصاء والتوجه الي شعبة التدريب وعند وصولك / وصولكم عليك / عليكم مقابلة السيد رئيس شعبة التدريب لأخذ التعليمات الاخيرة منه .',
+        verbose_name='نص التعليمات الإدارية'
+    )
+    certificate_declaration = models.TextField(
+        default='اشهد بأن التعليمات قد تليت علي / علينا وسوف أعمل / نعمل بموجبها ونحافظ على الضبط والربط والانتظام في اللبس أثناء السفر حتى وصولي / وصولنا',
+        verbose_name='نص إقرار الشهادة'
+    )
+    signer_rank = models.CharField(
+        max_length=100,
+        default='مقدم مهندس ركن',
+        verbose_name='رتبة القائد الموقع'
+    )
+    signer_name = models.CharField(
+        max_length=150,
+        default='وليد عادل جاه الله حسب الرسول',
+        verbose_name='اسم القائد الموقع'
+    )
+    signer_title = models.CharField(
+        max_length=150,
+        default='ع/عقيد مهندس',
+        verbose_name='صفة/نيابة القائد الموقع'
+    )
+    signer_dept = models.CharField(
+        max_length=150,
+        default='قائد معهد نظم المعلومات والإحصاء',
+        verbose_name='منصب القائد الموقع'
+    )
+    copy_to_1 = models.CharField(
+        max_length=250,
+        default='السيد / رئيس شعبـــــــــة التدريب',
+        verbose_name='نسخة إلى (1)'
+    )
+    copy_to_2 = models.CharField(
+        max_length=250,
+        default='نسخة بيد المذكور / بالـمـ ه / ل 3 / ف',
+        verbose_name='نسخة إلى (2)'
+    )
+    watermark_image = models.ImageField(
+        upload_to='movement_watermarks/',
+        null=True,
+        blank=True,
+        verbose_name='صورة العلامة المائية المخصصة'
+    )
+    watermark_opacity = models.FloatField(
+        default=0.15,
+        verbose_name='درجة شفافية العلامة المائية'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='تاريخ آخر تعديل'
+    )
+
+    class Meta:
+        verbose_name = 'إعدادات وتخصيص أمر التحرك'
+        verbose_name_plural = 'إعدادات وتخصيص أمر التحرك'
+
+    def __str__(self):
+        return 'إعدادات أمر التحرك الرسمي'
+
+    @classmethod
+    def get_settings(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj
+
+    @property
+    def watermark_url(self):
+        if self.watermark_image and hasattr(self.watermark_image, 'url'):
+            return self.watermark_image.url
+        return None
+
+
 class SystemSettings(models.Model):
     """إعدادات وهوية وألوان وشعار النظام بالكامل"""
     system_name = models.CharField(

@@ -249,7 +249,7 @@
                         <th rowspan="2" style="min-width: 170px;" class="bg-primary bg-opacity-10 text-dark">
                             ملحوظة الشهادة
                         </th>
-                        <th rowspan="2" style="width: 115px;">الشهادة</th>
+                        <th rowspan="2" style="min-width: 190px;">الشهادة وأمر التحرك</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -371,27 +371,36 @@
                                        title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
                             </td>
 
-                            <!-- خيارات الشهادة للدارس -->
+                            <!-- خيارات الشهادة وأمر التحرك للدارس -->
                             <td class="text-center cert-cell">
                                 {% if en.has_complete_data_and_grades %}
-                                    <button type="button" 
-                                            class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
-                                            onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#certChoiceModal"
-                                            data-cert-official="{% url 'training:certificate' en.id %}"
-                                            data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
-                                            data-name="{{ en.trainee.name }}"
-                                            data-rank="{{ en.current_rank }}"
-                                            data-num="{{ en.trainee.military_number }}"
-                                            data-unit="{{ en.current_unit }}"
-                                            data-grade="{{ en.grade_label }}"
-                                            title="خيارات استخراج وطباعة الشهادة">
-                                        <i class="bi bi-award-fill text-dark"></i>
-                                        <span>الشهادة</span>
-                                    </button>
+                                    <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-center">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
+                                                onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{% url 'training:movement_order' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#certChoiceModal"
+                                                data-cert-official="{% url 'training:certificate' en.id %}"
+                                                data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
+                                                data-movement-order="{% url 'training:movement_order' en.id %}"
+                                                data-name="{{ en.trainee.name }}"
+                                                data-rank="{{ en.current_rank }}"
+                                                data-num="{{ en.trainee.military_number }}"
+                                                data-unit="{{ en.current_unit }}"
+                                                data-grade="{{ en.grade_label }}"
+                                                title="خيارات استخراج وطباعة الشهادة وأمر التحرك">
+                                            <i class="bi bi-award-fill text-dark"></i>
+                                            <span>الشهادة</span>
+                                        </button>
+                                        <a href="{% url 'training:movement_order' en.id %}" target="_blank"
+                                           class="btn btn-sm btn-info text-white fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1"
+                                           title="استخراج وطباعة أمر التحرك الرسمي">
+                                            <i class="bi bi-signpost-2-fill"></i>
+                                            <span>أمر التحرك</span>
+                                        </a>
+                                    </div>
                                 {% else %}
-                                    <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة إلا بعد اكتمال جميع البيانات والدرجات">
+                                    <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة وأمر التحرك إلا بعد اكتمال جميع البيانات والدرجات">
                                         <i class="bi bi-lock-fill text-secondary"></i>
                                         <span>غير مكتمل</span>
                                     </span>
@@ -542,6 +551,28 @@
                                 </div>
                             </div>
                             <div class="btn btn-primary fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                                <span>فتح وطباعة</span>
+                                <i class="bi bi-box-arrow-up-left"></i>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- الخيار 3: أمر التحرك الرسمي -->
+                    <div class="col-12">
+                        <a href="#" id="certLinkMovement" target="_blank" class="card border-2 border-info text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-info text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                    <i class="bi bi-signpost-2-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                                        <span>3. أمر التحرك الرسمي المعتمد</span>
+                                        <span class="badge bg-info text-white">طولي A4</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد للتحرك (للضباط وضباط الصف) شامل العلامة المائية والتعليمات الإدارية.</div>
+                                </div>
+                            </div>
+                            <div class="btn btn-info text-white fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
                                 <span>فتح وطباعة</span>
                                 <i class="bi bi-box-arrow-up-left"></i>
                             </div>
@@ -797,16 +828,33 @@
         filterGradesTable();
     }
 
-    // فتح نافذة اختيار الشهادات للدارس
+    // فتح نافذة اختيار الشهادات وأمر التحرك للدارس
     function openCertificateModal(officialUrl, detailUrl, arg3, arg4, arg5, arg6, arg7, arg8) {
+        let movementUrl = '';
         let name, rank, num, unit, grade;
-        if (typeof arg5 === 'undefined' || typeof arg6 === 'undefined') {
+        // التحقق من المتغيرات الممررة
+        if (typeof arg6 === 'undefined' && typeof arg7 === 'undefined' && typeof arg8 === 'undefined') {
             name = arg3;
             rank = arg4;
             num = arg5;
-            unit = arg6;
-            grade = arg7;
+            unit = '';
+            grade = '';
+        } else if (typeof arg7 === 'undefined' && typeof arg8 === 'undefined') {
+            movementUrl = arg3;
+            name = arg4;
+            rank = arg5;
+            num = arg6;
+            unit = '';
+            grade = '';
+        } else if (typeof arg8 === 'undefined') {
+            movementUrl = arg3;
+            name = arg4;
+            rank = arg5;
+            num = arg6;
+            unit = arg7;
+            grade = '';
         } else {
+            movementUrl = arg3;
             name = arg4;
             rank = arg5;
             num = arg6;
@@ -823,6 +871,9 @@
 
         const linkBasic = document.getElementById('certLinkBasic');
         if (linkBasic) linkBasic.href = detailUrl;
+
+        const linkMovement = document.getElementById('certLinkMovement');
+        if (linkMovement && movementUrl) linkMovement.href = movementUrl;
 
         const modalEl = document.getElementById('certChoiceModal');
         if (modalEl) {

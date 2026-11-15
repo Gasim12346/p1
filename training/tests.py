@@ -6,7 +6,7 @@ from training.models import (
     UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
-    CertificateSettings
+    CertificateSettings, MovementOrderSettings
 )
 
 
@@ -2496,6 +2496,128 @@ class PhoneAndEmailValidationTests(TestCase):
         edit_data['phone'] = '0123456789'
         form_edit_ok = UserEditForm(data=edit_data, instance=user)
         self.assertTrue(form_edit_ok.is_valid(), form_edit_ok.errors)
+
+
+class MovementOrderTests(TestCase):
+    """اختبارات استخراج وتخصيص أمر التحرك الرسمي للضباط وضباط الصف"""
+
+    def setUp(self):
+        import datetime
+        from training.models import MovementOrderSettings
+        self.admin = User.objects.create_superuser(username='admin_mov', password='Password123!', email='admin@test.com')
+        self.regular = User.objects.create_user(username='regular_mov', password='Password123!', email='regular@test.com')
+        self.cat = CourseCategory.objects.create(name='تصنيف أوامر التحرك')
+        self.course = Course.objects.create(name='دورة أمن سيبراني متقدمة', category=self.cat)
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='MOV-SESSION-01',
+            start_date=datetime.date(2026, 2, 1),
+            end_date=datetime.date(2026, 2, 28),
+            status='completed'
+        )
+        self.officer_trainee = Trainee.objects.create(
+            military_number='1234567890',
+            name='علي أحمد النيل',
+            category=TraineeCategory.OFFICER
+        )
+        self.officer_enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.officer_trainee,
+            current_rank='ملازم تقني',
+            current_unit='سلاح الإشارة',
+            is_graded=True
+        )
+        self.nco_trainee = Trainee.objects.create(
+            military_number='9876543210',
+            name='أحمد صديق كرار',
+            category=TraineeCategory.NCO
+        )
+        self.nco_enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.nco_trainee,
+            current_rank='رقيب أول إدارة',
+            current_unit='لواء القوات الخاصة',
+            is_graded=True
+        )
+
+    def test_movement_order_model_defaults(self):
+        """فحص إنشاء واسترجاع إعدادات أمر التحرك بالقيم الافتراضية المعتمدة"""
+        settings = MovementOrderSettings.get_settings()
+        self.assertEqual(settings.security_label, 'محظور')
+        self.assertEqual(settings.order_title, 'أمر تــــحـــــرك')
+        self.assertIn('الصادر بأمر سيادة', settings.issuing_authority_text)
+        self.assertIn('معهد', settings.from_location)
+        self.assertIn('شعبـــــــــــــــــــة التدريب', settings.to_location_default)
+        self.assertIn('بموجب هذا الأمر', settings.admin_instructions)
+
+    def test_movement_order_view_for_officer(self):
+        """فحص استخراج أمر التحرك لدارس ضابط والتأكد من مطابقة نموذج الضابط"""
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:movement_order', args=[self.officer_enrollment.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context['is_officer'])
+        content = res.content.decode('utf-8')
+        self.assertIn('علي أحمد النيل', content)
+        self.assertIn('رقم البطاقة', content)
+        self.assertIn('1234567890', content)
+        self.assertIn('محظور', content)
+        self.assertIn('أمر تــــحـــــرك', content)
+
+    def test_movement_order_view_for_nco(self):
+        """فحص استخراج أمر التحرك لدارس ضابط صف والتأكد من مطابقة نموذج ضابط الصف"""
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:movement_order', args=[self.nco_enrollment.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.context['is_officer'])
+        content = res.content.decode('utf-8')
+        self.assertIn('أحمد صديق كرار', content)
+        self.assertIn('الأشخاص', content)
+        self.assertIn('نمرة', content)
+        self.assertIn('9876543210', content)
+
+    def test_movement_order_type_toggle(self):
+        """فحص إمكانية تبديل النموذج عبر المعلمة type"""
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:movement_order', args=[self.officer_enrollment.id])
+        res = self.client.get(url + '?type=nco')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.context['is_officer'])
+
+    def test_movement_order_settings_update(self):
+        """فحص تعديل وحفظ إعدادات أمر التحرك من لوحة تحكم الإدارة"""
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:movement_order_settings_update')
+        post_data = {
+            'bismillah_text': 'بسم الله الرحمن الرحيم',
+            'security_label': 'سري جداً',
+            'order_title': 'أمر تحرك عسكري',
+            'issuing_authority_text': 'نص ديباجة تجريبي جديد',
+            'from_location': 'معهد الحاسوب',
+            'to_location_default': 'القيادة العامة',
+            'arms_default': 'مسدس',
+            'ammunition_default': '10 طلقات',
+            'purpose_prefix': 'إكمال دورة ',
+            'clothing_instructions': 'الميداني',
+            'travel_means': 'طيران عسكري',
+            'ratification_text': 'رئيس هيئة الأركان',
+            'admin_instructions': 'تعليمات تجريبية محدثة',
+            'certificate_declaration': 'إقرار المسافر المحدث',
+            'signer_rank': 'لواء ركن',
+            'signer_name': 'محمد الفاتح',
+            'signer_title': 'ع/قائد القوات',
+            'signer_dept': 'هيئة العمليات',
+            'copy_to_1': 'نسخة للقيادة',
+            'copy_to_2': 'نسخة للفرع',
+            'watermark_opacity': 0.20
+        }
+        res = self.client.post(url, post_data)
+        self.assertEqual(res.status_code, 302)
+        settings = MovementOrderSettings.get_settings()
+        self.assertEqual(settings.security_label, 'سري جداً')
+        self.assertEqual(settings.order_title, 'أمر تحرك عسكري')
+        self.assertEqual(settings.arms_default, 'مسدس')
 
 
 

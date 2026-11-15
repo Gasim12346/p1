@@ -35,6 +35,7 @@ urlpatterns = [
     path('results/session/<int:session_id>/sheet/', views.session_results_sheet_view, name='session_results_sheet'),
     path('results/certificate/<int:enrollment_id>/', views.certificate_view, name='certificate'),
     path('results/certificate/<int:enrollment_id>/detailed/', views.certificate_detailed_view, name='certificate_detailed'),
+    path('results/movement-order/<int:enrollment_id>/', views.movement_order_view, name='movement_order'),
 
     # القسم 6: المصادقة وتسجيل الدخول والخروج
     path('login/', views.login_view, name='login'),
@@ -61,9 +62,10 @@ urlpatterns = [
     # هوية وشعار وألوان النظام
     path('admin-portal/settings/system/', views.system_settings_update_view, name='system_settings_update'),
 
-    # إعدادات وتوقيعات ولوغهات الشهادة
+    # إعدادات وتوقيعات ولوغهات الشهادة وأمر التحرك
     path('admin-portal/settings/certificate/', views.certificate_settings_update_view, name='certificate_settings_update'),
     path('admin-dashboard/certificate-settings/', views.certificate_settings_update_view),
+    path('admin-portal/settings/movement-order/', views.movement_order_settings_update_view, name='movement_order_settings_update'),
 
     # إدارة تصنيفات الدورات
     path('admin-portal/categories/create/', views.category_create_view, name='category_create'),
