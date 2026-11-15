@@ -1989,15 +1989,12 @@ def movement_order_view(request, enrollment_id):
         pk=enrollment_id
     )
 
-    if enrollment.is_dropped:
-        messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن يتم استخراج أمر تحرك له.')
-        return redirect('training:results_center')
-
-    # التحقق من اعتماد واكتمال الدورة والدرجات
-    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
-        if not enrollment.has_complete_data_and_grades:
-            messages.warning(request, 'تنبيه: لا يمكن استخراج أمر التحرك إلا بعد اكتمال رصد كافة درجات الدورة واعتمادها.')
-            return redirect('training:results_entry', session_id=enrollment.session.id)
+    # التحقق من شروط استخراج أمر التحرك (يصدر في حالتين: 1. بعد اعتماد الدورة واكتمالها، أو 2. أثناء الدورة عند قطع الدورة عن الدارس)
+    if not enrollment.is_dropped:
+        if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
+            if not enrollment.has_complete_data_and_grades:
+                messages.warning(request, 'تنبيه: لا يمكن استخراج أمر التحرك إلا بعد اكتمال رصد كافة درجات الدورة واعتمادها، أو في حال قطع الدورة عن الدارس.')
+                return redirect('training:results_entry', session_id=enrollment.session.id)
 
     order_settings = MovementOrderSettings.get_settings()
 
@@ -2045,8 +2042,15 @@ def movement_order_view(request, enrollment_id):
         else:
             copy_to_1 = f"السيد / رئيس {destination_unit}"
 
-    purpose = f"{order_settings.purpose_prefix}{enrollment.session.course.name}"
-    movement_date = enrollment.movement_order_date or enrollment.session.end_date
+    if enrollment.is_dropped:
+        c_name = enrollment.session.course.name.strip()
+        if not c_name.startswith('دورة'):
+            c_name = f"دورة {c_name}"
+        purpose = f"قطع {c_name}"
+        movement_date = enrollment.movement_order_date or (enrollment.dropped_at.date() if enrollment.dropped_at else timezone.now().date())
+    else:
+        purpose = f"{order_settings.purpose_prefix}{enrollment.session.course.name}"
+        movement_date = enrollment.movement_order_date or enrollment.session.end_date
 
     page_title = f"أمر تحرك - {enrollment.trainee.name}"
     current_year = timezone.now().year

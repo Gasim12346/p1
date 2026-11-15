@@ -2635,6 +2635,65 @@ class MovementOrderTests(TestCase):
         self.assertEqual(settings.order_title, 'أمر تحرك عسكري')
         self.assertEqual(settings.arms_default, 'مسدس')
 
+    def test_movement_order_for_dropped_trainee(self):
+        """فحص استخراج أمر التحرك للدارس المقطوع عن الدورة أثناء انعقادها والتأكد من صيغة الغرض (قطع دورة)"""
+        # تجهيز دارس مقطوع عن الدورة
+        dropped_trainee = Trainee.objects.create(
+            military_number='5554443322',
+            name='طارق عبد الرحمن حسن',
+            category=TraineeCategory.OFFICER
+        )
+        dropped_enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=dropped_trainee,
+            current_rank='نقيب',
+            current_unit='سلاح المهندسين',
+            is_dropped=True,
+            drop_reason='ظروف إدارية عاجلة'
+        )
+
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:movement_order', args=[dropped_enrollment.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('قطع', res.context['purpose'])
+        self.assertIn('دورة أمن سيبراني متقدمة', res.context['purpose'])
+        self.assertEqual(res.context['destination_unit'], 'سلاح المهندسين')
+
+        content = res.content.decode('utf-8')
+        self.assertIn('طارق عبد الرحمن حسن', content)
+        self.assertIn('5554443322', content)
+        self.assertIn('سلاح المهندسين', content)
+        self.assertIn('قطع دورة', content)
+
+    def test_course_session_manage_shows_movement_order_button_beside_drop(self):
+        """فحص ظهور زر أمر التحرك بجانب حالة قطع الدورة في صفحة إدارة الدورة"""
+        dropped_trainee = Trainee.objects.create(
+            military_number='7778889900',
+            name='خالد عثمان إبراهيم',
+            category=TraineeCategory.NCO
+        )
+        dropped_en = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=dropped_trainee,
+            current_rank='مساعد',
+            current_unit='سلاح المدرعات',
+            is_dropped=True,
+            drop_reason='أمر تحرك'
+        )
+
+        self.client.login(username='admin_mov', password='Password123!')
+        url = reverse('training:course_session_manage', args=[self.session.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+        content = res.content.decode('utf-8')
+        self.assertIn('تم قطع الدورة', content)
+        # التحقق من وجود رابط استخراج أمر التحرك للدارس المقطوع
+        mov_url = reverse('training:movement_order', args=[dropped_en.id])
+        self.assertIn(mov_url, content)
+        self.assertIn('أمر التحرك', content)
+
 
 
 

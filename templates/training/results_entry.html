@@ -151,7 +151,13 @@
                                     <strong class="text-dark d-block">{{ d.current_rank }} / {{ d.trainee.name }}</strong>
                                     <small class="text-muted font-monospace">النمرة: {{ d.trainee.military_number }}</small>
                                 </div>
-                                <span class="badge bg-danger">مقطوع</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-danger">مقطوع</span>
+                                    <a href="{% url 'training:movement_order' d.id %}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-2 fw-bold small d-inline-flex align-items-center gap-1 shadow-sm" title="استخراج وطباعة أمر التحرك للدارس المقطوع">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                        <span>أمر التحرك</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     {% endfor %}

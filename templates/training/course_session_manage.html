@@ -351,9 +351,16 @@
                             <td class="text-center">
                                 {% if en.is_dropped %}
                                     <div class="d-flex flex-column align-items-center gap-1">
-                                        <span class="badge bg-danger py-1 px-2 rounded-pill shadow-sm" title="سبب القطع: {{ en.drop_reason|default:'لم يحدد' }}">
-                                            <i class="bi bi-slash-circle me-1"></i>تم قطع الدورة
-                                        </span>
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-danger py-1 px-2 rounded-pill shadow-sm" title="سبب القطع: {{ en.drop_reason|default:'لم يحدد' }}">
+                                                <i class="bi bi-slash-circle me-1"></i>تم قطع الدورة
+                                            </span>
+                                            <!-- زر أمر التحرك للدارس المقطوع عن الدورة -->
+                                            <a href="{% url 'training:movement_order' en.id %}" target="_blank" class="btn btn-sm btn-primary py-1 px-2 rounded-2 fw-bold shadow-sm d-inline-flex align-items-center gap-1" title="استخراج وطباعة أمر التحرك للدارس المقطوع عن الدورة">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                                <span>أمر التحرك</span>
+                                            </a>
+                                        </div>
                                         <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small fw-bold mt-1" title="إلغاء قطع الدورة وإعادة تفعيل الدارس" onclick="openRestoreModal('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
                                             <i class="bi bi-arrow-counterclockwise"></i> إلغاء القطع
                                         </button>
@@ -364,6 +371,12 @@
                                             <i class="bi bi-slash-circle"></i>
                                             <span>قطع الدورة</span>
                                         </button>
+                                        {% if session.status == 'completed' or session.is_completed %}
+                                            <a href="{% url 'training:movement_order' en.id %}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-2 fw-bold shadow-sm d-inline-flex align-items-center gap-1" title="استخراج وطباعة أمر التحرك للدارس المعتمد">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                                <span>أمر التحرك</span>
+                                            </a>
+                                        {% endif %}
                                         {% if is_admin and not en.is_graded %}
                                             <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-2" title="إزالة من الدورة نهائياً" onclick="confirmRemoveTrainee('{{ en.id }}', '{{ en.trainee.name|escapejs }}')">
                                                 <i class="bi bi-trash"></i>
