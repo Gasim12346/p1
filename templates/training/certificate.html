@@ -296,7 +296,11 @@
         <div class="cert-p1">
             يَــــــــشْـــــهَــــــدُ مَعْـهَــــــــــــــــــــــــــــــــــــــدُ نُــــــــظُـــــــــــــــــــــــــــــــــــــمِ المَعْـــلُــومَـــــــــــــــــــــــــــــاتِ وَالإِحْصَــــــــــــــــــــــــــــاءِ بَــــــــــــــــــأَنَّ &nbsp;&nbsp;&nbsp;
             نَـــــــــــــــــــــمْرَة &nbsp;&nbsp; {{ enrollment.trainee.military_number }} &nbsp;&nbsp;&nbsp;
-            الرُّتْبَة &nbsp;&nbsp; {{ enrollment.current_rank }} / {{ enrollment.trainee.name }}
+            {% if enrollment.trainee.category == 'civilian' and not enrollment.current_rank %}
+            الاسم &nbsp;&nbsp; {{ enrollment.trainee.name }}
+            {% else %}
+            الرُّتْبَة &nbsp;&nbsp; {{ enrollment.current_rank|default:"مدني" }} / {{ enrollment.trainee.name }}
+            {% endif %}
         </div>
 
         <!-- Statement Line 2 -->

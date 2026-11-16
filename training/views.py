@@ -1870,7 +1870,7 @@ def certificate_view(request, enrollment_id):
         missing_reasons = []
         if not enrollment.trainee.military_number or not enrollment.trainee.name:
             missing_reasons.append("بيانات الدارس الأساسية (النمرة والاسم)")
-        if not enrollment.current_rank or not enrollment.current_rank.strip():
+        if enrollment.trainee.category != TraineeCategory.CIVILIAN and (not enrollment.current_rank or not enrollment.current_rank.strip()):
             missing_reasons.append("الرتبة العسكرية للدارس")
         if not enrollment.current_unit or not enrollment.current_unit.strip():
             missing_reasons.append("الوحدة العسكرية للدارس")
@@ -1923,7 +1923,7 @@ def certificate_detailed_view(request, enrollment_id):
         missing_reasons = []
         if not enrollment.trainee.military_number or not enrollment.trainee.name:
             missing_reasons.append("بيانات الدارس الأساسية (النمرة والاسم)")
-        if not enrollment.current_rank or not enrollment.current_rank.strip():
+        if enrollment.trainee.category != TraineeCategory.CIVILIAN and (not enrollment.current_rank or not enrollment.current_rank.strip()):
             missing_reasons.append("الرتبة العسكرية للدارس")
         if not enrollment.current_unit or not enrollment.current_unit.strip():
             missing_reasons.append("الوحدة العسكرية للدارس")
@@ -2133,7 +2133,6 @@ def trainee_transcript_view(request, military_number):
             'success': True,
             'name': trainee.name,
             'military_number': trainee.military_number,
-            'rank': trainee.rank,
             'rank': courses_data[0]['current_rank'] if courses_data else '',
             'unit': trainee.unit,
             'force': trainee.force,

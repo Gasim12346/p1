@@ -710,8 +710,9 @@ class CourseEnrollment(models.Model):
             return False
 
         # 2. التحقق من الرتبة والوحدة أثناء الدورة
-        if not self.current_rank or not self.current_rank.strip():
-            return False
+        if self.trainee and self.trainee.category != TraineeCategory.CIVILIAN:
+            if not self.current_rank or not self.current_rank.strip():
+                return False
         if not self.current_unit or not self.current_unit.strip():
             return False
 

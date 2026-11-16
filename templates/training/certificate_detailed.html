@@ -347,8 +347,8 @@
                         <strong>{{ enrollment.trainee.military_number }}</strong>
                     </td>
                     <td style="width: 32%;">
-                        <span class="field-label">الرتبة:</span>
-                        <strong>{{ enrollment.current_rank }}</strong>
+                        <span class="field-label">{% if enrollment.trainee.category == 'civilian' %}الصفة:{% else %}الرتبة:{% endif %}</span>
+                        <strong>{{ enrollment.current_rank|default:"مدني" }}</strong>
                     </td>
                     <td style="width: 40%;">
                         <span class="field-label">الاسم:</span>
