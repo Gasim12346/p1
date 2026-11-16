@@ -2940,6 +2940,31 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertIn('filter_force', content)
         self.assertIn('filter_unit', content)
 
+    def test_admin_report_print_official_layout(self):
+        """التحقق من مطابقة تقرير الطباعة الرسمي للتصميم العسكري المعتمد وتطبيق الفلاتر"""
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:admin_report_print'))
+        self.assertEqual(res.status_code, 200)
+
+        content = res.content.decode('utf-8')
+        # التحقق من نصوص العناوين الرئيسية في الترويسة
+        self.assertIn('التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج', content)
+        self.assertIn('أولاً: ملخص المؤشرات العامة ومخرجات التأهيل (KPIs)', content)
+        self.assertIn('ثانياً: التوزيع التكراري للتقديرات والنتائج المعتمدة', content)
+        self.assertIn('ثالثاً: توزيع الدارسين بحسب القوات والتشكيلات', content)
+        self.assertIn('إعداد وضبط الإحصاء', content)
+        self.assertIn('رئيس فرع الإحصاء والنتائج', content)
+        self.assertIn('قائد معهد نظم المعلومات والإحصاء', content)
+
+        # التحقق من تطبيق الفلاتر عند تمريرها
+        res_filtered = self.client.get(reverse('training:admin_report_print'), {
+            'force': 'القوات البرية',
+            'session_status': 'completed',
+        })
+        self.assertEqual(res_filtered.status_code, 200)
+        self.assertEqual(res_filtered.context['trainees_total'], 1)
+        self.assertIn('القوات البرية', res_filtered.context['filters_summary'])
+
 
 
 

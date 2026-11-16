@@ -3205,37 +3205,219 @@ def admin_clear_activity_logs_view(request):
 # =====================================================================
 # تقرير التحليل والإحصاء الشامل القابل للطباعة
 # =====================================================================
-@admin_access_required
+@login_required
 def admin_report_print_view(request):
-    """تقرير تحليلي تنفيذي رسمي جاهز للطباعة لقيادة المعهد والإدارة"""
-    trainees_total = Trainee.objects.count()
-    trainees_officers = Trainee.objects.filter(category=TraineeCategory.OFFICER).count()
-    trainees_ncos = Trainee.objects.filter(category=TraineeCategory.NCO).count()
-    trainees_civilians = Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count()
+    """
+    التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج - جاهز للطباعة الرسمية
+    يدعم الفلترة اللحظية وفق النطاق الزمني والخيارات المحددة في قسم التقارير الشاملة
+    """
+    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
+        messages.error(request, 'عذراً، هذا التقرير مخصص للإدارة وهيئة القيادة والتسجيل فقط.')
+        return redirect('training:home')
 
-    courses_total = Course.objects.count()
-    categories = CourseCategory.objects.annotate(courses_count=Count('courses')).order_by('name')
-    sessions = CourseSession.objects.select_related('course', 'course__category').annotate(
-        enrolled_count=Count('enrollments')
-    ).order_by('-start_date')
-
-    enrollments_total = CourseEnrollment.objects.count()
-    enrollments_graded = CourseEnrollment.objects.filter(is_graded=True).count()
-    avg_score_res = CourseEnrollment.objects.filter(is_graded=True).aggregate(avg_score=Avg('percentage'))
-    avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
-
-    grade_a = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=85).count()
-    grade_b = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=75, percentage__lt=85).count()
-    grade_c = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=65, percentage__lt=75).count()
-    grade_d = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
-    grade_f = CourseEnrollment.objects.filter(is_graded=True, percentage__lt=50).count()
-
-    def calc_pct(part, whole):
-        return round((part / whole * 100), 1) if whole > 0 else 0
-
-    forces_stats = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
     cert_settings = CertificateSettings.get_settings()
     system_settings = SystemSettings.get_settings()
+
+    params = request.GET
+    has_filters = any(k in params for k in [
+        'start_date', 'end_date', 'all_dates', 'force', 'unit',
+        'course_id', 'category_id', 'session_id', 'status',
+        'session_status', 'trainee_category', 'instructor_id', 'q'
+    ])
+
+    def calc_pct(part, whole):
+        return round((part / whole * 100), 1) if whole > 0 else 0.0
+
+    if has_filters:
+        use_all_dates = params.get('all_dates') == '1'
+        start_date_str = params.get('start_date', '').strip()
+        end_date_str = params.get('end_date', '').strip()
+
+        if use_all_dates:
+            start_date = None
+            end_date = None
+        else:
+            def_start, def_end = get_default_date_range()
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else def_start
+            except ValueError:
+                start_date = def_start
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else def_end
+            except ValueError:
+                end_date = def_end
+
+        session_status = params.get('session_status', 'completed').strip()
+        if session_status not in ['completed', 'active', 'all']:
+            session_status = 'completed'
+
+        category_id = params.get('category_id', '').strip()
+        course_id = params.get('course_id', '').strip()
+        session_id = params.get('session_id', '').strip()
+        force = params.get('force', '').strip()
+        unit = params.get('unit', '').strip()
+        trainee_category = params.get('trainee_category', '').strip()
+        status = params.get('status', 'all').strip()
+        instructor_id = params.get('instructor_id', '').strip()
+        q = params.get('q', '').strip()
+
+        enrollments_qs = CourseEnrollment.objects.select_related(
+            'trainee', 'session', 'session__course', 'session__course__category'
+        )
+
+        if session_status == 'completed':
+            enrollments_qs = enrollments_qs.filter(session__status='completed')
+        elif session_status == 'active':
+            enrollments_qs = enrollments_qs.filter(session__status='active')
+        elif session_status == 'all':
+            enrollments_qs = enrollments_qs.filter(session__status__in=['completed', 'active'])
+
+        if start_date and end_date:
+            enrollments_qs = enrollments_qs.filter(
+                Q(session__start_date__lte=end_date, session__end_date__gte=start_date) |
+                Q(session__start_date__range=(start_date, end_date)) |
+                Q(session__end_date__range=(start_date, end_date))
+            )
+
+        if category_id:
+            enrollments_qs = enrollments_qs.filter(session__course__category_id=category_id)
+        if course_id:
+            enrollments_qs = enrollments_qs.filter(session__course_id=course_id)
+        if session_id:
+            enrollments_qs = enrollments_qs.filter(session_id=session_id)
+        if force:
+            enrollments_qs = enrollments_qs.filter(Q(current_force=force) | Q(trainee__force=force))
+        if unit:
+            enrollments_qs = enrollments_qs.filter(Q(current_unit__icontains=unit) | Q(trainee__unit__icontains=unit))
+        if trainee_category:
+            enrollments_qs = enrollments_qs.filter(trainee__category=trainee_category)
+        if instructor_id:
+            enrollments_qs = enrollments_qs.filter(
+                Q(session__supervisor_id=instructor_id) |
+                Q(session__instructors_assignments__instructor_id=instructor_id)
+            ).distinct()
+
+        if status == 'passed':
+            enrollments_qs = enrollments_qs.filter(is_dropped=False, is_graded=True, percentage__gte=50)
+        elif status == 'failed':
+            enrollments_qs = enrollments_qs.filter(is_dropped=False, is_graded=True, percentage__lt=50)
+        elif status == 'dropped':
+            enrollments_qs = enrollments_qs.filter(is_dropped=True)
+        elif status == 'active':
+            enrollments_qs = enrollments_qs.filter(is_dropped=False)
+
+        if q:
+            enrollments_qs = enrollments_qs.filter(
+                Q(trainee__name__icontains=q) |
+                Q(trainee__military_number__icontains=q) |
+                Q(current_rank__icontains=q) |
+                Q(current_unit__icontains=q) |
+                Q(session__course__name__icontains=q) |
+                Q(session__session_code__icontains=q)
+            )
+
+        # تجهيز نص ملخص الفلترة للطباعة
+        filter_desc_items = []
+        if use_all_dates:
+            filter_desc_items.append("كامل السجلات")
+        elif start_date and end_date:
+            filter_desc_items.append(f"الفترة من: {start_date.strftime('%Y-%m-%d')} إلى: {end_date.strftime('%Y-%m-%d')}")
+        if force:
+            filter_desc_items.append(f"القوة: {force}")
+        if unit:
+            filter_desc_items.append(f"الوحدة: {unit}")
+        if category_id:
+            cat_obj = CourseCategory.objects.filter(pk=category_id).first()
+            if cat_obj: filter_desc_items.append(f"التصنيف: {cat_obj.name}")
+        if course_id:
+            course_obj = Course.objects.filter(pk=course_id).first()
+            if course_obj: filter_desc_items.append(f"الدورة: {course_obj.name}")
+        if session_id:
+            sess_obj = CourseSession.objects.filter(pk=session_id).first()
+            if sess_obj: filter_desc_items.append(f"الدفعة: {sess_obj.session_code}")
+
+        filters_summary = " • ".join(filter_desc_items) if filter_desc_items else "كافة السجلات"
+
+        # 1. إحصائيات KPIs المفلترة
+        trainees_total = enrollments_qs.values('trainee_id').distinct().count()
+        trainees_officers = enrollments_qs.filter(trainee__category=TraineeCategory.OFFICER).values('trainee_id').distinct().count()
+        trainees_ncos = enrollments_qs.filter(trainee__category=TraineeCategory.NCO).values('trainee_id').distinct().count()
+        trainees_civilians = enrollments_qs.filter(trainee__category=TraineeCategory.CIVILIAN).values('trainee_id').distinct().count()
+
+        courses_total = enrollments_qs.values('session__course_id').distinct().count()
+        sessions_count = enrollments_qs.values('session_id').distinct().count()
+
+        # المعتمد نجاحهم: الذين تم رصد درجاتهم واجتازوا بنجاح (percentage >= 50 وغير مقطوعين)
+        enrollments_graded = enrollments_qs.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
+
+        # متوسط التحصيل العام
+        avg_score_res = enrollments_qs.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
+        avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+
+        # 2. التوزيع التكراري للتقديرات
+        graded_qs = enrollments_qs.filter(is_graded=True, is_dropped=False)
+        total_eval = graded_qs.count()
+
+        grade_a = graded_qs.filter(percentage__gte=85).count()
+        grade_b = graded_qs.filter(percentage__gte=75, percentage__lt=85).count()
+        grade_c = graded_qs.filter(percentage__gte=65, percentage__lt=75).count()
+        grade_d = graded_qs.filter(percentage__gte=50, percentage__lt=65).count()
+        grade_f = graded_qs.filter(percentage__lt=50).count() + enrollments_qs.filter(is_dropped=True).count()
+
+        grade_a_pct = calc_pct(grade_a, total_eval)
+        grade_b_pct = calc_pct(grade_b, total_eval)
+        grade_c_pct = calc_pct(grade_c, total_eval)
+        grade_d_pct = calc_pct(grade_d, total_eval)
+        grade_f_pct = calc_pct(grade_f, total_eval)
+
+        # 3. توزيع القوات
+        from collections import Counter
+        force_counts = Counter()
+        for en in enrollments_qs:
+            f_name = (en.current_force or (en.trainee.force if en.trainee else '') or '').strip()
+            force_counts[f_name if f_name else 'غير محدد'] += 1
+
+        total_force_en = sum(force_counts.values()) or 1
+        forces_stats = [
+            {'force': f, 'count': c, 'pct': round((c / total_force_en * 100), 1)}
+            for f, c in force_counts.most_common()
+        ]
+
+    else:
+        filters_summary = "كامل السجلات الإحصائية للنظام"
+        trainees_total = Trainee.objects.count()
+        trainees_officers = Trainee.objects.filter(category=TraineeCategory.OFFICER).count()
+        trainees_ncos = Trainee.objects.filter(category=TraineeCategory.NCO).count()
+        trainees_civilians = Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count()
+
+        courses_total = Course.objects.count()
+        sessions_count = CourseSession.objects.count()
+
+        enrollments_graded = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
+        avg_score_res = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
+        avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+
+        graded_qs = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False)
+        total_eval = graded_qs.count()
+
+        grade_a = graded_qs.filter(percentage__gte=85).count()
+        grade_b = graded_qs.filter(percentage__gte=75, percentage__lt=85).count()
+        grade_c = graded_qs.filter(percentage__gte=65, percentage__lt=75).count()
+        grade_d = graded_qs.filter(percentage__gte=50, percentage__lt=65).count()
+        grade_f = graded_qs.filter(percentage__lt=50).count() + CourseEnrollment.objects.filter(is_dropped=True).count()
+
+        grade_a_pct = calc_pct(grade_a, total_eval)
+        grade_b_pct = calc_pct(grade_b, total_eval)
+        grade_c_pct = calc_pct(grade_c, total_eval)
+        grade_d_pct = calc_pct(grade_d, total_eval)
+        grade_f_pct = calc_pct(grade_f, total_eval)
+
+        raw_forces = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
+        total_trainees = trainees_total or 1
+        forces_stats = [
+            {'force': f['force'] if f['force'] else 'غير محدد', 'count': f['count'], 'pct': round((f['count'] / total_trainees * 100), 1)}
+            for f in raw_forces
+        ]
 
     return render(request, 'training/admin_report_print.html', {
         'trainees_total': trainees_total,
@@ -3243,9 +3425,7 @@ def admin_report_print_view(request):
         'trainees_ncos': trainees_ncos,
         'trainees_civilians': trainees_civilians,
         'courses_total': courses_total,
-        'categories': categories,
-        'sessions': sessions,
-        'enrollments_total': enrollments_total,
+        'sessions_count': sessions_count,
         'enrollments_graded': enrollments_graded,
         'avg_score': avg_score,
         'grade_a': grade_a,
@@ -3253,12 +3433,13 @@ def admin_report_print_view(request):
         'grade_c': grade_c,
         'grade_d': grade_d,
         'grade_f': grade_f,
-        'grade_a_pct': calc_pct(grade_a, enrollments_graded),
-        'grade_b_pct': calc_pct(grade_b, enrollments_graded),
-        'grade_c_pct': calc_pct(grade_c, enrollments_graded),
-        'grade_d_pct': calc_pct(grade_d, enrollments_graded),
-        'grade_f_pct': calc_pct(grade_f, enrollments_graded),
+        'grade_a_pct': grade_a_pct,
+        'grade_b_pct': grade_b_pct,
+        'grade_c_pct': grade_c_pct,
+        'grade_d_pct': grade_d_pct,
+        'grade_f_pct': grade_f_pct,
         'forces_stats': forces_stats,
+        'filters_summary': filters_summary,
         'cert_settings': cert_settings,
         'system_settings': system_settings,
     })
