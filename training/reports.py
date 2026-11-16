@@ -8,9 +8,14 @@ from datetime import datetime, timedelta
 from urllib.parse import quote
 from django.utils import timezone
 from django.db.models import Q, Count, Avg
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
 
 from .models import (
     CourseEnrollment,
@@ -664,6 +669,9 @@ def export_report_to_excel(report_data):
     إنشاء ملف إكسل احترافي منسق بالكامل من بيانات التقرير
     مجهز لدعم اللغة العربية واتجاه اليمين لليسار (RTL) مع ترويسة أنيقة وألوان رسمية
     """
+    if not HAS_OPENPYXL:
+        raise ImportError("حزمة openpyxl غير مثبتة. يرجى تثبيتها عبر أمر: pip install openpyxl")
+
     wb = openpyxl.Workbook()
     ws = wb.active
 

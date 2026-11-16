@@ -3319,8 +3319,12 @@ def reports_export_excel_view(request):
         messages.error(request, 'عذراً، غير مصرح لك بتصدير التقارير.')
         return redirect('training:home')
 
-    report_data = get_report_data(request.GET)
-    excel_bytes = export_report_to_excel(report_data)
+    try:
+        report_data = get_report_data(request.GET)
+        excel_bytes = export_report_to_excel(report_data)
+    except ImportError:
+        messages.error(request, 'حزمة openpyxl غير مثبتة على بيئة الخادم الحالية. يرجى تثبيتها عبر أمر: pip install openpyxl')
+        return redirect('training:reports_hub')
 
     safe_title = report_data.get('report_title', 'تقرير')
     now_str = timezone.now().strftime('%Y%m%d_%H%M')
