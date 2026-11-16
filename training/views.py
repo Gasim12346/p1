@@ -1,8 +1,9 @@
 import json
 from datetime import datetime, date, timedelta
 from functools import wraps
+from urllib.parse import quote
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -25,6 +26,7 @@ from .forms import (
     MovementOrderSettingsForm, OFFICER_RANKS,
     SystemSettingsForm, UserCreateForm, UserEditForm, AdminLoginForm
 )
+from .reports import get_report_data, export_report_to_excel, get_default_date_range
 
 
 def is_admin_user(user):
@@ -3260,5 +3262,76 @@ def admin_report_print_view(request):
         'cert_settings': cert_settings,
         'system_settings': system_settings,
     })
+
+
+@login_required
+def reports_hub_view(request):
+    """
+    قسم التقارير الشاملة:
+    عرض وتخصيص واستخراج التقارير مع فلترة متقدمة ونطاق زمني (افتراضياً آخر 3 شهور)
+    """
+    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
+        messages.error(request, 'عذراً، هذا القسم مخصص للإدارة وهيئة القيادة والتسجيل فقط.')
+        return redirect('training:home')
+
+    # خيارات الفلترة المتاحة
+    categories = CourseCategory.objects.all().order_by('name')
+    courses = Course.objects.all().order_by('name')
+    sessions = CourseSession.objects.select_related('course').all().order_by('-start_date')
+    instructors = Instructor.objects.all().order_by('name')
+
+    # استخراج القوى والوحدات من الدارسين ومن التسجيلات
+    trainee_forces = set(Trainee.objects.exclude(force__isnull=True).exclude(force='').values_list('force', flat=True))
+    enrollment_forces = set(CourseEnrollment.objects.exclude(current_force__isnull=True).exclude(current_force='').values_list('current_force', flat=True))
+    forces = sorted([f for f in trainee_forces.union(enrollment_forces) if f and f.strip()])
+
+    trainee_units = set(Trainee.objects.exclude(unit__isnull=True).exclude(unit='').values_list('unit', flat=True))
+    enrollment_units = set(CourseEnrollment.objects.exclude(current_unit__isnull=True).exclude(current_unit='').values_list('current_unit', flat=True))
+    units = sorted([u for u in trainee_units.union(enrollment_units) if u and u.strip()])
+
+    trainee_categories = TraineeCategory.choices
+
+    # جلب بيانات التقرير المفلترة
+    report_data = get_report_data(request.GET)
+    system_settings = SystemSettings.get_settings()
+
+    context = {
+        'report_data': report_data,
+        'categories': categories,
+        'courses': courses,
+        'sessions': sessions,
+        'instructors': instructors,
+        'forces': forces,
+        'units': units,
+        'trainee_categories': trainee_categories,
+        'system_settings': system_settings,
+        'current_filters': request.GET,
+    }
+    return render(request, 'training/reports_hub.html', context)
+
+
+@login_required
+def reports_export_excel_view(request):
+    """
+    تصدير التقرير المفلتر مباشرة كملف إكسل منسق بالكامل (Excel .xlsx)
+    """
+    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user)):
+        messages.error(request, 'عذراً، غير مصرح لك بتصدير التقارير.')
+        return redirect('training:home')
+
+    report_data = get_report_data(request.GET)
+    excel_bytes = export_report_to_excel(report_data)
+
+    safe_title = report_data.get('report_title', 'تقرير')
+    now_str = timezone.now().strftime('%Y%m%d_%H%M')
+    filename = f"{safe_title}_{now_str}.xlsx"
+    encoded_filename = quote(filename)
+
+    response = HttpResponse(
+        excel_bytes,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+    return response
 
 

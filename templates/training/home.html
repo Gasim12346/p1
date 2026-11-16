@@ -23,6 +23,12 @@
                     <i class="bi bi-award"></i>
                     <span>رصد النتائج واستخراج الشهادات</span>
                 </a>
+                {% if is_registrar or is_supervisor or is_admin %}
+                <a href="{% url 'training:reports_hub' %}" class="btn btn-info fw-bold px-4 py-2 rounded-3 text-white d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" style="background: linear-gradient(135deg, #0284c7, #0369a1); border: 1px solid #38bdf8;">
+                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                    <span>التقارير الشاملة وإكسل</span>
+                </a>
+                {% endif %}
                 <a href="{% url 'training:logout' %}" class="btn btn-danger fw-bold px-3 py-2 rounded-3 text-white d-inline-flex align-items-center justify-content-center gap-2 ms-sm-auto shadow-sm" style="background: linear-gradient(135deg, #dc2626, #b91c1c); border: 1px solid #ef4444;" title="تسجيل الخروج من النظام">
                     <i class="bi bi-box-arrow-right"></i>
                     <span>تسجيل الخروج</span>
@@ -42,12 +48,12 @@
     </div>
 </div>
 
-<!-- 4 Core Modules Cards -->
+<!-- Core Modules Cards -->
 <div class="row g-4 mb-5">
     
     {% if is_registrar or is_admin %}
     <!-- Module 1: الدارسين -->
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="module-card">
             <div>
                 <span class="badge-step">القسم 1</span>
@@ -67,7 +73,7 @@
     </div>
 
     <!-- Module 2: الدورات ومفرداتها -->
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="module-card">
             <div>
                 <span class="badge-step">القسم 2</span>
@@ -89,7 +95,7 @@
 
     {% if is_registrar or is_supervisor or is_admin %}
     <!-- Module 3: الدورة التي يتم دراستها -->
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="module-card">
             <div>
                 <span class="badge-step">القسم 3</span>
@@ -110,7 +116,7 @@
     {% endif %}
 
     <!-- Module 4: النتيجة والشهادات -->
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-6">
         <div class="module-card">
             <div>
                 <span class="badge-step">القسم 4</span>
@@ -128,6 +134,31 @@
             </div>
         </div>
     </div>
+
+    {% if is_registrar or is_supervisor or is_admin %}
+    <!-- Module 5: التقارير الشاملة واستخراج إكسل -->
+    <div class="col-md-6 col-xl-6">
+        <div class="module-card" style="border: 2px solid #0284c7; box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.15);">
+            <div>
+                <span class="badge-step" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">القسم 5</span>
+                <div class="module-card-icon-box" style="background: linear-gradient(135deg, #0369a1, #0284c7); color: #fff;">
+                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">التقارير الشاملة وتصدير إكسل</h4>
+                <p class="text-muted small mb-0">مركز استخراج وتخصيص تقارير الدارسين، الدورات، الوحدات، القوى العسكرية، وأوامر التحرك مع فلترة التواريخ (افتراضياً 3 شهور) وحفظها بصيغة Excel منسقة.</p>
+            </div>
+            <div>
+                <hr class="border-slate-200 my-3">
+                <a href="{% url 'training:reports_hub' %}" class="btn btn-modern-primary w-100" style="background: linear-gradient(135deg, #0369a1, #0284c7);">
+                    <span>فتح قسم التقارير وتصدير إكسل</span>
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
 
 </div>
 {% endblock %}

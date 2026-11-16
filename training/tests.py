@@ -1,4 +1,7 @@
-from datetime import date
+import io
+from datetime import date, timedelta
+import openpyxl
+from django.utils import timezone
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -8,6 +11,7 @@ from training.models import (
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
     CertificateSettings, MovementOrderSettings
 )
+from training.reports import get_default_date_range, get_report_data, export_report_to_excel
 
 
 class AuthenticationAndSecurityTests(TestCase):
@@ -2693,6 +2697,151 @@ class MovementOrderTests(TestCase):
         mov_url = reverse('training:movement_order', args=[dropped_en.id])
         self.assertIn(mov_url, content)
         self.assertIn('أمر التحرك', content)
+
+
+class ComprehensiveReportsAndExcelTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username='admin_report',
+            password='Password123!',
+            email='admin@report.com'
+        )
+        self.category = CourseCategory.objects.create(name='تصنيف القيادة والسيطرة')
+        self.course = Course.objects.create(name='دورة أركان متقدمة', category=self.category)
+        self.supervisor = Instructor.objects.create(
+            name='عقيد ركن محمد سالم',
+            military_number='112233',
+            rank='عقيد ركن'
+        )
+        today = timezone.now().date()
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='دورة 101 أركان',
+            start_date=today - timedelta(days=20),
+            end_date=today + timedelta(days=10),
+            supervisor=self.supervisor
+        )
+        self.trainee1 = Trainee.objects.create(
+            military_number='99112233',
+            name='رائد خالد أحمد',
+            category=TraineeCategory.OFFICER,
+            force='القوات البرية',
+            unit='اللواء الأول مشاة'
+        )
+        self.enrollment1 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee1,
+            current_rank='رائد',
+            current_force='القوات البرية',
+            current_unit='اللواء الأول مشاة',
+            is_graded=True,
+            percentage=88.5,
+            grade_label='ممتاز'
+        )
+        self.trainee2 = Trainee.objects.create(
+            military_number='99112244',
+            name='نقيب حسام الدين',
+            category=TraineeCategory.OFFICER,
+            force='الدفاع الجوي',
+            unit='كتيبة الصواريخ'
+        )
+        self.enrollment2 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee2,
+            current_rank='نقيب',
+            current_force='الدفاع الجوي',
+            current_unit='كتيبة الصواريخ',
+            is_dropped=True,
+            drop_reason='أسباب طارئة'
+        )
+
+    def test_default_date_range_is_90_days(self):
+        """التحقق من أن النطاق الزمني الافتراضي هو 3 أشهر (90 يوماً حتى اليوم)"""
+        start, end = get_default_date_range()
+        self.assertEqual((end - start).days, 90)
+        self.assertEqual(end, timezone.now().date())
+
+    def test_get_report_data_trainees(self):
+        """التحقق من تجميع واستخراج تقرير الدارسين الشامل مع النسب والفلاتر"""
+        data = get_report_data({'report_type': 'trainees'})
+        self.assertEqual(data['report_type'], 'trainees')
+        self.assertEqual(len(data['records']), 2)
+        self.assertEqual(data['stats']['total'], 2)
+        self.assertEqual(data['stats']['passed'], 1)
+        self.assertEqual(data['stats']['dropped'], 1)
+
+    def test_get_report_data_filter_by_force_and_unit(self):
+        """التحقق من فلترة تقرير الدارسين بالقوة والوحدة"""
+        data = get_report_data({
+            'report_type': 'trainees',
+            'force': 'القوات البرية',
+            'unit': 'اللواء الأول مشاة'
+        })
+        self.assertEqual(len(data['records']), 1)
+        self.assertEqual(data['records'][0]['military_number'], '99112233')
+
+    def test_get_report_data_sessions(self):
+        """التحقق من استخراج تقرير الدورات المنعقدة ونسب النجاح"""
+        data = get_report_data({'report_type': 'sessions'})
+        self.assertEqual(data['report_type'], 'sessions')
+        self.assertGreaterEqual(len(data['records']), 1)
+        self.assertIn('دورة أركان متقدمة', [r['course_name'] for r in data['records']])
+
+    def test_get_report_data_units_forces(self):
+        """التحقق من استخراج تقرير توزيع الوحدات والقوى العسكرية"""
+        data = get_report_data({'report_type': 'units_forces'})
+        self.assertEqual(data['report_type'], 'units_forces')
+        self.assertGreaterEqual(len(data['records']), 1)
+
+    def test_get_report_data_dropped_trainees(self):
+        """التحقق من استخراج تقرير الدارسين المقطوعين وأوامر التحرك"""
+        data = get_report_data({'report_type': 'dropped_trainees'})
+        self.assertEqual(data['report_type'], 'dropped_trainees')
+        self.assertEqual(len(data['records']), 1)
+        self.assertEqual(data['records'][0]['military_number'], '99112244')
+
+    def test_get_report_data_instructors(self):
+        """التحقق من استخراج تقرير هيئة التعليم وتكليفات المعلمين"""
+        data = get_report_data({'report_type': 'instructors'})
+        self.assertEqual(data['report_type'], 'instructors')
+        self.assertGreaterEqual(len(data['records']), 1)
+
+    def test_export_report_to_excel_structure(self):
+        """التحقق من توليد ملف إكسل سليم ومنسق بالكامل واتجاه من اليمين لليسار RTL"""
+        data = get_report_data({'report_type': 'trainees'})
+        excel_bytes = export_report_to_excel(data)
+        self.assertTrue(len(excel_bytes) > 0)
+        
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        ws = wb.active
+        self.assertTrue(ws.views.sheetView[0].rightToLeft)
+        # التحقق من وجود الترويسة العسكرية
+        self.assertIn('معهد نظم المعلومات', ws.cell(row=1, column=1).value)
+
+    def test_reports_hub_view_access(self):
+        """التحقق من صلاحيات الوصول لقسم التقارير الشاملة وعرض الصفحة"""
+        # غير مسجل
+        res = self.client.get(reverse('training:reports_hub'))
+        self.assertEqual(res.status_code, 302)
+
+        # مسجل كمدير نظام
+        self.client.login(username='admin_report', password='Password123!')
+        res = self.client.get(reverse('training:reports_hub'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('report_data', res.context)
+        self.assertIn('categories', res.context)
+        self.assertIn('courses', res.context)
+        self.assertIn('sessions', res.context)
+        self.assertContains(res, 'منظومة التقارير الشاملة')
+
+    def test_reports_export_excel_view_download(self):
+        """التحقق من استجابة تنزيل ملف الإكسل عبر الرابط"""
+        self.client.login(username='admin_report', password='Password123!')
+        res = self.client.get(reverse('training:reports_export_excel'), {'report_type': 'trainees'})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn('attachment;', res['Content-Disposition'])
 
 
 

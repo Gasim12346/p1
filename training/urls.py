@@ -78,4 +78,8 @@ urlpatterns = [
 
     # سجل النشاط والعمليات
     path('admin-portal/activity-log/clear/', views.admin_clear_activity_logs_view, name='admin_clear_activity_logs'),
+
+    # القسم 8: التقارير الشاملة واستخراج إكسل
+    path('reports/', views.reports_hub_view, name='reports_hub'),
+    path('reports/export/excel/', views.reports_export_excel_view, name='reports_export_excel'),
 ]

@@ -1048,6 +1048,14 @@
                                 <span>النتيجة والشهادات</span>
                             </a>
                         </li>
+                        {% if is_registrar or is_supervisor or is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link-custom" href="{% url 'training:reports_hub' %}">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                                    <span>التقارير الشاملة وإكسل</span>
+                                </a>
+                            </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -1126,6 +1134,14 @@
                         <i class="bi bi-award-fill"></i>
                         <span>النتيجة والشهادات</span>
                     </a>
+
+                    {% if is_registrar or is_supervisor or is_admin %}
+                        <!-- 6. التقارير الشاملة واستخراج إكسل -->
+                        <a href="{% url 'training:reports_hub' %}" class="sidebar-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}" title="التقارير الشاملة واستخراج إكسل">
+                            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                            <span>التقارير الشاملة وإكسل</span>
+                        </a>
+                    {% endif %}
                 </div>
 
                 <!-- Sidebar Footer -->
@@ -1167,6 +1183,8 @@
                                     <i class="bi bi-award-fill text-warning me-1"></i> النتيجة والشهادات
                                 {% elif 'admin' in request.resolver_match.url_name or 'category' in request.resolver_match.url_name %}
                                     <i class="bi bi-shield-shaded text-warning me-1"></i> لوحة الإدارة والتحليلات
+                                {% elif 'report' in request.resolver_match.url_name %}
+                                    <i class="bi bi-file-earmark-spreadsheet-fill text-success me-1"></i> التقارير الشاملة واستخراج إكسل
                                 {% else %}
                                     <i class="bi bi-layers-fill text-primary me-1"></i> بوابة النظام
                                 {% endif %}
