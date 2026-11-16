@@ -2755,6 +2755,18 @@ class ComprehensiveReportsAndExcelTests(TestCase):
             is_dropped=True,
             drop_reason='أسباب طارئة'
         )
+        self.trainee3 = Trainee.objects.create(
+            military_number='99112255',
+            name='محمد علي إدريس',
+            category=TraineeCategory.CIVILIAN
+        )
+        self.enrollment3 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee3,
+            current_rank='',
+            current_force='',
+            current_unit=''
+        )
 
     def test_default_date_range_is_90_days(self):
         """التحقق من أن النطاق الزمني الافتراضي هو 3 أشهر (90 يوماً حتى اليوم)"""
@@ -2763,13 +2775,16 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(end, timezone.now().date())
 
     def test_get_report_data_trainees(self):
-        """التحقق من تجميع واستخراج تقرير الدارسين الشامل مع النسب والفلاتر"""
+        """التحقق من تجميع واستخراج تقرير الدارسين الشامل مع النسب والفلاتر ومراعاة الرتب الفارغة"""
         data = get_report_data({'report_type': 'trainees'})
         self.assertEqual(data['report_type'], 'trainees')
-        self.assertEqual(len(data['records']), 2)
-        self.assertEqual(data['stats']['total'], 2)
+        self.assertEqual(len(data['records']), 3)
+        self.assertEqual(data['stats']['total'], 3)
         self.assertEqual(data['stats']['passed'], 1)
         self.assertEqual(data['stats']['dropped'], 1)
+        # التحقق من أن الدارس صاحب الرتبة الفارغة يعرض '---' دون التسبب في خطأ
+        blank_rank_trainee = next(r for r in data['records'] if r['military_number'] == '99112255')
+        self.assertEqual(blank_rank_trainee['rank'], '---')
 
     def test_get_report_data_filter_by_force_and_unit(self):
         """التحقق من فلترة تقرير الدارسين بالقوة والوحدة"""
