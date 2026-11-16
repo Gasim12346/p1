@@ -116,6 +116,162 @@
         align-items: center;
         gap: 6px;
     }
+    /* Searchable Select Widget */
+    .filter-panel-card {
+        position: relative;
+        z-index: 20;
+    }
+    .searchable-select-wrapper {
+        position: relative;
+        width: 100%;
+        user-select: none;
+    }
+    .searchable-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 0.25rem 0.65rem;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        cursor: pointer;
+        min-height: 31px;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+    .searchable-select-trigger:focus,
+    .searchable-select-trigger.active {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    .searchable-select-trigger .trigger-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #212529;
+        flex-grow: 1;
+        text-align: right;
+    }
+    .searchable-select-arrow {
+        font-size: 0.75rem;
+        color: #6c757d;
+        transition: transform 0.2s ease;
+        margin-right: 6px;
+    }
+    .searchable-select-trigger.active .searchable-select-arrow {
+        transform: rotate(180deg);
+    }
+    .searchable-select-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        z-index: 1060;
+        background-color: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        margin-top: 4px;
+        display: none;
+        overflow: hidden;
+        animation: fadeInDown 0.15s ease-out;
+    }
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .searchable-select-search {
+        padding: 6px;
+        background-color: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        position: relative;
+    }
+    .searchable-select-search input {
+        width: 100%;
+        padding: 4px 28px 4px 24px;
+        font-size: 0.8rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        outline: none;
+        background-color: #fff;
+        text-align: right;
+    }
+    .searchable-select-search input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .searchable-select-search .search-icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.75rem;
+        color: #94a3b8;
+        pointer-events: none;
+    }
+    .searchable-select-search .clear-search-btn {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85rem;
+        color: #94a3b8;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        line-height: 1;
+        display: none;
+    }
+    .searchable-select-search .clear-search-btn:hover {
+        color: #dc3545;
+    }
+    .searchable-select-menu {
+        max-height: 210px;
+        overflow-y: auto;
+        list-style: none;
+        margin: 0;
+        padding: 4px 0;
+    }
+    .searchable-select-menu::-webkit-scrollbar {
+        width: 6px;
+    }
+    .searchable-select-menu::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    .searchable-select-item {
+        padding: 5px 12px;
+        font-size: 0.825rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #334155;
+        transition: background 0.15s ease;
+        text-align: right;
+    }
+    .searchable-select-item:hover,
+    .searchable-select-item.highlighted {
+        background-color: #e0f2fe;
+        color: #0369a1;
+    }
+    .searchable-select-item.selected {
+        background-color: #f0fdf4;
+        color: #15803d;
+        font-weight: 600;
+    }
+    .searchable-select-item.hidden {
+        display: none !important;
+    }
+    .searchable-select-empty {
+        padding: 12px;
+        font-size: 0.8rem;
+        text-align: center;
+        color: #94a3b8;
+    }
     @media print {
         .navbar-custom, .app-sidebar, .app-inner-topbar, .filter-panel-card, .btn-action-group, .preset-date-container, .pagination-row {
             display: none !important;
@@ -244,7 +400,7 @@
                 <!-- 3. Course Dimensions -->
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">تصنيف الدورة:</label>
-                    <select name="category_id" class="form-select form-select-sm">
+                    <select name="category_id" id="filter_category" class="form-select form-select-sm searchable-select" onchange="onCategoryChange()">
                         <option value="">-- كافة التصنيفات --</option>
                         {% for cat in categories %}
                             <option value="{{ cat.id }}" {% if current_filters.category_id == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
@@ -254,20 +410,20 @@
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">اسم الدورة:</label>
-                    <select name="course_id" class="form-select form-select-sm">
+                    <select name="course_id" id="filter_course" class="form-select form-select-sm searchable-select" onchange="onCourseChange()">
                         <option value="">-- كافة الدورات --</option>
                         {% for c in courses %}
-                            <option value="{{ c.id }}" {% if current_filters.course_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                            <option value="{{ c.id }}" data-category="{{ c.category_id }}" {% if current_filters.course_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">الدفعة المنعقدة:</label>
-                    <select name="session_id" class="form-select form-select-sm">
+                    <select name="session_id" id="filter_session" class="form-select form-select-sm searchable-select" onchange="onSessionChange()">
                         <option value="">-- كافة الدفعات --</option>
                         {% for s in sessions %}
-                            <option value="{{ s.id }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} ({{ s.session_code }}) - {% if s.status == 'completed' %}معتمدة{% else %}منعقدة{% endif %}</option>
+                            <option value="{{ s.id }}" data-course="{{ s.course_id }}" data-category="{{ s.course.category_id }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} ({{ s.session_code }}) - {% if s.status == 'completed' %}معتمدة ومحفوظة{% else %}منعقدة{% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -277,7 +433,7 @@
                     <label class="form-label small text-dark fw-bold mb-1">
                         <i class="bi bi-shield-check text-success me-1"></i>حالة الدورة:
                     </label>
-                    <select name="session_status" class="form-select form-select-sm border-success fw-semibold">
+                    <select name="session_status" id="filter_session_status" class="form-select form-select-sm border-success fw-semibold searchable-select">
                         <option value="completed" {% if report_data.session_status == 'completed' or not report_data.session_status %}selected{% endif %}>الدورات المعتمدة والمحفوظة (الافتراضي)</option>
                         <option value="active" {% if report_data.session_status == 'active' %}selected{% endif %}>الدورات المنعقدة (الجارية حالياً)</option>
                         <option value="all" {% if report_data.session_status == 'all' %}selected{% endif %}>كافة الدورات (المعتمدة والمنعقدة)</option>
@@ -286,7 +442,7 @@
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">القوة العسكرية:</label>
-                    <select name="force" class="form-select form-select-sm">
+                    <select name="force" id="filter_force" class="form-select form-select-sm searchable-select" onchange="onForceChange()">
                         <option value="">-- كافة القوى --</option>
                         {% for f in forces %}
                             <option value="{{ f }}" {% if current_filters.force == f %}selected{% endif %}>{{ f }}</option>
@@ -297,7 +453,7 @@
                 <!-- 4. Military Unit & Trainee Dimensions -->
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">الوحدة العسكرية:</label>
-                    <select name="unit" class="form-select form-select-sm">
+                    <select name="unit" id="filter_unit" class="form-select form-select-sm searchable-select">
                         <option value="">-- كافة الوحدات --</option>
                         {% for u in units %}
                             <option value="{{ u }}" {% if current_filters.unit == u %}selected{% endif %}>{{ u }}</option>
@@ -307,7 +463,7 @@
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">فئة الدارس:</label>
-                    <select name="trainee_category" class="form-select form-select-sm">
+                    <select name="trainee_category" id="filter_trainee_category" class="form-select form-select-sm searchable-select">
                         <option value="">-- كافة الفئات --</option>
                         {% for c_code, c_name in trainee_categories %}
                             <option value="{{ c_code }}" {% if current_filters.trainee_category == c_code %}selected{% endif %}>{{ c_name }}</option>
@@ -317,7 +473,7 @@
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">حالة النتيجة:</label>
-                    <select name="status" class="form-select form-select-sm">
+                    <select name="status" id="filter_status" class="form-select form-select-sm searchable-select">
                         <option value="all" {% if current_filters.status == 'all' or not current_filters.status %}selected{% endif %}>-- كافة الحالات --</option>
                         <option value="passed" {% if current_filters.status == 'passed' %}selected{% endif %}>الناجحون فقط (50% فأعلى)</option>
                         <option value="failed" {% if current_filters.status == 'failed' %}selected{% endif %}>الراسبون فقط (أقل من 50%)</option>
@@ -328,7 +484,7 @@
 
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">المعلم / المشرف:</label>
-                    <select name="instructor_id" class="form-select form-select-sm">
+                    <select name="instructor_id" id="filter_instructor" class="form-select form-select-sm searchable-select">
                         <option value="">-- كافة المعلمين --</option>
                         {% for inst in instructors %}
                             <option value="{{ inst.pk }}" {% if current_filters.instructor_id == inst.pk|stringformat:"s" %}selected{% endif %}>{{ inst.name }} ({{ inst.military_number }})</option>
@@ -603,8 +759,367 @@
 
 </div>
 
-<!-- JavaScript for Quick Date Presets and Export Actions -->
+<!-- JavaScript for Dynamic Cascading Dropdowns, In-Field Live Search, and Date Presets -->
 <script>
+    // هياكل البيانات للربط والفلترة التفاعلية الفورية
+    const FORCE_UNITS_MAP = {{ force_units_map_json|default:"{}"|safe }};
+    const ALL_UNITS = {{ all_units_json|default:"[]"|safe }};
+    const COURSES_DATA = {{ courses_json|default:"[]"|safe }};
+    const SESSIONS_DATA = {{ sessions_json|default:"[]"|safe }};
+
+    // دالة توحيد وتطبيع النصوص العربية للبحث السريع (تجاهل الهمزات، والتاء المربوطة، وتشكيل الحروف)
+    function normalizeArabic(text) {
+        if (!text) return '';
+        return text.toString().toLowerCase()
+            .replace(/[أإآٱ]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/ى/g, 'ي')
+            .replace(/[\u064B-\u065F]/g, '')
+            .trim();
+    }
+
+    // 1. الربط الديناميكي: القوة العسكرية -> الوحدات العسكرية
+    function onForceChange() {
+        const forceSelect = document.getElementById('filter_force');
+        const unitSelect = document.getElementById('filter_unit');
+        if (!forceSelect || !unitSelect) return;
+
+        const selectedForce = forceSelect.value;
+        const currentUnit = unitSelect.value;
+
+        let availableUnits = [];
+        let defaultLabel = '-- كافة الوحدات --';
+
+        if (selectedForce && FORCE_UNITS_MAP[selectedForce]) {
+            availableUnits = FORCE_UNITS_MAP[selectedForce];
+            defaultLabel = `-- كافة وحدات (${selectedForce}) --`;
+        } else {
+            availableUnits = ALL_UNITS;
+        }
+
+        unitSelect.innerHTML = `<option value="">${defaultLabel}</option>`;
+        let unitStillValid = false;
+        availableUnits.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u;
+            opt.textContent = u;
+            if (u === currentUnit) {
+                opt.selected = true;
+                unitStillValid = true;
+            }
+            unitSelect.appendChild(opt);
+        });
+
+        if (!unitStillValid) {
+            unitSelect.value = '';
+        }
+
+        if (unitSelect._refreshSearchable) {
+            unitSelect._refreshSearchable();
+        }
+    }
+
+    // 2. الربط الديناميكي: تصنيف الدورة -> الدورات والدفعات
+    function onCategoryChange() {
+        const catSelect = document.getElementById('filter_category');
+        const courseSelect = document.getElementById('filter_course');
+        const sessionSelect = document.getElementById('filter_session');
+        if (!catSelect || !courseSelect || !sessionSelect) return;
+
+        const selectedCatId = catSelect.value;
+        const currentCourseId = courseSelect.value;
+
+        let filteredCourses = COURSES_DATA;
+        if (selectedCatId) {
+            filteredCourses = COURSES_DATA.filter(c => String(c.category_id) === String(selectedCatId));
+        }
+
+        courseSelect.innerHTML = '<option value="">-- كافة الدورات --</option>';
+        let courseStillValid = false;
+        filteredCourses.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            opt.setAttribute('data-category', c.category_id);
+            if (String(c.id) === String(currentCourseId)) {
+                opt.selected = true;
+                courseStillValid = true;
+            }
+            courseSelect.appendChild(opt);
+        });
+
+        if (!courseStillValid) {
+            courseSelect.value = '';
+        }
+
+        updateSessionOptions();
+
+        if (courseSelect._refreshSearchable) courseSelect._refreshSearchable();
+        if (sessionSelect._refreshSearchable) sessionSelect._refreshSearchable();
+    }
+
+    // 3. الربط الديناميكي: اسم الدورة -> الدفعات الخاصة بها ومزامنة التصنيف
+    function onCourseChange() {
+        const catSelect = document.getElementById('filter_category');
+        const courseSelect = document.getElementById('filter_course');
+        const sessionSelect = document.getElementById('filter_session');
+        if (!courseSelect || !sessionSelect) return;
+
+        const selectedCourseId = courseSelect.value;
+
+        if (selectedCourseId && catSelect) {
+            const courseObj = COURSES_DATA.find(c => String(c.id) === String(selectedCourseId));
+            if (courseObj && courseObj.category_id) {
+                if (String(catSelect.value) !== String(courseObj.category_id)) {
+                    catSelect.value = courseObj.category_id;
+                    if (catSelect._refreshSearchable) catSelect._refreshSearchable();
+                }
+            }
+        }
+
+        updateSessionOptions();
+
+        if (sessionSelect._refreshSearchable) sessionSelect._refreshSearchable();
+    }
+
+    // دالة مساعدة لتحديث خيارات الدفعات بناءً على الدورة أو التصنيف
+    function updateSessionOptions() {
+        const catSelect = document.getElementById('filter_category');
+        const courseSelect = document.getElementById('filter_course');
+        const sessionSelect = document.getElementById('filter_session');
+        if (!sessionSelect) return;
+
+        const selectedCourseId = courseSelect ? courseSelect.value : '';
+        const selectedCatId = catSelect ? catSelect.value : '';
+        const currentSessionId = sessionSelect.value;
+
+        let filteredSessions = SESSIONS_DATA;
+        if (selectedCourseId) {
+            filteredSessions = SESSIONS_DATA.filter(s => String(s.course_id) === String(selectedCourseId));
+        } else if (selectedCatId) {
+            filteredSessions = SESSIONS_DATA.filter(s => String(s.category_id) === String(selectedCatId));
+        }
+
+        sessionSelect.innerHTML = '<option value="">-- كافة الدفعات --</option>';
+        let sessionStillValid = false;
+        filteredSessions.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            opt.setAttribute('data-course', s.course_id);
+            opt.setAttribute('data-category', s.category_id);
+            if (String(s.id) === String(currentSessionId)) {
+                opt.selected = true;
+                sessionStillValid = true;
+            }
+            sessionSelect.appendChild(opt);
+        });
+
+        if (!sessionStillValid) {
+            sessionSelect.value = '';
+        }
+    }
+
+    // 4. مزامنة الدفعة المنعقدة -> تحديد الدورة والتصنيف تلقائياً
+    function onSessionChange() {
+        const catSelect = document.getElementById('filter_category');
+        const courseSelect = document.getElementById('filter_course');
+        const sessionSelect = document.getElementById('filter_session');
+        if (!sessionSelect) return;
+
+        const selectedSessionId = sessionSelect.value;
+        if (selectedSessionId) {
+            const sessionObj = SESSIONS_DATA.find(s => String(s.id) === String(selectedSessionId));
+            if (sessionObj) {
+                let catChanged = false;
+                let courseChanged = false;
+
+                if (catSelect && sessionObj.category_id && String(catSelect.value) !== String(sessionObj.category_id)) {
+                    catSelect.value = sessionObj.category_id;
+                    catChanged = true;
+                }
+
+                if (courseSelect && sessionObj.course_id && String(courseSelect.value) !== String(sessionObj.course_id)) {
+                    let hasOpt = Array.from(courseSelect.options).some(o => String(o.value) === String(sessionObj.course_id));
+                    if (!hasOpt) {
+                        const cObj = COURSES_DATA.find(c => String(c.id) === String(sessionObj.course_id));
+                        if (cObj) {
+                            const opt = document.createElement('option');
+                            opt.value = cObj.id;
+                            opt.textContent = cObj.name;
+                            courseSelect.appendChild(opt);
+                        }
+                    }
+                    courseSelect.value = sessionObj.course_id;
+                    courseChanged = true;
+                }
+
+                if (catChanged && catSelect._refreshSearchable) catSelect._refreshSearchable();
+                if (courseChanged && courseSelect._refreshSearchable) courseSelect._refreshSearchable();
+            }
+        }
+    }
+
+    // 5. محرك القوائم المنسدلة القابلة للبحث السريع (Searchable Dropdowns)
+    function makeSearchableSelect(selectEl) {
+        if (!selectEl || selectEl.dataset.searchableInit) return;
+        selectEl.dataset.searchableInit = "true";
+
+        // إخفاء العنصر الأصلي مع إبقائه في الـ DOM لضمان إرسال الفورم وحفظ الفلاتر بدقة
+        selectEl.style.display = 'none';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'searchable-select-wrapper';
+
+        const trigger = document.createElement('div');
+        trigger.className = 'searchable-select-trigger';
+        trigger.tabIndex = 0;
+        trigger.innerHTML = `
+            <span class="trigger-text"></span>
+            <i class="bi bi-chevron-down searchable-select-arrow"></i>
+        `;
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'searchable-select-dropdown';
+        dropdown.innerHTML = `
+            <div class="searchable-select-search">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" placeholder="اكتب للبحث..." autocomplete="off">
+                <button type="button" class="clear-search-btn" title="مسح">&times;</button>
+            </div>
+            <ul class="searchable-select-menu"></ul>
+            <div class="searchable-select-empty" style="display: none;">لا توجد خيارات مطابقة</div>
+        `;
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(dropdown);
+        selectEl.parentNode.insertBefore(wrapper, selectEl.nextSibling);
+
+        const triggerText = trigger.querySelector('.trigger-text');
+        const searchInput = dropdown.querySelector('input');
+        const clearBtn = dropdown.querySelector('.clear-search-btn');
+        const menu = dropdown.querySelector('.searchable-select-menu');
+        const emptyMsg = dropdown.querySelector('.searchable-select-empty');
+
+        function rebuildItems() {
+            menu.innerHTML = '';
+            const options = Array.from(selectEl.options);
+            const selectedOption = selectEl.options[selectEl.selectedIndex] || options[0];
+            triggerText.textContent = selectedOption ? selectedOption.text : '-- اختر --';
+
+            options.forEach((opt, idx) => {
+                const item = document.createElement('li');
+                item.className = 'searchable-select-item';
+                if (opt.selected) item.classList.add('selected');
+                item.dataset.value = opt.value;
+                item.dataset.index = idx;
+                item.innerHTML = `
+                    <span>${opt.text}</span>
+                    ${opt.selected ? '<i class="bi bi-check2 text-success"></i>' : ''}
+                `;
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectOption(opt.value);
+                });
+                menu.appendChild(item);
+            });
+        }
+
+        function selectOption(val) {
+            selectEl.value = val;
+            closeDropdown();
+            rebuildItems();
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function filterOptions() {
+            const query = normalizeArabic(searchInput.value);
+            clearBtn.style.display = searchInput.value ? 'block' : 'none';
+            let visibleCount = 0;
+
+            menu.querySelectorAll('.searchable-select-item').forEach(item => {
+                const itemText = normalizeArabic(item.textContent);
+                if (!query || itemText.includes(query)) {
+                    item.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+
+            emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        function openDropdown() {
+            document.querySelectorAll('.searchable-select-dropdown').forEach(d => {
+                if (d !== dropdown) d.style.display = 'none';
+            });
+            document.querySelectorAll('.searchable-select-trigger').forEach(t => {
+                if (t !== trigger) t.classList.remove('active');
+            });
+
+            dropdown.style.display = 'block';
+            trigger.classList.add('active');
+            searchInput.value = '';
+            filterOptions();
+            setTimeout(() => searchInput.focus(), 50);
+        }
+
+        function closeDropdown() {
+            dropdown.style.display = 'none';
+            trigger.classList.remove('active');
+        }
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (dropdown.style.display === 'block') {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        trigger.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                openDropdown();
+            }
+        });
+
+        searchInput.addEventListener('input', filterOptions);
+        searchInput.addEventListener('click', (e) => e.stopPropagation());
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+                trigger.focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const firstVisible = menu.querySelector('.searchable-select-item:not(.hidden)');
+                if (firstVisible) {
+                    selectOption(firstVisible.dataset.value);
+                    trigger.focus();
+                }
+            }
+        });
+
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            searchInput.value = '';
+            filterOptions();
+            searchInput.focus();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        selectEl._refreshSearchable = rebuildItems;
+        rebuildItems();
+    }
+
+    // دوال الفترات الزمنية السريعة
     function formatDateISO(date) {
         var y = date.getFullYear();
         var m = String(date.getMonth() + 1).padStart(2, '0');
@@ -631,7 +1146,6 @@
             allDatesCheckbox.checked = false;
         }
 
-        // إرسال النموذج تلقائياً لتحديث التقرير
         document.getElementById('reportsFilterForm').submit();
     }
 
@@ -669,6 +1183,23 @@
         if (allDatesCheckbox && allDatesCheckbox.checked) {
             toggleDateInputs(allDatesCheckbox);
         }
+
+        // تهيئة الترابط الأولي وفق الفلاتر القادمة من الرابط
+        const forceSelect = document.getElementById('filter_force');
+        if (forceSelect && forceSelect.value) {
+            onForceChange();
+        }
+
+        const catSelect = document.getElementById('filter_category');
+        const courseSelect = document.getElementById('filter_course');
+        if (catSelect && catSelect.value) {
+            onCategoryChange();
+        } else if (courseSelect && courseSelect.value) {
+            onCourseChange();
+        }
+
+        // تفعيل محرك البحث الداخلي على كافة القوائم المنسدلة
+        document.querySelectorAll('.searchable-select').forEach(makeSearchableSelect);
     });
 </script>
 {% endblock %}

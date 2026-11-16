@@ -3276,20 +3276,89 @@ def reports_hub_view(request):
 
     # خيارات الفلترة المتاحة
     categories = CourseCategory.objects.all().order_by('name')
-    courses = Course.objects.all().order_by('name')
-    sessions = CourseSession.objects.select_related('course').all().order_by('-start_date')
+    courses = Course.objects.select_related('category').all().order_by('name')
+    sessions = CourseSession.objects.select_related('course', 'course__category').all().order_by('-start_date')
     instructors = Instructor.objects.all().order_by('name')
 
-    # استخراج القوى والوحدات من الدارسين ومن التسجيلات
-    trainee_forces = set(Trainee.objects.exclude(force__isnull=True).exclude(force='').values_list('force', flat=True))
-    enrollment_forces = set(CourseEnrollment.objects.exclude(current_force__isnull=True).exclude(current_force='').values_list('current_force', flat=True))
-    forces = sorted([f for f in trainee_forces.union(enrollment_forces) if f and f.strip()])
+    # القوى العسكرية القياسية ووحداتها المعيارية بالنظام
+    DEFAULT_FORCE_UNITS = {
+        'القوات البرية': [
+            'سلاح المشاة', 'سلاح المدرعات', 'سلاح المدفعية', 'سلاح الإشارة',
+            'سلاح المهندسين', 'سلاح الصيانة', 'سلاح النقل', 'الإدارة المالية',
+            'إدارة نظم المعلومات', 'إدارة التدريب', 'هيئة الإمداد والتموين',
+            'الشرطة العسكرية', 'شعبة الاستخبارات', 'لواء القوات الخاصة',
+            'إدارة العمليات', 'قيادة القوات البرية'
+        ],
+        'القوات البحرية': [
+            'قاعدة بورتسودان البحرية', 'قاعدة فلامنجو البحرية', 'أسطول الزوارق والسفن',
+            'لواء المشاة البحرية', 'جناح الضفادع البشرية', 'ورش الصيانة البحرية',
+            'إدارة نظم المعلومات البحرية', 'الإدارة المالية البحرية',
+            'جناح الاتصالات الساحلية', 'مركز تدريب القوات البحرية', 'قيادة القوات البحرية'
+        ],
+        'القوات الجوية': [
+            'قاعدة وادي سيدنا الجوية', 'قاعدة الشهيد مختار الجوية', 'قاعدة الأبيض الجوية',
+            'قاعدة مروي الجوية', 'جناح المقاتلات', 'جناح النقل الجوي', 'جناح المروحيات',
+            'مجمع صيانة الطيران', 'الملاحة والمراقبة الجوية', 'إدارة نظم المعلومات الجوية',
+            'الإدارة المالية الجوية', 'كلية القوات الجوية', 'قيادة القوات الجوية'
+        ],
+        'قوات الدفاع الجوي': [
+            'لواء الصواريخ م/ط', 'كتائب المدفعية م/ط', 'مراكز الرادارات والإنذار المبكر',
+            'قيادة السيطرة والتوجيه', 'الحرب الإلكترونية', 'سلاح الإشارة للدفاع الجوي',
+            'ورش الصيانة الفنية', 'مركز تدريب الدفاع الجوي', 'إدارة نظم المعلومات',
+            'الإدارة المالية', 'قيادة قوات الدفاع الجوي'
+        ]
+    }
 
-    trainee_units = set(Trainee.objects.exclude(unit__isnull=True).exclude(unit='').values_list('unit', flat=True))
-    enrollment_units = set(CourseEnrollment.objects.exclude(current_unit__isnull=True).exclude(current_unit='').values_list('current_unit', flat=True))
-    units = sorted([u for u in trainee_units.union(enrollment_units) if u and u.strip()])
+    # بناء خريطة الربط بين القوى والوحدات مع إدراج كافة القوى دائماً
+    force_units_dict = {f: set(u_list) for f, u_list in DEFAULT_FORCE_UNITS.items()}
+    all_units_set = set()
+    for u_list in DEFAULT_FORCE_UNITS.values():
+        all_units_set.update(u_list)
+
+    # دمج القوى والوحدات المسجلة فعلياً في قاعدة البيانات للدارسين والتسجيلات والمعلمين
+    trainee_pairs = Trainee.objects.exclude(force__isnull=True).exclude(force='').exclude(unit__isnull=True).exclude(unit='').values_list('force', 'unit')
+    enrollment_pairs = CourseEnrollment.objects.exclude(current_force__isnull=True).exclude(current_force='').exclude(current_unit__isnull=True).exclude(current_unit='').values_list('current_force', 'current_unit')
+    instructor_pairs = Instructor.objects.exclude(force__isnull=True).exclude(force='').exclude(unit__isnull=True).exclude(unit='').values_list('force', 'unit')
+
+    for f_val, u_val in set(trainee_pairs).union(enrollment_pairs).union(instructor_pairs):
+        f_clean = f_val.strip() if f_val else ''
+        u_clean = u_val.strip() if u_val else ''
+        if f_clean and u_clean:
+            if f_clean not in force_units_dict:
+                force_units_dict[f_clean] = set()
+            force_units_dict[f_clean].add(u_clean)
+            all_units_set.add(u_clean)
+
+    # وحدات إضافية مسجلة بالنظام
+    extra_units = set(Trainee.objects.exclude(unit__isnull=True).exclude(unit='').values_list('unit', flat=True)).union(
+        CourseEnrollment.objects.exclude(current_unit__isnull=True).exclude(current_unit='').values_list('current_unit', flat=True)
+    )
+    for eu in extra_units:
+        if eu and eu.strip():
+            all_units_set.add(eu.strip())
+
+    force_units_map = {f: sorted(list(u_set)) for f, u_set in sorted(force_units_dict.items())}
+    forces = sorted(list(force_units_map.keys()))
+    units = sorted(list(all_units_set))
 
     trainee_categories = TraineeCategory.choices
+
+    # تجهيز هياكل البيانات الجاهزة للربط والفلترة اللحظية في المتصفح
+    courses_data = [
+        {'id': c.id, 'name': c.name, 'category_id': c.category_id}
+        for c in courses
+    ]
+    sessions_data = [
+        {
+            'id': s.id,
+            'session_code': s.session_code,
+            'name': f"{s.course.name} ({s.session_code}) - {'معتمدة ومحفوظة' if s.status == 'completed' else 'منعقدة'}",
+            'course_id': s.course_id,
+            'category_id': s.course.category_id if s.course else None,
+            'status': s.status
+        }
+        for s in sessions
+    ]
 
     # جلب بيانات التقرير المفلترة
     report_data = get_report_data(request.GET)
@@ -3306,6 +3375,10 @@ def reports_hub_view(request):
         'trainee_categories': trainee_categories,
         'system_settings': system_settings,
         'current_filters': request.GET,
+        'force_units_map_json': json.dumps(force_units_map, ensure_ascii=False),
+        'all_units_json': json.dumps(units, ensure_ascii=False),
+        'courses_json': json.dumps(courses_data, ensure_ascii=False),
+        'sessions_json': json.dumps(sessions_data, ensure_ascii=False),
     }
     return render(request, 'training/reports_hub.html', context)
 

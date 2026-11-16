@@ -1,4 +1,5 @@
 import io
+import json
 from datetime import date, timedelta
 import openpyxl
 from django.utils import timezone
@@ -2903,6 +2904,41 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         mils_all = [r['military_number'] for r in data_all['records']]
         self.assertIn('99112233', mils_all)
         self.assertIn('99112299', mils_all)
+
+    def test_reports_hub_cascading_and_searchable_dropdowns(self):
+        """التحقق من بيانات الترابط الديناميكي وظهور كافة القوى والبحث في القوائم المنسدلة"""
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:reports_hub'))
+        self.assertEqual(res.status_code, 200)
+
+        # 1. التحقق من وجود كافة القوى العسكرية القياسية في القائمة دائماً
+        forces = res.context['forces']
+        for std_force in ['القوات البرية', 'القوات البحرية', 'القوات الجوية', 'قوات الدفاع الجوي']:
+            self.assertIn(std_force, forces)
+
+        # 2. التحقق من وجود خريطة الربط بين القوى والوحدات
+        force_units_map = json.loads(res.context['force_units_map_json'])
+        self.assertIn('القوات البرية', force_units_map)
+        self.assertIn('القوات البحرية', force_units_map)
+        self.assertIn('القوات الجوية', force_units_map)
+        self.assertIn('قوات الدفاع الجوي', force_units_map)
+        self.assertTrue(len(force_units_map['القوات البرية']) > 0)
+
+        # 3. التحقق من بيانات ترابط الدورات والدفعات
+        courses_data = json.loads(res.context['courses_json'])
+        self.assertTrue(any(c['category_id'] == self.category.id for c in courses_data))
+
+        sessions_data = json.loads(res.context['sessions_json'])
+        self.assertTrue(any(s['course_id'] == self.course.id for s in sessions_data))
+
+        # 4. التحقق من اشتمال القالب على فئات البحث المنسدل
+        content = res.content.decode('utf-8')
+        self.assertIn('searchable-select', content)
+        self.assertIn('filter_category', content)
+        self.assertIn('filter_course', content)
+        self.assertIn('filter_session', content)
+        self.assertIn('filter_force', content)
+        self.assertIn('filter_unit', content)
 
 
 
