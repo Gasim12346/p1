@@ -98,8 +98,19 @@ def get_report_data(params):
     status = params.get('status', 'all').strip()
     instructor_id = params.get('instructor_id', '').strip()
     q = params.get('q', '').strip()
+    session_status = params.get('session_status', 'completed').strip()
+    if session_status not in ['completed', 'active', 'all']:
+        session_status = 'completed'
 
     filter_desc_items = []
+
+    session_status_map = {
+        'completed': 'الدورات المعتمدة والمحفوظة',
+        'active': 'الدورات المنعقدة (الجارية حالياً)',
+        'all': 'كافة الدورات (المعتمدة والمنعقدة)',
+    }
+    filter_desc_items.append(f"حالة الدورة: {session_status_map.get(session_status)}")
+
     if use_all_dates:
         filter_desc_items.append("الفترة: كامل السجلات (كل الأوقات)")
     else:
@@ -156,6 +167,14 @@ def get_report_data(params):
         qs = CourseEnrollment.objects.select_related(
             'trainee', 'session', 'session__course', 'session__course__category'
         )
+
+        # فلترة حالة الدورة التدريبية (معتمدة ومحفوظة، أو منعقدة حالياً، أو الكل)
+        if session_status == 'completed':
+            qs = qs.filter(session__status='completed')
+        elif session_status == 'active':
+            qs = qs.filter(session__status='active')
+        elif session_status == 'all':
+            qs = qs.filter(session__status__in=['completed', 'active'])
 
         # فلترة التاريخ (تاريخ انعقاد الدورة)
         if start_date and end_date:
@@ -256,6 +275,8 @@ def get_report_data(params):
                 'unit': en.current_unit or en.trainee.unit or '---',
                 'course_name': en.session.course.name,
                 'session_code': en.session.session_code or f"دورة {en.session.id}",
+                'session_status_label': 'معتمدة ومحفوظة' if en.session.status == 'completed' else 'منعقدة حالياً',
+                'session_status_class': 'success' if en.session.status == 'completed' else 'primary',
                 'dates': f"{en.session.start_date.strftime('%Y-%m-%d')} إلى {en.session.end_date.strftime('%Y-%m-%d')}",
                 'total_score': f"{en.total_score:.2f}" if en.total_score is not None else '---',
                 'percentage': f"{en.percentage:.2f}%" if en.percentage is not None else '---',
@@ -279,6 +300,7 @@ def get_report_data(params):
             {'key': 'unit', 'title': 'الوحدة', 'align': 'center', 'width': 22},
             {'key': 'course_name', 'title': 'الدورة', 'align': 'right', 'width': 26},
             {'key': 'session_code', 'title': 'الدفعة', 'align': 'center', 'width': 16},
+            {'key': 'session_status_label', 'title': 'حالة الدورة', 'align': 'center', 'width': 16},
             {'key': 'percentage', 'title': 'النسبة', 'align': 'center', 'width': 12},
             {'key': 'grade_label', 'title': 'التقدير', 'align': 'center', 'width': 14},
             {'key': 'result_status', 'title': 'الحالة', 'align': 'center', 'width': 16},
@@ -294,6 +316,7 @@ def get_report_data(params):
             'start_date': start_date_val,
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
+            'session_status': session_status,
         })
 
     # ========================================================
@@ -301,6 +324,14 @@ def get_report_data(params):
     # ========================================================
     elif report_type == 'sessions':
         qs = CourseSession.objects.select_related('course', 'course__category', 'supervisor').prefetch_related('enrollments')
+
+        # فلترة حالة الدورة التدريبية (معتمدة ومحفوظة، أو منعقدة حالياً، أو الكل)
+        if session_status == 'completed':
+            qs = qs.filter(status='completed')
+        elif session_status == 'active':
+            qs = qs.filter(status='active')
+        elif session_status == 'all':
+            qs = qs.filter(status__in=['completed', 'active'])
 
         if start_date and end_date:
             qs = qs.filter(
@@ -373,7 +404,7 @@ def get_report_data(params):
                 'start_date': s.start_date.strftime('%Y-%m-%d'),
                 'end_date': s.end_date.strftime('%Y-%m-%d'),
                 'supervisor_name': s.supervisor.name if s.supervisor else '---',
-                'status_label': 'معتمدة ومكتملة' if (s.status == 'completed' or getattr(s, 'is_completed', False)) else 'جارية حالياً',
+                'status_label': 'معتمدة ومحفوظة' if (s.status == 'completed' or getattr(s, 'is_completed', False)) else 'منعقدة حالياً',
                 'status_class': 'success' if (s.status == 'completed' or getattr(s, 'is_completed', False)) else 'primary',
                 'trainees_count': trainees_count,
                 'passed_count': passed_count,
@@ -382,6 +413,7 @@ def get_report_data(params):
                 'pass_rate': f"{pass_rate}%",
             })
 
+        stats['total_trainees_enrolled'] = stats['total_trainees']
         stats['avg_pass_rate'] = round(sum(pass_rates) / len(pass_rates), 1) if pass_rates else 0.0
 
         columns = [
@@ -409,6 +441,7 @@ def get_report_data(params):
             'start_date': start_date_val,
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
+            'session_status': session_status,
         })
 
     # ========================================================
@@ -416,6 +449,14 @@ def get_report_data(params):
     # ========================================================
     elif report_type == 'units_forces':
         qs = CourseEnrollment.objects.select_related('trainee', 'session', 'session__course')
+
+        # فلترة حالة الدورة التدريبية
+        if session_status == 'completed':
+            qs = qs.filter(session__status='completed')
+        elif session_status == 'active':
+            qs = qs.filter(session__status='active')
+        elif session_status == 'all':
+            qs = qs.filter(session__status__in=['completed', 'active'])
 
         if start_date and end_date:
             qs = qs.filter(
@@ -498,6 +539,7 @@ def get_report_data(params):
             'start_date': start_date_val,
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
+            'session_status': session_status,
         })
 
     # ========================================================
@@ -507,6 +549,14 @@ def get_report_data(params):
         qs = CourseEnrollment.objects.filter(is_dropped=True).select_related(
             'trainee', 'session', 'session__course'
         )
+
+        # فلترة حالة الدورة التدريبية
+        if session_status == 'completed':
+            qs = qs.filter(session__status='completed')
+        elif session_status == 'active':
+            qs = qs.filter(session__status='active')
+        elif session_status == 'all':
+            qs = qs.filter(session__status__in=['completed', 'active'])
 
         if start_date and end_date:
             qs = qs.filter(
@@ -582,6 +632,7 @@ def get_report_data(params):
             'start_date': start_date_val,
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
+            'session_status': session_status,
         })
 
     # ========================================================
@@ -604,8 +655,15 @@ def get_report_data(params):
         records = []
 
         for inst in instructors:
-            # الدورات التي يشرف عليها
+            # الدورات التي يشرف عليها بحسب حالة الدورة
             supervised_qs = CourseSession.objects.filter(supervisor=inst)
+            if session_status == 'completed':
+                supervised_qs = supervised_qs.filter(status='completed')
+            elif session_status == 'active':
+                supervised_qs = supervised_qs.filter(status='active')
+            elif session_status == 'all':
+                supervised_qs = supervised_qs.filter(status__in=['completed', 'active'])
+
             if start_date and end_date:
                 supervised_qs = supervised_qs.filter(
                     Q(start_date__lte=end_date, end_date__gte=start_date) |
@@ -613,8 +671,15 @@ def get_report_data(params):
                 )
             supervised_count = supervised_qs.count()
 
-            # المواد المكلف بها
+            # المواد المكلف بها بحسب حالة الدورة
             assigned_qs = SessionSubjectInstructor.objects.filter(instructor=inst)
+            if session_status == 'completed':
+                assigned_qs = assigned_qs.filter(session__status='completed')
+            elif session_status == 'active':
+                assigned_qs = assigned_qs.filter(session__status='active')
+            elif session_status == 'all':
+                assigned_qs = assigned_qs.filter(session__status__in=['completed', 'active'])
+
             if start_date and end_date:
                 assigned_qs = assigned_qs.filter(
                     Q(session__start_date__lte=end_date, session__end_date__gte=start_date) |
@@ -661,6 +726,7 @@ def get_report_data(params):
             'start_date': start_date_val,
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
+            'session_status': session_status,
         })
 
 

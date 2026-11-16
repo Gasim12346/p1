@@ -2720,7 +2720,30 @@ class ComprehensiveReportsAndExcelTests(TestCase):
             session_code='دورة 101 أركان',
             start_date=today - timedelta(days=20),
             end_date=today + timedelta(days=10),
-            supervisor=self.supervisor
+            supervisor=self.supervisor,
+            status='completed'
+        )
+        self.active_session = CourseSession.objects.create(
+            course=self.course,
+            session_code='دورة 102 أركان جارية',
+            start_date=today - timedelta(days=5),
+            end_date=today + timedelta(days=25),
+            supervisor=self.supervisor,
+            status='active'
+        )
+        self.trainee_active = Trainee.objects.create(
+            military_number='99112299',
+            name='ملازم أول سامر فؤاد',
+            category=TraineeCategory.OFFICER,
+            force='القوات الجوية',
+            unit='قاعدة الشهيد الجوية'
+        )
+        self.enrollment_active = CourseEnrollment.objects.create(
+            session=self.active_session,
+            trainee=self.trainee_active,
+            current_rank='ملازم أول',
+            current_force='القوات الجوية',
+            current_unit='قاعدة الشهيد الجوية'
         )
         self.trainee1 = Trainee.objects.create(
             military_number='99112233',
@@ -2857,6 +2880,29 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         self.assertIn('attachment;', res['Content-Disposition'])
+
+    def test_filter_by_session_status(self):
+        """التحقق من فلترة التقارير بحالة الدورة: معتمدة ومحفوظة (الافتراضي) أو منعقدة حالياً أو الكل"""
+        # الافتراضي: المعتمدة والمحفوظة فقط
+        data_default = get_report_data({'report_type': 'trainees'})
+        self.assertEqual(data_default['session_status'], 'completed')
+        mils_default = [r['military_number'] for r in data_default['records']]
+        self.assertIn('99112233', mils_default)
+        self.assertNotIn('99112299', mils_default)
+
+        # المنعقدة حالياً فقط
+        data_active = get_report_data({'report_type': 'trainees', 'session_status': 'active'})
+        self.assertEqual(data_active['session_status'], 'active')
+        mils_active = [r['military_number'] for r in data_active['records']]
+        self.assertIn('99112299', mils_active)
+        self.assertNotIn('99112233', mils_active)
+
+        # الكل: المعتمدة والمنعقدة
+        data_all = get_report_data({'report_type': 'trainees', 'session_status': 'all'})
+        self.assertEqual(data_all['session_status'], 'all')
+        mils_all = [r['military_number'] for r in data_all['records']]
+        self.assertIn('99112233', mils_all)
+        self.assertIn('99112299', mils_all)
 
 
 
