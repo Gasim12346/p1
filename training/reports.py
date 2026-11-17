@@ -527,9 +527,8 @@ def get_report_data(params):
         columns = [
             {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
             {'key': 'military_number', 'title': 'النمرة', 'align': 'center', 'width': 14},
-            {'key': 'name', 'title': 'اسم الدارس', 'align': 'right', 'width': 26},
             {'key': 'rank', 'title': 'الرتبة', 'align': 'center', 'width': 15},
-            {'key': 'category_label', 'title': 'التصنيف', 'align': 'center', 'width': 12},
+            {'key': 'name', 'title': 'اسم الدارس', 'align': 'right', 'width': 26},
             {'key': 'force', 'title': 'القوة', 'align': 'center', 'width': 18},
             {'key': 'unit', 'title': 'الوحدة', 'align': 'center', 'width': 22},
             {'key': 'course_name', 'title': 'الدورة', 'align': 'right', 'width': 26},
@@ -912,8 +911,8 @@ def get_report_data(params):
         columns = [
             {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
             {'key': 'military_number', 'title': 'النمرة', 'align': 'center', 'width': 14},
-            {'key': 'name', 'title': 'اسم الدارس', 'align': 'right', 'width': 26},
             {'key': 'rank', 'title': 'الرتبة', 'align': 'center', 'width': 15},
+            {'key': 'name', 'title': 'اسم الدارس', 'align': 'right', 'width': 26},
             {'key': 'unit', 'title': 'الوحدة المسجل بها', 'align': 'center', 'width': 22},
             {'key': 'force', 'title': 'القوة', 'align': 'center', 'width': 18},
             {'key': 'course_name', 'title': 'الدورة', 'align': 'right', 'width': 26},

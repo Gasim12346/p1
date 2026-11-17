@@ -2992,11 +2992,15 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertNotIn('session_code', col_keys)
         self.assertNotIn('session_status_label', col_keys)
         self.assertNotIn('force', col_keys)
+        # التحقق من حذف الأعمدة المخصصة وحذف التصنيف
+        self.assertNotIn('category_label', col_keys)
+        # التحقق من الترتيب الدقيق للعناوين: # ثم النمرة ثم الرتبة ثم اسم الدارس
+        self.assertEqual(col_keys[:4], ['index', 'military_number', 'rank', 'name'])
         # التحقق من بقاء بقية الأعمدة الأساسية
-        for k in ['index', 'military_number', 'name', 'rank', 'category_label', 'unit', 'percentage', 'grade_label', 'result_status']:
+        for k in ['index', 'military_number', 'rank', 'name', 'unit', 'percentage', 'grade_label', 'result_status']:
             self.assertIn(k, col_keys)
 
-        # التحقق من أن ملف الإكسل المصدر يحتوي على العنوان المخصص والأعمدة النظيفة
+        # التحقق من أن ملف الإكسل المصدر يحتوي على العنوان المخصص والأعمدة النظيفة بالترتيب الجديد
         excel_bytes = export_report_to_excel(res)
         wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
         ws = wb.active
@@ -3006,8 +3010,8 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertNotIn('الدفعة', header_vals)
         self.assertNotIn('حالة الدورة', header_vals)
         self.assertNotIn('القوة', header_vals)
-        self.assertIn('اسم الدارس', header_vals)
-        self.assertIn('الرتبة', header_vals)
+        self.assertNotIn('التصنيف', header_vals)
+        self.assertEqual(header_vals[:4], ['#', 'النمرة', 'الرتبة', 'اسم الدارس'])
 
     def test_trainee_rank_property(self):
         """التحقق من خاصية rank في نموذج Trainee لمنع حدوث AttributeError"""
