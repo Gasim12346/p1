@@ -2971,6 +2971,50 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(res_filtered.context['trainees_total'], 1)
         self.assertIn('القوات البرية', res_filtered.context['filters_summary'])
 
+    def test_trainees_report_custom_title_and_columns_exclusion(self):
+        """التحقق من وضع الدورة والدفعة والقوة وحالة الدورة في العنوان وحذفها من أعمدة الجدول عند التخصيص"""
+        res = get_report_data({
+            'report_type': 'trainees',
+            'course_id': str(self.course.id),
+            'session_id': str(self.session.id),
+            'force': 'القوات البرية',
+            'session_status': 'completed',
+        })
+        # التحقق من بناء العنوان المخصص
+        self.assertIn('دورة أركان متقدمة', res['report_title'])
+        self.assertIn('دورة 101 أركان', res['report_title'])
+        self.assertIn('القوات البرية', res['report_title'])
+        self.assertIn('معتمدة ومحفوظة', res['report_title'])
+
+        col_keys = [c['key'] for c in res['columns']]
+        # التحقق من حذف الأعمدة الـ 4 من الجدول التفصيلي
+        self.assertNotIn('course_name', col_keys)
+        self.assertNotIn('session_code', col_keys)
+        self.assertNotIn('session_status_label', col_keys)
+        self.assertNotIn('force', col_keys)
+        # التحقق من بقاء بقية الأعمدة الأساسية
+        for k in ['index', 'military_number', 'name', 'rank', 'category_label', 'unit', 'percentage', 'grade_label', 'result_status']:
+            self.assertIn(k, col_keys)
+
+        # التحقق من أن ملف الإكسل المصدر يحتوي على العنوان المخصص والأعمدة النظيفة
+        excel_bytes = export_report_to_excel(res)
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        ws = wb.active
+        self.assertEqual(ws.cell(row=2, column=1).value, res['report_title'])
+        header_vals = [ws.cell(row=5, column=i).value for i in range(1, len(res['columns']) + 1)]
+        self.assertNotIn('الدورة', header_vals)
+        self.assertNotIn('الدفعة', header_vals)
+        self.assertNotIn('حالة الدورة', header_vals)
+        self.assertNotIn('القوة', header_vals)
+        self.assertIn('اسم الدارس', header_vals)
+        self.assertIn('الرتبة', header_vals)
+
+    def test_trainee_rank_property(self):
+        """التحقق من خاصية rank في نموذج Trainee لمنع حدوث AttributeError"""
+        self.assertEqual(self.trainee1.rank, 'رائد')
+        new_trainee = Trainee.objects.create(military_number='12345678', name='دارس تجريبي جديد')
+        self.assertEqual(new_trainee.rank, '')
+
 
 class CourseSubjectsAndInstructorsReportTests(TestCase):
     """حزمة اختبارات شاملة لبيان المواد الدراسية وهيئة التدريس ومعدلات النجاح بالتقارير"""

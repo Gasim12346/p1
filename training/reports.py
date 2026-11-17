@@ -177,14 +177,14 @@ def get_report_data(params):
     """
     تجميع وفلترة بيانات التقرير بحسب المعايير المحددة في الطلب
     """
-    report_type = params.get('report_type', 'trainees').strip()
+    report_type = str(params.get('report_type') or 'trainees').strip()
     if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors', 'course_subjects']:
         report_type = 'trainees'
 
     # معالجة نطاق التواريخ
     use_all_dates = params.get('all_dates') in ['1', 'true', 'True']
-    start_date_str = params.get('start_date', '').strip()
-    end_date_str = params.get('end_date', '').strip()
+    start_date_str = str(params.get('start_date') or '').strip()
+    end_date_str = str(params.get('end_date') or '').strip()
 
     def_start, def_end = get_default_date_range()
 
@@ -207,16 +207,16 @@ def get_report_data(params):
         start_date_val = start_date.strftime('%Y-%m-%d')
         end_date_val = end_date.strftime('%Y-%m-%d')
 
-    category_id = params.get('category_id', '').strip()
-    course_id = params.get('course_id', '').strip()
-    session_id = params.get('session_id', '').strip()
-    force = params.get('force', '').strip()
-    unit = params.get('unit', '').strip()
-    trainee_category = params.get('trainee_category', '').strip()
-    status = params.get('status', 'all').strip()
-    instructor_id = params.get('instructor_id', '').strip()
-    q = params.get('q', '').strip()
-    session_status = params.get('session_status', 'completed').strip()
+    category_id = str(params.get('category_id') or '').strip()
+    course_id = str(params.get('course_id') or '').strip()
+    session_id = str(params.get('session_id') or '').strip()
+    force = str(params.get('force') or '').strip()
+    unit = str(params.get('unit') or '').strip()
+    trainee_category = str(params.get('trainee_category') or '').strip()
+    status = str(params.get('status') or 'all').strip()
+    instructor_id = str(params.get('instructor_id') or '').strip()
+    q = str(params.get('q') or '').strip()
+    session_status = str(params.get('session_status') or 'completed').strip()
     if session_status not in ['completed', 'active', 'all']:
         session_status = 'completed'
 
@@ -460,6 +460,70 @@ def get_report_data(params):
 
         stats['avg_percentage'] = round(sum(total_percentages) / len(total_percentages), 2) if total_percentages else 0.0
 
+        # فحص تخصيص الدورة والدفعة والقوة وحالة الدورة لوضعهم في العنوان وحذفهم من التفاصيل
+        selected_course_name = ''
+        selected_batch_code = ''
+        selected_session_status = ''
+        selected_force = force.strip() if force else ''
+
+        if session_id:
+            sess_obj = CourseSession.objects.filter(pk=session_id).first()
+            if sess_obj:
+                selected_course_name = sess_obj.course.name if sess_obj.course else ''
+                selected_batch_code = sess_obj.session_code or f"{sess_obj.id}"
+                selected_session_status = 'معتمدة ومحفوظة' if sess_obj.status == 'completed' else 'منعقدة حالياً'
+        elif course_id:
+            c_obj = Course.objects.filter(pk=course_id).first()
+            if c_obj:
+                selected_course_name = c_obj.name
+                if session_status in ['completed', 'active']:
+                    selected_session_status = 'معتمدة ومحفوظة' if session_status == 'completed' else 'منعقدة حالياً'
+
+        # التحقق من توحد الدورة أو الدفعة أو القوة أو الحالة في السجلات المعروضة
+        if not selected_course_name and records:
+            first_c = records[0]['course_name']
+            if all(r['course_name'] == first_c for r in records) and first_c and first_c != '---':
+                selected_course_name = first_c
+
+        if selected_course_name and not selected_batch_code and records:
+            first_b = records[0]['session_code']
+            if all(r['session_code'] == first_b for r in records) and first_b and first_b != '---':
+                selected_batch_code = first_b
+
+        if not selected_session_status and records:
+            first_s = records[0]['session_status_label']
+            if all(r['session_status_label'] == first_s for r in records) and first_s and first_s != '---':
+                selected_session_status = first_s
+
+        if not selected_force and records:
+            first_f = records[0]['force']
+            if first_f and first_f != '---' and all(r['force'] == first_f for r in records):
+                selected_force = first_f
+
+        # بناء صيغة العنوان المخصص: الدورة معها رقم الدفعة والقوة وحالة الدورة
+        course_batch_title = ''
+        if selected_course_name:
+            c_clean = selected_course_name.strip()
+            c_name = c_clean if c_clean.startswith('دورة') else f"دورة {c_clean}"
+            if selected_batch_code:
+                b_clean = selected_batch_code.strip()
+                b_str = b_clean if b_clean.startswith('الدفعة') else f"الدفعة {b_clean}"
+                course_batch_title = f"{c_name} ({b_str})"
+            else:
+                course_batch_title = c_name
+
+        title_parts = ['تقرير الدارسين والنتائج التفصيلي']
+        if course_batch_title:
+            title_parts.append(course_batch_title)
+        if selected_force:
+            title_parts.append(selected_force)
+        if selected_session_status and (course_batch_title or selected_force):
+            title_parts.append(f"({selected_session_status})")
+
+        report_title = " - ".join(title_parts[:3])
+        if len(title_parts) > 3:
+            report_title += f" {title_parts[3]}"
+
         columns = [
             {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
             {'key': 'military_number', 'title': 'النمرة', 'align': 'center', 'width': 14},
@@ -476,9 +540,23 @@ def get_report_data(params):
             {'key': 'result_status', 'title': 'الحالة', 'align': 'center', 'width': 16},
         ]
 
+        # حذف الدورة وحالة الدورة والدفعة والقوة من التفاصيل عند وضعها في العنوان
+        keys_to_exclude = set()
+        if selected_course_name:
+            keys_to_exclude.add('course_name')
+        if selected_batch_code:
+            keys_to_exclude.add('session_code')
+        if selected_session_status and (selected_course_name or selected_force):
+            keys_to_exclude.add('session_status_label')
+        if selected_force:
+            keys_to_exclude.add('force')
+
+        if keys_to_exclude:
+            columns = [c for c in columns if c['key'] not in keys_to_exclude]
+
         return _format_report_result({
             'report_type': report_type,
-            'report_title': 'تقرير الدارسين والنتائج التفصيلي',
+            'report_title': report_title,
             'records': records,
             'stats': stats,
             'columns': columns,
@@ -782,6 +860,55 @@ def get_report_data(params):
             'civilians': sum(1 for r in records if r['category_label'] == 'مدني'),
         }
 
+        # فحص تخصيص الدورة والدفعة والقوة لوضعهم في العنوان وحذفهم من التفاصيل
+        selected_course_name = ''
+        selected_batch_code = ''
+        selected_force = force.strip() if force else ''
+
+        if session_id:
+            sess_obj = CourseSession.objects.filter(pk=session_id).first()
+            if sess_obj:
+                selected_course_name = sess_obj.course.name if sess_obj.course else ''
+                selected_batch_code = sess_obj.session_code or f"{sess_obj.id}"
+        elif course_id:
+            c_obj = Course.objects.filter(pk=course_id).first()
+            if c_obj:
+                selected_course_name = c_obj.name
+
+        if not selected_course_name and records:
+            first_c = records[0]['course_name']
+            if all(r['course_name'] == first_c for r in records) and first_c and first_c != '---':
+                selected_course_name = first_c
+
+        if selected_course_name and not selected_batch_code and records:
+            first_b = records[0]['session_code']
+            if all(r['session_code'] == first_b for r in records) and first_b and first_b != '---':
+                selected_batch_code = first_b
+
+        if not selected_force and records:
+            first_f = records[0]['force']
+            if first_f and first_f != '---' and all(r['force'] == first_f for r in records):
+                selected_force = first_f
+
+        course_batch_title = ''
+        if selected_course_name:
+            c_clean = selected_course_name.strip()
+            c_name = c_clean if c_clean.startswith('دورة') else f"دورة {c_clean}"
+            if selected_batch_code:
+                b_clean = selected_batch_code.strip()
+                b_str = b_clean if b_clean.startswith('الدفعة') else f"الدفعة {b_clean}"
+                course_batch_title = f"{c_name} ({b_str})"
+            else:
+                course_batch_title = c_name
+
+        title_parts = ['تقرير الدارسين المقطوعة دوراتهم وأوامر التحرك']
+        if course_batch_title:
+            title_parts.append(course_batch_title)
+        if selected_force:
+            title_parts.append(selected_force)
+
+        report_title = " - ".join(title_parts)
+
         columns = [
             {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
             {'key': 'military_number', 'title': 'النمرة', 'align': 'center', 'width': 14},
@@ -795,9 +922,20 @@ def get_report_data(params):
             {'key': 'drop_reason', 'title': 'سبب القطع', 'align': 'right', 'width': 28},
         ]
 
+        keys_to_exclude = set()
+        if selected_course_name:
+            keys_to_exclude.add('course_name')
+        if selected_batch_code:
+            keys_to_exclude.add('session_code')
+        if selected_force:
+            keys_to_exclude.add('force')
+
+        if keys_to_exclude:
+            columns = [c for c in columns if c['key'] not in keys_to_exclude]
+
         return _format_report_result({
             'report_type': report_type,
-            'report_title': 'تقرير الدارسين المقطوعة دوراتهم وأوامر التحرك',
+            'report_title': report_title,
             'records': records,
             'stats': stats,
             'columns': columns,

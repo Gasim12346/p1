@@ -116,6 +116,12 @@ class Trainee(models.Model):
         return f"{self.name} ({self.military_number})"
 
     @property
+    def rank(self):
+        """الرتبة العسكرية للدارس من آخر تسجيل له إن وجد"""
+        last_en = self.enrollments.order_by('-id').first()
+        return last_en.current_rank if last_en and last_en.current_rank else ''
+
+    @property
     def full_address(self):
         """تجميع تفاصيل السكن بصيغة نصية واضحة"""
         parts = []

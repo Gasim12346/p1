@@ -3229,8 +3229,8 @@ def admin_report_print_view(request):
 
     if has_filters:
         use_all_dates = params.get('all_dates') == '1'
-        start_date_str = params.get('start_date', '').strip()
-        end_date_str = params.get('end_date', '').strip()
+        start_date_str = str(params.get('start_date') or '').strip()
+        end_date_str = str(params.get('end_date') or '').strip()
 
         if use_all_dates:
             start_date = None
@@ -3246,19 +3246,19 @@ def admin_report_print_view(request):
             except ValueError:
                 end_date = def_end
 
-        session_status = params.get('session_status', 'completed').strip()
+        session_status = str(params.get('session_status') or 'completed').strip()
         if session_status not in ['completed', 'active', 'all']:
             session_status = 'completed'
 
-        category_id = params.get('category_id', '').strip()
-        course_id = params.get('course_id', '').strip()
-        session_id = params.get('session_id', '').strip()
-        force = params.get('force', '').strip()
-        unit = params.get('unit', '').strip()
-        trainee_category = params.get('trainee_category', '').strip()
-        status = params.get('status', 'all').strip()
-        instructor_id = params.get('instructor_id', '').strip()
-        q = params.get('q', '').strip()
+        category_id = str(params.get('category_id') or '').strip()
+        course_id = str(params.get('course_id') or '').strip()
+        session_id = str(params.get('session_id') or '').strip()
+        force = str(params.get('force') or '').strip()
+        unit = str(params.get('unit') or '').strip()
+        trainee_category = str(params.get('trainee_category') or '').strip()
+        status = str(params.get('status') or 'all').strip()
+        instructor_id = str(params.get('instructor_id') or '').strip()
+        q = str(params.get('q') or '').strip()
 
         enrollments_qs = CourseEnrollment.objects.select_related(
             'trainee', 'session', 'session__course', 'session__course__category'
