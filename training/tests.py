@@ -1,5 +1,6 @@
 import io
 import json
+from decimal import Decimal
 from datetime import date, timedelta
 import openpyxl
 from django.utils import timezone
@@ -12,7 +13,12 @@ from training.models import (
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
     CertificateSettings, MovementOrderSettings
 )
-from training.reports import get_default_date_range, get_report_data, export_report_to_excel
+from training.reports import (
+    get_default_date_range,
+    get_report_data,
+    export_report_to_excel,
+    get_sessions_subjects_summary,
+)
 
 
 class AuthenticationAndSecurityTests(TestCase):
@@ -2964,6 +2970,178 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(res_filtered.status_code, 200)
         self.assertEqual(res_filtered.context['trainees_total'], 1)
         self.assertIn('القوات البرية', res_filtered.context['filters_summary'])
+
+
+class CourseSubjectsAndInstructorsReportTests(TestCase):
+    """حزمة اختبارات شاملة لبيان المواد الدراسية وهيئة التدريس ومعدلات النجاح بالتقارير"""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser('admin_sub_rep', 'admin_sub@test.com', 'Pass1234!')
+        self.admin.profile.role = UserRole.ADMIN
+        self.admin.profile.save()
+
+        # إنشاء تصنيف ودورة وانعقاد
+        self.cat = CourseCategory.objects.create(name='دورات المرشد', description='تصنيف دورات المرشدين')
+        self.course = Course.objects.create(
+            name='اساسيات حاسوب',
+            course_number='CRS-GUIDE-PC',
+            category=self.cat,
+            attendance_max_grade=Decimal('10.00')
+        )
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='الدفعة 22',
+            start_date=date.today() - timedelta(days=20),
+            end_date=date.today() - timedelta(days=2),
+            status='completed',
+            attendance_max_grade=Decimal('10.00')
+        )
+
+        # معلم ومادتين
+        self.instructor = Instructor.objects.create(
+            military_number='771122',
+            rank='نقيب',
+            name='أحمد البشير محمد',
+            force='القوات البرية',
+            unit='إدارة نظم المعلومات'
+        )
+        self.sub1 = Subject.objects.create(
+            course=self.course,
+            code='PC-01',
+            name='مقدمة الحاسوب ونظم التشغيل',
+            credit_hours=3,
+            max_grade=Decimal('100.00')
+        )
+        self.sub2 = Subject.objects.create(
+            course=self.course,
+            code='PC-02',
+            name='صيانة الحاسب الآلي والشبكات',
+            credit_hours=2,
+            max_grade=Decimal('100.00')
+        )
+
+        # ربط المعلم بالمادة الأولى، والمادة الثانية بدون معلم
+        SessionSubjectInstructor.objects.create(
+            session=self.session,
+            subject=self.sub1,
+            instructor=self.instructor
+        )
+        SessionSubjectInstructor.objects.create(
+            session=self.session,
+            subject=self.sub2,
+            instructor=None
+        )
+
+        # تسجيل دارسين ورصد الدرجات
+        self.t1 = Trainee.objects.create(military_number='551101', name='طارق عبد الرحمن', category='officer')
+        self.t2 = Trainee.objects.create(military_number='551102', name='عادل مصطفى', category='nco')
+
+        self.en1 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.t1,
+            current_rank='ملازم أول',
+            current_unit='سلاح الإشارة',
+            attendance_score=Decimal('10.00'),
+            is_graded=True
+        )
+        self.en2 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.t2,
+            current_rank='رقيب أول',
+            current_unit='القوات البحرية',
+            attendance_score=Decimal('9.00'),
+            is_graded=True
+        )
+
+        # درجات المادة 1 (90 و 80) -> متوسط 85.0، نسبة نجاح 100%
+        TraineeSubjectGrade.objects.create(enrollment=self.en1, subject=self.sub1, score=Decimal('90.00'))
+        TraineeSubjectGrade.objects.create(enrollment=self.en2, subject=self.sub1, score=Decimal('80.00'))
+
+        # درجات المادة 2 (70 و 40) -> متوسط 55.0، نسبة نجاح 50%
+        TraineeSubjectGrade.objects.create(enrollment=self.en1, subject=self.sub2, score=Decimal('70.00'))
+        TraineeSubjectGrade.objects.create(enrollment=self.en2, subject=self.sub2, score=Decimal('40.00'))
+
+    def test_get_sessions_subjects_summary_calculation(self):
+        """التحقق من حسابات بيان المواد الدراسية ونسب النجاح ونص التدريس"""
+        summary = get_sessions_subjects_summary([self.session])
+        self.assertEqual(len(summary), 1)
+
+        s_info = summary[0]
+        self.assertEqual(s_info['subjects_count'], 2)
+        self.assertEqual(s_info['course_name'], 'اساسيات حاسوب')
+        self.assertEqual(s_info['session_code'], 'الدفعة 22')
+        self.assertIn('لقد تم تدريس 2 مواد في دورة اساسيات حاسوب (الدفعة 22)', s_info['statement'])
+
+        # المادة 1: المعلم المكلف
+        sub1_stat = s_info['subjects'][0]
+        self.assertIn('أحمد البشير محمد', sub1_stat['instructor_name'])
+        self.assertEqual(sub1_stat['total_graded'], 2)
+        self.assertEqual(sub1_stat['passed_count'], 2)
+        self.assertEqual(sub1_stat['avg_score'], 85.0)
+        self.assertEqual(sub1_stat['pass_rate'], 100.0)
+
+        # المادة 2: بدون معلم مخصص مباشرة
+        sub2_stat = s_info['subjects'][1]
+        self.assertEqual(sub2_stat['total_graded'], 2)
+        self.assertEqual(sub2_stat['passed_count'], 1)
+        self.assertEqual(sub2_stat['avg_score'], 55.0)
+        self.assertEqual(sub2_stat['pass_rate'], 50.0)
+
+    def test_report_type_course_subjects(self):
+        """التحقق من استخراج التقرير المستقل للمواد وهيئة التدريس ومعدلات النجاح"""
+        res = get_report_data({
+            'report_type': 'course_subjects',
+            'session_id': str(self.session.id),
+            'all_dates': '1'
+        })
+        self.assertEqual(res['report_type'], 'course_subjects')
+        self.assertEqual(len(res['records']), 2)
+        self.assertEqual(res['stats']['total_subjects_taught'], 2)
+        self.assertEqual(res['stats']['total_instructors_involved'], 1)
+        self.assertEqual(res['stats']['overall_avg_pass_rate'], 75.0)
+
+    def test_reports_hub_view_renders_subjects_summary(self):
+        """التحقق من عرض شاشة التقارير لبيان المواد وهيئة التدريس ومعدلات النجاح"""
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:reports_hub'), {
+            'session_id': str(self.session.id),
+            'all_dates': '1'
+        })
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح', content)
+        self.assertIn('لقد تم تدريس', content)
+        self.assertIn('مواد معتمدة في هذه الدورة', content)
+        self.assertIn('مقدمة الحاسوب ونظم التشغيل', content)
+        self.assertIn('أحمد البشير محمد', content)
+
+    def test_admin_report_print_subjects_section(self):
+        """التحقق من طباعة قسم رابعاً: بيان المواد الدراسية وهيئة التدريس في نموذج الطباعة المعتمد"""
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:admin_report_print'), {
+            'session_id': str(self.session.id),
+            'all_dates': '1'
+        })
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('رابعاً: بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح', content)
+        self.assertIn('لقد تم تدريس', content)
+        self.assertIn('مقدمة الحاسوب ونظم التشغيل', content)
+
+    def test_export_excel_multi_sheet(self):
+        """التحقق من اشتمال ملف الإكسل على ورقة المواد وهيئة التدريس المنفصلة"""
+        report_data = get_report_data({
+            'report_type': 'trainees',
+            'session_id': str(self.session.id),
+            'all_dates': '1'
+        })
+        excel_bytes = export_report_to_excel(report_data)
+        self.assertTrue(len(excel_bytes) > 1000)
+
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        sheet_names = wb.sheetnames
+        self.assertIn('المواد وهيئة التدريس', sheet_names)
 
 
 

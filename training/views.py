@@ -26,7 +26,7 @@ from .forms import (
     MovementOrderSettingsForm, OFFICER_RANKS,
     SystemSettingsForm, UserCreateForm, UserEditForm, AdminLoginForm
 )
-from .reports import get_report_data, export_report_to_excel, get_default_date_range
+from .reports import get_report_data, export_report_to_excel, get_default_date_range, get_sessions_subjects_summary
 
 
 def is_admin_user(user):
@@ -3293,7 +3293,7 @@ def admin_report_print_view(request):
         if instructor_id:
             enrollments_qs = enrollments_qs.filter(
                 Q(session__supervisor_id=instructor_id) |
-                Q(session__instructors_assignments__instructor_id=instructor_id)
+                Q(session__subject_instructors__instructor_id=instructor_id)
             ).distinct()
 
         if status == 'passed':
@@ -3418,6 +3418,24 @@ def admin_report_print_view(request):
             for f in raw_forces
         ]
 
+    # استخراج بيان المواد وهيئة التدريس ومعدلات النجاح للطباعة الرسمية
+    subjects_summary = []
+    if has_filters:
+        if session_id:
+            sessions_for_summary = CourseSession.objects.filter(id=session_id).select_related('course', 'course__category', 'supervisor')
+        elif course_id:
+            sessions_for_summary = CourseSession.objects.filter(course_id=course_id).select_related('course', 'course__category', 'supervisor')
+        else:
+            sessions_for_summary = CourseSession.objects.filter(
+                id__in=enrollments_qs.values_list('session_id', flat=True).distinct()
+            ).select_related('course', 'course__category', 'supervisor')
+
+        if sessions_for_summary.exists():
+            subjects_summary = get_sessions_subjects_summary(sessions_for_summary[:5])
+    else:
+        recent_sessions = CourseSession.objects.all().order_by('-start_date')[:3]
+        subjects_summary = get_sessions_subjects_summary(recent_sessions)
+
     return render(request, 'training/admin_report_print.html', {
         'trainees_total': trainees_total,
         'trainees_officers': trainees_officers,
@@ -3439,6 +3457,7 @@ def admin_report_print_view(request):
         'grade_f_pct': grade_f_pct,
         'forces_stats': forces_stats,
         'filters_summary': filters_summary,
+        'subjects_summary': subjects_summary,
         'cert_settings': cert_settings,
         'system_settings': system_settings,
     })

@@ -526,7 +526,13 @@ class CourseSession(models.Model):
         if self.subject_instructors.exists():
             assigned_subjects = [si.subject for si in self.subject_instructors.select_related('subject').all()]
             custom_subjects = list(self.custom_session_subjects.exclude(id__in=[s.id for s in assigned_subjects]))
-            return assigned_subjects + custom_subjects
+            # وأيضاً أي مواد لها درجات مرصودة بالدورة إن وجدت لحماية السجلات
+            graded_ids = list(TraineeSubjectGrade.objects.filter(
+                enrollment__session=self,
+                score__isnull=False
+            ).exclude(subject_id__in=[s.id for s in assigned_subjects]).values_list('subject_id', flat=True).distinct())
+            extra_graded = list(Subject.objects.filter(id__in=graded_ids)) if graded_ids else []
+            return assigned_subjects + custom_subjects + extra_graded
 
         # 2. إذا كانت هناك مواد مخصصة للدورة المنعقدة
         custom_subjects = list(self.custom_session_subjects.all())

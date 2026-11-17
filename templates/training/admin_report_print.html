@@ -303,6 +303,52 @@
             </tbody>
         </table>
 
+        <!-- 4. بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح -->
+        {% if subjects_summary %}
+            {% for sess in subjects_summary %}
+                <div class="report-section-title">
+                    <span>رابعاً: بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح ({{ sess.course_name }} - {{ sess.session_code }})</span>
+                </div>
+                <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px; color: #0f172a; padding: 4px 10px; background: #f8fafc; border-right: 4px solid #1e3a8a;">
+                    • لقد تم تدريس ({{ sess.subjects_count }}) مواد دراسية معتمدة في هذه الدورة:
+                </div>
+                <table class="report-table" style="margin-bottom: 22px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">م</th>
+                            <th style="width: 25%;">اسم المادة الدراسية</th>
+                            <th style="width: 24%;">الأستاذ / المعلم المكلف</th>
+                            <th style="width: 8%;">الساعات</th>
+                            <th style="width: 9%;">الدرجة العظمى</th>
+                            <th style="width: 9%;">الممتحنون</th>
+                            <th style="width: 9%;">الناجحون</th>
+                            <th style="width: 10%;">متوسط الدرجات</th>
+                            <th style="width: 11%;">نسبة النجاح</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in sess.subjects %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td class="fw-bold text-start ps-3">{{ sub.subject_name }}</td>
+                            <td class="text-start ps-3">{{ sub.instructor_name }}</td>
+                            <td>{{ sub.credit_hours }}</td>
+                            <td>{{ sub.max_grade|floatformat:0 }}</td>
+                            <td>{{ sub.total_graded }}</td>
+                            <td>{{ sub.passed_count }}</td>
+                            <td>{{ sub.avg_score }}</td>
+                            <td><strong>{{ sub.pass_rate }}%</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9">لا توجد مواد مسجلة.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% endif %}
+
         <!-- Signatures Block -->
         <div class="sig-box">
             <div style="width: 32%;">

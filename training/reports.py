@@ -26,6 +26,8 @@ from .models import (
     TraineeCategory,
     Instructor,
     SessionSubjectInstructor,
+    Subject,
+    TraineeSubjectGrade,
 )
 
 
@@ -55,12 +57,128 @@ def _format_report_result(res):
     return res
 
 
+def get_sessions_subjects_summary(sessions_qs):
+    """
+    حساب تفاصيل المواد الدراسية وهيئة التدريس ونسب ومتوسطات النجاح لكل دورة منعقدة
+    يوفر بياناً إحصائياً دقيقاً بعدد المواد المنفذة في كل دورة والمعلم المكلف ومتوسط التحصيل ونسبة النجاح
+    """
+    summary = []
+    for session in sessions_qs:
+        subjects = session.get_subjects()
+        if not subjects:
+            continue
+
+        active_enrollments = list(session.enrollments.filter(is_dropped=False))
+        total_enrolled = len(active_enrollments)
+
+        # خريطة المعلمين المسندين لمواد الدورة
+        subject_instructors_map = {
+            si.subject_id: si.instructor 
+            for si in session.subject_instructors.select_related('instructor').all()
+        }
+
+        subjects_data = []
+        for s_idx, sub in enumerate(subjects, start=1):
+            instructor = subject_instructors_map.get(sub.id)
+            if instructor:
+                inst_name = f"{instructor.rank} / {instructor.name}" if instructor.rank else instructor.name
+            elif session.supervisor:
+                inst_name = f"{session.supervisor.name} (مشرف الدورة)"
+            else:
+                inst_name = 'لم يحدد بعد'
+
+            # درجات المادة للدارسين النشطين
+            grades = list(TraineeSubjectGrade.objects.filter(
+                enrollment__in=active_enrollments,
+                subject=sub,
+                score__isnull=False
+            ))
+            total_graded = len(grades)
+            max_grade_val = float(sub.max_grade or 100.0)
+            pass_threshold = max_grade_val * 0.5
+
+            if total_graded > 0:
+                scores = [float(g.score) for g in grades]
+                avg_score = round(sum(scores) / total_graded, 2)
+                passed_count = sum(1 for s in scores if s >= pass_threshold)
+                failed_count = total_graded - passed_count
+                pass_rate = round((passed_count / total_graded) * 100, 1)
+                avg_percentage = round((avg_score / max_grade_val) * 100, 1) if max_grade_val > 0 else 0.0
+                highest_score = round(max(scores), 2)
+                lowest_score = round(min(scores), 2)
+            else:
+                avg_score = 0.0
+                passed_count = 0
+                failed_count = 0
+                pass_rate = 0.0
+                avg_percentage = 0.0
+                highest_score = 0.0
+                lowest_score = 0.0
+
+            if pass_rate >= 85:
+                assessment = 'ممتاز (أ)'
+                assessment_class = 'success'
+            elif pass_rate >= 75:
+                assessment = 'جيد جداً (ب)'
+                assessment_class = 'primary'
+            elif pass_rate >= 65:
+                assessment = 'جيد (ج)'
+                assessment_class = 'info'
+            elif pass_rate >= 50:
+                assessment = 'مقبول (د)'
+                assessment_class = 'warning'
+            else:
+                assessment = 'دون المستوى'
+                assessment_class = 'danger'
+
+            subjects_data.append({
+                'index': s_idx,
+                'subject_id': sub.id,
+                'subject_code': sub.code or f"SUB-{sub.id}",
+                'subject_name': sub.name,
+                'credit_hours': sub.credit_hours,
+                'max_grade': max_grade_val,
+                'instructor_name': inst_name,
+                'total_enrolled': total_enrolled,
+                'total_graded': total_graded,
+                'passed_count': passed_count,
+                'failed_count': failed_count,
+                'avg_score': avg_score,
+                'avg_percentage': avg_percentage,
+                'pass_rate': pass_rate,
+                'highest_score': highest_score,
+                'lowest_score': lowest_score,
+                'assessment': assessment,
+                'assessment_class': assessment_class,
+            })
+
+        course_title = session.course.name if session.course else ''
+        batch_title = session.session_code or f"الدفعة {session.id}"
+        cat_title = session.course.category.name if session.course and session.course.category else 'عام'
+
+        summary.append({
+            'session_id': session.id,
+            'session_code': batch_title,
+            'course_name': course_title,
+            'category_name': cat_title,
+            'start_date': session.start_date.strftime('%Y-%m-%d') if session.start_date else '',
+            'end_date': session.end_date.strftime('%Y-%m-%d') if session.end_date else '',
+            'status_label': 'معتمدة ومحفوظة' if session.status == 'completed' else 'منعقدة حالياً',
+            'status_class': 'success' if session.status == 'completed' else 'primary',
+            'subjects_count': len(subjects),
+            'total_enrolled': total_enrolled,
+            'statement': f"لقد تم تدريس {len(subjects)} مواد في دورة {course_title} ({batch_title})",
+            'subjects': subjects_data,
+        })
+    return summary
+
+
 def get_report_data(params):
     """
     تجميع وفلترة بيانات التقرير بحسب المعايير المحددة في الطلب
     """
     report_type = params.get('report_type', 'trainees').strip()
-    if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors']:
+    if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors', 'course_subjects']:
         report_type = 'trainees'
 
     # معالجة نطاق التواريخ
@@ -160,6 +278,58 @@ def get_report_data(params):
 
     filters_summary = " | ".join(filter_desc_items) if filter_desc_items else "كافة السجلات"
 
+    # استعلام الدورات المنعقدة وفق معايير الفلترة لتحليل المواد وهيئة التدريس
+    sessions_filter_qs = CourseSession.objects.select_related(
+        'course', 'course__category', 'supervisor'
+    ).prefetch_related('enrollments', 'subject_instructors__instructor')
+
+    if session_status == 'completed':
+        sessions_filter_qs = sessions_filter_qs.filter(status='completed')
+    elif session_status == 'active':
+        sessions_filter_qs = sessions_filter_qs.filter(status='active')
+    elif session_status == 'all':
+        sessions_filter_qs = sessions_filter_qs.filter(status__in=['completed', 'active'])
+
+    if start_date and end_date:
+        sessions_filter_qs = sessions_filter_qs.filter(
+            Q(start_date__lte=end_date, end_date__gte=start_date) |
+            Q(start_date__range=(start_date, end_date))
+        )
+
+    if category_id:
+        sessions_filter_qs = sessions_filter_qs.filter(course__category_id=category_id)
+    if course_id:
+        sessions_filter_qs = sessions_filter_qs.filter(course_id=course_id)
+    if session_id:
+        filtered_by_session = sessions_filter_qs.filter(id=session_id)
+        if filtered_by_session.exists():
+            sessions_filter_qs = filtered_by_session
+        else:
+            fallback_session = CourseSession.objects.filter(id=session_id).select_related('course', 'course__category', 'supervisor').prefetch_related('enrollments', 'subject_instructors__instructor')
+            if fallback_session.exists():
+                sessions_filter_qs = fallback_session
+    if instructor_id:
+        sessions_filter_qs = sessions_filter_qs.filter(
+            Q(supervisor_id=instructor_id) |
+            Q(subject_instructors__instructor_id=instructor_id)
+        ).distinct()
+
+    if q:
+        sessions_filter_qs = sessions_filter_qs.filter(
+            Q(course__name__icontains=q) |
+            Q(session_code__icontains=q) |
+            Q(course__category__name__icontains=q) |
+            Q(supervisor__name__icontains=q)
+        )
+
+    sessions_filter_qs = sessions_filter_qs.order_by('-start_date', 'course__name')
+
+    # احتساب بيان المواد وهيئة التدريس للدورات المشمولة
+    target_sessions = []
+    if session_id or course_id or report_type == 'course_subjects' or sessions_filter_qs.count() <= 10:
+        target_sessions = list(sessions_filter_qs[:15])
+    sessions_subjects_summary = get_sessions_subjects_summary(target_sessions) if target_sessions else []
+
     # ========================================================
     # 1. تقرير الدارسين والنتائج التفصيلي (trainees)
     # ========================================================
@@ -199,7 +369,7 @@ def get_report_data(params):
         if instructor_id:
             qs = qs.filter(
                 Q(session__supervisor_id=instructor_id) |
-                Q(session__instructors_assignments__instructor_id=instructor_id)
+                Q(session__subject_instructors__instructor_id=instructor_id)
             ).distinct()
 
         if status == 'passed':
@@ -317,6 +487,7 @@ def get_report_data(params):
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
             'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
         })
 
     # ========================================================
@@ -348,7 +519,7 @@ def get_report_data(params):
         if instructor_id:
             qs = qs.filter(
                 Q(supervisor_id=instructor_id) |
-                Q(instructors_assignments__instructor_id=instructor_id)
+                Q(subject_instructors__instructor_id=instructor_id)
             ).distinct()
 
         if q:
@@ -442,6 +613,7 @@ def get_report_data(params):
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
             'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
         })
 
     # ========================================================
@@ -540,6 +712,7 @@ def get_report_data(params):
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
             'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
         })
 
     # ========================================================
@@ -633,6 +806,7 @@ def get_report_data(params):
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
             'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
         })
 
     # ========================================================
@@ -727,6 +901,77 @@ def get_report_data(params):
             'end_date': end_date_val,
             'use_all_dates': use_all_dates,
             'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
+        })
+
+    # ========================================================
+    # 6. تقرير المواد الدراسية وهيئة التدريس ونسب النجاح (course_subjects)
+    # ========================================================
+    elif report_type == 'course_subjects':
+        records = []
+        all_instructors = set()
+        all_pass_rates = []
+        total_graded_exams = 0
+
+        for s_summary in sessions_subjects_summary:
+            for sub in s_summary['subjects']:
+                records.append({
+                    'category_name': s_summary['category_name'],
+                    'course_name': s_summary['course_name'],
+                    'session_code': s_summary['session_code'],
+                    'subject_name': sub['subject_name'],
+                    'subject_code': sub['subject_code'],
+                    'instructor_name': sub['instructor_name'],
+                    'credit_hours': f"{sub['credit_hours']} س",
+                    'max_grade': f"{sub['max_grade']:.0f}",
+                    'total_graded': sub['total_graded'],
+                    'passed_count': sub['passed_count'],
+                    'avg_score': f"{sub['avg_score']:.2f}",
+                    'pass_rate': f"{sub['pass_rate']}%",
+                    'assessment': sub['assessment'],
+                    'assessment_class': sub['assessment_class'],
+                })
+                if sub['instructor_name'] not in ['لم يحدد بعد', 'لم يحدد'] and not sub['instructor_name'].endswith('(مشرف الدورة)'):
+                    all_instructors.add(sub['instructor_name'])
+                if sub['total_graded'] > 0:
+                    all_pass_rates.append(sub['pass_rate'])
+                total_graded_exams += sub['total_graded']
+
+        stats = {
+            'total_subjects_taught': len(records),
+            'total_instructors_involved': len(all_instructors),
+            'overall_avg_pass_rate': round(sum(all_pass_rates) / len(all_pass_rates), 1) if all_pass_rates else 0.0,
+            'total_graded_exams': total_graded_exams,
+        }
+
+        columns = [
+            {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
+            {'key': 'category_name', 'title': 'تصنيف الدورة', 'align': 'center', 'width': 16},
+            {'key': 'course_name', 'title': 'اسم الدورة التدريبية', 'align': 'right', 'width': 26},
+            {'key': 'session_code', 'title': 'الدفعة', 'align': 'center', 'width': 14},
+            {'key': 'subject_name', 'title': 'المادة الدراسية', 'align': 'right', 'width': 24},
+            {'key': 'instructor_name', 'title': 'الأستاذ / المعلم المكلف', 'align': 'right', 'width': 24},
+            {'key': 'credit_hours', 'title': 'الساعات', 'align': 'center', 'width': 10},
+            {'key': 'max_grade', 'title': 'الدرجة العظمى', 'align': 'center', 'width': 12},
+            {'key': 'total_graded', 'title': 'الممتحنون', 'align': 'center', 'width': 11},
+            {'key': 'passed_count', 'title': 'الناجحون', 'align': 'center', 'width': 11},
+            {'key': 'avg_score', 'title': 'متوسط الدرجات', 'align': 'center', 'width': 14},
+            {'key': 'pass_rate', 'title': 'متوسط النجاح', 'align': 'center', 'width': 14},
+            {'key': 'assessment', 'title': 'مستوى الإنجاز', 'align': 'center', 'width': 14},
+        ]
+
+        return _format_report_result({
+            'report_type': report_type,
+            'report_title': 'تقرير المواد الدراسية وهيئة التدريس ومعدلات النجاح',
+            'records': records,
+            'stats': stats,
+            'columns': columns,
+            'filters_summary': filters_summary,
+            'start_date': start_date_val,
+            'end_date': end_date_val,
+            'use_all_dates': use_all_dates,
+            'session_status': session_status,
+            'subjects_summary': sessions_subjects_summary,
         })
 
 
@@ -871,6 +1116,79 @@ def export_report_to_excel(report_data):
         col_letter = get_column_letter(c_idx)
         desired_width = col_def.get('width', 18)
         ws.column_dimensions[col_letter].width = desired_width
+
+    # 8. إضافة ورقة منفصلة لتحليل المواد وهيئة التدريس إذا كانت متوفرة
+    subjects_summary = report_data.get('subjects_summary', [])
+    if subjects_summary and report_data.get('report_type') != 'course_subjects':
+        ws_sub = wb.create_sheet(title="المواد وهيئة التدريس")
+        ws_sub.views.sheetView[0].rightToLeft = True
+
+        ws_sub.merge_cells('A1:J1')
+        c_top = ws_sub.cell(row=1, column=1, value="القوات المسلحة - معهد نظم المعلومات والإحصاء | بيان المواد وهيئة التدريس ومعدلات النجاح")
+        c_top.font = font_title
+        c_top.fill = header_fill
+        c_top.alignment = align_center
+        ws_sub.row_dimensions[1].height = 32
+
+        sub_row = 3
+        for sess in subjects_summary:
+            ws_sub.merge_cells(start_row=sub_row, start_column=1, end_row=sub_row, end_column=10)
+            c_banner = ws_sub.cell(row=sub_row, column=1, value=f"{sess['statement']} | الدورة: {sess['course_name']} | الدفعة: {sess['session_code']} ({sess['status_label']})")
+            c_banner.font = font_sub_title
+            c_banner.fill = gold_fill
+            c_banner.alignment = align_center
+            ws_sub.row_dimensions[sub_row].height = 26
+            sub_row += 1
+
+            sub_headers = [
+                ('#', 6),
+                ('اسم المادة الدراسية', 26),
+                ('كود المادة', 14),
+                ('الأستاذ / المعلم المكلف', 26),
+                ('الساعات', 10),
+                ('الدرجة العظمى', 14),
+                ('الممتحنون', 12),
+                ('الناجحون', 12),
+                ('متوسط الدرجات', 14),
+                ('متوسط النجاح (%)', 16),
+            ]
+            ws_sub.row_dimensions[sub_row].height = 24
+            for col_idx, (h_title, h_width) in enumerate(sub_headers, start=1):
+                ch = ws_sub.cell(row=sub_row, column=col_idx, value=h_title)
+                ch.font = font_table_header
+                ch.fill = table_header_fill
+                ch.alignment = align_center
+                ch.border = cell_border
+                col_letter = get_column_letter(col_idx)
+                ws_sub.column_dimensions[col_letter].width = h_width
+            sub_row += 1
+
+            for s_idx, sub in enumerate(sess['subjects'], start=1):
+                ws_sub.row_dimensions[sub_row].height = 22
+                vals = [
+                    s_idx,
+                    sub['subject_name'],
+                    sub['subject_code'],
+                    sub['instructor_name'],
+                    f"{sub['credit_hours']} س",
+                    f"{sub['max_grade']:.0f}",
+                    sub['total_graded'],
+                    sub['passed_count'],
+                    f"{sub['avg_score']:.2f}",
+                    f"{sub['pass_rate']}%",
+                ]
+                for col_idx, val in enumerate(vals, start=1):
+                    cell = ws_sub.cell(row=sub_row, column=col_idx, value=val)
+                    cell.font = font_data
+                    cell.border = cell_border
+                    if col_idx in [2, 4]:
+                        cell.alignment = align_right
+                    else:
+                        cell.alignment = align_center
+                    if s_idx % 2 == 0:
+                        cell.fill = zebra_fill
+                sub_row += 1
+            sub_row += 2
 
     # حفظ في الذاكرة وإرجاع الحزم
     output = io.BytesIO()
