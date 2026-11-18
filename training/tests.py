@@ -2957,8 +2957,8 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         # التحقق من نصوص العناوين الرئيسية في الترويسة
         self.assertIn('التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج', content)
         self.assertIn('أولاً: ملخص المؤشرات العامة ومخرجات التأهيل (KPIs)', content)
-        self.assertIn('ثانياً: التوزيع التكراري للتقديرات والنتائج المعتمدة', content)
-        self.assertIn('ثالثاً: توزيع الدارسين بحسب القوات والتشكيلات', content)
+        self.assertNotIn('التوزيع التكراري للتقديرات والنتائج المعتمدة', content)
+        self.assertIn('ثانياً: توزيع الدارسين بحسب القوات والتشكيلات', content)
         self.assertIn('إعداد وضبط الإحصاء', content)
         self.assertIn('رئيس فرع الإحصاء والنتائج', content)
         self.assertIn('قائد معهد نظم المعلومات والإحصاء', content)
