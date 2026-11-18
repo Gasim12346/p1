@@ -3227,6 +3227,11 @@ def admin_report_print_view(request):
     def calc_pct(part, whole):
         return round((part / whole * 100), 1) if whole > 0 else 0.0
 
+    report_sub_header = ''
+    report_category_name = ''
+    report_course_name = ''
+    report_batch_code = ''
+
     if has_filters:
         use_all_dates = params.get('all_dates') == '1'
         start_date_str = str(params.get('start_date') or '').strip()
@@ -3336,6 +3341,67 @@ def admin_report_print_view(request):
             if sess_obj: filter_desc_items.append(f"الدفعة: {sess_obj.session_code}")
 
         filters_summary = " • ".join(filter_desc_items) if filter_desc_items else "كافة السجلات"
+
+        # استخراج وتجهيز تصنيف الدورة واسم الدورة والدفعة لوضعهم أسفل العنوان الرئيسي مباشرة
+        cat_name = ''
+        c_name = ''
+        b_code = ''
+
+        if session_id:
+            s_item = CourseSession.objects.filter(pk=session_id).select_related('course', 'course__category').first()
+            if s_item:
+                b_code = s_item.session_code or f"{s_item.id}"
+                if s_item.course:
+                    c_name = s_item.course.name
+                    if s_item.course.category:
+                        cat_name = s_item.course.category.name
+
+        if course_id and not c_name:
+            c_item = Course.objects.filter(pk=course_id).select_related('category').first()
+            if c_item:
+                c_name = c_item.name
+                if c_item.category and not cat_name:
+                    cat_name = c_item.category.name
+
+        if category_id and not cat_name:
+            cat_item = CourseCategory.objects.filter(pk=category_id).first()
+            if cat_item:
+                cat_name = cat_item.name
+
+        # إذا لم يتم التحديد الصريح، فحص إذا كانت السجلات المفلترة تخص دورة أو دفعة أو تصنيف موحد
+        if not b_code:
+            unique_sessions = list(enrollments_qs.values_list('session__session_code', flat=True).distinct()[:2])
+            if len(unique_sessions) == 1 and unique_sessions[0]:
+                b_code = unique_sessions[0]
+        if not c_name:
+            unique_courses = list(enrollments_qs.values_list('session__course__name', flat=True).distinct()[:2])
+            if len(unique_courses) == 1 and unique_courses[0]:
+                c_name = unique_courses[0]
+        if not cat_name:
+            unique_cats = list(enrollments_qs.values_list('session__course__category__name', flat=True).distinct()[:2])
+            if len(unique_cats) == 1 and unique_cats[0]:
+                cat_name = unique_cats[0]
+
+        # تنظيف رقم الدفعة
+        b_code_display = ''
+        if b_code:
+            b_clean = b_code.strip()
+            if b_clean.startswith('الدفعة'):
+                b_clean = b_clean[len('الدفعة'):].strip()
+            b_code_display = f"الدفعة: {b_clean}"
+
+        header_parts = []
+        if cat_name:
+            header_parts.append(f"التصنيف: {cat_name}")
+        if c_name:
+            header_parts.append(f"الدورة: {c_name}")
+        if b_code_display:
+            header_parts.append(b_code_display)
+
+        report_sub_header = " • ".join(header_parts)
+        report_category_name = cat_name
+        report_course_name = c_name
+        report_batch_code = b_code
 
         # 1. إحصائيات KPIs المفلترة
         trainees_total = enrollments_qs.values('trainee_id').distinct().count()
@@ -3457,6 +3523,10 @@ def admin_report_print_view(request):
         'grade_f_pct': grade_f_pct,
         'forces_stats': forces_stats,
         'filters_summary': filters_summary,
+        'report_sub_header': report_sub_header,
+        'report_category_name': report_category_name,
+        'report_course_name': report_course_name,
+        'report_batch_code': report_batch_code,
         'subjects_summary': subjects_summary,
         'cert_settings': cert_settings,
         'system_settings': system_settings,

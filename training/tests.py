@@ -2966,11 +2966,19 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         # التحقق من تطبيق الفلاتر عند تمريرها
         res_filtered = self.client.get(reverse('training:admin_report_print'), {
             'force': 'القوات البرية',
+            'course_id': str(self.course.id),
+            'session_id': str(self.session.id),
+            'category_id': str(self.category.id),
             'session_status': 'completed',
         })
         self.assertEqual(res_filtered.status_code, 200)
         self.assertEqual(res_filtered.context['trainees_total'], 1)
         self.assertIn('القوات البرية', res_filtered.context['filters_summary'])
+        content_filtered = res_filtered.content.decode('utf-8')
+        # التحقق من ظهور تصنيف الدورة واسم الدورة والدفعة أسفل العنوان الرئيسي
+        self.assertIn(f"التصنيف: {self.category.name}", content_filtered)
+        self.assertIn(f"الدورة: {self.course.name}", content_filtered)
+        self.assertIn(f"الدفعة: {self.session.session_code}", content_filtered)
 
     def test_trainees_report_custom_title_and_columns_exclusion(self):
         """التحقق من وضع الدورة والدفعة والقوة وحالة الدورة في العنوان وحذفها من أعمدة الجدول عند التخصيص"""
