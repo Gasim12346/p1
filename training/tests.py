@@ -19,6 +19,7 @@ from training.reports import (
     export_report_to_excel,
     get_sessions_subjects_summary,
 )
+from training.views import calculate_next_course_session_code
 
 
 class AuthenticationAndSecurityTests(TestCase):
@@ -3341,6 +3342,85 @@ class DisciplineInfractionTests(TestCase):
         self.assertTrue(del_data['success'])
         self.assertEqual(del_data['score'], 10.0)
         self.assertEqual(len(del_data['infractions']), 0)
+
+
+class TargetCategoryAndBatchNumberingTests(TestCase):
+    """اختبارات عزل ترقيم الدفعات وتصنيف الفئات المستهدفة في الدورات"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_superuser('admin_batch', 'batch@test.com', 'pass123')
+        self.client.force_login(self.user)
+        self.category = CourseCategory.objects.create(name='دورات مرشد تجريبية')
+        self.course = Course.objects.create(
+            category=self.category,
+            name='شبكات متقدمة',
+            course_number='NET-101'
+        )
+
+    def test_independent_batch_numbering_per_target_category(self):
+        """التحقق من أن ترقيم الدفعات مستقل تماماً بين الضباط وضباط الصف والمشتركة"""
+        # دورة أولى للضباط برقم دفعة 1
+        CourseSession.objects.create(
+            course=self.course,
+            target_category='officer',
+            session_code='1',
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 30)
+        )
+        # دورة ثانية للضباط برقم دفعة 2
+        CourseSession.objects.create(
+            course=self.course,
+            target_category='officer',
+            session_code='2',
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28)
+        )
+
+        # احتساب الدفعة التالية للضباط يجب أن يكون 3
+        next_officer = calculate_next_course_session_code(self.course, target_category='officer')
+        self.assertEqual(next_officer, '3')
+
+        # احتساب الدفعة التالية لضباط الصف لنفس الدورة يجب أن يكون 1 لأنه تسلسل مستقل
+        next_nco = calculate_next_course_session_code(self.course, target_category='nco')
+        self.assertEqual(next_nco, '1')
+
+        # إنشاء دورة لضباط الصف برقم 1
+        CourseSession.objects.create(
+            course=self.course,
+            target_category='nco',
+            session_code='1',
+            start_date=date(2026, 3, 1),
+            end_date=date(2026, 3, 30)
+        )
+
+        # الدفعة التالية لضباط الصف الآن يجب أن تكون 2
+        next_nco_2 = calculate_next_course_session_code(self.course, target_category='nco')
+        self.assertEqual(next_nco_2, '2')
+
+        # بينما المشتركة لا تزال تسلسلها المستقل عند 1
+        next_joint = calculate_next_course_session_code(self.course, target_category='joint')
+        self.assertEqual(next_joint, '1')
+
+    def test_api_returns_correct_batch_number_per_category(self):
+        """فحص استعلام API لرقم الدفعة المستقل بناءً على الفئة"""
+        CourseSession.objects.create(
+            course=self.course,
+            target_category='officer',
+            session_code='5',
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 30)
+        )
+        url = reverse('training:api_next_course_number')
+        res_off = self.client.get(url, {'course_id': self.course.id, 'target_category': 'officer'})
+        self.assertEqual(res_off.status_code, 200)
+        self.assertEqual(res_off.json()['next_number'], '6')
+
+        res_nco = self.client.get(url, {'course_id': self.course.id, 'target_category': 'nco'})
+        self.assertEqual(res_nco.status_code, 200)
+        self.assertEqual(res_nco.json()['next_number'], '1')
+        self.assertEqual(res_nco.json()['target_category_display'], 'ضباط صف')
+
 
 
 

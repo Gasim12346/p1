@@ -50,7 +50,7 @@
             <div class="card-body p-4">
                 <div class="row g-3">
                     <!-- اختيار تصنيف الدورة -->
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-dark">تصنيف الدورة <span class="text-danger">*</span></label>
                         <select id="categorySelector" class="form-select form-select-lg" required
                             onchange="filterCoursesByCategory()">
@@ -62,7 +62,7 @@
                     </div>
 
                     <!-- اختيار اسم الدورة -->
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-dark">اسم الدورة التدريبية <span
                                 class="text-danger">*</span></label>
                         <select name="course" id="courseSelector" class="form-select form-select-lg" required onchange="renderCourseSubjects(this.value); updatePassedTraineesRestrictions(); autoFillCourseNumber(this.value);">
@@ -77,18 +77,32 @@
                         </select>
                     </div>
 
-                    <!-- رقم الدورة (توليد وإدخال تلقائي معتمد) -->
+                    <!-- اختيار تصنيف فئة الدورة (ضباط / ضباط صف / مشتركة) -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark">
+                            فئة الدارسين المستهدفة <span class="text-danger">*</span>
+                        </label>
+                        <select name="target_category" id="targetCategorySelector" class="form-select form-select-lg border-primary" required onchange="onTargetCategoryChange()">
+                            <option value="officer" selected>ضباط</option>
+                            <option value="nco">ضباط صف</option>
+                            <option value="joint">مشتركة (ضباط وضباط صف)</option>
+                            <option value="civilian">مدنيين</option>
+                        </select>
+                        <div class="form-text small text-muted">تحديد فئة الدورة لعزل تسلسل الدفعات وتصفية الدارسين.</div>
+                    </div>
+
+                    <!-- رقم الدفعة (توليد وإدخال تلقائي معتمد) -->
                     <div class="col-md-3">
                         <label class="form-label fw-bold text-dark d-flex align-items-center justify-content-between">
-                            <span>رقم الدورة <span class="text-danger">*</span></span>
+                            <span>رقم الدفعة <span class="text-danger">*</span></span>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2 fw-normal" style="font-size: 0.75rem;">
                                 <i class="bi bi-magic me-1"></i>تلقائي
                             </span>
                         </label>
-                        <input type="text" name="session_code" id="sessionCode" class="form-control form-control-lg fw-bold text-primary"
+                        <input type="text" name="session_code" id="sessionCode" class="form-control form-control-lg fw-bold text-primary font-monospace"
                             placeholder="يتم التحديد تلقائياً..." required>
                         <div class="form-text small text-muted" id="sessionCodeHint">
-                            يتم احتساب رقم الدورة تلقائياً بمجرد اختيار الدورة التدريبية.
+                            يتم احتساب رقم الدفعة تلقائياً بحسب الدورة وفئة الدارسين المستهدفة.
                         </div>
                     </div>
 
@@ -186,7 +200,8 @@
                     <span class="badge bg-success text-white px-3 py-1 rounded-pill mb-1">بيانات الدورة المحددة</span>
                     <h5 class="fw-bold text-dark mb-1" id="summaryCourseName">-</h5>
                     <div class="text-muted small">
-                        رقم الدورة: <strong id="summarySessionCode" class="text-dark">-</strong> •
+                        فئة الدورة: <strong id="summaryTargetCat" class="text-success">-</strong> •
+                        رقم الدفعة: <strong id="summarySessionCode" class="text-dark font-monospace">-</strong> •
                         فترة الانعقاد: <span id="summaryDates">-</span> •
                         مشرف الدورة: <strong id="summarySupervisor" class="text-primary">-</strong>
                     </div>
@@ -587,77 +602,100 @@
         {% endfor %}
     ];
 
-    // التوليد والتعبئة التلقائية لرقم الدورة وفق قواعد الترقيم المعتمدة
+    function getTargetCategoryLabel(val) {
+        if (val === 'officer') return 'ضباط';
+        if (val === 'nco') return 'ضباط صف';
+        if (val === 'joint') return 'مشتركة (ضباط وضباط صف)';
+        if (val === 'civilian') return 'مدنيين';
+        return 'ضباط';
+    }
+
+    function onTargetCategoryChange() {
+        const courseSelector = document.getElementById('courseSelector');
+        if (courseSelector && courseSelector.value) {
+            autoFillCourseNumber(courseSelector.value);
+        }
+    }
+
+    // التوليد والتعبئة التلقائية لرقم الدفعة وفق قواعد الترقيم المعتمدة
     function autoFillCourseNumber(courseId) {
         const sessionCodeInput = document.getElementById('sessionCode');
         const hintEl = document.getElementById('sessionCodeHint');
         const startDateInput = document.getElementById('startDate');
+        const targetCatSelect = document.getElementById('targetCategorySelector');
         if (!sessionCodeInput) return;
 
         const cid = String(courseId || '');
         if (!cid) {
             sessionCodeInput.value = '';
-            if (hintEl) hintEl.textContent = 'يتم احتساب رقم الدورة تلقائياً بمجرد اختيار الدورة التدريبية.';
+            if (hintEl) hintEl.textContent = 'يتم احتساب رقم الدفعة تلقائياً بمجرد اختيار الدورة التدريبية وتصنيف الفئة.';
             return;
         }
 
+        const targetCat = targetCatSelect ? targetCatSelect.value : 'officer';
+        const catName = getTargetCategoryLabel(targetCat);
         const data = COURSES_NEXT_NUMBERS[cid];
         const startDateVal = startDateInput ? startDateInput.value : '';
 
         // إذا كانت الدورة خاصة وتم تحديد تاريخ البداية مسبقاً، استعلم الرقم الدقيق لسنة التاريخ
         if (data && data.is_special && startDateVal) {
-            fetchNextNumberFromApi(cid, startDateVal);
+            fetchNextNumberFromApi(cid, startDateVal, targetCat);
             return;
         }
 
-        if (data) {
-            sessionCodeInput.value = data.next_number;
+        if (data && data[targetCat]) {
+            sessionCodeInput.value = data[targetCat];
             if (hintEl) {
                 if (data.is_special) {
-                    hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدورة لهذه السنة يبدأ من (${data.next_number}) ويتكرر سنوياً.</span>`;
+                    hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة (${catName}): ترقيم الدفعة لهذه السنة يبدأ من (<strong>${data[targetCat]}</strong>) ويتكرر سنوياً.</span>`;
                 } else {
-                    hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد: ترقيم تراكمي مستمر غير مكرر (${data.next_number}).</span>`;
+                    hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد (${catName}): ترقيم الدفعة التراكمي المستمر غير المكرر هو (<strong>${data[targetCat]}</strong>).</span>`;
                 }
             }
         } else {
-            fetchNextNumberFromApi(cid, startDateVal);
+            fetchNextNumberFromApi(cid, startDateVal, targetCat);
         }
     }
 
-    // استعلام رقم الدورة التالي عبر API عند تغيير تاريخ بداية الدورة
-    function fetchNextNumberFromApi(courseId, startDateVal) {
+    // استعلام رقم الدفعة التالي عبر API عند تغيير الدورة أو الفئة أو تاريخ البداية
+    function fetchNextNumberFromApi(courseId, startDateVal, targetCat) {
         const sessionCodeInput = document.getElementById('sessionCode');
         const hintEl = document.getElementById('sessionCodeHint');
         if (!courseId) return;
 
-        const url = `{% url 'training:api_next_course_number' %}?course_id=${encodeURIComponent(courseId)}&start_date=${encodeURIComponent(startDateVal || '')}`;
+        const cat = targetCat || (document.getElementById('targetCategorySelector')?.value || 'officer');
+        const catName = getTargetCategoryLabel(cat);
+        const url = `{% url 'training:api_next_course_number' %}?course_id=${encodeURIComponent(courseId)}&start_date=${encodeURIComponent(startDateVal || '')}&target_category=${encodeURIComponent(cat)}`;
         fetch(url)
             .then(res => res.json())
             .then(res => {
                 if (res.success) {
                     sessionCodeInput.value = res.next_number;
                     if (hintEl) {
+                        const displayCat = res.target_category_display || catName;
                         if (res.is_special) {
-                            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدورة لهذه السنة يبدأ من (${res.next_number}) ويتكرر سنوياً.</span>`;
+                            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة (${displayCat}): ترقيم الدفعة لهذه السنة يبدأ من (<strong>${res.next_number}</strong>) ويتكرر سنوياً.</span>`;
                         } else {
-                            hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد: ترقيم تراكمي مستمر غير مكرر (${res.next_number}).</span>`;
+                            hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد (${displayCat}): ترقيم الدفعة التراكمي المستمر غير المكرر هو (<strong>${res.next_number}</strong>).</span>`;
                         }
                     }
                 }
             })
-            .catch(err => console.error('Error fetching next course number:', err));
+            .catch(err => console.error('Error fetching next batch number:', err));
     }
 
-    // عند تغيير تاريخ بداية الدورة، إذا كانت الدورة خاصة يتم إعادة احتساب رقم الدورة لسنة التاريخ الجديد
+    // عند تغيير تاريخ بداية الدورة، إذا كانت الدورة خاصة يتم إعادة احتساب رقم الدفعة لسنة التاريخ الجديد
     function onStartDateChange() {
         const courseSelector = document.getElementById('courseSelector');
         const startDateInput = document.getElementById('startDate');
+        const targetCatSelect = document.getElementById('targetCategorySelector');
         if (!courseSelector || !courseSelector.value) return;
 
         const cid = String(courseSelector.value);
         const data = COURSES_NEXT_NUMBERS[cid];
+        const targetCat = targetCatSelect ? targetCatSelect.value : 'officer';
         if (data && data.is_special) {
-            fetchNextNumberFromApi(cid, startDateInput.value);
+            fetchNextNumberFromApi(cid, startDateInput.value, targetCat);
         }
     }
 
@@ -877,6 +915,7 @@
     function goToStep2() {
         const categorySelector = document.getElementById('categorySelector');
         const courseSelector = document.getElementById('courseSelector');
+        const targetCatSelect = document.getElementById('targetCategorySelector');
         const sessionCode = document.getElementById('sessionCode');
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
@@ -892,7 +931,7 @@
             return;
         }
         if (!sessionCode.value.trim()) {
-            alert('يرجى التأكد من رقم الدورة التدريبية.');
+            alert('يرجى التأكد من رقم الدفعة.');
             sessionCode.focus();
             return;
         }
@@ -907,12 +946,17 @@
             return;
         }
 
+        const targetCat = targetCatSelect ? targetCatSelect.value : 'officer';
+        const targetCatLabel = getTargetCategoryLabel(targetCat);
+
         // تعبئة ملخص الدورة في الخطوة 2
         const selectedCourseOption = courseSelector.options[courseSelector.selectedIndex];
         const courseName = selectedCourseOption ? selectedCourseOption.textContent.trim() : '';
         document.getElementById('summaryCourseName').textContent = courseName;
         document.getElementById('summarySessionCode').textContent = sessionCode.value.trim();
         document.getElementById('summaryDates').textContent = `من ${startDate.value} إلى ${endDate.value}`;
+        const summaryTargetEl = document.getElementById('summaryTargetCat');
+        if (summaryTargetEl) summaryTargetEl.textContent = targetCatLabel;
 
         const supervisorSelect = document.getElementById('supervisorSelect');
         const supOption = supervisorSelect.options[supervisorSelect.selectedIndex];
@@ -923,7 +967,65 @@
         document.getElementById('step1Container').style.display = 'none';
         document.getElementById('step2Container').style.display = 'block';
         updatePassedTraineesRestrictions();
+
+        // تفعيل تصفية الدارسين تلقائياً لتظهر فقط الفئة المرتبطة بالدورة
+        applyTargetCategoryFiltering(targetCat);
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // تصفية وعرض فئة الدارسين المقترنة بالدورة تلقائياً
+    function applyTargetCategoryFiltering(targetCat) {
+        const allBtn = document.getElementById('btn-cat-all');
+        const officerBtn = document.getElementById('btn-cat-officer');
+        const ncoBtn = document.getElementById('btn-cat-nco');
+        const civilianBtn = document.getElementById('btn-cat-civilian');
+        const statusText = document.getElementById('filterStatusText');
+
+        if (targetCat === 'officer') {
+            if (allBtn) allBtn.style.display = 'none';
+            if (ncoBtn) ncoBtn.style.display = 'none';
+            if (civilianBtn) civilianBtn.style.display = 'none';
+            if (officerBtn) {
+                officerBtn.style.display = 'inline-flex';
+                filterByCategoryTab('officer', officerBtn);
+            }
+            if (statusText) {
+                statusText.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i> تم حصر القائمة تلقائياً على <strong>الدارسين الضباط فقط</strong> وفق فئة الدورة المحددة.';
+            }
+        } else if (targetCat === 'nco') {
+            if (allBtn) allBtn.style.display = 'none';
+            if (officerBtn) officerBtn.style.display = 'none';
+            if (civilianBtn) civilianBtn.style.display = 'none';
+            if (ncoBtn) {
+                ncoBtn.style.display = 'inline-flex';
+                filterByCategoryTab('nco', ncoBtn);
+            }
+            if (statusText) {
+                statusText.innerHTML = '<i class="bi bi-shield-shaded text-warning me-1"></i> تم حصر القائمة تلقائياً على <strong>ضباط الصف فقط</strong> وفق فئة الدورة المحددة.';
+            }
+        } else if (targetCat === 'civilian') {
+            if (allBtn) allBtn.style.display = 'none';
+            if (officerBtn) officerBtn.style.display = 'none';
+            if (ncoBtn) ncoBtn.style.display = 'none';
+            if (civilianBtn) {
+                civilianBtn.style.display = 'inline-flex';
+                filterByCategoryTab('civilian', civilianBtn);
+            }
+            if (statusText) {
+                statusText.innerHTML = '<i class="bi bi-person-badge-fill text-purple me-1"></i> تم حصر القائمة تلقائياً على <strong>الدارسين المدنيين فقط</strong> وفق فئة الدورة المحددة.';
+            }
+        } else {
+            // مشتركة
+            if (allBtn) allBtn.style.display = 'inline-flex';
+            if (officerBtn) officerBtn.style.display = 'inline-flex';
+            if (ncoBtn) ncoBtn.style.display = 'inline-flex';
+            if (civilianBtn) civilianBtn.style.display = 'inline-flex';
+            if (allBtn) filterByCategoryTab('all', allBtn);
+            if (statusText) {
+                statusText.innerHTML = '<i class="bi bi-people-fill text-dark me-1"></i> دورة مشتركة: معروض <strong>جميع الدارسين (ضباط وضباط صف ومدنيين)</strong>.';
+            }
+        }
     }
 
     // العودة للخطوة 1

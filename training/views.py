@@ -550,11 +550,12 @@ def course_sessions_view(request):
     })
 
 
-def calculate_next_course_session_code(course, start_date=None):
+def calculate_next_course_session_code(course, start_date=None, target_category=None):
     """
-    احتساب رقم الدورة التالي تلقائياً وفق القواعد:
-    1. دورات المرشد: ترقيم تراكمي مستمر لا يتكرر أبداً ولا يتصفر بالسنة (أعلى رقم سابق للدورة + 1).
-    2. الدورات الخاصة: ترقيم يتكرر سنوياً، بحيث تبدأ الدورة في كل بداية سنة من الرقم 1 (أعلى رقم في تلك السنة للدورة + 1).
+    احتساب رقم الدفعة التالي تلقائياً وفق القواعد:
+    1. ترقيم مستقل لكل فئة من فئات الدارسين (الضباط لهم تسلسل مستقل، وضباط الصف لهم تسلسل مستقل، والدورات المشتركة لها تسلسل مستقل).
+    2. دورات المرشد: ترقيم تراكمي مستمر لا يتكرر أبداً ولا يتصفر بالسنة (أعلى رقم دفعة سابق لنفس الدورة ونفس الفئة + 1).
+    3. الدورات الخاصة: ترقيم يتكرر سنوياً، بحيث تبدأ الدفعة في كل بداية سنة من الرقم 1 لنفس الفئة (أعلى رقم دفعة في تلك السنة لنفس الفئة + 1).
     """
     import re
     from datetime import date
@@ -591,6 +592,9 @@ def calculate_next_course_session_code(course, start_date=None):
         # دورات المرشد لا تتكرر: ترقيم مستمر لا يعاد تصفيره بحسب السنة
         sessions = CourseSession.objects.filter(course=course)
 
+    if target_category:
+        sessions = sessions.filter(target_category=target_category)
+
     max_num = 0
     for s in sessions:
         if s.session_code:
@@ -608,20 +612,30 @@ def calculate_next_course_session_code(course, start_date=None):
 
 @login_required
 def api_get_next_course_number_view(request):
-    """إرجاع رقم الدورة التالي تلقائياً بناءً على الدورة وتاريخ الانعقاد والتصنيف"""
+    """إرجاع رقم الدفعة التالي تلقائياً بناءً على الدورة وتاريخ الانعقاد وفئة الدارسين المستهدفة"""
     course_id = request.GET.get('course_id')
     start_date_str = request.GET.get('start_date')
+    target_category = request.GET.get('target_category', 'officer').strip()
     if not course_id:
         return JsonResponse({'success': False, 'error': 'course_id مطلوب'})
 
     course = get_object_or_404(Course.objects.select_related('category'), pk=course_id)
-    next_number = calculate_next_course_session_code(course, start_date_str)
+    next_number = calculate_next_course_session_code(course, start_date_str, target_category=target_category)
     is_special = bool(course.category and 'خاص' in course.category.name)
+
+    cat_display_map = {
+        'officer': 'ضباط',
+        'nco': 'ضباط صف',
+        'joint': 'مشتركة',
+        'civilian': 'مدنيين',
+    }
 
     return JsonResponse({
         'success': True,
         'next_number': next_number,
         'is_special': is_special,
+        'target_category': target_category,
+        'target_category_display': cat_display_map.get(target_category, 'ضباط'),
         'category_name': course.category.name if course.category else '',
         'course_name': course.name,
     })
@@ -755,15 +769,16 @@ def course_session_create_view(request):
 
     if request.method == 'POST':
         course_id = request.POST.get('course')
+        target_category = request.POST.get('target_category', 'officer').strip() or 'officer'
         session_code = request.POST.get('session_code', '').strip()
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
 
-        # توليد رقم الدورة تلقائياً إذا تُرك الحقل فارغاً
+        # توليد رقم الدفعة تلقائياً إذا تُرك الحقل فارغاً
         if not session_code and course_id:
             try:
                 c_obj = Course.objects.select_related('category').get(pk=course_id)
-                session_code = calculate_next_course_session_code(c_obj, start_date)
+                session_code = calculate_next_course_session_code(c_obj, start_date, target_category=target_category)
             except Course.DoesNotExist:
                 pass
 
@@ -786,7 +801,7 @@ def course_session_create_view(request):
                 missing_movement.append(f'"{t_obj.name}" ({num})' if t_obj else num)
 
         if not course_id or not session_code or not start_date or not end_date:
-            messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، رقم الدورة، تاريخ البداية والنهاية).')
+            messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، فئة الدارسين، رقم الدفعة، وتاريخ البداية والنهاية).')
         elif not selected_trainee_nums:
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
         elif missing_movement:
@@ -797,36 +812,58 @@ def course_session_create_view(request):
         else:
             course = get_object_or_404(Course, pk=course_id)
 
-            # التحقق الصارم من قيد النجاح المسبق: منع إعادة تسجيل أي دارس أكمل نفس الدورة ونجح فيها
-            blocked_trainees = []
-            for num in selected_trainee_nums:
-                t = Trainee.objects.filter(military_number=num).first()
-                if t:
-                    prev_passed = has_trainee_passed_course(t, course)
-                    if prev_passed:
-                        blocked_trainees.append((t, prev_passed))
+            # التحقق من ملاءمة تصنيف الدارسين المختارين لتصنيف فئة الدورة المحددة
+            cat_mismatch = []
+            if target_category == 'officer':
+                for num in selected_trainee_nums:
+                    t = Trainee.objects.filter(military_number=num).first()
+                    if t and t.category != 'officer':
+                        cat_mismatch.append(f'"{t.name}" ({t.get_category_display()})')
+            elif target_category == 'nco':
+                for num in selected_trainee_nums:
+                    t = Trainee.objects.filter(military_number=num).first()
+                    if t and t.category == 'officer':
+                        cat_mismatch.append(f'"{t.name}" (ضابط)')
 
-            if blocked_trainees:
-                msg_list = "، ".join([f'"{bt[0].name}" (دفعة {bt[1].session.session_code} - تقدير {bt[1].grade_label})' for bt in blocked_trainees])
+            if cat_mismatch:
+                mismatch_str = '، '.join(cat_mismatch[:3])
+                cat_label = 'ضباط' if target_category == 'officer' else 'ضباط صف'
                 messages.error(
                     request,
-                    f'تحذير صارم: لا يمكن إتمام تسجيل الدورة؛ نظراً لأن الدارس(ين): {msg_list} قد أكملوا دورة "{course.name}" واجتازوها بنجاح مسبقاً، ويمنع النظام تكرار دخول نفس الدورة مرة أخرى!'
+                    f'قيد فئة الدورة: تم تحديد الدورة لفئة ({cat_label}) فقط، بينما تم اختيار دارسين لا يتبعون هذه الفئة: {mismatch_str}. يرجى حصر الاختيار على الدارسين التابعين للفئة المحددة.'
                 )
             else:
-                supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
+                # التحقق الصارم من قيد النجاح المسبق: منع إعادة تسجيل أي دارس أكمل نفس الدورة ونجح فيها
+                blocked_trainees = []
+                for num in selected_trainee_nums:
+                    t = Trainee.objects.filter(military_number=num).first()
+                    if t:
+                        prev_passed = has_trainee_passed_course(t, course)
+                        if prev_passed:
+                            blocked_trainees.append((t, prev_passed))
 
-                session = CourseSession.objects.create(
-                    course=course,
-                    session_code=session_code,
-                    start_date=start_date,
-                    end_date=end_date,
-                    movement_order_date=movement_order_date if movement_order_date else None,
-                    movement_order_file=movement_order_file if movement_order_file else None,
-                    status=status,
-                    attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
-                    supervisor=supervisor,
-                    notes=notes
-                )
+                if blocked_trainees:
+                    msg_list = "، ".join([f'"{bt[0].name}" (دفعة {bt[1].session.session_code} - تقدير {bt[1].grade_label})' for bt in blocked_trainees])
+                    messages.error(
+                        request,
+                        f'تحذير صارم: لا يمكن إتمام تسجيل الدورة؛ نظراً لأن الدارس(ين): {msg_list} قد أكملوا دورة "{course.name}" واجتازوها بنجاح مسبقاً، ويمنع النظام تكرار دخول نفس الدورة مرة أخرى!'
+                    )
+                else:
+                    supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
+
+                    session = CourseSession.objects.create(
+                        course=course,
+                        target_category=target_category,
+                        session_code=session_code,
+                        start_date=start_date,
+                        end_date=end_date,
+                        movement_order_date=movement_order_date if movement_order_date else None,
+                        movement_order_file=movement_order_file if movement_order_file else None,
+                        status=status,
+                        attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
+                        supervisor=supervisor,
+                        notes=notes
+                    )
 
                 # تعيين المعلمين لمواد الدورة العامة
                 for sub in course.subjects.filter(session__isnull=True):
@@ -921,12 +958,16 @@ def course_session_create_view(request):
                 for s in c.subjects.filter(session__isnull=True)
             ]
 
-    # خريطة الأرقام التلقائية التالية لكل دورة وفق قواعد الترقيم المعتمدة
+    # خريطة أرقام الدفعات التلقائية التالية لكل دورة وفئة وفق قواعد الترقيم المعتمدة
     courses_next_numbers_map = {}
     for cat in categories:
         for c in cat.courses.all():
             courses_next_numbers_map[str(c.id)] = {
-                'next_number': calculate_next_course_session_code(c, date.today()),
+                'officer': calculate_next_course_session_code(c, date.today(), 'officer'),
+                'nco': calculate_next_course_session_code(c, date.today(), 'nco'),
+                'joint': calculate_next_course_session_code(c, date.today(), 'joint'),
+                'civilian': calculate_next_course_session_code(c, date.today(), 'civilian'),
+                'next_number': calculate_next_course_session_code(c, date.today(), 'officer'),
                 'is_special': bool(c.category and 'خاص' in c.category.name),
                 'category_name': c.category.name if c.category else '',
             }
@@ -1231,9 +1272,15 @@ def course_session_manage_view(request, session_id):
         messages.success(request, f'تم إزالة الدارس "{t_name}" من الدورة.')
         return redirect('training:course_session_manage', session_id=session.id)
 
-    # قائمة الدارسين غير المسجلين في هذه الدورة لإمكانية إضافتهم
+    # قائمة الدارسين غير المسجلين في هذه الدورة لإمكانية إضافتهم مع مراعاة فئة الدورة المستهدفة
     enrolled_trainee_ids = enrollments.values_list('trainee_id', flat=True)
     available_trainees = Trainee.objects.exclude(military_number__in=enrolled_trainee_ids)
+    if session.target_category == 'officer':
+        available_trainees = available_trainees.filter(category='officer')
+    elif session.target_category == 'nco':
+        available_trainees = available_trainees.filter(category__in=['nco', 'civilian'])
+    elif session.target_category == 'civilian':
+        available_trainees = available_trainees.filter(category='civilian')
 
     # تحديد الدارسين الذين اجتازوا هذه الدورة بنجاح مسبقاً
     passed_for_session = CourseEnrollment.objects.filter(

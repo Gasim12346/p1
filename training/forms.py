@@ -597,15 +597,19 @@ class SubjectForm(forms.ModelForm):
 class CourseSessionForm(forms.ModelForm):
     class Meta:
         model = CourseSession
-        fields = ['course', 'session_code', 'start_date', 'end_date', 'movement_order_date', 'movement_order_file', 'status', 'attendance_max_grade', 'notes']
+        fields = ['course', 'target_category', 'session_code', 'start_date', 'end_date', 'movement_order_date', 'movement_order_file', 'status', 'attendance_max_grade', 'notes']
         widgets = {
             'course': forms.Select(attrs={
                 'class': 'form-select form-select-lg',
                 'required': 'required'
             }),
+            'target_category': forms.Select(attrs={
+                'class': 'form-select form-select-lg',
+                'required': 'required'
+            }),
             'session_code': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'مثال: الدفعة 18 - 2026',
+                'placeholder': 'مثال: 1 أو 18',
                 'required': 'required'
             }),
             'start_date': forms.DateInput(attrs={

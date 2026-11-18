@@ -434,6 +434,13 @@ class Subject(models.Model):
         return f"{self.name} ({self.code})"
 
 
+class SessionTargetGroup(models.TextChoices):
+    OFFICER = 'officer', 'ضباط'
+    NCO = 'nco', 'ضباط صف'
+    JOINT = 'joint', 'مشتركة'
+    CIVILIAN = 'civilian', 'مدنيين'
+
+
 class CourseSession(models.Model):
     """الدورة التي يتم دراستها (انعقاد دورة محددة بتاريخ)"""
     STATUS_CHOICES = [
@@ -448,10 +455,16 @@ class CourseSession(models.Model):
         related_name='sessions',
         verbose_name='الدورة التدريبية'
     )
+    target_category = models.CharField(
+        max_length=20,
+        choices=SessionTargetGroup.choices,
+        default=SessionTargetGroup.OFFICER,
+        verbose_name='فئة الدارسين المستهدفة'
+    )
     session_code = models.CharField(
         max_length=100,
-        verbose_name='رقم الدورة',
-        help_text='رقم الدورة (توليد تلقائي معتمد)'
+        verbose_name='رقم الدفعة',
+        help_text='رقم الدفعة (توليد تلقائي معتمد)'
     )
     start_date = models.DateField(
         verbose_name='تاريخ بداية الدورة'
@@ -519,7 +532,7 @@ class CourseSession(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.course.name} - {self.session_code} ({self.start_date})"
+        return f"{self.course.name} - دفعة {self.session_code} ({self.get_target_category_display()})"
 
     def get_subjects(self):
         """

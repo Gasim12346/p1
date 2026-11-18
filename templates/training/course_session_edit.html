@@ -28,13 +28,18 @@
                 {% csrf_token %}
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold text-dark">الدورة التدريبية <span class="text-danger">*</span></label>
                             {{ form.course }}
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">رقم الدورة <span class="text-danger">*</span></label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark">فئة الدارسين المستهدفة <span class="text-danger">*</span></label>
+                            {{ form.target_category }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark">رقم الدفعة <span class="text-danger">*</span></label>
                             {{ form.session_code }}
                         </div>
 
