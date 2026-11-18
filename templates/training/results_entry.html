@@ -13,10 +13,12 @@
         font-size: 1rem;
         border-radius: 8px;
     }
+
     .grade-input:focus {
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     }
+
     .grade-display-box {
         min-width: 70px;
         max-width: 85px;
@@ -37,18 +39,21 @@
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
         <li class="breadcrumb-item">
             {% if from_tab == 'archive' %}
-                <a href="{% url 'training:results_center' %}?tab=archive" class="text-decoration-none">النتيجة والشهادات (السجل التاريخي)</a>
+            <a href="{% url 'training:results_center' %}?tab=archive" class="text-decoration-none">النتيجة والشهادات
+                (السجل التاريخي)</a>
             {% else %}
-                <a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a>
+            <a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a>
             {% endif %}
         </li>
-        <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }} ({{ session.session_code }})</li>
+        <li class="breadcrumb-item active" aria-current="page">رصد درجات دورة: {{ session.course.name }} ({{
+            session.session_code }})</li>
     </ol>
 </nav>
 
 <!-- Course Info Banner -->
 <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-    <div class="card-header bg-primary text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div
+        class="card-header bg-primary text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-3">
             <div class="bg-white bg-opacity-20 p-2 rounded-3 fs-3">
                 <i class="bi bi-award-fill text-warning"></i>
@@ -60,28 +65,33 @@
                     <span class="mx-2">•</span>
                     <span>تصنيف: <strong>{{ session.course.category.name }}</strong></span>
                     <span class="mx-2">•</span>
-                    <span>الفترة: <strong>{{ session.start_date|date:"Y-m-d" }} إلى {{ session.end_date|date:"Y-m-d" }}</strong></span>
+                    <span>الفترة: <strong>{{ session.start_date|date:"Y-m-d" }} إلى {{ session.end_date|date:"Y-m-d"
+                            }}</strong></span>
                 </div>
             </div>
         </div>
 
         <div class="d-flex flex-wrap gap-2">
             {% if from_tab == 'archive' %}
-                <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-arrow-right"></i>
-                    <span>العودة إلى السجل التاريخي</span>
-                </a>
+            <a href="{% url 'training:results_center' %}?tab=archive"
+                class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة إلى السجل التاريخي</span>
+            </a>
             {% else %}
-                <a href="{% url 'training:results_center' %}" class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-arrow-right"></i>
-                    <span>العودة لقائمة الدورات</span>
-                </a>
+            <a href="{% url 'training:results_center' %}"
+                class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة لقائمة الدورات</span>
+            </a>
             {% endif %}
-            <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank"
+                class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
                 <i class="bi bi-printer-fill"></i>
                 <span>طباعة كشف النتيجة العام</span>
             </a>
-            <a href="{% url 'training:course_session_manage' session.id %}" class="btn btn-outline-light rounded-3 px-3 d-inline-flex align-items-center gap-1">
+            <a href="{% url 'training:course_session_manage' session.id %}"
+                class="btn btn-outline-light rounded-3 px-3 d-inline-flex align-items-center gap-1">
                 <i class="bi bi-people"></i>
                 <span>إدارة الدارسين</span>
             </a>
@@ -90,57 +100,63 @@
 </div>
 
 {% if is_locked %}
-    <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3">
-        <i class="bi bi-shield-lock-fill text-primary fs-3"></i>
-        <div>
-            <h6 class="fw-bold mb-0 text-dark">نتائج هذه الدورة معتمدة ومقفلة</h6>
-        </div>
+<div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3">
+    <i class="bi bi-shield-lock-fill text-primary fs-3"></i>
+    <div>
+        <h6 class="fw-bold mb-0 text-dark">نتائج هذه الدورة معتمدة ومقفلة</h6>
     </div>
+</div>
 {% endif %}
 
 {% if dropped_count > 0 %}
-    <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex flex-wrap align-items-center justify-content-between p-3 gap-2">
-        <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-2 fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                <i class="bi bi-slash-circle-fill"></i>
-            </div>
-            <div>
-                <h6 class="fw-bold mb-1 text-danger">تم قطع الدورة عن {{ dropped_count }} دارس</h6>
-                <div class="small text-muted">تم منعهم من الدخول للدورة وحجب نتائجهم وتفاصيلهم وشهاداتهم تلقائياً تطبيقاً للقرار الإداري.</div>
-            </div>
+<div
+    class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex flex-wrap align-items-center justify-content-between p-3 gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-2 fs-4 d-flex align-items-center justify-content-center"
+            style="width: 44px; height: 44px;">
+            <i class="bi bi-slash-circle-fill"></i>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#droppedTraineesCollapse">
-            <i class="bi bi-eye me-1"></i>عرض الأسماء المقطوعة ({{ dropped_count }})
-        </button>
+        <div>
+            <h6 class="fw-bold mb-1 text-danger">تم قطع الدورة عن {{ dropped_count }} دارس</h6>
+            <div class="small text-muted">تم منعهم من الدخول للدورة وحجب نتائجهم وتفاصيلهم وشهاداتهم تلقائياً تطبيقاً
+                للقرار الإداري.</div>
+        </div>
     </div>
-    <div class="collapse mb-4" id="droppedTraineesCollapse">
-        <div class="card border-danger border-opacity-25 rounded-4 shadow-sm overflow-hidden">
-            <div class="card-header bg-danger bg-opacity-10 py-2 px-3 fw-bold text-danger small">
-                قائمة الدارسين المقطوع عنهم الدورة (محجوبون عن الرصد والنتائج)
-            </div>
-            <div class="card-body p-3">
-                <div class="row g-2">
-                    {% for d in dropped_enrollments %}
-                        <div class="col-md-6 col-lg-4">
-                            <div class="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between">
-                                <div>
-                                    <strong class="text-dark d-block">{{ d.current_rank }} / {{ d.trainee.name }}</strong>
-                                    <small class="text-muted font-monospace">النمرة: {{ d.trainee.military_number }}</small>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-danger">مقطوع</span>
-                                    <a href="{% url 'training:movement_order' d.id %}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-2 fw-bold small d-inline-flex align-items-center gap-1 shadow-sm" title="استخراج وطباعة أمر التحرك للدارس المقطوع">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                        <span>أمر التحرك</span>
-                                    </a>
-                                </div>
-                            </div>
+    <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3" data-bs-toggle="collapse"
+        data-bs-target="#droppedTraineesCollapse">
+        <i class="bi bi-eye me-1"></i>عرض الأسماء المقطوعة ({{ dropped_count }})
+    </button>
+</div>
+<div class="collapse mb-4" id="droppedTraineesCollapse">
+    <div class="card border-danger border-opacity-25 rounded-4 shadow-sm overflow-hidden">
+        <div class="card-header bg-danger bg-opacity-10 py-2 px-3 fw-bold text-danger small">
+            قائمة الدارسين المقطوع عنهم الدورة (محجوبون عن الرصد والنتائج)
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-2">
+                {% for d in dropped_enrollments %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong class="text-dark d-block">{{ d.current_rank }} / {{ d.trainee.name }}</strong>
+                            <small class="text-muted font-monospace">النمرة: {{ d.trainee.military_number }}</small>
                         </div>
-                    {% endfor %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-danger">مقطوع</span>
+                            <a href="{% url 'training:movement_order' d.id %}" target="_blank"
+                                class="btn btn-sm btn-outline-primary py-1 px-2 rounded-2 fw-bold small d-inline-flex align-items-center gap-1 shadow-sm"
+                                title="استخراج وطباعة أمر التحرك للدارس المقطوع">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span>أمر التحرك</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
+</div>
 {% endif %}
 
 <!-- Grade Entry Table Card -->
@@ -150,7 +166,8 @@
     <input type="hidden" name="from" value="{{ from_tab }}">
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div
+            class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="bi bi-table text-primary"></i>
@@ -169,16 +186,23 @@
             <div class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" id="gradeSearchInput" class="form-control border-start-0" placeholder="بحث سريع في كشف الدورة بالاسم أو النمرة..." onkeyup="filterGradesTable()">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                class="bi bi-search"></i></span>
+                        <input type="text" id="gradeSearchInput" class="form-control border-start-0"
+                            placeholder="بحث سريع في كشف الدورة بالاسم أو النمرة..." onkeyup="filterGradesTable()">
                     </div>
                 </div>
                 <div class="col-md-7 text-md-end">
                     <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-dark active" onclick="filterGradesCategory('all', this)">الكل</button>
-                        <button type="button" class="btn btn-outline-primary" onclick="filterGradesCategory('officer', this)">ضباط</button>
-                        <button type="button" class="btn btn-outline-warning text-dark" onclick="filterGradesCategory('nco', this)">ضباط صف</button>
-                        <button type="button" class="btn btn-outline-purple" style="color: #7e22ce; border-color: #7e22ce;" onclick="filterGradesCategory('civilian', this)">مدنيين</button>
+                        <button type="button" class="btn btn-outline-dark active"
+                            onclick="filterGradesCategory('all', this)">الكل</button>
+                        <button type="button" class="btn btn-outline-primary"
+                            onclick="filterGradesCategory('officer', this)">ضباط</button>
+                        <button type="button" class="btn btn-outline-warning text-dark"
+                            onclick="filterGradesCategory('nco', this)">ضباط صف</button>
+                        <button type="button" class="btn btn-outline-purple"
+                            style="color: #7e22ce; border-color: #7e22ce;"
+                            onclick="filterGradesCategory('civilian', this)">مدنيين</button>
                     </div>
                 </div>
             </div>
@@ -191,20 +215,21 @@
                         <th rowspan="2" style="min-width: 45px;">#</th>
                         <th rowspan="2" style="min-width: 110px;">النمرة</th>
                         <th rowspan="2" style="min-width: 180px;">الدارس (الرتبة والاسم والوحدة)</th>
-                        
+
                         <!-- رؤوس أعمدة المواد الدراسية -->
                         {% for sub in subjects %}
-                            <th style="min-width: 120px;">
-                                <div class="text-dark fw-bold">{{ sub.name }}</div>
-                                <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace mb-1">
-                                    العظمى: {{ sub.max_grade }}
-                                </span>
-                                <div class="small text-muted" style="font-size: 0.75rem;" title="المعلم المكلف بتدريس ورصد درجات هذه المادة">
-                                    <i class="bi bi-person-workspace text-primary me-1"></i>{{ sub.instructor_name }}
-                                </div>
-                            </th>
+                        <th style="min-width: 120px;">
+                            <div class="text-dark fw-bold">{{ sub.name }}</div>
+                            <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace mb-1">
+                                العظمى: {{ sub.max_grade }}
+                            </span>
+                            <div class="small text-muted" style="font-size: 0.75rem;"
+                                title="المعلم المكلف بتدريس ورصد درجات هذه المادة">
+                                <i class="bi bi-person-workspace text-primary me-1"></i>{{ sub.instructor_name }}
+                            </div>
+                        </th>
                         {% empty %}
-                            <th>لا توجد مواد</th>
+                        <th>لا توجد مواد</th>
                         {% endfor %}
 
                         <!-- عمود درجات الضبط والربط -->
@@ -236,25 +261,32 @@
                 </thead>
                 <tbody>
                     {% for en in enrollments %}
-                        <tr class="student-row" data-trainee-num="{{ en.trainee.military_number }}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}" data-enrollment-id="{{ en.id }}" data-is-dropped="{{ en.is_dropped|yesno:'true,false' }}">
-                            <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
-                            
-                            <!-- النمرة -->
-                            <td class="text-center">
-                                <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
-                                    {{ en.trainee.military_number }}
-                                </span>
-                            </td>
+                    <tr class="student-row" data-trainee-num="{{ en.trainee.military_number }}"
+                        data-category="{{ en.trainee.category }}"
+                        data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}"
+                        data-enrollment-id="{{ en.id }}" data-is-dropped="{{ en.is_dropped|yesno:'true,false' }}">
+                        <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
 
-                            <!-- الاسم والرتبة -->
-                            <td>
-                                <strong class="text-dark d-block">
-                                    {% if en.current_rank %}{{ en.current_rank }}{% else %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle small me-1">الرتبة ناقصة</span>{% endif %} / {{ en.trainee.name }}
-                                </strong>
-                                <small class="text-muted">
-                                    {% if en.current_unit %}{{ en.current_unit }}{% else %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle small">الوحدة ناقصة</span>{% endif %}
-                                </small>
-                            </td>
+                        <!-- النمرة -->
+                        <td class="text-center">
+                            <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
+                                {{ en.trainee.military_number }}
+                            </span>
+                        </td>
+
+                        <!-- الاسم والرتبة -->
+                        <td>
+                            <strong class="text-dark d-block">
+                                {% if en.current_rank %}{{ en.current_rank }}{% else %}<span
+                                    class="badge bg-danger-subtle text-danger border border-danger-subtle small me-1">الرتبة
+                                    ناقصة</span>{% endif %} / {{ en.trainee.name }}
+                            </strong>
+                            <small class="text-muted">
+                                {% if en.current_unit %}{{ en.current_unit }}{% else %}<span
+                                    class="badge bg-danger-subtle text-danger border border-danger-subtle small">الوحدة
+                                    ناقصة</span>{% endif %}
+                            </small>
+                        </td>
 
                             <!-- درجات المواد -->
                             {% for item in en.subjects_data %}
@@ -336,89 +368,86 @@
                                 {% endif %}
                             </td>
 
-                            <!-- المجموع المكتسب التلقائي -->
-                            <td class="text-center fw-bold fs-6 total-cell bg-light">
-                                {% if en.is_graded %}
-                                    {{ en.total_score }}
-                                {% else %}
-                                    <span class="text-muted small">قيد الرصد</span>
-                                {% endif %}
-                            </td>
+                        <!-- المجموع المكتسب التلقائي -->
+                        <td class="text-center fw-bold fs-6 total-cell bg-light">
+                            {% if en.is_graded %}
+                            {{ en.total_score }}
+                            {% else %}
+                            <span class="text-muted small">قيد الرصد</span>
+                            {% endif %}
+                        </td>
 
-                            <!-- النسبة التلقائية -->
-                            <td class="text-center fw-bold percentage-cell bg-light font-monospace">
-                                {% if en.is_graded %}
-                                    {{ en.percentage }}%
-                                {% else %}
-                                    <span class="text-muted small">-</span>
-                                {% endif %}
-                            </td>
+                        <!-- النسبة التلقائية -->
+                        <td class="text-center fw-bold percentage-cell bg-light font-monospace">
+                            {% if en.is_graded %}
+                            {{ en.percentage }}%
+                            {% else %}
+                            <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
 
-                            <!-- التقدير التلقائي -->
-                            <td class="text-center fw-bold grade-cell bg-light">
-                                {% if en.is_graded %}
-                                    <span class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% elif en.percentage >= 50 %}badge-grade-d{% else %}bg-danger text-white{% endif %} px-2 py-1">
-                                        {{ en.grade_label }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-light text-secondary border px-2 py-1">
-                                        <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
-                                    </span>
-                                {% endif %}
-                            </td>
+                        <!-- التقدير التلقائي -->
+                        <td class="text-center fw-bold grade-cell bg-light">
+                            {% if en.is_graded %}
+                            <span
+                                class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% elif en.percentage >= 50 %}badge-grade-d{% else %}bg-danger text-white{% endif %} px-2 py-1">
+                                {{ en.grade_label }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-light text-secondary border px-2 py-1">
+                                <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
+                            </span>
+                            {% endif %}
+                        </td>
 
-                            <!-- ملحوظة الشهادة (متاحة للتعديل دائماً) -->
-                            <td class="p-2" style="min-width: 170px;">
-                                <input type="text" 
-                                       name="cert_note_{{ en.trainee.military_number }}"
-                                       class="form-control form-control-sm cert-note-input"
-                                       placeholder="اكتب الملحوظة هنا..."
-                                       value="{{ en.certificate_note }}"
-                                       title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
-                            </td>
+                        <!-- ملحوظة الشهادة (متاحة للتعديل دائماً) -->
+                        <td class="p-2" style="min-width: 170px;">
+                            <input type="text" name="cert_note_{{ en.trainee.military_number }}"
+                                class="form-control form-control-sm cert-note-input" placeholder="اكتب الملحوظة هنا..."
+                                value="{{ en.certificate_note }}"
+                                title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
+                        </td>
 
-                            <!-- خيارات الشهادة وأمر التحرك للدارس -->
-                            <td class="text-center cert-cell">
-                                {% if en.has_complete_data_and_grades %}
-                                    <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-center">
-                                        <button type="button" 
-                                                class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
-                                                onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{% url 'training:movement_order' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#certChoiceModal"
-                                                data-cert-official="{% url 'training:certificate' en.id %}"
-                                                data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
-                                                data-movement-order="{% url 'training:movement_order' en.id %}"
-                                                data-name="{{ en.trainee.name }}"
-                                                data-rank="{{ en.current_rank }}"
-                                                data-num="{{ en.trainee.military_number }}"
-                                                data-unit="{{ en.current_unit }}"
-                                                data-grade="{{ en.grade_label }}"
-                                                title="خيارات استخراج وطباعة الشهادة وأمر التحرك">
-                                            <i class="bi bi-award-fill text-dark"></i>
-                                            <span>الشهادة</span>
-                                        </button>
-                                        <a href="{% url 'training:movement_order' en.id %}" target="_blank"
-                                           class="btn btn-sm btn-info text-white fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1"
-                                           title="استخراج وطباعة أمر التحرك الرسمي">
-                                            <i class="bi bi-signpost-2-fill"></i>
-                                            <span>أمر التحرك</span>
-                                        </a>
-                                    </div>
-                                {% else %}
-                                    <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1" title="لا تظهر الشهادة وأمر التحرك إلا بعد اكتمال جميع البيانات والدرجات">
-                                        <i class="bi bi-lock-fill text-secondary"></i>
-                                        <span>غير مكتمل</span>
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
+                        <!-- خيارات الشهادة وأمر التحرك للدارس -->
+                        <td class="text-center cert-cell">
+                            {% if en.has_complete_data_and_grades %}
+                            <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-center">
+                                <button type="button"
+                                    class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
+                                    onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{% url 'training:movement_order' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
+                                    data-bs-toggle="modal" data-bs-target="#certChoiceModal"
+                                    data-cert-official="{% url 'training:certificate' en.id %}"
+                                    data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
+                                    data-movement-order="{% url 'training:movement_order' en.id %}"
+                                    data-name="{{ en.trainee.name }}" data-rank="{{ en.current_rank }}"
+                                    data-num="{{ en.trainee.military_number }}" data-unit="{{ en.current_unit }}"
+                                    data-grade="{{ en.grade_label }}" title="خيارات استخراج وطباعة الشهادة وأمر التحرك">
+                                    <i class="bi bi-award-fill text-dark"></i>
+                                    <span>الشهادة</span>
+                                </button>
+                                <a href="{% url 'training:movement_order' en.id %}" target="_blank"
+                                    class="btn btn-sm btn-info text-white fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1"
+                                    title="استخراج وطباعة أمر التحرك الرسمي">
+                                    <i class="bi bi-signpost-2-fill"></i>
+                                    <span>أمر التحرك</span>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span
+                                class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1"
+                                title="لا تظهر الشهادة وأمر التحرك إلا بعد اكتمال جميع البيانات والدرجات">
+                                <i class="bi bi-lock-fill text-secondary"></i>
+                                <span>غير مكتمل</span>
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="{{ subjects|length|add:8 }}" class="text-center py-5 text-muted">
-                                لا يوجد دارسون مسجلون في هذه الدورة.
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="{{ subjects|length|add:8 }}" class="text-center py-5 text-muted">
+                            لا يوجد دارسون مسجلون في هذه الدورة.
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -428,47 +457,56 @@
         <div class="card-footer bg-light py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div>
                 <span class="text-muted small">
-                    <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم تطبيق التقديرات المعتمدة تلقائياً: 
-                    <strong>ممتاز (85-100)</strong> • 
-                    <strong>جيد جداً (75-84)</strong> • 
-                    <strong>جيد (65-74)</strong> • 
+                    <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم تطبيق التقديرات المعتمدة تلقائياً:
+                    <strong>ممتاز (85-100)</strong> •
+                    <strong>جيد جداً (75-84)</strong> •
+                    <strong>جيد (65-74)</strong> •
                     <strong>مقبول (50-64)</strong>
                 </span>
             </div>
 
             <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto align-items-center">
                 {% if is_locked %}
-                    <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
-                        <i class="bi bi-lock-fill fs-5"></i>
-                        <span>الدرجات معتمدة ومقفلة. يمكنك تعديل ملحوظات الشهادات وحفظها أدناه.</span>
-                    </div>
-                    <button type="submit" name="save_notes" value="1" class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-pencil-square fs-5"></i>
-                        <span>حفظ وتحديث ملحوظات الشهادات</span>
-                    </button>
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
+                    <i class="bi bi-lock-fill fs-5"></i>
+                    <span>الدرجات معتمدة ومقفلة. يمكنك تعديل ملحوظات الشهادات وحفظها أدناه.</span>
+                </div>
+                <button type="submit" name="save_notes" value="1"
+                    class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-pencil-square fs-5"></i>
+                    <span>حفظ وتحديث ملحوظات الشهادات</span>
+                </button>
                 {% else %}
-                    <button type="submit" name="save_notes" value="1" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" title="حفظ ملحوظات الشهادات فقط">
-                        <i class="bi bi-pencil-square"></i>
-                        <span>حفظ الملحوظات</span>
-                    </button>
-                    {% if can_approve_results and session.status != 'completed' %}
-                        {% if is_fully_graded %}
-                            <button type="submit" name="mark_completed" value="1" class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
-                                <i class="bi bi-patch-check-fill fs-5"></i>
-                                <span>اعتماد نتيجة الدورة نهائياً</span>
-                            </button>
-                        {% else %}
-                            <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2" disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة">
-                                <i class="bi bi-hourglass-split text-warning"></i>
-                                <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
-                            </button>
-                        {% endif %}
-                    {% endif %}
+                <button type="submit" name="save_notes" value="1"
+                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
+                    title="حفظ ملحوظات الشهادات فقط">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>حفظ الملحوظات</span>
+                </button>
+                {% if can_approve_results and session.status != 'completed' %}
+                {% if is_fully_graded %}
+                <button type="submit" name="mark_completed" value="1"
+                    class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                    onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
+                    <i class="bi bi-patch-check-fill fs-5"></i>
+                    <span>اعتماد نتيجة الدورة نهائياً</span>
+                </button>
+                {% else %}
+                <button type="button"
+                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
+                    disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة">
+                    <i class="bi bi-hourglass-split text-warning"></i>
+                    <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
+                </button>
+                {% endif %}
+                {% endif %}
 
-                    <button type="submit" name="save_grades" value="1" class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-save2-fill"></i>
-                        <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
-                    </button>
+                <button type="submit" name="save_grades" value="1"
+                    class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-save2-fill"></i>
+                    <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد
+                        جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
+                </button>
                 {% endif %}
             </div>
         </div>
@@ -476,12 +514,14 @@
 
     <!-- Mobile Sticky Save Bar -->
     {% if not is_locked %}
-        <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
-            <button type="submit" name="save_grades" value="1" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
-                <i class="bi bi-save2-fill"></i>
-                <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
-            </button>
-        </div>
+    <div class="d-md-none sticky-bottom bg-white border-top p-2 shadow-lg text-center rounded-top-3">
+        <button type="submit" name="save_grades" value="1"
+            class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-save2-fill"></i>
+            <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد جميع
+                الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
+        </button>
+    </div>
     {% endif %}
 </form>
 
@@ -494,14 +534,16 @@
                     <i class="bi bi-award-fill text-warning fs-4"></i>
                     <span>خيارات استخراج وطباعة الشهادة</span>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="إغلاق"></button>
             </div>
-            
+
             <div class="modal-body p-4 bg-light">
                 <!-- بيانات الدارس المحددة -->
                 <div class="bg-white p-3 rounded-3 border shadow-sm mb-4">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3 d-flex align-items-center justify-content-center"
+                            style="width: 55px; height: 55px;">
                             <i class="bi bi-person-badge-fill"></i>
                         </div>
                         <div>
@@ -521,9 +563,11 @@
                 <div class="row g-3">
                     <!-- الخيار 1: شهادة التقدير الرسمية -->
                     <div class="col-12">
-                        <a href="#" id="certLinkOfficial" target="_blank" class="card border-2 border-warning text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                        <a href="#" id="certLinkOfficial" target="_blank"
+                            class="card border-2 border-warning text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-warning text-dark p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                <div class="bg-warning text-dark p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center"
+                                    style="width: 55px; height: 55px;">
                                     <i class="bi bi-award-fill"></i>
                                 </div>
                                 <div>
@@ -531,10 +575,12 @@
                                         <span>1. شهادة التقدير الرسمية</span>
                                         <span class="badge bg-warning text-dark">عرضية A4</span>
                                     </div>
-                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد لإكمال الدورة مع التقدير العام وشعارات القوات المسلحة.</div>
+                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد لإكمال الدورة مع التقدير
+                                        العام وشعارات القوات المسلحة.</div>
                                 </div>
                             </div>
-                            <div class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                            <div
+                                class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
                                 <span>فتح وطباعة</span>
                                 <i class="bi bi-box-arrow-up-left"></i>
                             </div>
@@ -543,9 +589,11 @@
 
                     <!-- الخيار 2: شهادة التفاصيل -->
                     <div class="col-12">
-                        <a href="#" id="certLinkBasic" target="_blank" class="card border-2 border-primary text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                        <a href="#" id="certLinkBasic" target="_blank"
+                            class="card border-2 border-primary text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-primary text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                <div class="bg-primary text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center"
+                                    style="width: 55px; height: 55px;">
                                     <i class="bi bi-file-earmark-text-fill"></i>
                                 </div>
                                 <div>
@@ -553,10 +601,12 @@
                                         <span>2. شهادة التفاصيل (كشف الدرجات والترتيب)</span>
                                         <span class="badge bg-primary text-white">طولية A4</span>
                                     </div>
-                                    <div class="text-muted small mt-1">النموذج المعتمد شامل كشف درجات المواد، الترتيب العام، والملحوظة الخاصة.</div>
+                                    <div class="text-muted small mt-1">النموذج المعتمد شامل كشف درجات المواد، الترتيب
+                                        العام، والملحوظة الخاصة.</div>
                                 </div>
                             </div>
-                            <div class="btn btn-primary fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                            <div
+                                class="btn btn-primary fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
                                 <span>فتح وطباعة</span>
                                 <i class="bi bi-box-arrow-up-left"></i>
                             </div>
@@ -565,9 +615,11 @@
 
                     <!-- الخيار 3: أمر التحرك الرسمي -->
                     <div class="col-12">
-                        <a href="#" id="certLinkMovement" target="_blank" class="card border-2 border-info text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
+                        <a href="#" id="certLinkMovement" target="_blank"
+                            class="card border-2 border-info text-decoration-none shadow-sm rounded-3 p-3 d-flex flex-row align-items-center justify-content-between bg-white text-dark hover-shadow">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-info text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                                <div class="bg-info text-white p-3 rounded-3 fs-3 d-flex align-items-center justify-content-center"
+                                    style="width: 55px; height: 55px;">
                                     <i class="bi bi-signpost-2-fill"></i>
                                 </div>
                                 <div>
@@ -575,10 +627,12 @@
                                         <span>3. أمر التحرك الرسمي المعتمد</span>
                                         <span class="badge bg-info text-white">طولي A4</span>
                                     </div>
-                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد للتحرك (للضباط وضباط الصف) شامل العلامة المائية والتعليمات الإدارية.</div>
+                                    <div class="text-muted small mt-1">النموذج الرسمي المعتمد للتحرك (للضباط وضباط الصف)
+                                        شامل العلامة المائية والتعليمات الإدارية.</div>
                                 </div>
                             </div>
-                            <div class="btn btn-info text-white fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+                            <div
+                                class="btn btn-info text-white fw-bold px-3 py-2 rounded-2 d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
                                 <span>فتح وطباعة</span>
                                 <i class="bi bi-box-arrow-up-left"></i>
                             </div>
@@ -588,8 +642,10 @@
             </div>
 
             <div class="modal-footer bg-white py-3 px-4 d-flex justify-content-between align-items-center">
-                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>تفتح كل شهادة في نافذة مستقلة مهيأة للطباعة المباشرة بصيغة A4.</span>
-                <button type="button" class="btn btn-secondary px-4 fw-bold rounded-2" data-bs-dismiss="modal">إغلاق</button>
+                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>تفتح كل شهادة في نافذة مستقلة مهيأة
+                    للطباعة المباشرة بصيغة A4.</span>
+                <button type="button" class="btn btn-secondary px-4 fw-bold rounded-2"
+                    data-bs-dismiss="modal">إغلاق</button>
             </div>
         </div>
     </div>
@@ -606,7 +662,8 @@
                         سجل درجات الضبط والربط للدارس: <span id="discTraineeName" class="text-warning"></span>
                     </h5>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="إغلاق"></button>
             </div>
 
             <div class="modal-body p-4 bg-light">
@@ -628,10 +685,12 @@
                     </div>
 
                     <!-- تنبيه قطع الدورة التلقائي عند تجاوز 5 نقاط -->
-                    <div id="discDroppedAlert" class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
+                    <div id="discDroppedAlert"
+                        class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                         <div>
-                            <span>تنبيه نظامي: تجاوز الدارس الحد الأقصى المسموح به لمخالفات الضبط والربط (أكثر من 5 نقاط)، وتم قطع الدورة عنه تلقائياً.</span>
+                            <span>تنبيه نظامي: تجاوز الدارس الحد الأقصى المسموح به لمخالفات الضبط والربط (أكثر من 5
+                                نقاط)، وتم قطع الدورة عنه تلقائياً.</span>
                             <div class="small fw-normal text-danger-emphasis mt-1" id="discDropReason"></div>
                         </div>
                     </div>
@@ -649,7 +708,8 @@
                         <div class="row g-2 align-items-end">
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted mb-1">تاريخ المخالفة</label>
-                                <input type="date" id="discInfractionDate" class="form-control form-control-sm" required>
+                                <input type="date" id="discInfractionDate" class="form-control form-control-sm"
+                                    required>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label small fw-bold text-muted mb-1">نوع المخالفة</label>
@@ -660,14 +720,16 @@
                                     <option value="absent_lecture">الغياب عن المحاضرة الواحدة</option>
                                     <option value="absent_full_day">الغياب ليوم كامل</option>
                                     <option value="enter_supervisor_office">دخول مكتب المشرف</option>
-                                    <option value="enter_education_commander_office">دخول مكتب قائد جناح التعليم</option>
+                                    <option value="enter_education_commander_office">دخول مكتب قائد جناح التعليم
+                                    </option>
                                     <option value="enter_chief_instructor_office">دخول مكتب كبير المعلمين</option>
                                     <option value="enter_commander_office">دخول مكتب القائد</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-muted mb-1">ملاحظات (اختياري)</label>
-                                <input type="text" id="discInfractionNotes" class="form-control form-control-sm" placeholder="تفاصيل أو ملاحظة...">
+                                <input type="text" id="discInfractionNotes" class="form-control form-control-sm"
+                                    placeholder="تفاصيل أو ملاحظة...">
                             </div>
                             <div class="col-12 text-end mt-2">
                                 <button type="button" id="btnSubmitDiscipline" onclick="submitAddDisciplineInfraction()" class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
@@ -681,12 +743,14 @@
 
                 <!-- جدول المخالفات المسجلة -->
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-                    <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div
+                        class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
                         <span class="fw-bold small text-dark">
                             <i class="bi bi-card-list me-1 text-primary"></i>
                             سجل المخالفات المسجلة للدارس:
                         </span>
-                        <span class="badge bg-light text-dark border small" id="discInfractionsCountBadge">0 مخالفات</span>
+                        <span class="badge bg-light text-dark border small" id="discInfractionsCountBadge">0
+                            مخالفات</span>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-center small">
@@ -712,7 +776,8 @@
             </div>
 
             <div class="modal-footer bg-white py-2 px-3">
-                <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill"
+                    data-bs-dismiss="modal">إغلاق</button>
             </div>
         </div>
     </div>
@@ -904,10 +969,10 @@
     }
 
     // التحقق الشامل قبل إرسال النموذج لمنع حفظ درجات غير صالحة
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const gradesForm = document.getElementById('gradesForm');
         if (gradesForm) {
-            gradesForm.addEventListener('submit', function(e) {
+            gradesForm.addEventListener('submit', function (e) {
                 // إذا كان الضغط على حفظ الملحوظات فقط، لا داعي للتحقق من الدرجات
                 const activeSubmitter = e.submitter;
                 if (activeSubmitter && activeSubmitter.name === 'save_notes') {
@@ -1349,10 +1414,10 @@
                 alert(data.message || 'حدث خطأ أثناء حذف المخالفة.');
             }
         })
-        .catch(err => {
-            console.error('Error deleting infraction:', err);
-            alert('حدث خطأ في الاتصال بالخادم.');
-        });
+            .catch(err => {
+                console.error('Error deleting infraction:', err);
+                alert('حدث خطأ في الاتصال بالخادم.');
+            });
     }
 
     function updateMainTableRowDiscipline(enrollmentId, score, isDropped) {
@@ -1409,7 +1474,7 @@
             '"': '&quot;',
             "'": '&#039;'
         };
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        return text.replace(/[&<>"']/g, function (m) { return map[m]; });
     }
 </script>
 {% endblock %}
