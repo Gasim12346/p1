@@ -3825,6 +3825,7 @@ def api_add_discipline_infraction_view(request):
     return JsonResponse({
         'success': True,
         'message': 'تم تسجيل المخالفة واحتساب درجات الضبط والربط بنجاح.',
+        'enrollment_id': enrollment.id,
         'score': result['score'],
         'is_dropped': result['dropped'],
         'drop_reason': result['reason'],
@@ -3886,6 +3887,7 @@ def api_delete_discipline_infraction_view(request, infraction_id):
     return JsonResponse({
         'success': True,
         'message': 'تم حذف المخالفة وتحديث درجات الضبط والربط بنجاح.',
+        'enrollment_id': enrollment.id,
         'score': result['score'],
         'is_dropped': result['dropped'],
         'drop_reason': result['reason'],

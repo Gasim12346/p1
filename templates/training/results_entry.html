@@ -292,7 +292,18 @@
                                         <button type="button" 
                                                 class="btn btn-sm {% if en.is_dropped %}btn-danger text-white{% elif en.discipline_infractions.exists %}btn-outline-warning text-dark{% else %}btn-outline-primary{% endif %} rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn"
                                                 id="btn_disc_{{ en.id }}"
-                                                onclick="openDisciplineModal({{ en.id }})"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#disciplineModal"
+                                                data-enrollment-id="{{ en.id }}"
+                                                data-trainee-name="{{ en.trainee.name }}"
+                                                data-military-number="{{ en.trainee.military_number }}"
+                                                data-rank="{{ en.current_rank|default:'' }}"
+                                                data-unit="{{ en.current_unit|default:'' }}"
+                                                data-score="{% if en.is_dropped %}0{% elif en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% else %}{{ session.attendance_max_grade|unlocalize|default:'10' }}{% endif %}"
+                                                data-max="{{ session.attendance_max_grade|unlocalize|default:'10' }}"
+                                                data-is-dropped="{{ en.is_dropped|yesno:'true,false' }}"
+                                                data-drop-reason="{{ en.drop_reason|default:'' }}"
+                                                onclick="openDisciplineModal({{ en.id }}, this)"
                                                 title="إدارة مخالفات ورصد درجات الضبط والربط">
                                             <i class="bi {% if en.is_dropped %}bi-slash-circle-fill{% else %}bi-shield-shaded{% endif %}"></i>
                                             <span id="btn_text_{{ en.id }}">{% if en.is_dropped %}تم قطع الدورة{% else %}درجات الضبط والربط{% endif %}</span>
@@ -633,6 +644,7 @@
                         <span>تسجيل مخالفة جديدة للدارس</span>
                     </h6>
                     <form id="disciplineAddForm" onsubmit="event.preventDefault(); submitAddDisciplineInfraction();">
+                        {% csrf_token %}
                         <input type="hidden" id="discCurrentEnrollmentId" value="">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-3">
@@ -658,7 +670,7 @@
                                 <input type="text" id="discInfractionNotes" class="form-control form-control-sm" placeholder="تفاصيل أو ملاحظة...">
                             </div>
                             <div class="col-12 text-end mt-2">
-                                <button type="submit" id="btnSubmitDiscipline" class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                                <button type="button" id="btnSubmitDiscipline" onclick="submitAddDisciplineInfraction()" class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-check-circle-fill"></i>
                                     <span>تسجيل المخالفة واحتساب الدرجة</span>
                                 </button>
@@ -1023,38 +1035,105 @@
     // ==========================================
     let currentDiscEnrollmentId = null;
 
-    function openDisciplineModal(enrollmentId) {
+    function getDisciplineCsrfToken() {
+        const formToken = document.querySelector('#disciplineAddForm [name=csrfmiddlewaretoken]');
+        if (formToken && formToken.value) return formToken.value;
+        const mainToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (mainToken && mainToken.value) return mainToken.value;
+        const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        return cookie ? cookie.split('=')[1] : '';
+    }
+
+    function openDisciplineModal(enrollmentId, btnEl) {
         currentDiscEnrollmentId = enrollmentId;
         const hiddenInput = document.getElementById('discCurrentEnrollmentId');
         if (hiddenInput) hiddenInput.value = enrollmentId;
 
+        // تعبئة البيانات الأولية فوراً من خصائص الزر لتوفير استجابة سريعة
+        if (btnEl) {
+            const nameEl = document.getElementById('discTraineeName');
+            const numEl = document.getElementById('discMilitaryNumber');
+            const rankNameEl = document.getElementById('discRankAndName');
+            const unitEl = document.getElementById('discUnit');
+            const scoreEl = document.getElementById('discScoreDisplay');
+            const maxEl = document.getElementById('discMaxGradeDisplay');
+            const alertEl = document.getElementById('discDroppedAlert');
+            const reasonEl = document.getElementById('discDropReason');
+
+            const traineeName = btnEl.getAttribute('data-trainee-name') || '';
+            const milNum = btnEl.getAttribute('data-military-number') || '';
+            const rank = btnEl.getAttribute('data-rank') || '';
+            const unit = btnEl.getAttribute('data-unit') || '';
+            const score = btnEl.getAttribute('data-score') || '10';
+            const maxGrade = btnEl.getAttribute('data-max') || '10';
+            const isDropped = btnEl.getAttribute('data-is-dropped') === 'true';
+            const dropReason = btnEl.getAttribute('data-drop-reason') || '';
+
+            if (nameEl) nameEl.textContent = traineeName;
+            if (numEl) numEl.textContent = milNum;
+            if (rankNameEl) rankNameEl.textContent = (rank ? rank + ' / ' : '') + traineeName;
+            if (unitEl) unitEl.textContent = unit ? `(${unit})` : '';
+            if (scoreEl) scoreEl.textContent = parseFloat(score).toFixed(2).replace(/\.00$/, '');
+            if (maxEl) maxEl.textContent = maxGrade;
+
+            if (alertEl && reasonEl) {
+                if (isDropped) {
+                    alertEl.classList.remove('d-none');
+                    reasonEl.textContent = dropReason || 'تم قطع الدورة عن الدارس لتجاوز حد المخالفات المسموح به.';
+                } else {
+                    alertEl.classList.add('d-none');
+                    reasonEl.textContent = '';
+                }
+            }
+        }
+
+        // تهيئة التاريخ وتفريغ حقول الإدخال
+        const dateInput = document.getElementById('discInfractionDate');
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
         const typeSelect = document.getElementById('discInfractionType');
         const notesInput = document.getElementById('discInfractionNotes');
         if (typeSelect) typeSelect.value = '';
         if (notesInput) notesInput.value = '';
 
+        // عرض مؤشر التحميل في جدول المخالفات
+        const tbody = document.getElementById('discInfractionsTableBody');
+        const emptyState = document.getElementById('discEmptyState');
+        if (emptyState) emptyState.classList.add('d-none');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-3 text-muted text-center"><div class="spinner-border spinner-border-sm text-primary me-2"></div> جارٍ تحميل سجل المخالفات...</td></tr>`;
+        }
+
+        // فتح النافذة المنبثقة للتأكيد في حال لم تُفتح تلقائياً
+        const modalEl = document.getElementById('disciplineModal');
+        if (modalEl) {
+            if (window.bootstrap && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else if (window.$) {
+                $(modalEl).modal('show');
+            } else {
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                document.body.classList.add('modal-open');
+            }
+        }
+
+        // جلب البيانات المحدثة من الخادم عبر AJAX
         fetch(`/results/api/discipline/${enrollmentId}/`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     renderDisciplineModal(data);
-                    const modalEl = document.getElementById('disciplineModal');
-                    if (window.bootstrap && bootstrap.Modal) {
-                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                    } else if (window.$) {
-                        $(modalEl).modal('show');
-                    } else {
-                        modalEl.classList.add('show');
-                        modalEl.style.display = 'block';
-                        document.body.classList.add('modal-open');
-                    }
                 } else {
                     alert(data.message || 'حدث خطأ أثناء تحميل سجل الضبط والربط.');
                 }
             })
             .catch(err => {
                 console.error('Error fetching discipline data:', err);
-                alert('حدث خطأ في الاتصال بالخادم.');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-3 text-danger text-center"><i class="bi bi-exclamation-circle me-1"></i>تعذر تحميل السجل. يرجى إعادة المحاولة.</td></tr>`;
+                }
             });
     }
 
@@ -1092,52 +1171,82 @@
             formCard.style.display = data.can_edit ? 'block' : 'none';
         }
 
-        const tbody = document.getElementById('discInfractionsTableBody');
-        const emptyState = document.getElementById('discEmptyState');
-        const countBadge = document.getElementById('discInfractionsCountBadge');
-
-        if (tbody) tbody.innerHTML = '';
-        const infs = data.infractions || [];
-        if (countBadge) countBadge.textContent = infs.length + ' مخالفة';
-
-        if (infs.length === 0) {
-            if (emptyState) emptyState.classList.remove('d-none');
-        } else {
-            if (emptyState) emptyState.classList.add('d-none');
-            if (tbody) {
-                infs.forEach((inf, idx) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="text-muted fw-bold">${idx + 1}</td>
-                        <td><span class="badge bg-light text-dark border font-monospace">${inf.date}</span></td>
-                        <td class="text-start fw-bold text-dark">${escapeDisciplineHtml(inf.infraction_display)}</td>
-                        <td class="text-muted small">${escapeDisciplineHtml(inf.notes || '-')}</td>
-                        <td>
-                            ${data.can_edit ? `
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 rounded-pill" onclick="deleteDisciplineInfraction(${inf.id})" title="حذف المخالفة">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            ` : '-'}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+        // تحديث خيارات القائمة المنسدلة إن توفرت
+        if (data.choices && data.choices.length > 0) {
+            const typeSelect = document.getElementById('discInfractionType');
+            if (typeSelect && typeSelect.options.length <= 1) {
+                typeSelect.innerHTML = '<option value="">-- اختر المخالفة من القائمة --</option>';
+                data.choices.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.value;
+                    opt.textContent = c.label;
+                    typeSelect.appendChild(opt);
                 });
             }
         }
 
+        renderDisciplineInfractionsList(data.infractions, data.can_edit);
         updateMainTableRowDiscipline(data.enrollment_id, data.score, data.is_dropped);
+    }
+
+    function renderDisciplineInfractionsList(infs, canEdit) {
+        const tbody = document.getElementById('discInfractionsTableBody');
+        const emptyState = document.getElementById('discEmptyState');
+        const countBadge = document.getElementById('discInfractionsCountBadge');
+
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        const list = infs || [];
+        if (countBadge) countBadge.textContent = list.length + ' مخالفة';
+
+        if (list.length === 0) {
+            if (emptyState) emptyState.classList.remove('d-none');
+        } else {
+            if (emptyState) emptyState.classList.add('d-none');
+            list.forEach((inf, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-muted fw-bold">${idx + 1}</td>
+                    <td><span class="badge bg-light text-dark border font-monospace">${inf.date}</span></td>
+                    <td class="text-start fw-bold text-dark">${escapeDisciplineHtml(inf.infraction_display)}</td>
+                    <td class="text-muted small">${escapeDisciplineHtml(inf.notes || '-')}</td>
+                    <td>
+                        ${canEdit ? `
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 rounded-pill" onclick="deleteDisciplineInfraction(${inf.id})" title="حذف المخالفة">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        ` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
     }
 
     function submitAddDisciplineInfraction() {
         const enrollmentId = document.getElementById('discCurrentEnrollmentId').value;
-        const type = document.getElementById('discInfractionType').value;
-        const date = document.getElementById('discInfractionDate').value;
-        const notes = document.getElementById('discInfractionNotes').value;
+        const typeSelect = document.getElementById('discInfractionType');
+        const type = typeSelect ? typeSelect.value : '';
+        const dateInput = document.getElementById('discInfractionDate');
+        let date = dateInput ? dateInput.value : '';
+        const notesInput = document.getElementById('discInfractionNotes');
+        const notes = notesInput ? notesInput.value.trim() : '';
         const btn = document.getElementById('btnSubmitDiscipline');
 
-        if (!type) {
-            alert('يرجى اختيار نوع المخالفة من القائمة.');
+        if (!enrollmentId) {
+            alert('حدث خطأ: لم يتم تحديد الدارس بشكل صحيح.');
             return;
+        }
+
+        if (!type) {
+            alert('يرجى اختيار نوع المخالفة من القائمة المنسدلة.');
+            if (typeSelect) typeSelect.focus();
+            return;
+        }
+
+        if (!date) {
+            date = new Date().toISOString().split('T')[0];
+            if (dateInput) dateInput.value = date;
         }
 
         if (btn) {
@@ -1145,8 +1254,9 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارٍ التسجيل...';
         }
 
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfToken = getDisciplineCsrfToken();
         const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
         formData.append('enrollment_id', enrollmentId);
         formData.append('infraction_type', type);
         formData.append('date', date);
@@ -1164,7 +1274,26 @@
                 btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>تسجيل المخالفة واحتساب الدرجة</span>';
             }
             if (data.success) {
-                openDisciplineModal(enrollmentId);
+                if (typeSelect) typeSelect.value = '';
+                if (notesInput) notesInput.value = '';
+
+                const scoreEl = document.getElementById('discScoreDisplay');
+                if (scoreEl) scoreEl.textContent = parseFloat(data.score).toFixed(2).replace(/\.00$/, '');
+
+                const alertEl = document.getElementById('discDroppedAlert');
+                const reasonEl = document.getElementById('discDropReason');
+                if (alertEl && reasonEl) {
+                    if (data.is_dropped) {
+                        alertEl.classList.remove('d-none');
+                        reasonEl.textContent = data.drop_reason || 'تم قطع الدورة عن الدارس لتجاوز حد المخالفات المسموح به.';
+                    } else {
+                        alertEl.classList.add('d-none');
+                        reasonEl.textContent = '';
+                    }
+                }
+
+                renderDisciplineInfractionsList(data.infractions, true);
+                updateMainTableRowDiscipline(enrollmentId, data.score, data.is_dropped);
             } else {
                 alert(data.message || 'حدث خطأ أثناء تسجيل المخالفة.');
             }
@@ -1184,16 +1313,37 @@
             return;
         }
 
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfToken = getDisciplineCsrfToken();
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
         fetch(`/results/api/discipline/delete/${infractionId}/`, {
             method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken }
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
         })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                if (currentDiscEnrollmentId) {
-                    openDisciplineModal(currentDiscEnrollmentId);
+                const scoreEl = document.getElementById('discScoreDisplay');
+                if (scoreEl) scoreEl.textContent = parseFloat(data.score).toFixed(2).replace(/\.00$/, '');
+
+                const alertEl = document.getElementById('discDroppedAlert');
+                const reasonEl = document.getElementById('discDropReason');
+                if (alertEl && reasonEl) {
+                    if (data.is_dropped) {
+                        alertEl.classList.remove('d-none');
+                        reasonEl.textContent = data.drop_reason || '';
+                    } else {
+                        alertEl.classList.add('d-none');
+                        reasonEl.textContent = '';
+                    }
+                }
+
+                renderDisciplineInfractionsList(data.infractions, true);
+                const enrollmentId = data.enrollment_id || currentDiscEnrollmentId;
+                if (enrollmentId) {
+                    updateMainTableRowDiscipline(enrollmentId, data.score, data.is_dropped);
                 }
             } else {
                 alert(data.message || 'حدث خطأ أثناء حذف المخالفة.');
@@ -1210,30 +1360,38 @@
         const badge = document.getElementById('badge_disc_' + enrollmentId);
         const btn = document.getElementById('btn_disc_' + enrollmentId);
         const btnText = document.getElementById('btn_text_' + enrollmentId);
-        const row = attInput ? attInput.closest('tr') : null;
+        const row = attInput ? attInput.closest('tr') : (btn ? btn.closest('tr') : null);
+
+        const formattedScore = parseFloat(score).toFixed(2).replace(/\.00$/, '');
 
         if (attInput) {
-            attInput.value = isDropped ? '0' : score;
+            attInput.value = isDropped ? '0.00' : formattedScore;
         }
 
         if (row) {
             row.setAttribute('data-is-dropped', isDropped ? 'true' : 'false');
         }
 
-        if (btn && badge && btnText) {
+        if (btn) {
+            btn.setAttribute('data-is-dropped', isDropped ? 'true' : 'false');
+            btn.setAttribute('data-score', formattedScore);
             const icon = btn.querySelector('i');
             if (isDropped) {
                 btn.className = 'btn btn-sm btn-danger text-white rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn';
                 if (icon) icon.className = 'bi bi-slash-circle-fill';
-                btnText.textContent = 'تم قطع الدورة';
-                badge.className = 'badge bg-white text-danger rounded-pill ms-1 font-monospace';
-                badge.textContent = 'مفصول';
+                if (btnText) btnText.textContent = 'تم قطع الدورة';
+                if (badge) {
+                    badge.className = 'badge bg-white text-danger rounded-pill ms-1 font-monospace';
+                    badge.textContent = 'مفصول';
+                }
             } else {
                 btn.className = 'btn btn-sm btn-outline-primary rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn';
                 if (icon) icon.className = 'bi bi-shield-shaded text-primary';
-                btnText.textContent = 'درجات الضبط والربط';
-                badge.className = 'badge bg-primary text-white rounded-pill ms-1 font-monospace';
-                badge.textContent = parseFloat(score).toFixed(2).replace(/\.00$/, '');
+                if (btnText) btnText.textContent = 'درجات الضبط والربط';
+                if (badge) {
+                    badge.className = 'badge bg-primary text-white rounded-pill ms-1 font-monospace';
+                    badge.textContent = formattedScore;
+                }
             }
         }
 
