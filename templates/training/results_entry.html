@@ -207,9 +207,9 @@
                             <th>لا توجد مواد</th>
                         {% endfor %}
 
-                        <!-- عمود المواظبة والسلوك -->
-                        <th style="min-width: 120px;">
-                            <div class="text-primary fw-bold">المواظبة والسلوك</div>
+                        <!-- عمود درجات الضبط والربط -->
+                        <th style="min-width: 140px;">
+                            <div class="text-primary fw-bold">درجات الضبط والربط</div>
                             <span class="badge bg-primary bg-opacity-10 text-primary font-monospace mb-1">
                                 العظمى: {{ session.attendance_max_grade }}
                             </span>
@@ -236,7 +236,7 @@
                 </thead>
                 <tbody>
                     {% for en in enrollments %}
-                        <tr class="student-row" data-trainee-num="{{ en.trainee.military_number }}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}" data-enrollment-id="{{ en.id }}">
+                        <tr class="student-row" data-trainee-num="{{ en.trainee.military_number }}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_unit }}" data-enrollment-id="{{ en.id }}" data-is-dropped="{{ en.is_dropped|yesno:'true,false' }}">
                             <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
                             
                             <!-- النمرة -->
@@ -285,25 +285,38 @@
                                 </td>
                             {% endfor %}
 
-                            <!-- درجة المواظبة -->
-                            <td class="text-center p-2">
+                            <!-- درجات الضبط والربط -->
+                            <td class="text-center p-2 align-middle">
                                 {% if can_edit_attendance and not is_locked %}
-                                    <input type="number" 
-                                           name="att_{{ en.trainee.military_number }}"
-                                           class="form-control grade-input attendance-grade mx-auto border-primary text-center"
-                                           min="0" 
-                                           max="{{ session.attendance_max_grade|unlocalize }}" 
-                                           step="0.5"
-                                           data-max="{{ session.attendance_max_grade|unlocalize }}"
-                                           placeholder="-"
-                                           {% if en.attendance_score is not None %}value="{{ en.attendance_score|unlocalize }}"{% endif %}
-                                           oninput="calculateRow(this, true)">
+                                    <div class="d-flex flex-column align-items-center justify-content-center gap-1">
+                                        <button type="button" 
+                                                class="btn btn-sm {% if en.is_dropped %}btn-danger text-white{% elif en.discipline_infractions.exists %}btn-outline-warning text-dark{% else %}btn-outline-primary{% endif %} rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn"
+                                                id="btn_disc_{{ en.id }}"
+                                                onclick="openDisciplineModal({{ en.id }})"
+                                                title="إدارة مخالفات ورصد درجات الضبط والربط">
+                                            <i class="bi {% if en.is_dropped %}bi-slash-circle-fill{% else %}bi-shield-shaded{% endif %}"></i>
+                                            <span id="btn_text_{{ en.id }}">{% if en.is_dropped %}تم قطع الدورة{% else %}درجات الضبط والربط{% endif %}</span>
+                                            <span class="badge {% if en.is_dropped %}bg-white text-danger{% else %}bg-primary text-white{% endif %} rounded-pill ms-1 font-monospace" id="badge_disc_{{ en.id }}">
+                                                {% if en.is_dropped %}مفصول{% elif en.attendance_score is not None %}{{ en.attendance_score|floatformat:"-2" }}{% else %}{{ session.attendance_max_grade|floatformat:"-2"|default:"10" }}{% endif %}
+                                            </span>
+                                        </button>
+
+                                        <!-- حقل الدرجة المخفي لربط الحسابات التلقائية وحفظ النموذج -->
+                                        <input type="hidden"
+                                               name="att_{{ en.trainee.military_number }}"
+                                               id="att_input_{{ en.id }}"
+                                               class="attendance-grade"
+                                               data-max="{{ session.attendance_max_grade|unlocalize }}"
+                                               value="{% if en.is_dropped %}0.00{% elif en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% else %}{{ session.attendance_max_grade|unlocalize|default:'10.00' }}{% endif %}">
+                                    </div>
                                 {% else %}
                                     <div class="grade-display-box mx-auto py-1 px-2 rounded-2 bg-light border text-center font-monospace readonly-attendance-grade"
                                          data-score="{% if en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% endif %}"
                                          data-max="{{ session.attendance_max_grade|unlocalize }}"
-                                         title="رصد درجة المواظبة محصور بمشرف الدورة أو مدير النظام">
-                                        {% if en.attendance_score is not None %}
+                                         title="رصد درجات الضبط والربط محصور بمشرف الدورة أو مدير النظام">
+                                        {% if en.is_dropped %}
+                                            <span class="badge bg-danger text-white">تم قطع الدورة</span>
+                                        {% elif en.attendance_score is not None %}
                                             <strong class="text-primary">{{ en.attendance_score|unlocalize }}</strong>
                                         {% else %}
                                             <span class="text-muted small">-</span>
@@ -570,6 +583,128 @@
         </div>
     </div>
 </div>
+
+<!-- نافذة منبثقة: درجات الضبط والربط وإدارة المخالفات -->
+<div class="modal fade" id="disciplineModal" tabindex="-1" aria-labelledby="disciplineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-shaded text-warning fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="disciplineModalLabel">
+                        سجل درجات الضبط والربط للدارس: <span id="discTraineeName" class="text-warning"></span>
+                    </h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+
+            <div class="modal-body p-4 bg-light">
+                <!-- بطاقة ملخص الدارس والدرجة الحالية -->
+                <div class="card border-0 shadow-sm rounded-3 mb-3 p-3 bg-white">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-7">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary font-monospace" id="discMilitaryNumber"></span>
+                                <strong class="text-dark" id="discRankAndName"></strong>
+                                <small class="text-muted" id="discUnit"></small>
+                            </div>
+                        </div>
+                        <div class="col-md-5 text-md-end">
+                            <span class="text-muted small">درجة الضبط والربط المحتسبة:</span>
+                            <strong class="fs-5 text-primary ms-1" id="discScoreDisplay">--</strong>
+                            <span class="text-muted small">/ <span id="discMaxGradeDisplay">10</span></span>
+                        </div>
+                    </div>
+
+                    <!-- تنبيه قطع الدورة التلقائي عند تجاوز 5 نقاط -->
+                    <div id="discDroppedAlert" class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div>
+                            <span>تنبيه نظامي: تجاوز الدارس الحد الأقصى المسموح به لمخالفات الضبط والربط (أكثر من 5 نقاط)، وتم قطع الدورة عنه تلقائياً.</span>
+                            <div class="small fw-normal text-danger-emphasis mt-1" id="discDropReason"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نموذج تسجيل مخالفة جديدة -->
+                <div id="discAddFormCard" class="card border-0 shadow-sm rounded-3 mb-3 p-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle-fill text-danger"></i>
+                        <span>تسجيل مخالفة جديدة للدارس</span>
+                    </h6>
+                    <form id="disciplineAddForm" onsubmit="event.preventDefault(); submitAddDisciplineInfraction();">
+                        <input type="hidden" id="discCurrentEnrollmentId" value="">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-muted mb-1">تاريخ المخالفة</label>
+                                <input type="date" id="discInfractionDate" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold text-muted mb-1">نوع المخالفة</label>
+                                <select id="discInfractionType" class="form-select form-select-sm" required>
+                                    <option value="">-- اختر المخالفة من القائمة --</option>
+                                    <option value="delay_lecture">التأخير عن تمام المحاضرة الواحدة</option>
+                                    <option value="medical_rest">الراحة الطبية ليوم واحد</option>
+                                    <option value="absent_lecture">الغياب عن المحاضرة الواحدة</option>
+                                    <option value="absent_full_day">الغياب ليوم كامل</option>
+                                    <option value="enter_supervisor_office">دخول مكتب المشرف</option>
+                                    <option value="enter_education_commander_office">دخول مكتب قائد جناح التعليم</option>
+                                    <option value="enter_chief_instructor_office">دخول مكتب كبير المعلمين</option>
+                                    <option value="enter_commander_office">دخول مكتب القائد</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted mb-1">ملاحظات (اختياري)</label>
+                                <input type="text" id="discInfractionNotes" class="form-control form-control-sm" placeholder="تفاصيل أو ملاحظة...">
+                            </div>
+                            <div class="col-12 text-end mt-2">
+                                <button type="submit" id="btnSubmitDiscipline" class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>تسجيل المخالفة واحتساب الدرجة</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- جدول المخالفات المسجلة -->
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                    <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                        <span class="fw-bold small text-dark">
+                            <i class="bi bi-card-list me-1 text-primary"></i>
+                            سجل المخالفات المسجلة للدارس:
+                        </span>
+                        <span class="badge bg-light text-dark border small" id="discInfractionsCountBadge">0 مخالفات</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-center small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 120px;">تاريخ المخالفة</th>
+                                    <th class="text-start">المخالفة</th>
+                                    <th>ملاحظات</th>
+                                    <th style="width: 80px;">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="discInfractionsTableBody">
+                                <!-- يتم ملؤها ديناميكياً عبر AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="discEmptyState" class="p-4 text-center text-muted small d-none">
+                        <i class="bi bi-shield-check text-success fs-3 d-block mb-1"></i>
+                        <span>سجل نظيف: لا توجد أي مخالفات مسجلة على الدارس في هذه الدورة.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white py-2 px-3">
+                <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -580,6 +715,20 @@
     function calculateRow(inputElement, isUserEdit = false) {
         const row = inputElement.classList.contains('student-row') ? inputElement : inputElement.closest('tr');
         if (!row) return;
+
+        const isDropped = row.getAttribute('data-is-dropped') === 'true';
+        const totalCell = row.querySelector('.total-cell');
+        const percentageCell = row.querySelector('.percentage-cell');
+        const gradeCell = row.querySelector('.grade-cell');
+        const certCell = row.querySelector('.cert-cell');
+
+        if (isDropped) {
+            if (totalCell) totalCell.innerHTML = `<span class="text-danger small fw-bold">-</span>`;
+            if (percentageCell) percentageCell.innerHTML = `<span class="text-danger small fw-bold">-</span>`;
+            if (gradeCell) gradeCell.innerHTML = `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-slash-circle me-1"></i>تم قطع الدورة</span>`;
+            if (certCell) certCell.innerHTML = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="bi bi-slash-circle me-1"></i>محجوب (مفصول)</span>`;
+            return;
+        }
 
         const editableSubjectInputs = row.querySelectorAll('input.subject-grade');
         const readonlySubjectBoxes = row.querySelectorAll('.readonly-subject-grade');
@@ -867,6 +1016,242 @@
                 document.body.classList.add('modal-open');
             }
         }
+    }
+
+    // ==========================================
+    // إدارة نافذة وسجل درجات الضبط والربط
+    // ==========================================
+    let currentDiscEnrollmentId = null;
+
+    function openDisciplineModal(enrollmentId) {
+        currentDiscEnrollmentId = enrollmentId;
+        const hiddenInput = document.getElementById('discCurrentEnrollmentId');
+        if (hiddenInput) hiddenInput.value = enrollmentId;
+
+        const typeSelect = document.getElementById('discInfractionType');
+        const notesInput = document.getElementById('discInfractionNotes');
+        if (typeSelect) typeSelect.value = '';
+        if (notesInput) notesInput.value = '';
+
+        fetch(`/results/api/discipline/${enrollmentId}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderDisciplineModal(data);
+                    const modalEl = document.getElementById('disciplineModal');
+                    if (window.bootstrap && bootstrap.Modal) {
+                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    } else if (window.$) {
+                        $(modalEl).modal('show');
+                    } else {
+                        modalEl.classList.add('show');
+                        modalEl.style.display = 'block';
+                        document.body.classList.add('modal-open');
+                    }
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء تحميل سجل الضبط والربط.');
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching discipline data:', err);
+                alert('حدث خطأ في الاتصال بالخادم.');
+            });
+    }
+
+    function renderDisciplineModal(data) {
+        const nameEl = document.getElementById('discTraineeName');
+        const numEl = document.getElementById('discMilitaryNumber');
+        const rankNameEl = document.getElementById('discRankAndName');
+        const unitEl = document.getElementById('discUnit');
+        const scoreEl = document.getElementById('discScoreDisplay');
+        const maxEl = document.getElementById('discMaxGradeDisplay');
+        const dateInput = document.getElementById('discInfractionDate');
+
+        if (nameEl) nameEl.textContent = data.trainee_name;
+        if (numEl) numEl.textContent = data.military_number;
+        if (rankNameEl) rankNameEl.textContent = (data.current_rank ? data.current_rank + ' / ' : '') + data.trainee_name;
+        if (unitEl) unitEl.textContent = data.current_unit ? `(${data.current_unit})` : '';
+        if (scoreEl) scoreEl.textContent = parseFloat(data.score).toFixed(2).replace(/\.00$/, '');
+        if (maxEl) maxEl.textContent = data.max_grade;
+        if (dateInput && data.today) dateInput.value = data.today;
+
+        const alertEl = document.getElementById('discDroppedAlert');
+        const reasonEl = document.getElementById('discDropReason');
+        if (alertEl && reasonEl) {
+            if (data.is_dropped) {
+                alertEl.classList.remove('d-none');
+                reasonEl.textContent = data.drop_reason || 'تم قطع الدورة عن الدارس لتجاوز حد المخالفات المسموح به.';
+            } else {
+                alertEl.classList.add('d-none');
+                reasonEl.textContent = '';
+            }
+        }
+
+        const formCard = document.getElementById('discAddFormCard');
+        if (formCard) {
+            formCard.style.display = data.can_edit ? 'block' : 'none';
+        }
+
+        const tbody = document.getElementById('discInfractionsTableBody');
+        const emptyState = document.getElementById('discEmptyState');
+        const countBadge = document.getElementById('discInfractionsCountBadge');
+
+        if (tbody) tbody.innerHTML = '';
+        const infs = data.infractions || [];
+        if (countBadge) countBadge.textContent = infs.length + ' مخالفة';
+
+        if (infs.length === 0) {
+            if (emptyState) emptyState.classList.remove('d-none');
+        } else {
+            if (emptyState) emptyState.classList.add('d-none');
+            if (tbody) {
+                infs.forEach((inf, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-muted fw-bold">${idx + 1}</td>
+                        <td><span class="badge bg-light text-dark border font-monospace">${inf.date}</span></td>
+                        <td class="text-start fw-bold text-dark">${escapeDisciplineHtml(inf.infraction_display)}</td>
+                        <td class="text-muted small">${escapeDisciplineHtml(inf.notes || '-')}</td>
+                        <td>
+                            ${data.can_edit ? `
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 rounded-pill" onclick="deleteDisciplineInfraction(${inf.id})" title="حذف المخالفة">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : '-'}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        updateMainTableRowDiscipline(data.enrollment_id, data.score, data.is_dropped);
+    }
+
+    function submitAddDisciplineInfraction() {
+        const enrollmentId = document.getElementById('discCurrentEnrollmentId').value;
+        const type = document.getElementById('discInfractionType').value;
+        const date = document.getElementById('discInfractionDate').value;
+        const notes = document.getElementById('discInfractionNotes').value;
+        const btn = document.getElementById('btnSubmitDiscipline');
+
+        if (!type) {
+            alert('يرجى اختيار نوع المخالفة من القائمة.');
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارٍ التسجيل...';
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const formData = new FormData();
+        formData.append('enrollment_id', enrollmentId);
+        formData.append('infraction_type', type);
+        formData.append('date', date);
+        formData.append('notes', notes);
+
+        fetch('/results/api/discipline/add/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>تسجيل المخالفة واحتساب الدرجة</span>';
+            }
+            if (data.success) {
+                openDisciplineModal(enrollmentId);
+            } else {
+                alert(data.message || 'حدث خطأ أثناء تسجيل المخالفة.');
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>تسجيل المخالفة واحتساب الدرجة</span>';
+            }
+            console.error('Error adding infraction:', err);
+            alert('حدث خطأ في الاتصال بالخادم.');
+        });
+    }
+
+    function deleteDisciplineInfraction(infractionId) {
+        if (!confirm('هل أنت متأكد من حذف هذه المخالفة من سجل الدارس؟')) {
+            return;
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(`/results/api/discipline/delete/${infractionId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (currentDiscEnrollmentId) {
+                    openDisciplineModal(currentDiscEnrollmentId);
+                }
+            } else {
+                alert(data.message || 'حدث خطأ أثناء حذف المخالفة.');
+            }
+        })
+        .catch(err => {
+            console.error('Error deleting infraction:', err);
+            alert('حدث خطأ في الاتصال بالخادم.');
+        });
+    }
+
+    function updateMainTableRowDiscipline(enrollmentId, score, isDropped) {
+        const attInput = document.getElementById('att_input_' + enrollmentId);
+        const badge = document.getElementById('badge_disc_' + enrollmentId);
+        const btn = document.getElementById('btn_disc_' + enrollmentId);
+        const btnText = document.getElementById('btn_text_' + enrollmentId);
+        const row = attInput ? attInput.closest('tr') : null;
+
+        if (attInput) {
+            attInput.value = isDropped ? '0' : score;
+        }
+
+        if (row) {
+            row.setAttribute('data-is-dropped', isDropped ? 'true' : 'false');
+        }
+
+        if (btn && badge && btnText) {
+            const icon = btn.querySelector('i');
+            if (isDropped) {
+                btn.className = 'btn btn-sm btn-danger text-white rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn';
+                if (icon) icon.className = 'bi bi-slash-circle-fill';
+                btnText.textContent = 'تم قطع الدورة';
+                badge.className = 'badge bg-white text-danger rounded-pill ms-1 font-monospace';
+                badge.textContent = 'مفصول';
+            } else {
+                btn.className = 'btn btn-sm btn-outline-primary rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn';
+                if (icon) icon.className = 'bi bi-shield-shaded text-primary';
+                btnText.textContent = 'درجات الضبط والربط';
+                badge.className = 'badge bg-primary text-white rounded-pill ms-1 font-monospace';
+                badge.textContent = parseFloat(score).toFixed(2).replace(/\.00$/, '');
+            }
+        }
+
+        if (attInput) {
+            calculateRow(attInput, true);
+        }
+    }
+
+    function escapeDisciplineHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 </script>
 {% endblock %}

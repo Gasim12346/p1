@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from datetime import datetime, date, timedelta
 from functools import wraps
 from urllib.parse import quote
@@ -15,7 +16,7 @@ from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 from .models import (
     Instructor, SessionSubjectInstructor,
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
-    CourseSession, CourseEnrollment, TraineeSubjectGrade,
+    CourseSession, CourseEnrollment, TraineeSubjectGrade, DisciplineInfraction,
     CertificateSettings, MovementOrderSettings, SystemSettings, UserProfile, UserRole,
     has_trainee_passed_course,
     ActivityLog, ActivityAction, ActivityCategory, log_activity
@@ -3684,5 +3685,211 @@ def reports_export_excel_view(request):
     )
     response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
     return response
+
+
+# ==========================================================
+# إدارة مخالفات ودرجات الضبط والربط للدارسين
+# ==========================================================
+
+@login_required
+def api_get_discipline_infractions_view(request, enrollment_id):
+    """
+    استرجاع سجل مخالفات الضبط والربط للدارس في دورة محددة
+    """
+    enrollment = get_object_or_404(
+        CourseEnrollment.objects.select_related('trainee', 'session', 'session__course'),
+        pk=enrollment_id
+    )
+    session = enrollment.session
+    user_inst = get_user_instructor(request.user)
+    is_session_sup = bool(user_inst and session.supervisor_id == user_inst.military_number)
+    is_sup = is_supervisor_user(request.user) or is_session_sup
+    is_reg = is_registrar_user(request.user)
+    is_adm = is_admin_user(request.user)
+    can_edit = (is_adm or is_sup or is_reg) and (session.status != 'completed' or is_adm)
+
+    # إذا لم تكن هناك مخالفات مسجلة وكان الدارس غير مقطوع والدرجة 0 أو فارغة، تُهيأ للعظمى
+    if not enrollment.discipline_infractions.exists() and not enrollment.is_dropped:
+        if enrollment.attendance_score is None or enrollment.attendance_score == Decimal('0.00'):
+            enrollment.attendance_score = session.attendance_max_grade or Decimal('10.00')
+            enrollment.save(update_fields=['attendance_score'])
+            enrollment.calculate_results()
+
+    infractions_data = [
+        {
+            'id': inf.id,
+            'infraction_type': inf.infraction_type,
+            'infraction_display': inf.get_infraction_type_display(),
+            'date': inf.date.strftime('%Y-%m-%d'),
+            'notes': inf.notes,
+        }
+        for inf in enrollment.discipline_infractions.all().order_by('-date', '-created_at')
+    ]
+
+    choices = [
+        {'value': code, 'label': label}
+        for code, label in DisciplineInfraction.INFRACTION_CHOICES
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'enrollment_id': enrollment.id,
+        'trainee_name': enrollment.trainee.name,
+        'military_number': enrollment.trainee.military_number,
+        'current_rank': enrollment.current_rank,
+        'current_unit': enrollment.current_unit,
+        'max_grade': float(session.attendance_max_grade or 10.0),
+        'score': float(enrollment.attendance_score or 0.0),
+        'is_dropped': enrollment.is_dropped,
+        'drop_reason': enrollment.drop_reason,
+        'can_edit': can_edit,
+        'infractions': infractions_data,
+        'choices': choices,
+        'today': timezone.now().strftime('%Y-%m-%d')
+    })
+
+
+@login_required
+def api_add_discipline_infraction_view(request):
+    """
+    تسجيل مخالفة ضبط وربط جديدة للدارس واحتساب النقاط تلقائياً
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'طريقة الطلب غير مسموح بها.'}, status=405)
+
+    enrollment_id = request.POST.get('enrollment_id')
+    infraction_type = request.POST.get('infraction_type')
+    date_str = request.POST.get('date', '').strip()
+    notes = request.POST.get('notes', '').strip()
+
+    if not enrollment_id or not infraction_type:
+        return JsonResponse({'success': False, 'message': 'يرجى تحديد الدارس ونوع المخالفة.'}, status=400)
+
+    enrollment = get_object_or_404(
+        CourseEnrollment.objects.select_related('trainee', 'session', 'session__course'),
+        pk=enrollment_id
+    )
+    session = enrollment.session
+    user_inst = get_user_instructor(request.user)
+    is_session_sup = bool(user_inst and session.supervisor_id == user_inst.military_number)
+    is_sup = is_supervisor_user(request.user) or is_session_sup
+    is_reg = is_registrar_user(request.user)
+    is_adm = is_admin_user(request.user)
+
+    if not (is_adm or is_sup or is_reg):
+        return JsonResponse({'success': False, 'message': 'غير مصرح لك بتسجيل مخالفات الضبط والربط.'}, status=403)
+
+    if session.status == 'completed' and not is_adm:
+        return JsonResponse({'success': False, 'message': 'نتائج هذه الدورة معتمدة ومقفلة.'}, status=403)
+
+    if infraction_type not in DisciplineInfraction.POINTS_MAP:
+        return JsonResponse({'success': False, 'message': 'نوع المخالفة المحدد غير صالح.'}, status=400)
+
+    if date_str:
+        try:
+            inf_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            inf_date = timezone.now().date()
+    else:
+        inf_date = timezone.now().date()
+
+    infraction = DisciplineInfraction.objects.create(
+        enrollment=enrollment,
+        infraction_type=infraction_type,
+        date=inf_date,
+        notes=notes
+    )
+
+    result = enrollment.update_discipline_score()
+
+    log_activity(
+        request=request,
+        action_type=ActivityAction.UPDATE,
+        action_category=ActivityCategory.GRADES,
+        description=f"تسجيل مخالفة ضبط وربط للدارس {enrollment.trainee.name} ({infraction.get_infraction_type_display()} بتاريخ {inf_date})",
+        target_model="DisciplineInfraction",
+        target_id=infraction.id
+    )
+
+    infractions_data = [
+        {
+            'id': inf.id,
+            'infraction_type': inf.infraction_type,
+            'infraction_display': inf.get_infraction_type_display(),
+            'date': inf.date.strftime('%Y-%m-%d'),
+            'notes': inf.notes,
+        }
+        for inf in enrollment.discipline_infractions.all().order_by('-date', '-created_at')
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'message': 'تم تسجيل المخالفة واحتساب درجات الضبط والربط بنجاح.',
+        'score': result['score'],
+        'is_dropped': result['dropped'],
+        'drop_reason': result['reason'],
+        'infractions': infractions_data
+    })
+
+
+@login_required
+def api_delete_discipline_infraction_view(request, infraction_id):
+    """
+    حذف مخالفة ضبط وربط للدارس وتحديث احتساب الدرجات وإلغاء القطع إن انخفضت النقاط عن 5
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'طريقة الطلب غير مسموح بها.'}, status=405)
+
+    infraction = get_object_or_404(
+        DisciplineInfraction.objects.select_related('enrollment', 'enrollment__trainee', 'enrollment__session'),
+        pk=infraction_id
+    )
+    enrollment = infraction.enrollment
+    session = enrollment.session
+    user_inst = get_user_instructor(request.user)
+    is_session_sup = bool(user_inst and session.supervisor_id == user_inst.military_number)
+    is_sup = is_supervisor_user(request.user) or is_session_sup
+    is_reg = is_registrar_user(request.user)
+    is_adm = is_admin_user(request.user)
+
+    if not (is_adm or is_sup or is_reg):
+        return JsonResponse({'success': False, 'message': 'غير مصرح لك بحذف مخالفات الضبط والربط.'}, status=403)
+
+    if session.status == 'completed' and not is_adm:
+        return JsonResponse({'success': False, 'message': 'نتائج هذه الدورة معتمدة ومقفلة.'}, status=403)
+
+    inf_type_display = infraction.get_infraction_type_display()
+    infraction.delete()
+
+    result = enrollment.update_discipline_score()
+
+    log_activity(
+        request=request,
+        action_type=ActivityAction.DELETE,
+        action_category=ActivityCategory.GRADES,
+        description=f"حذف مخالفة ضبط وربط للدارس {enrollment.trainee.name} ({inf_type_display})",
+        target_model="CourseEnrollment",
+        target_id=enrollment.id
+    )
+
+    infractions_data = [
+        {
+            'id': inf.id,
+            'infraction_type': inf.infraction_type,
+            'infraction_display': inf.get_infraction_type_display(),
+            'date': inf.date.strftime('%Y-%m-%d'),
+            'notes': inf.notes,
+        }
+        for inf in enrollment.discipline_infractions.all().order_by('-date', '-created_at')
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'message': 'تم حذف المخالفة وتحديث درجات الضبط والربط بنجاح.',
+        'score': result['score'],
+        'is_dropped': result['dropped'],
+        'drop_reason': result['reason'],
+        'infractions': infractions_data
+    })
 
 

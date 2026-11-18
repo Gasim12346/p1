@@ -82,4 +82,9 @@ urlpatterns = [
     # القسم 8: التقارير الشاملة واستخراج إكسل
     path('reports/', views.reports_hub_view, name='reports_hub'),
     path('reports/export/excel/', views.reports_export_excel_view, name='reports_export_excel'),
+
+    # مخالفات ودرجات الضبط والربط
+    path('results/api/discipline/<int:enrollment_id>/', views.api_get_discipline_infractions_view, name='api_get_discipline_infractions'),
+    path('results/api/discipline/add/', views.api_add_discipline_infraction_view, name='api_add_discipline_infraction'),
+    path('results/api/discipline/delete/<int:infraction_id>/', views.api_delete_discipline_infraction_view, name='api_delete_discipline_infraction'),
 ]

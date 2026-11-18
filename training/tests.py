@@ -11,7 +11,7 @@ from training.models import (
     UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
-    CertificateSettings, MovementOrderSettings
+    CertificateSettings, MovementOrderSettings, DisciplineInfraction
 )
 from training.reports import (
     get_default_date_range,
@@ -3202,6 +3202,146 @@ class CourseSubjectsAndInstructorsReportTests(TestCase):
         wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
         sheet_names = wb.sheetnames
         self.assertIn('المواد وهيئة التدريس', sheet_names)
+
+
+class DisciplineInfractionTests(TestCase):
+    """اختبارات منظومة درجات ومخالفات الضبط والربط والقطع التلقائي للدورة"""
+
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username='admin_disc',
+            email='admin@test.com',
+            password='password123'
+        )
+        self.client.login(username='admin_disc', password='password123')
+
+        self.category = CourseCategory.objects.create(name='تصنيف الضبط والربط')
+        self.course = Course.objects.create(
+            name='دورة القيادة والأركان',
+            course_number='C-DISC-01',
+            category=self.category,
+            attendance_max_grade=10.00
+        )
+        self.subject = Subject.objects.create(
+            course=self.course,
+            name='إدارة العمليات',
+            max_grade=100.00,
+            credit_hours=10
+        )
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='D-DISC-101',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timedelta(days=30),
+            attendance_max_grade=10.00
+        )
+        self.trainee = Trainee.objects.create(
+            military_number='77889900',
+            name='مقدم ركن أحمد عثمان',
+            category=TraineeCategory.OFFICER,
+            force='القوات البرية',
+            unit='الفرقة السابعة'
+        )
+        self.enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='مقدم ركن',
+            current_force='القوات البرية',
+            current_unit='الفرقة السابعة',
+            attendance_score=10.00
+        )
+
+    def test_discipline_points_and_score_deduction(self):
+        """فحص احتساب نقاط المخالفات وخصمها من درجة الضبط والربط"""
+        inf1 = DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='delay_lecture'
+        )
+        self.assertEqual(inf1.points, Decimal('0.5'))
+        res = self.enrollment.update_discipline_score()
+        self.assertFalse(res['dropped'])
+        self.assertEqual(res['score'], 9.5)
+        self.assertEqual(self.enrollment.attendance_score, Decimal('9.50'))
+
+        inf2 = DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='absent_full_day'
+        )
+        self.assertEqual(inf2.points, Decimal('2.0'))
+        res = self.enrollment.update_discipline_score()
+        self.assertFalse(res['dropped'])
+        self.assertEqual(res['score'], 7.5)
+
+    def test_automatic_course_drop_when_points_exceed_5(self):
+        """فحص قطع الدورة تلقائياً عند تجاوز نقاط المخالفات 5 نقاط"""
+        DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='enter_commander_office'
+        )
+        DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='enter_chief_instructor_office'
+        )
+
+        res = self.enrollment.update_discipline_score()
+        self.assertTrue(res['dropped'])
+        self.assertTrue(self.enrollment.is_dropped)
+        self.assertIn('تجاوز حد مخالفات الضبط والربط المسموح به', self.enrollment.drop_reason)
+        self.assertEqual(self.enrollment.attendance_score, Decimal('0.00'))
+
+    def test_cancel_automatic_drop_when_infractions_deleted(self):
+        """فحص إلغاء قطع الدورة تلقائياً عند حذف المخالفة وانخفاض النقاط إلى 5 أو أقل"""
+        inf1 = DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='enter_commander_office'
+        )
+        inf2 = DisciplineInfraction.objects.create(
+            enrollment=self.enrollment,
+            infraction_type='enter_chief_instructor_office'
+        )
+        self.enrollment.update_discipline_score()
+        self.assertTrue(self.enrollment.is_dropped)
+
+        inf2.delete()
+        res = self.enrollment.update_discipline_score()
+        self.assertFalse(res['dropped'])
+        self.assertFalse(self.enrollment.is_dropped)
+        self.assertEqual(res['score'], 7.0)
+
+    def test_api_discipline_endpoints(self):
+        """فحص استجابة مسارات إدارة مخالفات الضبط والربط"""
+        get_url = reverse('training:api_get_discipline_infractions', kwargs={'enrollment_id': self.enrollment.id})
+        resp = self.client.get(get_url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['trainee_name'], self.trainee.name)
+        for choice in data['choices']:
+            self.assertNotIn('0.5', choice['label'])
+            self.assertNotIn('2', choice['label'])
+
+        add_url = reverse('training:api_add_discipline_infraction')
+        add_resp = self.client.post(add_url, {
+            'enrollment_id': self.enrollment.id,
+            'infraction_type': 'medical_rest',
+            'date': '2026-11-18',
+            'notes': 'تقرير مستشفى السلاح الطبي'
+        })
+        self.assertEqual(add_resp.status_code, 200)
+        add_data = add_resp.json()
+        self.assertTrue(add_data['success'])
+        self.assertEqual(add_data['score'], 9.5)
+        self.assertEqual(len(add_data['infractions']), 1)
+
+        inf_id = add_data['infractions'][0]['id']
+        del_url = reverse('training:api_delete_discipline_infraction', kwargs={'infraction_id': inf_id})
+        del_resp = self.client.post(del_url)
+        self.assertEqual(del_resp.status_code, 200)
+        del_data = del_resp.json()
+        self.assertTrue(del_data['success'])
+        self.assertEqual(del_data['score'], 10.0)
+        self.assertEqual(len(del_data['infractions']), 0)
+
 
 
 

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
@@ -768,6 +769,58 @@ class CourseEnrollment(models.Model):
                 if self.attendance_score > self.session.attendance_max_grade:
                     raise ValidationError({'attendance_score': f'درجة المواظبة ({self.attendance_score}) تتجاوز الحد الأقصى للمواظبة بالدورة ({self.session.attendance_max_grade}).'})
 
+    @property
+    def total_discipline_points(self):
+        """إجمالي نقاط مخالفات الضبط والربط المسجلة للدارس"""
+        points = sum(inf.points for inf in self.discipline_infractions.all())
+        return Decimal(str(points))
+
+    def update_discipline_score(self):
+        """
+        حساب وتحديث درجة الضبط والربط وفحص قيد قطع الدورة التلقائي:
+        - إذا تجاوز مجموع النقاط 5.0 نقاط (total_points > 5):
+          يتم قطع الدورة تلقائياً عن الطالب (is_dropped=True).
+        - إذا كان مجموع النقاط <= 5.0 نقاط:
+          تُحسب درجة الضبط والربط: (العظمى - إجمالي النقاط)، ولا تقل عن 0.
+          وإذا كان الطالب مفصولاً بسبب المخالفات فقط وتم تقليصها (حذف مخالفة)، يلغى القطع تلقائياً.
+        """
+        total_pts = self.total_discipline_points
+        max_att = Decimal(str(self.session.attendance_max_grade)) if (self.session and self.session.attendance_max_grade is not None) else Decimal('10.00')
+
+        if total_pts > Decimal('5.0'):
+            self.is_dropped = True
+            self.drop_reason = f'قطع دورة تلقائي: تجاوز حد مخالفات الضبط والربط المسموح به ({total_pts} نقطة)'
+            if not self.dropped_at:
+                self.dropped_at = timezone.now()
+            self.attendance_score = Decimal('0.00')
+            self.is_graded = False
+            self.total_score = Decimal('0.00')
+            self.percentage = Decimal('0.00')
+            self.grade_label = 'تم قطع الدورة'
+            self.save(update_fields=['is_dropped', 'drop_reason', 'dropped_at', 'attendance_score', 'is_graded', 'total_score', 'percentage', 'grade_label'])
+            return {
+                'dropped': True,
+                'total_points': float(total_pts),
+                'score': 0.0,
+                'reason': self.drop_reason
+            }
+        else:
+            if self.is_dropped and 'مخالفات الضبط والربط' in (self.drop_reason or ''):
+                self.is_dropped = False
+                self.drop_reason = ''
+                self.dropped_at = None
+
+            new_score = max(Decimal('0.00'), max_att - total_pts)
+            self.attendance_score = new_score
+            self.save(update_fields=['is_dropped', 'drop_reason', 'dropped_at', 'attendance_score'])
+            self.calculate_results()
+            return {
+                'dropped': False,
+                'total_points': float(total_pts),
+                'score': float(new_score),
+                'reason': ''
+            }
+
     def calculate_results(self):
         """
         حساب المجموع الكلي، النسبة المئوية، والتقدير
@@ -779,6 +832,13 @@ class CourseEnrollment(models.Model):
         50 - 64  : مقبول (د)
         أقل من 50: دون المستوى / راسب
         """
+        if self.is_dropped:
+            self.is_graded = False
+            self.total_score = Decimal('0.00')
+            self.percentage = Decimal('0.00')
+            self.grade_label = 'تم قطع الدورة'
+            self.save(update_fields=['is_graded', 'total_score', 'percentage', 'grade_label'])
+            return None
         session_subjects = self.session.get_subjects()
         total_subjects = len(session_subjects)
         actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self, subject__in=session_subjects))
@@ -940,6 +1000,77 @@ class TraineeSubjectGrade(models.Model):
 
     def __str__(self):
         return f"{self.enrollment.trainee.name} - {self.subject.name}: {self.score}"
+
+
+class DisciplineInfraction(models.Model):
+    """سجل مخالفات الضبط والربط للدارس في الدورة"""
+
+    INFRACTION_CHOICES = [
+        ('delay_lecture', 'التأخير عن تمام المحاضرة الواحدة'),
+        ('medical_rest', 'الراحة الطبية ليوم واحد'),
+        ('absent_full_day', 'الغياب ليوم كامل'),
+        ('absent_lecture', 'الغياب عن المحاضرة الواحدة'),
+        ('enter_supervisor_office', 'دخول مكتب المشرف'),
+        ('enter_education_commander_office', 'دخول مكتب قائد جناح التعليم'),
+        ('enter_chief_instructor_office', 'دخول مكتب كبير المعلمين'),
+        ('enter_commander_office', 'دخول مكتب القائد'),
+    ]
+
+    POINTS_MAP = {
+        'delay_lecture': Decimal('0.5'),
+        'medical_rest': Decimal('0.5'),
+        'absent_full_day': Decimal('2.0'),
+        'absent_lecture': Decimal('1.5'),
+        'enter_supervisor_office': Decimal('1.5'),
+        'enter_education_commander_office': Decimal('2.0'),
+        'enter_chief_instructor_office': Decimal('2.5'),
+        'enter_commander_office': Decimal('3.0'),
+    }
+
+    enrollment = models.ForeignKey(
+        CourseEnrollment,
+        on_delete=models.CASCADE,
+        related_name='discipline_infractions',
+        verbose_name='تسجيل الدارس بالدورة'
+    )
+    infraction_type = models.CharField(
+        max_length=50,
+        choices=INFRACTION_CHOICES,
+        verbose_name='نوع المخالفة'
+    )
+    date = models.DateField(
+        default=timezone.now,
+        verbose_name='تاريخ المخالفة'
+    )
+    notes = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name='ملاحظات'
+    )
+    points = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=Decimal('0.0'),
+        verbose_name='النقاط المحتسبة'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='تاريخ ووقت التسجيل'
+    )
+
+    class Meta:
+        verbose_name = 'مخالفة ضبط وربط'
+        verbose_name_plural = 'مخالفات الضبط والربط'
+        ordering = ['-date', '-created_at']
+
+    def save(self, *args, **kwargs):
+        if self.infraction_type in self.POINTS_MAP:
+            self.points = self.POINTS_MAP[self.infraction_type]
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.enrollment.trainee.name} - {self.get_infraction_type_display()} ({self.date})"
 
 
 class CertificateSettings(models.Model):
