@@ -2827,11 +2827,12 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(data['records'][0]['military_number'], '99112233')
 
     def test_get_report_data_sessions(self):
-        """التحقق من استخراج تقرير الدورات المنعقدة ونسب النجاح"""
+        """التحقق من استخراج تقرير الدورات المنعقدة ونسب النجاح مع بيان المواد المنفذة"""
         data = get_report_data({'report_type': 'sessions'})
         self.assertEqual(data['report_type'], 'sessions')
         self.assertGreaterEqual(len(data['records']), 1)
         self.assertIn('دورة أركان متقدمة', [r['course_name'] for r in data['records']])
+        self.assertIn('subjects_count', [c['key'] for c in data['columns']])
 
     def test_get_report_data_units_forces(self):
         """التحقق من استخراج تقرير توزيع الوحدات والقوى العسكرية"""

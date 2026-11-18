@@ -834,6 +834,8 @@
                         {% endfor %}
                         {% if report_data.report_type == 'trainees' or report_data.report_type == 'dropped_trainees' %}
                             <th class="text-center">إجراءات ووثائق</th>
+                        {% elif report_data.report_type == 'sessions' %}
+                            <th class="text-center" style="width: 170px;">تقرير الدورة والدارسين</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -876,6 +878,15 @@
                                     {% else %}
                                         <span class="text-muted small">---</span>
                                     {% endif %}
+                                </td>
+                            {% elif report_data.report_type == 'sessions' %}
+                                <td class="text-center text-nowrap">
+                                    <a href="{% url 'training:reports_hub' %}?report_type=trainees&session_id={{ row.id }}" class="btn btn-sm btn-outline-primary fw-bold py-1 px-2" title="عرض تفاصيل الدارسين والمواد المعتمدة والنتائج لهذه الدورة">
+                                        <i class="bi bi-eye-fill"></i> تقرير الدورة
+                                    </a>
+                                    <a href="{% url 'training:reports_export_excel' %}?report_type=trainees&session_id={{ row.id }}" class="btn btn-sm btn-outline-success fw-bold py-1 px-2" title="تصدير ملف إكسل متكامل للدورة (ورقة الدارسين + ورقة المواد والأساتذة)">
+                                        <i class="bi bi-file-earmark-excel-fill"></i> إكسل
+                                    </a>
                                 </td>
                             {% endif %}
                         </tr>

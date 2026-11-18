@@ -326,8 +326,8 @@ def get_report_data(params):
 
     # احتساب بيان المواد وهيئة التدريس للدورات المشمولة
     target_sessions = []
-    if session_id or course_id or report_type == 'course_subjects' or sessions_filter_qs.count() <= 10:
-        target_sessions = list(sessions_filter_qs[:15])
+    if session_id or course_id or report_type in ['sessions', 'course_subjects'] or sessions_filter_qs.count() <= 30:
+        target_sessions = list(sessions_filter_qs[:50])
     sessions_subjects_summary = get_sessions_subjects_summary(target_sessions) if target_sessions else []
 
     # ========================================================
@@ -634,6 +634,10 @@ def get_report_data(params):
             if graded_count > 0:
                 pass_rates.append(pass_rate)
 
+            # المواد المعتمدة المنفذة في هذه الدورة
+            subjects_list = s.get_subjects()
+            subjects_count = len(subjects_list)
+
             stats['total_sessions'] += 1
             if s.status == 'completed' or getattr(s, 'is_completed', False):
                 stats['completed_sessions'] += 1
@@ -652,6 +656,8 @@ def get_report_data(params):
                 'start_date': s.start_date.strftime('%Y-%m-%d'),
                 'end_date': s.end_date.strftime('%Y-%m-%d'),
                 'supervisor_name': s.supervisor.name if s.supervisor else '---',
+                'subjects_count': f"{subjects_count} مواد" if subjects_count else "---",
+                'subjects_count_num': subjects_count,
                 'status_label': 'معتمدة ومحفوظة' if (s.status == 'completed' or getattr(s, 'is_completed', False)) else 'منعقدة حالياً',
                 'status_class': 'success' if (s.status == 'completed' or getattr(s, 'is_completed', False)) else 'primary',
                 'trainees_count': trainees_count,
@@ -672,6 +678,7 @@ def get_report_data(params):
             {'key': 'start_date', 'title': 'تاريخ البداية', 'align': 'center', 'width': 14},
             {'key': 'end_date', 'title': 'تاريخ النهاية', 'align': 'center', 'width': 14},
             {'key': 'supervisor_name', 'title': 'مشرف الدورة', 'align': 'right', 'width': 22},
+            {'key': 'subjects_count', 'title': 'المواد المعتمدة', 'align': 'center', 'width': 14},
             {'key': 'trainees_count', 'title': 'الدارسين', 'align': 'center', 'width': 11},
             {'key': 'passed_count', 'title': 'الناجحين', 'align': 'center', 'width': 11},
             {'key': 'dropped_count', 'title': 'المقطوعين', 'align': 'center', 'width': 11},
