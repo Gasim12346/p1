@@ -1,11 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>التقرير التحليلي الإحصائي التنفيذي - إدارة نظم المعلومات والإحصاء</title>
-    
+
     <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
 
@@ -92,7 +93,8 @@
             font-size: 9.5pt;
         }
 
-        .report-table th, .report-table td {
+        .report-table th,
+        .report-table td {
             border: 1px solid #94a3b8;
             padding: 5px 6px;
             text-align: center;
@@ -119,9 +121,11 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
+
             .no-print {
                 display: none !important;
             }
+
             .report-page {
                 box-shadow: none !important;
                 margin: 0 auto !important;
@@ -129,6 +133,7 @@
                 min-height: auto !important;
                 padding: 6mm 10mm !important;
             }
+
             @page {
                 size: A4 portrait;
                 margin: 6mm 8mm;
@@ -136,6 +141,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="no-print">
@@ -148,14 +154,14 @@
     </div>
 
     <div class="report-page">
-        
+
         <!-- Header -->
         <div class="report-header">
             <div>
                 {% if cert_settings.right_logo_url %}
-                    <img src="{{ cert_settings.right_logo_url }}" alt="شعار السودان">
+                <img src="{{ cert_settings.right_logo_url }}" alt="شعار السودان">
                 {% else %}
-                    <img src="{% static 'img/sudan_crest.png' %}" alt="شعار السودان">
+                <img src="{% static 'img/sudan_crest.png' %}" alt="شعار السودان">
                 {% endif %}
             </div>
             <div class="report-title-box">
@@ -173,23 +179,25 @@
             </div>
             <div>
                 {% if cert_settings.left_logo_url %}
-                    <img src="{{ cert_settings.left_logo_url }}" alt="شعار النظم">
+                <img src="{{ cert_settings.left_logo_url }}" alt="شعار النظم">
                 {% elif system_settings.main_logo_url %}
-                    <img src="{{ system_settings.main_logo_url }}" alt="شعار النظم">
+                <img src="{{ system_settings.main_logo_url }}" alt="شعار النظم">
                 {% else %}
-                    <img src="{% static 'img/military_info_logo.png' %}" alt="شعار النظم">
+                <img src="{% static 'img/military_info_logo.png' %}" alt="شعار النظم">
                 {% endif %}
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 9.5pt; font-weight: bold;">
+        <div class="d-flex justify-content-between align-items-center mb-2"
+            style="font-size: 9.5pt; font-weight: bold;">
             <div>المحطة: {{ cert_settings.station_text|default:"الخرطوم" }}</div>
             <div>تاريخ الاستخراج: {% now "Y/m/d" %}م</div>
             <div>سري وللاستخدام الإداري فقط</div>
         </div>
 
         {% if filters_summary and filters_summary != 'كامل السجلات الإحصائية للنظام' and filters_summary != 'كافة السجلات' %}
-        <div class="text-center py-1 px-2 mb-2 rounded" style="font-size: 8.5pt; background: #f8fafc; border: 1px dashed #cbd5e1; color: #475569;">
+        <div class="text-center py-1 px-2 mb-2 rounded"
+            style="font-size: 8.5pt; background: #f8fafc; border: 1px dashed #cbd5e1; color: #475569;">
             <i class="bi bi-funnel-fill text-primary me-1"></i>
             <strong>نطاق الفلترة المطبق:</strong> {{ filters_summary }}
         </div>
@@ -296,16 +304,16 @@
             </thead>
             <tbody>
                 {% for f in forces_stats %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td class="fw-bold text-start ps-3">{{ f.force|default:"غير محدد" }}</td>
-                        <td>{{ f.count }}</td>
-                        <td>{{ f.pct }}%</td>
-                    </tr>
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold text-start ps-3">{{ f.force|default:"غير محدد" }}</td>
+                    <td>{{ f.count }}</td>
+                    <td>{{ f.pct }}%</td>
+                </tr>
                 {% empty %}
-                    <tr>
-                        <td colspan="4">لا توجد بيانات قوات مسجلة.</td>
-                    </tr>
+                <tr>
+                    <td colspan="4">لا توجد بيانات قوات مسجلة.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -382,4 +390,5 @@
     </div>
 
 </body>
+
 </html>
