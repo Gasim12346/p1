@@ -2954,7 +2954,7 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertEqual(res.status_code, 200)
 
         content = res.content.decode('utf-8')
-        # التحقق من نصوص العناوين الرئيسية في الترويسة
+        # التحقق من نصوص العناوين الرئيسية في الترويسة لتقرير عام متعدد الدورات (حذف التوزيع التكراري)
         self.assertIn('التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج', content)
         self.assertIn('أولاً: ملخص المؤشرات العامة ومخرجات التأهيل (KPIs)', content)
         self.assertNotIn('التوزيع التكراري للتقديرات والنتائج المعتمدة', content)
@@ -2963,7 +2963,7 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertIn('رئيس فرع الإحصاء والنتائج', content)
         self.assertIn('قائد معهد نظم المعلومات والإحصاء', content)
 
-        # التحقق من تطبيق الفلاتر عند تمريرها
+        # التحقق من تقرير دورة واحدة محددة (ظهور التوزيع التكراري وكافة تفاصيل الدورة)
         res_filtered = self.client.get(reverse('training:admin_report_print'), {
             'force': 'القوات البرية',
             'course_id': str(self.course.id),
@@ -2979,6 +2979,9 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         self.assertIn(f"التصنيف: {self.category.name}", content_filtered)
         self.assertIn(f"الدورة: {self.course.name}", content_filtered)
         self.assertIn(f"الدفعة: {self.session.session_code}", content_filtered)
+        # التحقق من وجود جدول التوزيع التكراري للتقديرات في تقرير الدورة الواحدة
+        self.assertIn('ثانياً: التوزيع التكراري للتقديرات والنتائج المعتمدة', content_filtered)
+        self.assertIn('ثالثاً: توزيع الدارسين بحسب القوات والتشكيلات', content_filtered)
 
     def test_trainees_report_custom_title_and_columns_exclusion(self):
         """التحقق من وضع الدورة والدفعة والقوة وحالة الدورة في العنوان وحذفها من أعمدة الجدول عند التخصيص"""

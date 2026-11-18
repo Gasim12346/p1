@@ -226,9 +226,64 @@
             </tbody>
         </table>
 
-        <!-- 2. Forces Distribution -->
+        <!-- 2. Grade Distribution (يظهر فقط في تقرير الدورة الواحدة لعرض كامل تفاصيلها) -->
+        {% if is_single_course %}
         <div class="section-header">
-            <span>ثانياً: توزيع الدارسين بحسب القوات والتشكيلات</span>
+            <span>ثانياً: التوزيع التكراري للتقديرات والنتائج المعتمدة</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>التقدير الأكاديمي</th>
+                    <th>الشريحة المئوية</th>
+                    <th>عدد الدارسين</th>
+                    <th>النسبة المئوية (%)</th>
+                    <th>الملاحظات الإدارية</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold" style="color: #15803d;">ممتاز (أ)</td>
+                    <td>85% فأعلى</td>
+                    <td class="fw-bold">{{ grade_a }}</td>
+                    <td>{{ grade_a_pct }}%</td>
+                    <td>أداء استثنائي متقدم</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" style="color: #1d4ed8;">جيد جداً (ب)</td>
+                    <td>75% إلى أقل من 85%</td>
+                    <td class="fw-bold">{{ grade_b }}</td>
+                    <td>{{ grade_b_pct }}%</td>
+                    <td>أداء متميز عالي الكفاءة</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" style="color: #b45309;">جيد (ج)</td>
+                    <td>65% إلى أقل من 75%</td>
+                    <td class="fw-bold">{{ grade_c }}</td>
+                    <td>{{ grade_c_pct }}%</td>
+                    <td>مستوى جيد محقق للمتطلبات</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" style="color: #334155;">مقبول (د)</td>
+                    <td>50% إلى أقل من 65%</td>
+                    <td class="fw-bold">{{ grade_d }}</td>
+                    <td>{{ grade_d_pct }}%</td>
+                    <td>محقق للحد الأدنى المطلوب</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" style="color: #dc2626;">دون المستوى</td>
+                    <td>أقل من 50%</td>
+                    <td class="fw-bold">{{ grade_f }}</td>
+                    <td>{{ grade_f_pct }}%</td>
+                    <td>لم يستوفِ شروط التخرج</td>
+                </tr>
+            </tbody>
+        </table>
+        {% endif %}
+
+        <!-- Forces Distribution -->
+        <div class="section-header">
+            <span>{% if is_single_course %}ثالثاً{% else %}ثانياً{% endif %}: توزيع الدارسين بحسب القوات والتشكيلات</span>
         </div>
         <table class="report-table">
             <thead>
@@ -255,11 +310,11 @@
             </tbody>
         </table>
 
-        <!-- 3. بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح -->
+        <!-- بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح -->
         {% if subjects_summary %}
             {% for sess in subjects_summary %}
                 <div class="report-section-title">
-                    <span>ثالثاً: بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح ({{ sess.course_name }} - {{ sess.session_code }})</span>
+                    <span>{% if is_single_course %}رابعاً{% else %}ثالثاً{% endif %}: بيان المواد الدراسية وهيئة التدريس ومعدلات النجاح ({{ sess.course_name }} - {{ sess.session_code }})</span>
                 </div>
                 <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px; color: #0f172a; padding: 4px 10px; background: #f8fafc; border-right: 4px solid #1e3a8a;">
                     • لقد تم تدريس ({{ sess.subjects_count }}) مواد دراسية معتمدة في هذه الدورة:

@@ -3231,6 +3231,7 @@ def admin_report_print_view(request):
     report_category_name = ''
     report_course_name = ''
     report_batch_code = ''
+    is_single_course = False
 
     if has_filters:
         use_all_dates = params.get('all_dates') == '1'
@@ -3412,6 +3413,9 @@ def admin_report_print_view(request):
         courses_total = enrollments_qs.values('session__course_id').distinct().count()
         sessions_count = enrollments_qs.values('session_id').distinct().count()
 
+        # تحديد ما إذا كان التقرير يخص دورة تدريبية واحدة فقط لعرض كافة تفاصيلها
+        is_single_course = bool(session_id) or (sessions_count == 1) or (courses_total == 1 and sessions_count <= 1)
+
         # المعتمد نجاحهم: الذين تم رصد درجاتهم واجتازوا بنجاح (percentage >= 50 وغير مقطوعين)
         enrollments_graded = enrollments_qs.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
 
@@ -3527,6 +3531,7 @@ def admin_report_print_view(request):
         'report_category_name': report_category_name,
         'report_course_name': report_course_name,
         'report_batch_code': report_batch_code,
+        'is_single_course': is_single_course,
         'subjects_summary': subjects_summary,
         'cert_settings': cert_settings,
         'system_settings': system_settings,
