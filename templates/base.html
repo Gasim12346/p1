@@ -1009,55 +1009,7 @@
                     </div>
                 </div>
 
-                <!-- شريط روابط التنقل المتجاوب: تظهر جميع محتوياته دائماً حتى عند تصغير الشاشة -->
-                <div class="navbar-links-scroll-wrapper w-100 mt-2 pt-2 border-top border-secondary border-opacity-25">
-                    <ul class="navbar-nav-responsive">
-                        {% if not is_instructor %}
-                            <li class="nav-item">
-                                <a class="nav-link-custom active" href="{% url 'training:home' %}">
-                                    <i class="bi bi-speedometer2"></i>
-                                    <span>الرئيسية</span>
-                                </a>
-                            </li>
-                        {% endif %}
-                        {% if is_registrar or is_admin %}
-                            <li class="nav-item">
-                                <a class="nav-link-custom" href="{% url 'training:trainees_list' %}">
-                                    <i class="bi bi-people-fill"></i>
-                                    <span>الدارسين</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link-custom" href="{% url 'training:courses_catalog' %}">
-                                    <i class="bi bi-journal-bookmark-fill"></i>
-                                    <span>الدورات ومفرداتها</span>
-                                </a>
-                            </li>
-                        {% endif %}
-                        {% if is_registrar or is_supervisor or is_admin %}
-                            <li class="nav-item">
-                                <a class="nav-link-custom" href="{% url 'training:course_sessions' %}">
-                                    <i class="bi bi-diagram-3-fill"></i>
-                                    <span>الدورة التي تدرس</span>
-                                </a>
-                            </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link-custom" href="{% url 'training:results_center' %}">
-                                <i class="bi bi-award-fill"></i>
-                                <span>النتيجة والشهادات</span>
-                            </a>
-                        </li>
-                        {% if is_registrar or is_supervisor or is_admin %}
-                            <li class="nav-item">
-                                <a class="nav-link-custom" href="{% url 'training:reports_hub' %}">
-                                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-                                    <span>التقارير الشاملة وإكسل</span>
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </div>
+
             </div>
         </nav>
 
