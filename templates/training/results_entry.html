@@ -87,30 +87,6 @@
             </a>
         </div>
     </div>
-
-    <!-- Summary of scores rules -->
-    <div class="card-body bg-light p-3 border-bottom">
-        <div class="row g-3 text-center align-items-center">
-            <div class="col-6 col-md-3">
-                <small class="text-muted d-block">إجمالي درجات المواد</small>
-                <strong class="text-dark fs-5">{{ subjects_total_max }}</strong>
-            </div>
-            <div class="col-6 col-md-3">
-                <small class="text-muted d-block">درجة المواظبة والسلوك العظمى</small>
-                <strong class="text-primary fs-5">{{ session.attendance_max_grade }}</strong>
-            </div>
-            <div class="col-6 col-md-3">
-                <small class="text-muted d-block">المجموع الكلي الممكن للدورة</small>
-                <strong class="text-success fs-5" id="totalPossibleScore">{{ total_possible_score }}</strong> درجة
-            </div>
-            <div class="col-6 col-md-3">
-                <small class="text-muted d-block">قاعدة احتساب النسبة التلقائية</small>
-                <span class="badge bg-secondary bg-opacity-10 text-dark border px-2 py-1 font-monospace" style="font-size: 0.85rem;">
-                    (مجموع الطالب × 100) ÷ {{ total_possible_score }}
-                </span>
-            </div>
-        </div>
-    </div>
 </div>
 
 {% if is_locked %}
