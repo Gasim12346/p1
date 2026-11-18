@@ -368,148 +368,187 @@
                                 {% endif %}
                             </td>
 
-                        <!-- المجموع المكتسب التلقائي -->
-                        <td class="text-center fw-bold fs-6 total-cell bg-light">
-                            {% if en.is_graded %}
-                            {{ en.total_score }}
-                            {% else %}
-                            <span class="text-muted small">قيد الرصد</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- النسبة التلقائية -->
-                        <td class="text-center fw-bold percentage-cell bg-light font-monospace">
-                            {% if en.is_graded %}
-                            {{ en.percentage }}%
-                            {% else %}
-                            <span class="text-muted small">-</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- التقدير التلقائي -->
-                        <td class="text-center fw-bold grade-cell bg-light">
-                            {% if en.is_graded %}
-                            <span
-                                class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% elif en.percentage >= 50 %}badge-grade-d{% else %}bg-danger text-white{% endif %} px-2 py-1">
-                                {{ en.grade_label }}
-                            </span>
-                            {% else %}
-                            <span class="badge bg-light text-secondary border px-2 py-1">
-                                <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
-                            </span>
-                            {% endif %}
-                        </td>
-
-                        <!-- ملحوظة الشهادة (متاحة للتعديل دائماً) -->
-                        <td class="p-2" style="min-width: 170px;">
-                            <input type="text" name="cert_note_{{ en.trainee.military_number }}"
-                                class="form-control form-control-sm cert-note-input" placeholder="اكتب الملحوظة هنا..."
-                                value="{{ en.certificate_note }}"
-                                title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
-                        </td>
-
-                        <!-- خيارات الشهادة وأمر التحرك للدارس -->
-                        <td class="text-center cert-cell">
-                            {% if en.has_complete_data_and_grades %}
-                            <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-center">
-                                <button type="button"
-                                    class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
-                                    onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{% url 'training:movement_order' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
-                                    data-bs-toggle="modal" data-bs-target="#certChoiceModal"
-                                    data-cert-official="{% url 'training:certificate' en.id %}"
-                                    data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
-                                    data-movement-order="{% url 'training:movement_order' en.id %}"
-                                    data-name="{{ en.trainee.name }}" data-rank="{{ en.current_rank }}"
-                                    data-num="{{ en.trainee.military_number }}" data-unit="{{ en.current_unit }}"
-                                    data-grade="{{ en.grade_label }}" title="خيارات استخراج وطباعة الشهادة وأمر التحرك">
-                                    <i class="bi bi-award-fill text-dark"></i>
-                                    <span>الشهادة</span>
-                                </button>
-                                <a href="{% url 'training:movement_order' en.id %}" target="_blank"
-                                    class="btn btn-sm btn-info text-white fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1"
-                                    title="استخراج وطباعة أمر التحرك الرسمي">
-                                    <i class="bi bi-signpost-2-fill"></i>
-                                    <span>أمر التحرك</span>
-                                </a>
-                            </div>
-                            {% else %}
-                            <span
-                                class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1"
-                                title="لا تظهر الشهادة وأمر التحرك إلا بعد اكتمال جميع البيانات والدرجات">
-                                <i class="bi bi-lock-fill text-secondary"></i>
-                                <span>غير مكتمل</span>
-                            </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="{{ subjects|length|add:8 }}" class="text-center py-5 text-muted">
-                            لا يوجد دارسون مسجلون في هذه الدورة.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Action Submit Bar -->
-        <div class="card-footer bg-light py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div>
-                <span class="text-muted small">
-                    <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم تطبيق التقديرات المعتمدة تلقائياً:
-                    <strong>ممتاز (85-100)</strong> •
-                    <strong>جيد جداً (75-84)</strong> •
-                    <strong>جيد (65-74)</strong> •
-                    <strong>مقبول (50-64)</strong>
-                </span>
-            </div>
-
-            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto align-items-center">
-                {% if is_locked %}
-                <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
-                    <i class="bi bi-lock-fill fs-5"></i>
-                    <span>الدرجات معتمدة ومقفلة. يمكنك تعديل ملحوظات الشهادات وحفظها أدناه.</span>
-                </div>
-                <button type="submit" name="save_notes" value="1"
-                    class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-pencil-square fs-5"></i>
-                    <span>حفظ وتحديث ملحوظات الشهادات</span>
-                </button>
-                {% else %}
-                <button type="submit" name="save_notes" value="1"
-                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
-                    title="حفظ ملحوظات الشهادات فقط">
-                    <i class="bi bi-pencil-square"></i>
-                    <span>حفظ الملحوظات</span>
-                </button>
-                {% if can_approve_results and session.status != 'completed' %}
-                {% if is_fully_graded %}
-                <button type="submit" name="mark_completed" value="1"
-                    class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
-                    onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
-                    <i class="bi bi-patch-check-fill fs-5"></i>
-                    <span>اعتماد نتيجة الدورة نهائياً</span>
-                </button>
-                {% else %}
+        <!-- درجات الضبط والربط -->
+        <td class="text-center p-2 align-middle">
+            {% if can_edit_attendance and not is_locked %}
+            <div class="d-flex flex-column align-items-center justify-content-center gap-1">
                 <button type="button"
-                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
-                    disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة">
-                    <i class="bi bi-hourglass-split text-warning"></i>
-                    <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
+                    class="btn btn-sm {% if en.is_dropped %}btn-danger text-white{% elif en.discipline_infractions.exists %}btn-outline-warning text-dark{% else %}btn-outline-primary{% endif %} rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn"
+                    id="btn_disc_{{ en.id }}" onclick="openDisciplineModal({{ en.id }})"
+                    title="إدارة مخالفات ورصد درجات الضبط والربط">
+                    <i class="bi {% if en.is_dropped %}bi-slash-circle-fill{% else %}bi-shield-shaded{% endif %}"></i>
+                    <span id="btn_text_{{ en.id }}">{% if en.is_dropped %}تم قطع الدورة{% else %}درجات
+                        الضبط والربط{% endif %}</span>
+                    <span
+                        class="badge {% if en.is_dropped %}bg-white text-danger{% else %}bg-primary text-white{% endif %} rounded-pill ms-1 font-monospace"
+                        id="badge_disc_{{ en.id }}">
+                        {% if en.is_dropped %}مفصول{% elif en.attendance_score is not None %}{{
+                        en.attendance_score|floatformat:"-2" }}{% else %}{{
+                        session.attendance_max_grade|floatformat:"-2"|default:"10" }}{% endif %}
+                    </span>
                 </button>
-                {% endif %}
-                {% endif %}
 
-                <button type="submit" name="save_grades" value="1"
-                    class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-save2-fill"></i>
-                    <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد
-                        جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
-                </button>
+                <!-- حقل الدرجة المخفي لربط الحسابات التلقائية وحفظ النموذج -->
+                <input type="hidden" name="att_{{ en.trainee.military_number }}" id="att_input_{{ en.id }}"
+                    class="attendance-grade" data-max="{{ session.attendance_max_grade|unlocalize }}"
+                    value="{% if en.is_dropped %}0.00{% elif en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% else %}{{ session.attendance_max_grade|unlocalize|default:'10.00' }}{% endif %}">
+            </div>
+            {% else %}
+            <div class="grade-display-box mx-auto py-1 px-2 rounded-2 bg-light border text-center font-monospace readonly-attendance-grade"
+                data-score="{% if en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% endif %}"
+                data-max="{{ session.attendance_max_grade|unlocalize }}"
+                title="رصد درجات الضبط والربط محصور بمشرف الدورة أو مدير النظام">
+                {% if en.is_dropped %}
+                <span class="badge bg-danger text-white">تم قطع الدورة</span>
+                {% elif en.attendance_score is not None %}
+                <strong class="text-primary">{{ en.attendance_score|unlocalize }}</strong>
+                {% else %}
+                <span class="text-muted small">-</span>
                 {% endif %}
             </div>
+            {% endif %}
+        </td>
+
+        <!-- المجموع المكتسب التلقائي -->
+        <td class="text-center fw-bold fs-6 total-cell bg-light">
+            {% if en.is_graded %}
+            {{ en.total_score }}
+            {% else %}
+            <span class="text-muted small">قيد الرصد</span>
+            {% endif %}
+        </td>
+
+        <!-- النسبة التلقائية -->
+        <td class="text-center fw-bold percentage-cell bg-light font-monospace">
+            {% if en.is_graded %}
+            {{ en.percentage }}%
+            {% else %}
+            <span class="text-muted small">-</span>
+            {% endif %}
+        </td>
+
+        <!-- التقدير التلقائي -->
+        <td class="text-center fw-bold grade-cell bg-light">
+            {% if en.is_graded %}
+            <span
+                class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% elif en.percentage >= 50 %}badge-grade-d{% else %}bg-danger text-white{% endif %} px-2 py-1">
+                {{ en.grade_label }}
+            </span>
+            {% else %}
+            <span class="badge bg-light text-secondary border px-2 py-1">
+                <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
+            </span>
+            {% endif %}
+        </td>
+
+        <!-- ملحوظة الشهادة (متاحة للتعديل دائماً) -->
+        <td class="p-2" style="min-width: 170px;">
+            <input type="text" name="cert_note_{{ en.trainee.military_number }}"
+                class="form-control form-control-sm cert-note-input" placeholder="اكتب الملحوظة هنا..."
+                value="{{ en.certificate_note }}" title="يمكنك كتابة ملحوظة خاصة للدارس لتظهر في شهادته">
+        </td>
+
+        <!-- خيارات الشهادة وأمر التحرك للدارس -->
+        <td class="text-center cert-cell">
+            {% if en.has_complete_data_and_grades %}
+            <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-center">
+                <button type="button"
+                    class="btn btn-sm btn-warning text-dark fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1 cert-modal-btn"
+                    onclick="openCertificateModal('{% url 'training:certificate' en.id %}', '{% url 'training:certificate_detailed' en.id %}', '{% url 'training:movement_order' en.id %}', '{{ en.trainee.name|escapejs }}', '{{ en.current_rank|escapejs }}', '{{ en.trainee.military_number|escapejs }}', '{{ en.current_unit|escapejs }}', '{{ en.grade_label|escapejs }}')"
+                    data-bs-toggle="modal" data-bs-target="#certChoiceModal"
+                    data-cert-official="{% url 'training:certificate' en.id %}"
+                    data-cert-basic="{% url 'training:certificate_detailed' en.id %}"
+                    data-movement-order="{% url 'training:movement_order' en.id %}" data-name="{{ en.trainee.name }}"
+                    data-rank="{{ en.current_rank }}" data-num="{{ en.trainee.military_number }}"
+                    data-unit="{{ en.current_unit }}" data-grade="{{ en.grade_label }}"
+                    title="خيارات استخراج وطباعة الشهادة وأمر التحرك">
+                    <i class="bi bi-award-fill text-dark"></i>
+                    <span>الشهادة</span>
+                </button>
+                <a href="{% url 'training:movement_order' en.id %}" target="_blank"
+                    class="btn btn-sm btn-info text-white fw-bold px-2 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1"
+                    title="استخراج وطباعة أمر التحرك الرسمي">
+                    <i class="bi bi-signpost-2-fill"></i>
+                    <span>أمر التحرك</span>
+                </a>
+            </div>
+            {% else %}
+            <span class="badge bg-light text-muted border px-2 py-1 d-inline-flex align-items-center gap-1"
+                title="لا تظهر الشهادة وأمر التحرك إلا بعد اكتمال جميع البيانات والدرجات">
+                <i class="bi bi-lock-fill text-secondary"></i>
+                <span>غير مكتمل</span>
+            </span>
+            {% endif %}
+        </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="{{ subjects|length|add:8 }}" class="text-center py-5 text-muted">
+                لا يوجد دارسون مسجلون في هذه الدورة.
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+
+    <!-- Action Submit Bar -->
+    <div class="card-footer bg-light py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <span class="text-muted small">
+                <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم تطبيق التقديرات المعتمدة تلقائياً:
+                <strong>ممتاز (85-100)</strong> •
+                <strong>جيد جداً (75-84)</strong> •
+                <strong>جيد (65-74)</strong> •
+                <strong>مقبول (50-64)</strong>
+            </span>
         </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto align-items-center">
+            {% if is_locked %}
+            <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-3">
+                <i class="bi bi-lock-fill fs-5"></i>
+                <span>الدرجات معتمدة ومقفلة. يمكنك تعديل ملحوظات الشهادات وحفظها أدناه.</span>
+            </div>
+            <button type="submit" name="save_notes" value="1"
+                class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-pencil-square fs-5"></i>
+                <span>حفظ وتحديث ملحوظات الشهادات</span>
+            </button>
+            {% else %}
+            <button type="submit" name="save_notes" value="1"
+                class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
+                title="حفظ ملحوظات الشهادات فقط">
+                <i class="bi bi-pencil-square"></i>
+                <span>حفظ الملحوظات</span>
+            </button>
+            {% if can_approve_results and session.status != 'completed' %}
+            {% if is_fully_graded %}
+            <button type="submit" name="mark_completed" value="1"
+                class="btn btn-success fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                onclick="return confirm('هل أنت متأكد من اعتماد نتائج الدورة نهائياً وإقفالها؟ لا يمكن التعديل بعدها إلا بواسطة مدير النظام.')">
+                <i class="bi bi-patch-check-fill fs-5"></i>
+                <span>اعتماد نتيجة الدورة نهائياً</span>
+            </button>
+            {% else %}
+            <button type="button"
+                class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2"
+                disabled title="لا يمكن الاعتماد حتى اكتمال رصد كافة درجات المواد من المعلمين ورصد المواظبة">
+                <i class="bi bi-hourglass-split text-warning"></i>
+                <span>بانتظار اكتمال رصد المواد (متبقي {{ missing_grades_count }} درجات)</span>
+            </button>
+            {% endif %}
+            {% endif %}
+
+            <button type="submit" name="save_grades" value="1"
+                class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-save2-fill"></i>
+                <span>{% if is_instructor_only %}حفظ درجات المواد المكلف بها{% elif allowed_subject_ids %}حفظ ورصد
+                    جميع الدرجات{% else %}حفظ المواظبة والملحوظات{% endif %}</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
     </div>
 
     <!-- Mobile Sticky Save Bar -->
@@ -684,6 +723,13 @@
                         </div>
                     </div>
 
+                    <!-- تنبيه نجاح تسجيل المخالفة -->
+                    <div id="discSuccessAlert"
+                        class="alert alert-success mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                        <span id="discSuccessMsg">تم تسجيل المخالفة بنجاح واحتساب درجات الضبط والربط.</span>
+                    </div>
+
                     <!-- تنبيه قطع الدورة التلقائي عند تجاوز 5 نقاط -->
                     <div id="discDroppedAlert"
                         class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
@@ -713,7 +759,7 @@
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label small fw-bold text-muted mb-1">نوع المخالفة</label>
-                                <select id="discInfractionType" class="form-select form-select-sm" required>
+                                <select id="discInfractionType" class="form-select form-select-sm" required onchange="onDisciplineTypeChange(this)">
                                     <option value="">-- اختر المخالفة من القائمة --</option>
                                     <option value="delay_lecture">التأخير عن تمام المحاضرة الواحدة</option>
                                     <option value="medical_rest">الراحة الطبية ليوم واحد</option>
@@ -732,9 +778,10 @@
                                     placeholder="تفاصيل أو ملاحظة...">
                             </div>
                             <div class="col-12 text-end mt-2">
-                                <button type="button" id="btnSubmitDiscipline" onclick="submitAddDisciplineInfraction()" class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                                <button type="button" id="btnSubmitDiscipline" onclick="submitAddDisciplineInfraction()"
+                                    class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-check-circle-fill"></i>
-                                    <span>تسجيل المخالفة واحتساب الدرجة</span>
+                                    <span id="btnSubmitDisciplineText">تسجيل المخالفة واحتساب الدرجة</span>
                                 </button>
                             </div>
                         </div>
@@ -1006,6 +1053,18 @@
         rows.forEach(row => {
             calculateRow(row, false);
         });
+
+        // ربط نافذة الضبط والربط عند الفتح عبر Bootstrap
+        const discModalEl = document.getElementById('disciplineModal');
+        if (discModalEl) {
+            discModalEl.addEventListener('show.bs.modal', function (event) {
+                const btn = event.relatedTarget;
+                if (btn && btn.getAttribute('data-enrollment-id')) {
+                    const enId = btn.getAttribute('data-enrollment-id');
+                    openDisciplineModal(enId, btn);
+                }
+            });
+        }
     });
 
     // بحث سريع في كشف رصد الدورة بالاسم أو النمرة
@@ -1288,6 +1347,25 @@
         }
     }
 
+    function onDisciplineTypeChange(selectEl) {
+        const btn = document.getElementById('btnSubmitDiscipline');
+        const btnText = document.getElementById('btnSubmitDisciplineText');
+        if (selectEl.value && selectEl.selectedIndex > 0) {
+            const selectedText = selectEl.options[selectEl.selectedIndex].text;
+            if (btnText) btnText.textContent = `تأكيد وتسجيل: ${selectedText}`;
+            if (btn) {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-success');
+            }
+        } else {
+            if (btnText) btnText.textContent = 'تسجيل المخالفة واحتساب الدرجة';
+            if (btn) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-danger');
+            }
+        }
+    }
+
     function submitAddDisciplineInfraction() {
         const enrollmentId = document.getElementById('discCurrentEnrollmentId').value;
         const typeSelect = document.getElementById('discInfractionType');
@@ -1297,6 +1375,7 @@
         const notesInput = document.getElementById('discInfractionNotes');
         const notes = notesInput ? notesInput.value.trim() : '';
         const btn = document.getElementById('btnSubmitDiscipline');
+        const btnText = document.getElementById('btnSubmitDisciplineText');
 
         if (!enrollmentId) {
             alert('حدث خطأ: لم يتم تحديد الدارس بشكل صحيح.');
@@ -1321,7 +1400,7 @@
 
         const csrfToken = getDisciplineCsrfToken();
         const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', csrfToken);
+        if (csrfToken) formData.append('csrfmiddlewaretoken', csrfToken);
         formData.append('enrollment_id', enrollmentId);
         formData.append('infraction_type', type);
         formData.append('date', date);
@@ -1329,18 +1408,37 @@
 
         fetch('/results/api/discipline/add/', {
             method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
             body: formData
         })
-        .then(res => res.json())
-        .then(data => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>تسجيل المخالفة واحتساب الدرجة</span>';
-            }
-            if (data.success) {
+            .then(async res => {
+                const data = await res.json().catch(() => null);
+                if (!res.ok || !data || !data.success) {
+                    const msg = (data && data.message) ? data.message : 'تعذر تسجيل المخالفة (رمز الاستجابة: ' + res.status + ')';
+                    throw new Error(msg);
+                }
+                return data;
+            })
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-danger');
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span id="btnSubmitDisciplineText">تسجيل المخالفة واحتساب الدرجة</span>';
+                }
+
                 if (typeSelect) typeSelect.value = '';
                 if (notesInput) notesInput.value = '';
+
+                // عرض تنبيه النجاح داخل النافذة
+                const successAlert = document.getElementById('discSuccessAlert');
+                const successMsg = document.getElementById('discSuccessMsg');
+                if (successAlert && successMsg) {
+                    successMsg.textContent = data.message || 'تم تسجيل المخالفة واحتساب درجات الضبط والربط بنجاح!';
+                    successAlert.classList.remove('d-none');
+                    setTimeout(() => {
+                        successAlert.classList.add('d-none');
+                    }, 4000);
+                }
 
                 const scoreEl = document.getElementById('discScoreDisplay');
                 if (scoreEl) scoreEl.textContent = parseFloat(data.score).toFixed(2).replace(/\.00$/, '');
@@ -1359,18 +1457,17 @@
 
                 renderDisciplineInfractionsList(data.infractions, true);
                 updateMainTableRowDiscipline(enrollmentId, data.score, data.is_dropped);
-            } else {
-                alert(data.message || 'حدث خطأ أثناء تسجيل المخالفة.');
-            }
-        })
-        .catch(err => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>تسجيل المخالفة واحتساب الدرجة</span>';
-            }
-            console.error('Error adding infraction:', err);
-            alert('حدث خطأ في الاتصال بالخادم.');
-        });
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-danger');
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span id="btnSubmitDisciplineText">تسجيل المخالفة واحتساب الدرجة</span>';
+                }
+                console.error('Error adding infraction:', err);
+                alert(err.message || 'حدث خطأ في الاتصال بالخادم.');
+            });
     }
 
     function deleteDisciplineInfraction(infractionId) {
@@ -1380,16 +1477,21 @@
 
         const csrfToken = getDisciplineCsrfToken();
         const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', csrfToken);
+        if (csrfToken) formData.append('csrfmiddlewaretoken', csrfToken);
 
         fetch(`/results/api/discipline/delete/${infractionId}/`, {
             method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
             body: formData
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
+            .then(async res => {
+                const data = await res.json().catch(() => null);
+                if (!res.ok || !data || !data.success) {
+                    const msg = (data && data.message) ? data.message : 'تعذر حذف المخالفة (رمز الاستجابة: ' + res.status + ')';
+                    throw new Error(msg);
+                }
+                return data;
+            })
+            .then(data => {
                 const scoreEl = document.getElementById('discScoreDisplay');
                 if (scoreEl) scoreEl.textContent = parseFloat(data.score).toFixed(2).replace(/\.00$/, '');
 
@@ -1410,13 +1512,10 @@
                 if (enrollmentId) {
                     updateMainTableRowDiscipline(enrollmentId, data.score, data.is_dropped);
                 }
-            } else {
-                alert(data.message || 'حدث خطأ أثناء حذف المخالفة.');
-            }
-        })
+            })
             .catch(err => {
                 console.error('Error deleting infraction:', err);
-                alert('حدث خطأ في الاتصال بالخادم.');
+                alert(err.message || 'حدث خطأ في الاتصال بالخادم.');
             });
     }
 

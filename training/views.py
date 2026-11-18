@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 from .models import (
     Instructor, SessionSubjectInstructor,
@@ -3749,6 +3750,7 @@ def api_get_discipline_infractions_view(request, enrollment_id):
     })
 
 
+@csrf_exempt
 @login_required
 def api_add_discipline_infraction_view(request):
     """
@@ -3759,8 +3761,18 @@ def api_add_discipline_infraction_view(request):
 
     enrollment_id = request.POST.get('enrollment_id')
     infraction_type = request.POST.get('infraction_type')
-    date_str = request.POST.get('date', '').strip()
-    notes = request.POST.get('notes', '').strip()
+    date_str = (request.POST.get('date') or '').strip()
+    notes = (request.POST.get('notes') or '').strip()
+
+    if not enrollment_id or not infraction_type:
+        try:
+            body_data = json.loads(request.body.decode('utf-8'))
+            enrollment_id = enrollment_id or body_data.get('enrollment_id')
+            infraction_type = infraction_type or body_data.get('infraction_type')
+            date_str = date_str or (body_data.get('date') or '').strip()
+            notes = notes or (body_data.get('notes') or '').strip()
+        except Exception:
+            pass
 
     if not enrollment_id or not infraction_type:
         return JsonResponse({'success': False, 'message': 'يرجى تحديد الدارس ونوع المخالفة.'}, status=400)
@@ -3824,7 +3836,14 @@ def api_add_discipline_infraction_view(request):
 
     return JsonResponse({
         'success': True,
-        'message': 'تم تسجيل المخالفة واحتساب درجات الضبط والربط بنجاح.',
+        'message': f'تم تسجيل مخالفة ({infraction.get_infraction_type_display()}) بنجاح.',
+        'added_infraction': {
+            'id': infraction.id,
+            'type': infraction.infraction_type,
+            'display': infraction.get_infraction_type_display(),
+            'date': inf_date.strftime('%Y-%m-%d'),
+            'notes': infraction.notes,
+        },
         'enrollment_id': enrollment.id,
         'score': result['score'],
         'is_dropped': result['dropped'],
@@ -3833,6 +3852,7 @@ def api_add_discipline_infraction_view(request):
     })
 
 
+@csrf_exempt
 @login_required
 def api_delete_discipline_infraction_view(request, infraction_id):
     """
