@@ -11,29 +11,7 @@
                 <i class="bi bi-patch-check-fill text-warning"></i>
                 <span class="small fw-semibold text-white">المنظومة التدريبية والأكاديمية الموحدة</span>
             </div>
-            <h1 class="display-6 fw-bold mb-4 text-white">نظام تسجيل الدارسين واستخراج النتائج والشهادات</h1>
-            <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2">
-                {% if is_registrar or is_admin %}
-                <a href="{% url 'training:trainees_list' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-3 shadow-sm text-dark d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-person-plus-fill"></i>
-                    <span>دخول سجل الدارسين</span>
-                </a>
-                {% endif %}
-                <a href="{% url 'training:results_center' %}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-award"></i>
-                    <span>رصد النتائج واستخراج الشهادات</span>
-                </a>
-                {% if is_registrar or is_supervisor or is_admin %}
-                <a href="{% url 'training:reports_hub' %}" class="btn btn-info fw-bold px-4 py-2 rounded-3 text-white d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" style="background: linear-gradient(135deg, #0284c7, #0369a1); border: 1px solid #38bdf8;">
-                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-                    <span>التقارير الشاملة وإكسل</span>
-                </a>
-                {% endif %}
-                <a href="{% url 'training:logout' %}" class="btn btn-danger fw-bold px-3 py-2 rounded-3 text-white d-inline-flex align-items-center justify-content-center gap-2 ms-sm-auto shadow-sm" style="background: linear-gradient(135deg, #dc2626, #b91c1c); border: 1px solid #ef4444;" title="تسجيل الخروج من النظام">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>تسجيل الخروج</span>
-                </a>
-            </div>
+            <h1 class="display-6 fw-bold mb-0 text-white">نظام تسجيل الدارسين واستخراج النتائج والشهادات</h1>
         </div>
     </div>
 </div>
