@@ -191,9 +191,8 @@ def trainees_list_view(request):
     else:
         form = TraineeForm()
 
+    # الدارسون متاحون ومشاركون لجميع المعاهد
     trainees = Trainee.objects.all().prefetch_related('relatives', 'enrollments')
-    if request.institute:
-        trainees = trainees.filter(institute=request.institute)
 
     if category_filter in [TraineeCategory.OFFICER, TraineeCategory.NCO, TraineeCategory.CIVILIAN]:
         trainees = trainees.filter(category=category_filter)
@@ -213,7 +212,7 @@ def trainees_list_view(request):
             search_filter |= Q(batch=int(search_query))
         trainees = trainees.filter(search_filter).distinct()
 
-    base_trainees = Trainee.objects.filter(institute=request.institute) if request.institute else Trainee.objects.all()
+    base_trainees = Trainee.objects.all()
     counts = {
         'all': base_trainees.count(),
         'officer': base_trainees.filter(category=TraineeCategory.OFFICER).count(),
@@ -802,8 +801,6 @@ def course_session_create_view(request):
     if request.institute:
         categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
     trainees = Trainee.objects.all().order_by('category', 'name')
-    if request.institute:
-        trainees = trainees.filter(Q(institute=request.institute) | Q(institute__isnull=True))
     instructors = Instructor.objects.filter(is_active=True).order_by('name')
     if request.institute:
         instructors = instructors.filter(Q(institute=request.institute) | Q(institute__isnull=True))
@@ -2359,26 +2356,28 @@ def admin_dashboard_view(request):
     trainees_ncos = Trainee.objects.filter(category=TraineeCategory.NCO).count()
     trainees_civilians = Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count()
 
-    courses_total = Course.objects.count()
-    categories_total = CourseCategory.objects.count()
-    sessions_total = CourseSession.objects.count()
-    sessions_active = CourseSession.objects.filter(status='active').count()
-    sessions_completed = CourseSession.objects.filter(status='completed').count()
-    sessions_planned = CourseSession.objects.filter(status='planned').count()
+    courses_total = Course.objects.filter(institute=request.institute).count() if request.institute else Course.objects.count()
+    categories_total = CourseCategory.objects.filter(institute=request.institute).count() if request.institute else CourseCategory.objects.count()
+    sessions_qs = CourseSession.objects.filter(institute=request.institute) if request.institute else CourseSession.objects.all()
+    sessions_total = sessions_qs.count()
+    sessions_active = sessions_qs.filter(status='active').count()
+    sessions_completed = sessions_qs.filter(status='completed').count()
+    sessions_planned = sessions_qs.filter(status='planned').count()
 
-    enrollments_total = CourseEnrollment.objects.count()
-    enrollments_graded = CourseEnrollment.objects.filter(is_graded=True).count()
+    enrollments_qs = CourseEnrollment.objects.filter(session__institute=request.institute) if request.institute else CourseEnrollment.objects.all()
+    enrollments_total = enrollments_qs.count()
+    enrollments_graded = enrollments_qs.filter(is_graded=True).count()
     completion_rate = round((enrollments_graded / enrollments_total * 100), 1) if enrollments_total > 0 else 0
 
-    avg_score_res = CourseEnrollment.objects.filter(is_graded=True).aggregate(avg_score=Avg('percentage'))
+    avg_score_res = enrollments_qs.filter(is_graded=True).aggregate(avg_score=Avg('percentage'))
     avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
 
     # 2. توزيع التقديرات (Grade Distribution)
-    grade_a = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=85).count()
-    grade_b = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=75, percentage__lt=85).count()
-    grade_c = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=65, percentage__lt=75).count()
-    grade_d = CourseEnrollment.objects.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
-    grade_f = CourseEnrollment.objects.filter(is_graded=True, percentage__lt=50).count()
+    grade_a = enrollments_qs.filter(is_graded=True, percentage__gte=85).count()
+    grade_b = enrollments_qs.filter(is_graded=True, percentage__gte=75, percentage__lt=85).count()
+    grade_c = enrollments_qs.filter(is_graded=True, percentage__gte=65, percentage__lt=75).count()
+    grade_d = enrollments_qs.filter(is_graded=True, percentage__gte=50, percentage__lt=65).count()
+    grade_f = enrollments_qs.filter(is_graded=True, percentage__lt=50).count()
 
     def calc_pct(part, whole):
         return round((part / whole * 100), 1) if whole > 0 else 0
@@ -2392,17 +2391,26 @@ def admin_dashboard_view(request):
     ]
 
     # 3. توزيع الدارسين بحسب القوة (Forces Distribution)
-    forces_stats = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
-    forces_list = []
-    for item in forces_stats:
-        forces_list.append({
-            'name': item['force'] or 'غير محدد',
-            'count': item['count'],
-            'pct': calc_pct(item['count'], trainees_total)
-        })
-
-    # 4. توزيع الدارسين بحسب الوحدات (Top Units)
-    top_units = Trainee.objects.values('unit').annotate(count=Count('military_number')).order_by('-count')[:6]
+    if request.institute:
+        raw_forces = enrollments_qs.exclude(current_force__isnull=True).exclude(current_force='').values('current_force').annotate(count=Count('id')).order_by('-count')
+        forces_list = []
+        for item in raw_forces:
+            forces_list.append({
+                'name': item['current_force'],
+                'count': item['count'],
+                'pct': calc_pct(item['count'], enrollments_total)
+            })
+        top_units = enrollments_qs.exclude(current_unit__isnull=True).exclude(current_unit='').values('current_unit').annotate(count=Count('id')).order_by('-count')[:6]
+    else:
+        forces_stats = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
+        forces_list = []
+        for item in forces_stats:
+            forces_list.append({
+                'name': item['force'] or 'غير محدد',
+                'count': item['count'],
+                'pct': calc_pct(item['count'], trainees_total)
+            })
+        top_units = Trainee.objects.values('unit').annotate(count=Count('military_number')).order_by('-count')[:6]
 
     # 5. تصنيفات الدورات
     categories = CourseCategory.objects.annotate(courses_count=Count('courses')).order_by('name')
@@ -3328,8 +3336,8 @@ def admin_report_print_view(request):
         messages.error(request, 'عذراً، هذا التقرير مخصص للإدارة وهيئة القيادة والتسجيل فقط.')
         return redirect('training:home')
 
-    cert_settings = CertificateSettings.get_settings()
-    system_settings = SystemSettings.get_settings()
+    cert_settings = CertificateSettings.get_settings(institute=request.institute)
+    system_settings = SystemSettings.get_settings(institute=request.institute)
 
     params = request.GET
     has_filters = any(k in params for k in [
@@ -3383,6 +3391,8 @@ def admin_report_print_view(request):
         enrollments_qs = CourseEnrollment.objects.select_related(
             'trainee', 'session', 'session__course', 'session__course__category'
         )
+        if request.institute:
+            enrollments_qs = enrollments_qs.filter(session__institute=request.institute)
 
         if session_status == 'completed':
             enrollments_qs = enrollments_qs.filter(session__status='completed')
@@ -3568,39 +3578,76 @@ def admin_report_print_view(request):
 
     else:
         filters_summary = "كامل السجلات الإحصائية للنظام"
-        trainees_total = Trainee.objects.count()
-        trainees_officers = Trainee.objects.filter(category=TraineeCategory.OFFICER).count()
-        trainees_ncos = Trainee.objects.filter(category=TraineeCategory.NCO).count()
-        trainees_civilians = Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count()
+        if request.institute:
+            inst_sessions = CourseSession.objects.filter(institute=request.institute)
+            inst_enrollments = CourseEnrollment.objects.filter(session__institute=request.institute)
+            trainees_total = inst_enrollments.values('trainee_id').distinct().count()
+            trainees_officers = inst_enrollments.filter(trainee__category=TraineeCategory.OFFICER).values('trainee_id').distinct().count()
+            trainees_ncos = inst_enrollments.filter(trainee__category=TraineeCategory.NCO).values('trainee_id').distinct().count()
+            trainees_civilians = inst_enrollments.filter(trainee__category=TraineeCategory.CIVILIAN).values('trainee_id').distinct().count()
 
-        courses_total = Course.objects.count()
-        sessions_count = CourseSession.objects.count()
+            courses_total = Course.objects.filter(institute=request.institute).count()
+            sessions_count = inst_sessions.count()
 
-        enrollments_graded = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
-        avg_score_res = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
-        avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+            enrollments_graded = inst_enrollments.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
+            avg_score_res = inst_enrollments.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
+            avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
 
-        graded_qs = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False)
-        total_eval = graded_qs.count()
+            graded_qs = inst_enrollments.filter(is_graded=True, is_dropped=False)
+            total_eval = graded_qs.count()
 
-        grade_a = graded_qs.filter(percentage__gte=85).count()
-        grade_b = graded_qs.filter(percentage__gte=75, percentage__lt=85).count()
-        grade_c = graded_qs.filter(percentage__gte=65, percentage__lt=75).count()
-        grade_d = graded_qs.filter(percentage__gte=50, percentage__lt=65).count()
-        grade_f = graded_qs.filter(percentage__lt=50).count() + CourseEnrollment.objects.filter(is_dropped=True).count()
+            grade_a = graded_qs.filter(percentage__gte=85).count()
+            grade_b = graded_qs.filter(percentage__gte=75, percentage__lt=85).count()
+            grade_c = graded_qs.filter(percentage__gte=65, percentage__lt=75).count()
+            grade_d = graded_qs.filter(percentage__gte=50, percentage__lt=65).count()
+            grade_f = graded_qs.filter(percentage__lt=50).count() + inst_enrollments.filter(is_dropped=True).count()
 
-        grade_a_pct = calc_pct(grade_a, total_eval)
-        grade_b_pct = calc_pct(grade_b, total_eval)
-        grade_c_pct = calc_pct(grade_c, total_eval)
-        grade_d_pct = calc_pct(grade_d, total_eval)
-        grade_f_pct = calc_pct(grade_f, total_eval)
+            grade_a_pct = calc_pct(grade_a, total_eval)
+            grade_b_pct = calc_pct(grade_b, total_eval)
+            grade_c_pct = calc_pct(grade_c, total_eval)
+            grade_d_pct = calc_pct(grade_d, total_eval)
+            grade_f_pct = calc_pct(grade_f, total_eval)
 
-        raw_forces = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
-        total_trainees = trainees_total or 1
-        forces_stats = [
-            {'force': f['force'] if f['force'] else 'غير محدد', 'count': f['count'], 'pct': round((f['count'] / total_trainees * 100), 1)}
-            for f in raw_forces
-        ]
+            raw_forces = inst_enrollments.exclude(current_force__isnull=True).exclude(current_force='').values('current_force').annotate(count=Count('id')).order_by('-count')
+            total_trainees = trainees_total or 1
+            forces_stats = [
+                {'force': f['current_force'], 'count': f['count'], 'pct': round((f['count'] / total_trainees * 100), 1)}
+                for f in raw_forces
+            ]
+        else:
+            trainees_total = Trainee.objects.count()
+            trainees_officers = Trainee.objects.filter(category=TraineeCategory.OFFICER).count()
+            trainees_ncos = Trainee.objects.filter(category=TraineeCategory.NCO).count()
+            trainees_civilians = Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count()
+
+            courses_total = Course.objects.count()
+            sessions_count = CourseSession.objects.count()
+
+            enrollments_graded = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
+            avg_score_res = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
+            avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+
+            graded_qs = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False)
+            total_eval = graded_qs.count()
+
+            grade_a = graded_qs.filter(percentage__gte=85).count()
+            grade_b = graded_qs.filter(percentage__gte=75, percentage__lt=85).count()
+            grade_c = graded_qs.filter(percentage__gte=65, percentage__lt=75).count()
+            grade_d = graded_qs.filter(percentage__gte=50, percentage__lt=65).count()
+            grade_f = graded_qs.filter(percentage__lt=50).count() + CourseEnrollment.objects.filter(is_dropped=True).count()
+
+            grade_a_pct = calc_pct(grade_a, total_eval)
+            grade_b_pct = calc_pct(grade_b, total_eval)
+            grade_c_pct = calc_pct(grade_c, total_eval)
+            grade_d_pct = calc_pct(grade_d, total_eval)
+            grade_f_pct = calc_pct(grade_f, total_eval)
+
+            raw_forces = Trainee.objects.values('force').annotate(count=Count('military_number')).order_by('-count')
+            total_trainees = trainees_total or 1
+            forces_stats = [
+                {'force': f['force'] if f['force'] else 'غير محدد', 'count': f['count'], 'pct': round((f['count'] / total_trainees * 100), 1)}
+                for f in raw_forces
+            ]
 
     # استخراج بيان المواد وهيئة التدريس ومعدلات النجاح للطباعة الرسمية
     subjects_summary = []
@@ -3613,11 +3660,16 @@ def admin_report_print_view(request):
             sessions_for_summary = CourseSession.objects.filter(
                 id__in=enrollments_qs.values_list('session_id', flat=True).distinct()
             ).select_related('course', 'course__category', 'supervisor')
+        if request.institute:
+            sessions_for_summary = sessions_for_summary.filter(institute=request.institute)
 
         if sessions_for_summary.exists():
             subjects_summary = get_sessions_subjects_summary(sessions_for_summary[:5])
     else:
-        recent_sessions = CourseSession.objects.all().order_by('-start_date')[:3]
+        recent_sessions = CourseSession.objects.all()
+        if request.institute:
+            recent_sessions = recent_sessions.filter(institute=request.institute)
+        recent_sessions = recent_sessions.order_by('-start_date')[:3]
         subjects_summary = get_sessions_subjects_summary(recent_sessions)
 
     return render(request, 'training/admin_report_print.html', {
@@ -3754,9 +3806,9 @@ def reports_hub_view(request):
         for s in sessions
     ]
 
-    # جلب بيانات التقرير المفلترة
-    report_data = get_report_data(request.GET)
-    system_settings = SystemSettings.get_settings()
+    # جلب بيانات التقرير المفلترة مع عزل بيانات المعهد
+    report_data = get_report_data(request.GET, institute=request.institute)
+    system_settings = SystemSettings.get_settings(institute=request.institute)
 
     context = {
         'report_data': report_data,
@@ -3787,7 +3839,7 @@ def reports_export_excel_view(request):
         return redirect('training:home')
 
     try:
-        report_data = get_report_data(request.GET)
+        report_data = get_report_data(request.GET, institute=request.institute)
         excel_bytes = export_report_to_excel(report_data)
     except ImportError:
         messages.error(request, 'حزمة openpyxl غير مثبتة على بيئة الخادم الحالية. يرجى تثبيتها عبر أمر: pip install openpyxl')

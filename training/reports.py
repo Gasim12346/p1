@@ -173,9 +173,9 @@ def get_sessions_subjects_summary(sessions_qs):
     return summary
 
 
-def get_report_data(params):
+def get_report_data(params, institute=None):
     """
-    تجميع وفلترة بيانات التقرير بحسب المعايير المحددة في الطلب
+    تجميع وفلترة بيانات التقرير بحسب المعايير المحددة في الطلب وعزل بيانات المعهد إن وجد
     """
     report_type = str(params.get('report_type') or 'trainees').strip()
     if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors', 'course_subjects']:
@@ -283,6 +283,9 @@ def get_report_data(params):
         'course', 'course__category', 'supervisor'
     ).prefetch_related('enrollments', 'subject_instructors__instructor')
 
+    if institute:
+        sessions_filter_qs = sessions_filter_qs.filter(institute=institute)
+
     if session_status == 'completed':
         sessions_filter_qs = sessions_filter_qs.filter(status='completed')
     elif session_status == 'active':
@@ -306,6 +309,8 @@ def get_report_data(params):
             sessions_filter_qs = filtered_by_session
         else:
             fallback_session = CourseSession.objects.filter(id=session_id).select_related('course', 'course__category', 'supervisor').prefetch_related('enrollments', 'subject_instructors__instructor')
+            if institute:
+                fallback_session = fallback_session.filter(institute=institute)
             if fallback_session.exists():
                 sessions_filter_qs = fallback_session
     if instructor_id:
@@ -337,6 +342,8 @@ def get_report_data(params):
         qs = CourseEnrollment.objects.select_related(
             'trainee', 'session', 'session__course', 'session__course__category'
         )
+        if institute:
+            qs = qs.filter(session__institute=institute)
 
         # فلترة حالة الدورة التدريبية (معتمدة ومحفوظة، أو منعقدة حالياً، أو الكل)
         if session_status == 'completed':
@@ -572,6 +579,8 @@ def get_report_data(params):
     # ========================================================
     elif report_type == 'sessions':
         qs = CourseSession.objects.select_related('course', 'course__category', 'supervisor').prefetch_related('enrollments')
+        if institute:
+            qs = qs.filter(institute=institute)
 
         # فلترة حالة الدورة التدريبية (معتمدة ومحفوظة، أو منعقدة حالياً، أو الكل)
         if session_status == 'completed':
@@ -705,6 +714,8 @@ def get_report_data(params):
     # ========================================================
     elif report_type == 'units_forces':
         qs = CourseEnrollment.objects.select_related('trainee', 'session', 'session__course')
+        if institute:
+            qs = qs.filter(session__institute=institute)
 
         # فلترة حالة الدورة التدريبية
         if session_status == 'completed':
@@ -806,6 +817,8 @@ def get_report_data(params):
         qs = CourseEnrollment.objects.filter(is_dropped=True).select_related(
             'trainee', 'session', 'session__course'
         )
+        if institute:
+            qs = qs.filter(session__institute=institute)
 
         # فلترة حالة الدورة التدريبية
         if session_status == 'completed':
@@ -958,6 +971,8 @@ def get_report_data(params):
     # ========================================================
     elif report_type == 'instructors':
         qs = Instructor.objects.all()
+        if institute:
+            qs = qs.filter(institute=institute)
         if instructor_id:
             qs = qs.filter(pk=instructor_id)
         if q:
@@ -975,6 +990,8 @@ def get_report_data(params):
         for inst in instructors:
             # الدورات التي يشرف عليها بحسب حالة الدورة
             supervised_qs = CourseSession.objects.filter(supervisor=inst)
+            if institute:
+                supervised_qs = supervised_qs.filter(institute=institute)
             if session_status == 'completed':
                 supervised_qs = supervised_qs.filter(status='completed')
             elif session_status == 'active':
@@ -991,6 +1008,8 @@ def get_report_data(params):
 
             # المواد المكلف بها بحسب حالة الدورة
             assigned_qs = SessionSubjectInstructor.objects.filter(instructor=inst)
+            if institute:
+                assigned_qs = assigned_qs.filter(session__institute=institute)
             if session_status == 'completed':
                 assigned_qs = assigned_qs.filter(session__status='completed')
             elif session_status == 'active':

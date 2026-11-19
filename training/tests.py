@@ -3594,25 +3594,78 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertRedirects(res_exit, reverse('training:super_admin_dashboard'))
         self.assertNotIn('active_institute_id', self.client.session)
 
-    def test_multi_institute_trainee_data_isolation(self):
-        """فحص العزل الصارم للبيانات: كل معهد يرى دارسيه فقط ولا يرى دارسي المعاهد الأخرى"""
+    def test_trainees_shared_across_all_institutes(self):
+        """فحص إتاحة بيانات الدارسين لكافة المعاهد: كلا المعهدين يريان جميع الدارسين للاستفادة منهم"""
         # تسجيل الدخول كمدير معهد أ
         self.client.login(username='admin_a', password='Password123!')
         res_a = self.client.get(reverse('training:trainees_list'))
         self.assertEqual(res_a.status_code, 200)
         self.assertContains(res_a, '11111')
         self.assertContains(res_a, 'دارس معهد أ')
-        self.assertNotContains(res_a, '22222')
-        self.assertNotContains(res_a, 'دارس معهد ب')
+        self.assertContains(res_a, '22222')
+        self.assertContains(res_a, 'دارس معهد ب')
 
         # تسجيل الدخول كمدير معهد ب
         self.client.login(username='admin_b', password='Password123!')
         res_b = self.client.get(reverse('training:trainees_list'))
         self.assertEqual(res_b.status_code, 200)
+        self.assertContains(res_b, '11111')
+        self.assertContains(res_b, 'دارس معهد أ')
         self.assertContains(res_b, '22222')
         self.assertContains(res_b, 'دارس معهد ب')
-        self.assertNotContains(res_b, '11111')
-        self.assertNotContains(res_b, 'دارس معهد أ')
+
+    def test_multi_institute_reports_isolation(self):
+        """فحص العزل الصارم للتقارير: كل معهد يرى تقارير ودورات ونتائج معهده فقط"""
+        import datetime
+        cat_a = CourseCategory.objects.create(name='تصنيف معهد أ', institute=self.inst_a)
+        course_a = Course.objects.create(name='دورة معهد أ الحصرية', category=cat_a, institute=self.inst_a)
+        session_a = CourseSession.objects.create(
+            course=course_a,
+            institute=self.inst_a,
+            session_code='BATCH-A1',
+            start_date=datetime.date(2025, 1, 1),
+            end_date=datetime.date(2025, 2, 1),
+            status='completed'
+        )
+        CourseEnrollment.objects.create(
+            session=session_a,
+            trainee=self.trainee_a,
+            is_graded=True,
+            percentage=95.0,
+            grade_label='ممتاز'
+        )
+
+        cat_b = CourseCategory.objects.create(name='تصنيف معهد ب', institute=self.inst_b)
+        course_b = Course.objects.create(name='دورة معهد ب الحصرية', category=cat_b, institute=self.inst_b)
+        session_b = CourseSession.objects.create(
+            course=course_b,
+            institute=self.inst_b,
+            session_code='BATCH-B1',
+            start_date=datetime.date(2025, 1, 1),
+            end_date=datetime.date(2025, 2, 1),
+            status='completed'
+        )
+        CourseEnrollment.objects.create(
+            session=session_b,
+            trainee=self.trainee_b,
+            is_graded=True,
+            percentage=88.0,
+            grade_label='جيد جداً'
+        )
+
+        # استعلام التقارير لمدير معهد أ
+        self.client.login(username='admin_a', password='Password123!')
+        res_rep_a = self.client.get(reverse('training:reports_hub'), {'report_type': 'trainees', 'all_dates': '1'})
+        self.assertEqual(res_rep_a.status_code, 200)
+        self.assertContains(res_rep_a, 'دورة معهد أ الحصرية')
+        self.assertNotContains(res_rep_a, 'دورة معهد ب الحصرية')
+
+        # استعلام التقارير لمدير معهد ب
+        self.client.login(username='admin_b', password='Password123!')
+        res_rep_b = self.client.get(reverse('training:reports_hub'), {'report_type': 'trainees', 'all_dates': '1'})
+        self.assertEqual(res_rep_b.status_code, 200)
+        self.assertContains(res_rep_b, 'دورة معهد ب الحصرية')
+        self.assertNotContains(res_rep_b, 'دورة معهد أ الحصرية')
 
 
 
