@@ -2519,6 +2519,8 @@ def admin_dashboard_view(request):
 
     # 11. سجل النشاط والعمليات الشامل ومسار تدقيق المستخدمين (Audit & Activity Logs)
     activity_qs = ActivityLog.objects.all()
+    if request.institute:
+        activity_qs = activity_qs.filter(institute=request.institute)
 
     # معلمات الفلترة والبحث
     activity_user = request.GET.get('activity_user', '').strip()
@@ -2556,16 +2558,17 @@ def admin_dashboard_view(request):
             Q(ip_address__icontains=activity_q)
         )
 
-    activity_logs_total = ActivityLog.objects.count()
-    activity_logs_today = ActivityLog.objects.filter(timestamp__date=today).count()
-    activity_logs_creates = ActivityLog.objects.filter(action_type=ActivityAction.CREATE).count()
-    activity_logs_updates = ActivityLog.objects.filter(action_type=ActivityAction.UPDATE).count()
-    activity_logs_deletes = ActivityLog.objects.filter(action_type=ActivityAction.DELETE).count()
-    activity_logs_sessions = ActivityLog.objects.filter(action_type__in=[ActivityAction.LOGIN, ActivityAction.LOGOUT]).count()
-    activity_logs_grades = ActivityLog.objects.filter(action_type__in=[ActivityAction.GRADE_ENTRY, ActivityAction.GRADE_APPROVAL]).count()
+    base_activity = ActivityLog.objects.filter(institute=request.institute) if request.institute else ActivityLog.objects.all()
+    activity_logs_total = base_activity.count()
+    activity_logs_today = base_activity.filter(timestamp__date=today).count()
+    activity_logs_creates = base_activity.filter(action_type=ActivityAction.CREATE).count()
+    activity_logs_updates = base_activity.filter(action_type=ActivityAction.UPDATE).count()
+    activity_logs_deletes = base_activity.filter(action_type=ActivityAction.DELETE).count()
+    activity_logs_sessions = base_activity.filter(action_type__in=[ActivityAction.LOGIN, ActivityAction.LOGOUT]).count()
+    activity_logs_grades = base_activity.filter(action_type__in=[ActivityAction.GRADE_ENTRY, ActivityAction.GRADE_APPROVAL]).count()
 
     activity_logs = list(activity_qs[:300])
-    activity_users_list = User.objects.all().order_by('username')
+    activity_users_list = User.objects.filter(profile__institute=request.institute).order_by('username') if request.institute else User.objects.all().order_by('username')
 
     context = {
         # KPIs
@@ -3309,17 +3312,19 @@ def category_delete_view(request, category_id):
 # =====================================================================
 @admin_access_required
 def admin_clear_activity_logs_view(request):
-    """تفريغ وتنظيف سجل النشاط والعمليات من لوحة الأدمن مع توثيق عملية التفريغ"""
+    """تفريغ وتنظيف سجل النشاط والعمليات من لوحة الأدمن مع توثيق عملية التفريغ للمعهد المحدد"""
     if request.method == 'POST':
-        count = ActivityLog.objects.count()
-        ActivityLog.objects.all().delete()
+        qs = ActivityLog.objects.filter(institute=request.institute) if request.institute else ActivityLog.objects.all()
+        count = qs.count()
+        qs.delete()
+        inst_name = request.institute.name if request.institute else "العام"
         log_activity(
             request=request,
             action_type=ActivityAction.DELETE,
             action_category=ActivityCategory.SYSTEM,
-            description=f"قام مدير النظام بتفريغ وحذف سجل النشاط والعمليات السابق بالكامل (كان يحتوي على {count} عملية مسجلة)."
+            description=f"قام مدير النظام بتفريغ وحذف سجل النشاط والعمليات السابق لنظام ({inst_name}) بالكامل (كان يحتوي على {count} عملية مسجلة)."
         )
-        messages.success(request, f'تم تفريغ وحذف سجل النشاط السابق بنجاح ({count} سجل تم تنظيفها).')
+        messages.success(request, f'تم تفريغ وحذف سجل النشاط السابق لنظام "{inst_name}" بنجاح ({count} سجل تم تنظيفها).')
     return redirect(f"{reverse('training:admin_dashboard')}?tab=activity-log#pane-activity-log")
 
 
@@ -4119,12 +4124,24 @@ def super_admin_dashboard_view(request):
         'users_total': User.objects.count(),
     }
 
-    recent_activities = ActivityLog.objects.select_related('institute', 'user').order_by('-timestamp')[:20]
+    institute_filter_id = request.GET.get('institute_filter', '').strip()
+    selected_filter_institute = None
+    activities_qs = ActivityLog.objects.select_related('institute', 'user').order_by('-timestamp')
+    if institute_filter_id:
+        if institute_filter_id.isdigit():
+            selected_filter_institute = Institute.objects.filter(pk=int(institute_filter_id)).first()
+            if selected_filter_institute:
+                activities_qs = activities_qs.filter(institute=selected_filter_institute)
+
+    recent_activities = activities_qs[:40]
 
     context = {
         'institutes_data': institutes_data,
+        'institutes': institutes,
         'stats': stats,
         'recent_activities': recent_activities,
+        'selected_filter_institute': selected_filter_institute,
+        'selected_institute_id': institute_filter_id,
     }
     return render(request, 'training/super_admin/dashboard.html', context)
 

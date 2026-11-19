@@ -317,12 +317,33 @@
     </div>
 
     <!-- Recent System Operations Across Institutes -->
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="activity_logs_section">
+        <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3 border-bottom">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-clock-history text-primary fs-5"></i>
-                <h5 class="fw-bold text-dark mb-0">سجل أحدث العمليات والأنشطة عبر كافة المعاهد</h5>
+                {% if selected_filter_institute %}
+                    <h5 class="fw-bold text-dark mb-0">سجل عمليات معهد: <span class="text-primary">{{ selected_filter_institute.name }}</span></h5>
+                {% else %}
+                    <h5 class="fw-bold text-dark mb-0">سجل أحدث العمليات والأنشطة (كافة المعاهد)</h5>
+                {% endif %}
             </div>
+            <!-- فلتر عزل السجل بحسب المعهد -->
+            <form method="get" action="{% url 'training:super_admin_dashboard' %}#activity_logs_section" class="d-flex align-items-center gap-2">
+                <label for="instFilterSelect" class="small text-muted fw-bold text-nowrap">عزل السجل بحسب المعهد:</label>
+                <select name="institute_filter" id="instFilterSelect" class="form-select form-select-sm rounded-pill py-1 px-3" onchange="this.form.submit()" style="min-width: 220px;">
+                    <option value="">-- كافة المعاهد (سجل عام) --</option>
+                    {% for inst in institutes %}
+                        <option value="{{ inst.id }}" {% if selected_institute_id == inst.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inst.name }} ({{ inst.code }})
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if selected_filter_institute %}
+                    <a href="{% url 'training:super_admin_dashboard' %}#activity_logs_section" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 small" title="عرض كافة المعاهد">
+                        <i class="bi bi-x-circle"></i> الكل
+                    </a>
+                {% endif %}
+            </form>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -355,7 +376,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted font-sans-serif">لا توجد عمليات مسجلة حديثاً.</td>
+                            <td colspan="5" class="text-center py-4 text-muted font-sans-serif">لا توجد عمليات مسجلة حديثاً لهذا المعهد.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

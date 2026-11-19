@@ -3667,6 +3667,52 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertContains(res_rep_b, 'دورة معهد ب الحصرية')
         self.assertNotContains(res_rep_b, 'دورة معهد أ الحصرية')
 
+    def test_multi_institute_activity_log_isolation(self):
+        """فحص العزل الصارم لسجل النشاط والعمليات: كل معهد يرى عملياته الخاصة فقط"""
+        from training.models import log_activity, ActivityAction, ActivityCategory
+
+        # تسجيل عمليات منفصلة لكل معهد
+        log_activity(
+            user=self.admin_a_user,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.SYSTEM,
+            description="عملية خاصة بمعهد أ فقط",
+            institute=self.inst_a
+        )
+        log_activity(
+            user=self.admin_b_user,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.SYSTEM,
+            description="عملية خاصة بمعهد ب فقط",
+            institute=self.inst_b
+        )
+
+        # 1. فحص لوحة إدارة معهد أ
+        self.client.login(username='admin_a', password='Password123!')
+        res_admin_a = self.client.get(reverse('training:admin_dashboard'))
+        self.assertEqual(res_admin_a.status_code, 200)
+        self.assertContains(res_admin_a, "عملية خاصة بمعهد أ فقط")
+        self.assertNotContains(res_admin_a, "عملية خاصة بمعهد ب فقط")
+
+        # 2. فحص لوحة إدارة معهد ب
+        self.client.login(username='admin_b', password='Password123!')
+        res_admin_b = self.client.get(reverse('training:admin_dashboard'))
+        self.assertEqual(res_admin_b.status_code, 200)
+        self.assertContains(res_admin_b, "عملية خاصة بمعهد ب فقط")
+        self.assertNotContains(res_admin_b, "عملية خاصة بمعهد أ فقط")
+
+        # 3. فحص عزل السجل بالسوبر أدمن عبر الفلتر
+        self.client.login(username='super_boss', password='Password123!')
+        res_super_a = self.client.get(reverse('training:super_admin_dashboard'), {'institute_filter': self.inst_a.id})
+        self.assertEqual(res_super_a.status_code, 200)
+        self.assertContains(res_super_a, "عملية خاصة بمعهد أ فقط")
+        self.assertNotContains(res_super_a, "عملية خاصة بمعهد ب فقط")
+
+        res_super_b = self.client.get(reverse('training:super_admin_dashboard'), {'institute_filter': self.inst_b.id})
+        self.assertEqual(res_super_b.status_code, 200)
+        self.assertContains(res_super_b, "عملية خاصة بمعهد ب فقط")
+        self.assertNotContains(res_super_b, "عملية خاصة بمعهد أ فقط")
+
 
 
 
