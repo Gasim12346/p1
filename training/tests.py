@@ -3498,11 +3498,15 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         )
 
     def test_super_admin_dashboard_access_control(self):
-        """فحص أمان لوحة تحكم السوبر أدمن: محصورة بالسوبر أدمن ومحظورة على الأدمن العادي"""
-        # أدمن المعهد العادي يحاول الدخول
+        """فحص أمان لوحة تحكم السوبر أدمن: محصورة بالسوبر أدمن ومحظورة على الأدمن العادي وغير المسجلين"""
+        # غير المسجل يحاول الدخول يتم تحويله لصفحة تسجيل دخول السوبر أدمن
+        res_anon = self.client.get(reverse('training:super_admin_dashboard'))
+        self.assertRedirects(res_anon, f"{reverse('training:super_admin_login')}?next={reverse('training:super_admin_dashboard')}")
+
+        # أدمن المعهد العادي يحاول الدخول يتم رفضه وتحويله لصفحة دخول السوبر أدمن
         self.client.login(username='admin_a', password='Password123!')
         res_admin = self.client.get(reverse('training:super_admin_dashboard'))
-        self.assertRedirects(res_admin, reverse('training:home'))
+        self.assertRedirects(res_admin, reverse('training:super_admin_login'))
 
         # السوبر أدمن يدخل بنجاح
         self.client.login(username='super_boss', password='Password123!')
@@ -3512,6 +3516,48 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertContains(res_super, 'معهد المدرعات')
         self.assertContains(res_super, 'issi')
         self.assertContains(res_super, 'armor')
+
+    def test_super_admin_login_and_logout_isolated(self):
+        """فحص صفحة تسجيل الدخول والخروج المنفردة والمعزولة للسوبر أدمن"""
+        login_url = reverse('training:super_admin_login')
+        logout_url = reverse('training:super_admin_logout')
+
+        # 1. معاينة شاشة تسجيل دخول السوبر أدمن
+        res_get = self.client.get(login_url)
+        self.assertEqual(res_get.status_code, 200)
+        self.assertContains(res_get, 'بوابة السوبر أدمن المركزية')
+        self.assertContains(res_get, 'المنظومة المركزية الشاملة')
+
+        # 2. محاولة الدخول بحساب مدير معهد عادي (admin_a) - يجب رفضه
+        res_fail = self.client.post(login_url, {
+            'username': 'admin_a',
+            'password': 'Password123!',
+        })
+        self.assertEqual(res_fail.status_code, 200)
+        self.assertContains(res_fail, 'هذا الحساب لا يملك صلاحيات السوبر أدمن')
+
+        # 3. تسجيل الدخول بحساب السوبر أدمن بنجاح
+        res_success = self.client.post(login_url, {
+            'username': 'super_boss',
+            'password': 'Password123!',
+        })
+        self.assertRedirects(res_success, reverse('training:super_admin_dashboard'))
+
+        # 4. تسجيل الخروج عبر مسار خروج السوبر أدمن
+        res_logout = self.client.get(logout_url)
+        self.assertRedirects(res_logout, reverse('training:super_admin_login'))
+
+    def test_super_admin_isolated_template_structure(self):
+        """فحص عزل شاشات السوبر أدمن بحيث لا تحتوي على القوائم الجانبية الخاصة بالمعاهد"""
+        self.client.login(username='super_boss', password='Password123!')
+        res = self.client.get(reverse('training:super_admin_dashboard'))
+        self.assertEqual(res.status_code, 200)
+        # التأكد من استخدام القالب المنفصل المخصص
+        self.assertContains(res, 'المنظومة المركزية لإدارة المعاهد والمنشآت التدريبية')
+        self.assertContains(res, 'بوابة السوبر أدمن المركزية')
+        # التأكد من خلوه من القائمة الجانبية للمعاهد (app-sidebar و sidebar-nav)
+        self.assertNotContains(res, 'sidebar-page-layout')
+        self.assertNotContains(res, 'app-sidebar')
 
     def test_initialize_new_institute_service(self):
         """فحص تهيئة نظام معهد جديد: توليد إعدادات الهوية والشهادات والدورات القياسية وحساب المدير"""

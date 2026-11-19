@@ -40,12 +40,15 @@ def is_super_admin_user(user):
 
 
 def super_admin_required(view_func):
-    """قيد صلاحية: محصور بالمدير العام للمنظومة (سوبر أدمن)"""
+    """قيد صلاحية: محصور بالمدير العام للمنظومة (سوبر أدمن) وتوجيه غير المسجلين لصفحة تسجيل دخول السوبر أدمن"""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.warning(request, 'يرجى تسجيل الدخول بحساب السوبر أدمن للوصول إلى إدارة المنظومة المركزية.')
+            return redirect(f"{reverse('training:super_admin_login')}?next={quote(request.get_full_path())}")
         if not is_super_admin_user(request.user):
             messages.error(request, 'هذا القسم مخصص للمدير العام للمنظومة (سوبر أدمن) فقط.')
-            return redirect('training:home')
+            return redirect('training:super_admin_login')
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
@@ -4104,7 +4107,78 @@ def api_delete_discipline_infraction_view(request, infraction_id):
 # =====================================================================
 # بوابة وإدارة السوبر أدمن المركزية (Super Admin Multi-Institute Portal)
 # =====================================================================
-@login_required
+def super_admin_login_view(request):
+    """صفحة تسجيل الدخول المخصصة والمعزولة للمدير العام للمنظومة (سوبر أدمن)"""
+    if request.user.is_authenticated and is_super_admin_user(request.user):
+        return redirect('training:super_admin_dashboard')
+
+    redirect_to = request.GET.get('next', request.POST.get('next', '')).strip()
+    is_safe_redirect = bool(
+        redirect_to and url_has_allowed_host_and_scheme(
+            url=redirect_to,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        )
+    )
+    if not is_safe_redirect:
+        redirect_to = ''
+
+    if request.method == 'POST':
+        form = UserLoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username'].strip()
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                if is_super_admin_user(user):
+                    login(request, user)
+                    log_activity(
+                        request=request,
+                        action_type=ActivityAction.LOGIN,
+                        action_category=ActivityCategory.AUTH,
+                        description=f"تسجيل الدخول إلى بوابة السوبر أدمن المركزية للمستخدم: {username}",
+                        target_model="User",
+                        target_id=user.id
+                    )
+                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح كمدير عام للمنظومة (سوبر أدمن).')
+                    if redirect_to and not redirect_to.startswith('/super-admin/login'):
+                        return redirect(redirect_to)
+                    return redirect('training:super_admin_dashboard')
+                else:
+                    messages.error(request, 'عفواً، هذا الحساب لا يملك صلاحيات السوبر أدمن (المدير العام للمنظومة). يرجى استخدام بوابة تسجيل دخول المعاهد.')
+            else:
+                messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة.')
+        else:
+            messages.error(request, 'يرجى إدخال اسم المستخدم وكلمة المرور بشكل صحيح.')
+    else:
+        form = UserLoginForm()
+
+    return render(request, 'training/super_admin/login.html', {
+        'form': form,
+        'next': redirect_to,
+    })
+
+
+def super_admin_logout_view(request):
+    """تسجيل خروج السوبر أدمن والتحويل لصفحة تسجيل دخول السوبر أدمن"""
+    if request.user.is_authenticated:
+        username = request.user.username
+        user_id = request.user.id
+        logout(request)
+        request.session.pop('active_institute_id', None)
+        log_activity(
+            request=request,
+            action_type=ActivityAction.LOGOUT,
+            action_category=ActivityCategory.AUTH,
+            description=f"تسجيل الخروج من بوابة السوبر أدمن المركزية للمستخدم: {username}",
+            target_model="User",
+            target_id=user_id
+        )
+        messages.info(request, 'تم تسجيل خروج السوبر أدمن بنجاح.')
+    return redirect('training:super_admin_login')
+
+
 @super_admin_required
 def super_admin_dashboard_view(request):
     """لوحة تحكم السوبر أدمن المركزية: عرض كافة الأنظمة والمعاهد وإحصائياتها والتحكم بها"""
@@ -4157,7 +4231,6 @@ def super_admin_dashboard_view(request):
     return render(request, 'training/super_admin/dashboard.html', context)
 
 
-@login_required
 @super_admin_required
 def super_admin_institute_create_view(request):
     """إنشاء نظام معهد / منشأة تدريبية جديدة مع توليد المعرف وحساب المدير والإعدادات القياسية"""
@@ -4245,7 +4318,6 @@ def super_admin_institute_create_view(request):
     })
 
 
-@login_required
 @super_admin_required
 def super_admin_institute_edit_view(request, institute_id):
     """تعديل بيانات المعهد أو تحديث شعاره وحالته"""
@@ -4279,7 +4351,6 @@ def super_admin_institute_edit_view(request, institute_id):
     return redirect('training:super_admin_dashboard')
 
 
-@login_required
 @super_admin_required
 def super_admin_institute_toggle_status_view(request, institute_id):
     """تجميد أو تنشيط نظام المعهد"""
@@ -4291,7 +4362,6 @@ def super_admin_institute_toggle_status_view(request, institute_id):
     return redirect('training:super_admin_dashboard')
 
 
-@login_required
 @super_admin_required
 def super_admin_switch_institute_view(request, institute_id):
     """تبديل السياق والدخول لإدارة وتصفح نظام معهد معين كمدير كامل الصلاحيات"""
@@ -4301,7 +4371,6 @@ def super_admin_switch_institute_view(request, institute_id):
     return redirect('training:home')
 
 
-@login_required
 @super_admin_required
 def super_admin_exit_switch_view(request):
     """الخروج من سياق المعهد والعودة إلى لوحة السوبر أدمن المركزية"""

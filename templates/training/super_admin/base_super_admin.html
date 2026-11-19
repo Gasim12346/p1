@@ -1,0 +1,216 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة تحكم السوبر أدمن المركزية | المنظومة الشاملة للمعاهد{% endblock %}</title>
+    
+    <!-- Local Bootstrap RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --super-navy-dark: #060b16;
+            --super-navy-deep: #0b1329;
+            --super-navy-mid: #0f1e40;
+            --super-gold: #d97706;
+            --super-gold-light: #fbbf24;
+            --super-bg: #f8fafc;
+        }
+
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--super-bg);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Super Admin Executive Topbar */
+        .super-topbar {
+            background: linear-gradient(135deg, var(--super-navy-dark) 0%, var(--super-navy-deep) 60%, var(--super-navy-mid) 100%);
+            border-bottom: 2px solid var(--super-gold);
+            padding: 0.85rem 1.5rem;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+        }
+
+        .super-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .super-badge-icon {
+            width: 46px;
+            height: 46px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            border: 2px solid var(--super-gold-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--super-gold-light);
+            font-size: 1.35rem;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+            flex-shrink: 0;
+        }
+
+        .super-nav-link {
+            color: #cbd5e1;
+            font-weight: 600;
+            padding: 0.45rem 0.9rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .super-nav-link:hover, .super-nav-link.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .super-user-chip {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0.35rem 0.85rem;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            font-size: 0.85rem;
+        }
+
+        .live-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .super-footer {
+            background: var(--super-navy-dark);
+            border-top: 1px solid #1e293b;
+            color: #94a3b8;
+            padding: 1.25rem 0;
+            margin-top: auto;
+            font-size: 0.85rem;
+        }
+
+        .badge { font-weight: 700 !important; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Dedicated Super Admin Executive Topbar -->
+    <header class="super-topbar">
+        <div class="container-fluid d-flex align-items-center justify-content-between flex-wrap gap-2">
+            
+            <!-- Super Admin Brand & Central Identity -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'training:super_admin_dashboard' %}" class="super-brand">
+                    <div class="super-badge-icon">
+                        <i class="bi bi-motherboard-fill"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-6 text-white" style="line-height: 1.2;">المنظومة المركزية لإدارة المعاهد والمنشآت التدريبية</div>
+                        <small class="text-warning fw-bold" style="font-size: 0.72rem;">
+                            <i class="bi bi-shield-lock-fill me-1"></i> بوابة السوبر أدمن المركزية (Super Admin Center)
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Central Navigation Links -->
+                <nav class="d-none d-lg-flex align-items-center gap-1 ms-3">
+                    <a href="{% url 'training:super_admin_dashboard' %}" class="super-nav-link {% if request.resolver_match.url_name == 'super_admin_dashboard' %}active{% endif %}">
+                        <i class="bi bi-grid-fill text-warning"></i>
+                        <span>لوحة المنظومة والمعاهد</span>
+                    </a>
+                    <a href="{% url 'training:super_admin_institute_create' %}" class="super-nav-link {% if request.resolver_match.url_name == 'super_admin_institute_create' %}active{% endif %}">
+                        <i class="bi bi-plus-circle-fill text-warning"></i>
+                        <span>إنشاء نظام معهد جديد</span>
+                    </a>
+                    <a href="{% url 'training:super_admin_dashboard' %}#activity_logs_section" class="super-nav-link">
+                        <i class="bi bi-clock-history text-warning"></i>
+                        <span>سجل العمليات الموحد</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                
+                <!-- Quick Create Institute Button -->
+                <a href="{% url 'training:super_admin_institute_create' %}" class="btn btn-sm btn-warning fw-bold rounded-pill px-3 py-1 text-dark shadow-sm d-inline-flex align-items-center gap-1" title="إنشاء نظام معهد جديد">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>إنشاء معهد</span>
+                </a>
+
+                <!-- Super Admin User Indicator -->
+                <div class="super-user-chip">
+                    <span class="live-dot"></span>
+                    <span class="fw-bold">{{ user.username }}</span>
+                    <span class="badge bg-warning text-dark px-2 py-0" style="font-size: 0.65rem;">سوبر أدمن</span>
+                </div>
+
+                <!-- Dedicated Super Admin Logout Button -->
+                <a href="{% url 'training:super_admin_logout' %}" class="btn btn-sm btn-danger rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm text-white" style="background: linear-gradient(135deg, #dc2626, #b91c1c); border: 1px solid #ef4444;" title="تسجيل الخروج من بوابة السوبر أدمن">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>تسجيل خروج</span>
+                </a>
+
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow-1 py-3">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Super Admin Footer -->
+    <footer class="super-footer text-center">
+        <div class="container-fluid">
+            <span>المنظومة المركزية الشاملة لإدارة المعاهد والمنشآت التدريبية • تحكم وإشراف السوبر أدمن • جميع الحقوق محفوظة &copy; 2026</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper JS -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

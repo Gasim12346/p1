@@ -1,0 +1,201 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول السوبر أدمن | المنظومة المركزية لإدارة المعاهد</title>
+    
+    <!-- Local Bootstrap RTL CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 25%, #1e1b4b 0%, #0b1329 55%, #030712 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .super-login-card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+            max-width: 450px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid rgba(217, 119, 6, 0.35);
+            color: #1e293b;
+        }
+
+        .super-login-header {
+            background: linear-gradient(135deg, #060b16 0%, #0f172a 50%, #1e1b4b 100%);
+            padding: 2.5rem 1.5rem 2rem 1.5rem;
+            text-align: center;
+            color: #ffffff;
+            border-bottom: 2px solid #d97706;
+            position: relative;
+        }
+
+        .super-badge-icon {
+            width: 76px;
+            height: 76px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(217, 119, 6, 0.3);
+            margin-bottom: 1.1rem;
+            color: #fbbf24;
+            font-size: 2.2rem;
+        }
+
+        .btn-super-login {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: #ffffff;
+            border: none;
+            font-weight: 800;
+            padding: 0.9rem;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+        }
+
+        .btn-super-login:hover {
+            background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+            transform: translateY(-2px);
+            color: #ffffff;
+            box-shadow: 0 10px 28px rgba(217, 119, 6, 0.5);
+        }
+
+        .form-control:focus {
+            border-color: #d97706;
+            box-shadow: 0 0 0 0.25rem rgba(217, 119, 6, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="super-login-card">
+        
+        <!-- Header Banner -->
+        <div class="super-login-header">
+            <div class="super-badge-icon">
+                <i class="bi bi-motherboard-fill"></i>
+            </div>
+            <div class="d-inline-flex align-items-center gap-1 px-3 py-1 mb-2 rounded-pill bg-warning bg-opacity-25 border border-warning border-opacity-50">
+                <i class="bi bi-shield-lock-fill text-warning small"></i>
+                <span class="small fw-bold text-warning">بوابة السوبر أدمن المركزية</span>
+            </div>
+            <h4 class="fw-bold mb-1 text-white">المنظومة المركزية الشاملة</h4>
+            <p class="text-white-50 small mb-0">إدارة ومتابعة كافة المعاهد والمنشآت التدريبية</p>
+        </div>
+
+        <!-- Form Body -->
+        <div class="p-4 p-md-4">
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} py-2 px-3 rounded-3 small mb-3 d-flex align-items-center gap-2">
+                        <i class="bi {% if message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} fs-5"></i>
+                        <div>{{ message }}</div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" action="{% url 'training:super_admin_login' %}" autocomplete="off">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <!-- Username -->
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-bold text-dark small">
+                        <i class="bi bi-person-badge-fill text-warning me-1"></i>
+                        اسم مستخدم السوبر أدمن
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="bi bi-person-fill-gear"></i>
+                        </span>
+                        {{ form.username }}
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-4">
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-bold text-dark small">
+                        <i class="bi bi-shield-lock-fill text-warning me-1"></i>
+                        كلمة مرور السوبر أدمن
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="bi bi-key-fill"></i>
+                        </span>
+                        {{ form.password }}
+                        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility()" title="إظهار / إخفاء كلمة المرور">
+                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 mb-3">
+                    <button type="submit" class="btn btn-super-login btn-lg d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-shield-check fs-5"></i>
+                        <span>دخول إلى لوحة السوبر أدمن</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Link to Institute Login -->
+            <div class="text-center pt-3 border-top mt-3">
+                <a href="{% url 'training:login' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-bold small text-decoration-none d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-right-circle"></i>
+                    <span>الذهاب إلى بوابة تسجيل دخول المعاهد</span>
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center py-3 bg-light border-top text-muted small">
+            <i class="bi bi-lock-fill text-warning me-1"></i>
+            منطقة مخصصة للإدارة المركزية العليا ومحمية بسجلات تدقيق أمنية
+        </div>
+
+    </div>
+
+    <script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+    </script>
+</body>
+</html>

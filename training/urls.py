@@ -42,6 +42,8 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
 
     # القسم 6-ب: بوابة وإدارة السوبر أدمن المركزية للمنظومة الشاملة
+    path('super-admin/login/', views.super_admin_login_view, name='super_admin_login'),
+    path('super-admin/logout/', views.super_admin_logout_view, name='super_admin_logout'),
     path('super-admin/', views.super_admin_dashboard_view, name='super_admin_dashboard'),
     path('super-admin/institutes/create/', views.super_admin_institute_create_view, name='super_admin_institute_create'),
     path('super-admin/institutes/<int:institute_id>/edit/', views.super_admin_institute_edit_view, name='super_admin_institute_edit'),
