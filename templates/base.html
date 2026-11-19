@@ -936,6 +936,26 @@
 </head>
 <body>
 
+    {% if super_admin_switched and active_institute %}
+        <!-- شريط تنبيه سياق السوبر أدمن عند الدخول لإدارة معهد محدد -->
+        <div class="alert alert-warning border-0 rounded-0 mb-0 py-2 px-3 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 sticky-top" style="z-index: 1060; background: linear-gradient(90deg, #b45309, #d97706); color: #ffffff;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-eye-fill fs-5 text-warning"></i>
+                <span class="small">أنت الآن في وضع تصفح وإدارة نظام: <strong class="text-white text-decoration-underline">{{ active_institute.name }}</strong> (الرمز: <code class="bg-dark text-warning px-2 py-0 rounded">{{ active_institute.code }}</code>) بصلاحيات السوبر أدمن الكاملة.</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'training:super_admin_dashboard' %}" class="btn btn-sm btn-light fw-bold px-3 py-1 text-dark shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-return-right"></i>
+                    <span>العودة للوحة السوبر أدمن</span>
+                </a>
+                <a href="{% url 'training:super_admin_exit_switch' %}" class="btn btn-sm btn-dark text-white fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                    <span>إنهاء وضع المعهد</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
     {% if request.resolver_match.url_name == 'home' %}
         <!-- =========================================================
              A. الصفحة الرئيسية: إبقاء النافبار العلوي الأصلي (Top Navbar)
@@ -963,12 +983,21 @@
                             <span class="text-white small fw-bold" id="liveClock">التاريخ: 2026</span>
                         </div>
                         
+                        {% if is_super_admin %}
+                            <a href="{% url 'training:super_admin_dashboard' %}" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" title="الانتقال إلى لوحة تحكم السوبر أدمن المركزية">
+                                <i class="bi bi-motherboard-fill"></i>
+                                <span>لوحة السوبر أدمن</span>
+                            </a>
+                        {% endif %}
+
                         {% if user.is_authenticated %}
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 text-nowrap" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-person-circle text-warning"></i>
                                     <span>{{ user.username }}</span>
-                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                    {% if is_super_admin %}
+                                        <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">سوبر أدمن</span>
+                                    {% elif user.is_superuser or user.profile.role == 'admin' %}
                                         <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">أدمن</span>
                                     {% endif %}
                                 </button>
@@ -977,6 +1006,15 @@
                                         <div class="fw-bold small text-dark">{{ user.get_full_name|default:user.username }}</div>
                                         <small class="text-muted" style="font-size: 0.72rem;">{{ user.profile.get_role_display|default:"مستخدم عادي" }}</small>
                                     </li>
+                                    {% if is_super_admin %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-dark py-2 bg-warning bg-opacity-25" href="{% url 'training:super_admin_dashboard' %}">
+                                                <i class="bi bi-motherboard-fill text-warning"></i>
+                                                لوحة تحكم السوبر أدمن المركزية
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% endif %}
                                     {% if user.is_superuser or user.profile.role == 'admin' %}
                                         <li>
                                             <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-primary py-2" href="{% url 'training:admin_dashboard' %}">
@@ -1094,6 +1132,15 @@
                             <span>التقارير الشاملة وإكسل</span>
                         </a>
                     {% endif %}
+
+                    {% if is_super_admin %}
+                        <!-- 7. لوحة تحكم السوبر أدمن المركزية -->
+                        <div class="sidebar-section-title text-warning mt-2">إدارة المنظومة الشاملة</div>
+                        <a href="{% url 'training:super_admin_dashboard' %}" class="sidebar-nav-link text-warning {% if 'super_admin' in request.resolver_match.url_name %}active{% endif %}" title="لوحة تحكم السوبر أدمن المركزية">
+                            <i class="bi bi-motherboard-fill text-warning"></i>
+                            <span>لوحة السوبر أدمن</span>
+                        </a>
+                    {% endif %}
                 </div>
 
                 <!-- Sidebar Footer -->
@@ -1150,12 +1197,21 @@
                             <span id="topbarLiveClock">التاريخ: 2026</span>
                         </div>
 
+                        {% if is_super_admin %}
+                            <a href="{% url 'training:super_admin_dashboard' %}" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" title="الانتقال إلى لوحة تحكم السوبر أدمن المركزية">
+                                <i class="bi bi-motherboard-fill"></i>
+                                <span>لوحة السوبر أدمن</span>
+                            </a>
+                        {% endif %}
+
                         {% if user.is_authenticated %}
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-light border rounded-pill px-2 px-sm-3 py-1 dropdown-toggle d-flex align-items-center gap-1 gap-sm-2 shadow-sm" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-person-circle text-primary"></i>
                                     <span class="fw-bold">{{ user.username }}</span>
-                                    {% if user.is_superuser or user.profile.role == 'admin' %}
+                                    {% if is_super_admin %}
+                                        <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">سوبر أدمن</span>
+                                    {% elif user.is_superuser or user.profile.role == 'admin' %}
                                         <span class="badge bg-warning text-dark small" style="font-size: 0.65rem;">أدمن</span>
                                     {% endif %}
                                 </button>
@@ -1164,6 +1220,15 @@
                                         <div class="fw-bold small text-dark">{{ user.get_full_name|default:user.username }}</div>
                                         <small class="text-muted" style="font-size: 0.72rem;">{{ user.profile.get_role_display|default:"مستخدم عادي" }}</small>
                                     </li>
+                                    {% if is_super_admin %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-dark py-2 bg-warning bg-opacity-25" href="{% url 'training:super_admin_dashboard' %}">
+                                                <i class="bi bi-motherboard-fill text-warning"></i>
+                                                لوحة تحكم السوبر أدمن المركزية
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% endif %}
                                     {% if user.is_superuser or user.profile.role == 'admin' %}
                                         <li>
                                             <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-primary py-2" href="{% url 'training:admin_dashboard' %}">

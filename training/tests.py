@@ -8,11 +8,12 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from training.models import (
-    UserProfile, UserRole, CourseCategory, Course, Subject,
+    Institute, UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
     CertificateSettings, MovementOrderSettings, DisciplineInfraction
 )
+from training.services import initialize_new_institute
 from training.reports import (
     get_default_date_range,
     get_report_data,
@@ -3420,6 +3421,199 @@ class TargetCategoryAndBatchNumberingTests(TestCase):
         self.assertEqual(res_nco.status_code, 200)
         self.assertEqual(res_nco.json()['next_number'], '1')
         self.assertEqual(res_nco.json()['target_category_display'], 'ضباط صف')
+
+
+class MultiInstituteAndSuperAdminTests(TestCase):
+    """اختبارات معمارية المنظومة متعددة المعاهد وصلاحيات السوبر أدمن وعزل البيانات"""
+
+    def setUp(self):
+        self.client = Client()
+
+        # إنشاء أو جلب معهد أ ومعهد ب
+        self.inst_a, _ = Institute.objects.get_or_create(
+            code="issi",
+            defaults={
+                "name": "معهد نظم المعلومات والإحصاء",
+                "parent_unit": "إدارة نظم المعلومات",
+                "is_active": True
+            }
+        )
+        self.inst_b, _ = Institute.objects.get_or_create(
+            code="armor",
+            defaults={
+                "name": "معهد المدرعات",
+                "parent_unit": "سلاح المدرعات",
+                "is_active": True
+            }
+        )
+
+        # حساب سوبر أدمن
+        self.super_user = User.objects.create_user(
+            username='super_boss',
+            password='Password123!',
+            is_superuser=True
+        )
+        self.super_profile = getattr(self.super_user, 'profile', None) or UserProfile.objects.get_or_create(user=self.super_user)[0]
+        self.super_profile.role = UserRole.SUPER_ADMIN
+        self.super_profile.save()
+
+        # حساب أدمن معهد أ
+        self.admin_a_user = User.objects.create_user(
+            username='admin_a',
+            password='Password123!',
+            is_staff=True
+        )
+        self.admin_a_profile = getattr(self.admin_a_user, 'profile', None) or UserProfile.objects.get_or_create(user=self.admin_a_user)[0]
+        self.admin_a_profile.role = UserRole.ADMIN
+        self.admin_a_profile.institute = self.inst_a
+        self.admin_a_profile.sync_permissions_from_role()
+        self.admin_a_profile.save()
+
+        # حساب أدمن معهد ب
+        self.admin_b_user = User.objects.create_user(
+            username='admin_b',
+            password='Password123!',
+            is_staff=True
+        )
+        self.admin_b_profile = getattr(self.admin_b_user, 'profile', None) or UserProfile.objects.get_or_create(user=self.admin_b_user)[0]
+        self.admin_b_profile.role = UserRole.ADMIN
+        self.admin_b_profile.institute = self.inst_b
+        self.admin_b_profile.sync_permissions_from_role()
+        self.admin_b_profile.save()
+
+        # دارس في معهد أ
+        self.trainee_a = Trainee.objects.create(
+            military_number='11111',
+            name='دارس معهد أ',
+            institute=self.inst_a,
+            category=TraineeCategory.OFFICER
+        )
+
+        # دارس في معهد ب
+        self.trainee_b = Trainee.objects.create(
+            military_number='22222',
+            name='دارس معهد ب',
+            institute=self.inst_b,
+            category=TraineeCategory.OFFICER
+        )
+
+    def test_super_admin_dashboard_access_control(self):
+        """فحص أمان لوحة تحكم السوبر أدمن: محصورة بالسوبر أدمن ومحظورة على الأدمن العادي"""
+        # أدمن المعهد العادي يحاول الدخول
+        self.client.login(username='admin_a', password='Password123!')
+        res_admin = self.client.get(reverse('training:super_admin_dashboard'))
+        self.assertRedirects(res_admin, reverse('training:home'))
+
+        # السوبر أدمن يدخل بنجاح
+        self.client.login(username='super_boss', password='Password123!')
+        res_super = self.client.get(reverse('training:super_admin_dashboard'))
+        self.assertEqual(res_super.status_code, 200)
+        self.assertContains(res_super, 'معهد نظم المعلومات والإحصاء')
+        self.assertContains(res_super, 'معهد المدرعات')
+        self.assertContains(res_super, 'issi')
+        self.assertContains(res_super, 'armor')
+
+    def test_initialize_new_institute_service(self):
+        """فحص تهيئة نظام معهد جديد: توليد إعدادات الهوية والشهادات والدورات القياسية وحساب المدير"""
+        new_inst = Institute.objects.create(
+            name="معهد الطيران والدفاع الجوي",
+            code="airforce",
+            parent_unit="القوات الجوية",
+            is_active=True
+        )
+        admin_data = {
+            'username': 'air_commander',
+            'password': 'Password123!',
+            'name': 'عقيد طيار / حسام عمر',
+            'rank': 'عقيد طيار',
+            'military_number': '33333',
+            'phone': '0912345678',
+        }
+        res = initialize_new_institute(new_inst, admin_data=admin_data)
+
+        # التحقق من الإعدادات
+        self.assertEqual(res['system_settings'].system_name, 'نظام معهد الطيران والدفاع الجوي')
+        self.assertEqual(res['cert_settings'].header_line_2, 'معهد الطيران والدفاع الجوي')
+
+        # التحقق من تصنيفات الدورات القياسية الجاهزة
+        self.assertTrue(new_inst.categories.filter(name='دورات الحاسوب وتقنية المعلومات').exists())
+        self.assertTrue(new_inst.categories.filter(name='الدورات الإدارية والقيادية').exists())
+
+        # التحقق من حساب المدير
+        user = res['admin_user']
+        self.assertEqual(user.username, 'air_commander')
+        self.assertEqual(user.profile.institute, new_inst)
+        self.assertEqual(user.profile.role, UserRole.ADMIN)
+        self.assertTrue(user.profile.can_manage_users)
+
+    def test_super_admin_create_institute_view(self):
+        """فحص إنشاء نظام معهد جديد عبر طلب POST من لوحة السوبر أدمن"""
+        self.client.login(username='super_boss', password='Password123!')
+        url = reverse('training:super_admin_institute_create')
+
+        post_data = {
+            'name': 'معهد المشاة المتقدم',
+            'code': 'infantry',
+            'parent_unit': 'سلاح المشاة',
+            'admin_username': 'infantry_admin',
+            'admin_password': 'AdminPassword123!',
+            'admin_name': 'مقدم ركن / خليل إبراهيم',
+            'admin_rank': 'مقدم ركن',
+            'admin_military_number': '44444',
+            'admin_phone': '0987654321',
+        }
+        res = self.client.post(url, post_data)
+        self.assertRedirects(res, reverse('training:super_admin_dashboard'))
+
+        # التأكد من إنشاء المعهد والمدير في قاعدة البيانات
+        inst = Institute.objects.get(code='infantry')
+        self.assertEqual(inst.name, 'معهد المشاة المتقدم')
+        self.assertTrue(User.objects.filter(username='infantry_admin').exists())
+        admin_prof = User.objects.get(username='infantry_admin').profile
+        self.assertEqual(admin_prof.institute, inst)
+        self.assertEqual(admin_prof.role, UserRole.ADMIN)
+
+    def test_super_admin_switch_and_exit_institute(self):
+        """فحص التبديل السريع للسوبر أدمن للدخول لأي معهد كأدمن مباشر والعودة للوحة المركزية"""
+        self.client.login(username='super_boss', password='Password123!')
+
+        # التبديل إلى معهد المدرعات
+        switch_url = reverse('training:super_admin_switch_institute', kwargs={'institute_id': self.inst_b.id})
+        res_switch = self.client.get(switch_url)
+        self.assertRedirects(res_switch, reverse('training:home'))
+        self.assertEqual(self.client.session.get('active_institute_id'), self.inst_b.id)
+
+        # التحقق من عرض اسم المعهد المحول إليه في الصفحة الرئيسية
+        res_home = self.client.get(reverse('training:home'))
+        self.assertEqual(res_home.status_code, 200)
+        self.assertContains(res_home, 'معهد المدرعات')
+
+        # الخروج من سياق المعهد
+        exit_url = reverse('training:super_admin_exit_switch')
+        res_exit = self.client.get(exit_url)
+        self.assertRedirects(res_exit, reverse('training:super_admin_dashboard'))
+        self.assertNotIn('active_institute_id', self.client.session)
+
+    def test_multi_institute_trainee_data_isolation(self):
+        """فحص العزل الصارم للبيانات: كل معهد يرى دارسيه فقط ولا يرى دارسي المعاهد الأخرى"""
+        # تسجيل الدخول كمدير معهد أ
+        self.client.login(username='admin_a', password='Password123!')
+        res_a = self.client.get(reverse('training:trainees_list'))
+        self.assertEqual(res_a.status_code, 200)
+        self.assertContains(res_a, '11111')
+        self.assertContains(res_a, 'دارس معهد أ')
+        self.assertNotContains(res_a, '22222')
+        self.assertNotContains(res_a, 'دارس معهد ب')
+
+        # تسجيل الدخول كمدير معهد ب
+        self.client.login(username='admin_b', password='Password123!')
+        res_b = self.client.get(reverse('training:trainees_list'))
+        self.assertEqual(res_b.status_code, 200)
+        self.assertContains(res_b, '22222')
+        self.assertContains(res_b, 'دارس معهد ب')
+        self.assertNotContains(res_b, '11111')
+        self.assertNotContains(res_b, 'دارس معهد أ')
+
 
 
 

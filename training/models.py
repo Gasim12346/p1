@@ -20,6 +20,57 @@ phone_10_digits_validator = RegexValidator(
 )
 
 
+class Institute(models.Model):
+    """الكيان الأساسي للمعهد / الوحدة والمنشأة التعليمية"""
+    code = models.SlugField(
+        max_length=50,
+        unique=True,
+        verbose_name='رمز المعهد (ID فريد للنظام)'
+    )
+    name = models.CharField(
+        max_length=200,
+        verbose_name='اسم المعهد / المنشأة التعليمية'
+    )
+    parent_unit = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        verbose_name='الوحدة / الإدارة التابع لها'
+    )
+    logo = models.ImageField(
+        upload_to='institute_logos/',
+        blank=True,
+        null=True,
+        verbose_name='شعار المعهد'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='حالة النظام (نشط / معلق)'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='تاريخ الإنشاء'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='تاريخ آخر تحديث'
+    )
+
+    class Meta:
+        verbose_name = 'معهد / منشأة تدريبية'
+        verbose_name_plural = 'المعاهد والمنشآت التدريبية'
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+    @property
+    def logo_url(self):
+        if self.logo and hasattr(self.logo, 'url'):
+            return self.logo.url
+        return None
+
+
 class TraineeCategory(models.TextChoices):
     OFFICER = 'officer', 'ضباط'
     NCO = 'nco', 'ضباط صف'
@@ -28,6 +79,14 @@ class TraineeCategory(models.TextChoices):
 
 class Trainee(models.Model):
     """بيانات الدارس الأساسية"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='trainees',
+        verbose_name='المعهد'
+    )
     military_number = models.CharField(
         max_length=50,
         primary_key=True,
@@ -116,6 +175,13 @@ class Trainee(models.Model):
     def __str__(self):
         return f"{self.name} ({self.military_number})"
 
+    def save(self, *args, **kwargs):
+        if not self.institute_id:
+            default_inst = Institute.objects.filter(is_active=True).first()
+            if default_inst:
+                self.institute = default_inst
+        super().save(*args, **kwargs)
+
     @property
     def rank(self):
         """الرتبة العسكرية للدارس من آخر تسجيل له إن وجد"""
@@ -201,6 +267,14 @@ class InstructorCategory(models.TextChoices):
 
 class Instructor(models.Model):
     """بيانات المعلم / عضو هيئة التدريس"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='instructors',
+        verbose_name='المعهد'
+    )
     military_number = models.CharField(
         max_length=50,
         primary_key=True,
@@ -262,12 +336,26 @@ class Instructor(models.Model):
         prefix = f"{self.rank} / " if self.rank else ""
         return f"{prefix}{self.name} ({self.military_number})"
 
+    def save(self, *args, **kwargs):
+        if not self.institute_id:
+            default_inst = Institute.objects.filter(is_active=True).first()
+            if default_inst:
+                self.institute = default_inst
+        super().save(*args, **kwargs)
+
 
 class CourseCategory(models.Model):
     """تصنيف الدورة (دورات مرشد، دورات خاصة، دورات مشتركة)"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='categories',
+        verbose_name='المعهد'
+    )
     name = models.CharField(
         max_length=150,
-        unique=True,
         verbose_name='اسم تصنيف الدورة'
     )
     description = models.TextField(
@@ -280,13 +368,29 @@ class CourseCategory(models.Model):
         verbose_name = 'تصنيف دورة'
         verbose_name_plural = 'تصنيفات الدورات'
         ordering = ['id']
+        unique_together = ('institute', 'name')
 
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.institute_id:
+            default_inst = Institute.objects.filter(is_active=True).first()
+            if default_inst:
+                self.institute = default_inst
+        super().save(*args, **kwargs)
+
 
 class Course(models.Model):
     """بيانات الدورة التدريبية ومقررها"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='courses',
+        verbose_name='المعهد'
+    )
     category = models.ForeignKey(
         CourseCategory,
         on_delete=models.CASCADE,
@@ -295,7 +399,6 @@ class Course(models.Model):
     )
     course_number = models.CharField(
         max_length=50,
-        unique=True,
         blank=True,
         default='',
         verbose_name='رقم الدورة / الرمز'
@@ -328,6 +431,16 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.name} ({self.category.name})"
 
+    def save(self, *args, **kwargs):
+        if not self.institute_id:
+            if self.category and hasattr(self.category, 'institute') and self.category.institute:
+                self.institute = self.category.institute
+            else:
+                default_inst = Institute.objects.filter(is_active=True).first()
+                if default_inst:
+                    self.institute = default_inst
+        super().save(*args, **kwargs)
+
     @classmethod
     def generate_unique_course_number(cls, category=None):
         prefix = "CRS"
@@ -350,6 +463,8 @@ class Course(models.Model):
         return candidate
 
     def save(self, *args, **kwargs):
+        if not self.institute and self.category and self.category.institute:
+            self.institute = self.category.institute
         if not self.course_number:
             self.course_number = self.generate_unique_course_number(self.category)
         super().save(*args, **kwargs)
@@ -449,6 +564,14 @@ class CourseSession(models.Model):
         ('completed', 'مكتملة ومُعتمدة'),
     ]
 
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='sessions',
+        verbose_name='المعهد'
+    )
     course = models.ForeignKey(
         Course,
         on_delete=models.PROTECT,
@@ -526,6 +649,13 @@ class CourseSession(models.Model):
             raise ValidationError({'attendance_max_grade': 'الدرجة العظمى للمواظبة لا يمكن أن تكون سالبة.'})
 
     def save(self, *args, **kwargs):
+        if not self.institute_id:
+            if self.course and hasattr(self.course, 'institute') and self.course.institute:
+                self.institute = self.course.institute
+            else:
+                default_inst = Institute.objects.filter(is_active=True).first()
+                if default_inst:
+                    self.institute = default_inst
         if not self.pk and (self.attendance_max_grade is None or self.attendance_max_grade == 10.00):
             if self.course and hasattr(self.course, 'attendance_max_grade') and self.course.attendance_max_grade is not None:
                 self.attendance_max_grade = self.course.attendance_max_grade
@@ -1088,6 +1218,14 @@ class DisciplineInfraction(models.Model):
 
 class CertificateSettings(models.Model):
     """إعدادات وتخصيص قالب وتوقيعات الشهادة الرسمية"""
+    institute = models.OneToOneField(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='certificate_settings',
+        verbose_name='المعهد'
+    )
     bismillah_text = models.CharField(
         max_length=200,
         default='بسم الله الرحمن الرحيم',
@@ -1220,9 +1358,14 @@ class CertificateSettings(models.Model):
         return 'إعدادات الشهادة الرسمية'
 
     @classmethod
-    def get_settings(cls):
+    def get_settings(cls, institute=None):
         """الحصول على إعدادات الشهادة أو إنشاؤها بالقيم الافتراضية"""
-        obj, created = cls.objects.get_or_create(id=1)
+        if institute:
+            obj, _ = cls.objects.get_or_create(institute=institute)
+            return obj
+        obj = cls.objects.filter(institute__isnull=True).first() or cls.objects.first()
+        if not obj:
+            obj = cls.objects.create()
         return obj
 
     @property
@@ -1240,6 +1383,14 @@ class CertificateSettings(models.Model):
 
 class MovementOrderSettings(models.Model):
     """إعدادات وتخصيص قالب ونصوص أمر التحرك الرسمي المعتمد"""
+    institute = models.OneToOneField(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='movement_order_settings',
+        verbose_name='المعهد'
+    )
     bismillah_text = models.CharField(
         max_length=200,
         default='بسم الله الرحمن الرحيم',
@@ -1360,8 +1511,13 @@ class MovementOrderSettings(models.Model):
         return 'إعدادات أمر التحرك الرسمي'
 
     @classmethod
-    def get_settings(cls):
-        obj, created = cls.objects.get_or_create(id=1)
+    def get_settings(cls, institute=None):
+        if institute:
+            obj, _ = cls.objects.get_or_create(institute=institute)
+            return obj
+        obj = cls.objects.filter(institute__isnull=True).first() or cls.objects.first()
+        if not obj:
+            obj = cls.objects.create()
         return obj
 
     @property
@@ -1373,6 +1529,14 @@ class MovementOrderSettings(models.Model):
 
 class SystemSettings(models.Model):
     """إعدادات وهوية وألوان وشعار النظام بالكامل"""
+    institute = models.OneToOneField(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='system_settings',
+        verbose_name='المعهد'
+    )
     system_name = models.CharField(
         max_length=200,
         default='نظام تسجيل واستخراج النتائج والشهادات',
@@ -1444,9 +1608,14 @@ class SystemSettings(models.Model):
         return 'إعدادات وهوية وألوان النظام'
 
     @classmethod
-    def get_settings(cls):
+    def get_settings(cls, institute=None):
         """الحصول على كائن الإعدادات أو إنشاؤه بالقيم الافتراضية"""
-        obj, created = cls.objects.get_or_create(id=1)
+        if institute:
+            obj, _ = cls.objects.get_or_create(institute=institute)
+            return obj
+        obj = cls.objects.filter(institute__isnull=True).first() or cls.objects.first()
+        if not obj:
+            obj = cls.objects.create(system_name='نظام تسجيل واستخراج النتائج والشهادات')
         return obj
 
     @property
@@ -1457,7 +1626,8 @@ class SystemSettings(models.Model):
 
 
 class UserRole(models.TextChoices):
-    ADMIN = 'admin', 'مدير نظام (أدمن)'
+    SUPER_ADMIN = 'super_admin', 'سوبر أدمن (المدير العام للمنظومة)'
+    ADMIN = 'admin', 'مدير نظام المعهد (أدمن)'
     REGISTRAR = 'registrar', 'مسجل بيانات'
     SUPERVISOR = 'supervisor', 'مشرف دورة'
     INSTRUCTOR = 'instructor', 'معلم / هيئة التدريس'
@@ -1467,6 +1637,14 @@ class UserRole(models.TextChoices):
 
 class UserProfile(models.Model):
     """الملف التعريفي ونوع وصلاحية المستخدم في النظام"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='user_profiles',
+        verbose_name='المعهد التابع له'
+    )
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -1557,7 +1735,7 @@ class UserProfile(models.Model):
 
     def sync_permissions_from_role(self):
         """مزامنة خانات الاختيار للأذونات تلقائياً بناءً على الدور المختار"""
-        if self.role == UserRole.ADMIN or (self.user and (self.user.is_superuser or self.user.is_staff)):
+        if self.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or (self.user and (self.user.is_superuser or self.user.is_staff)):
             self.can_manage_users = True
             self.can_view = True
             self.can_add = True
@@ -1599,8 +1777,12 @@ class UserProfile(models.Model):
             self.can_approve_results = False
 
     @property
+    def is_super_admin(self):
+        return bool(self.role == UserRole.SUPER_ADMIN or (self.user and self.user.is_superuser))
+
+    @property
     def is_admin(self):
-        return bool(self.user.is_superuser or self.user.is_staff or self.role == UserRole.ADMIN or self.can_manage_users)
+        return bool(self.is_super_admin or (self.user and self.user.is_staff) or self.role == UserRole.ADMIN or self.can_manage_users)
 
     @property
     def is_registrar(self):
@@ -1669,6 +1851,14 @@ class ActivityCategory(models.TextChoices):
 
 class ActivityLog(models.Model):
     """سجل النشاط والعمليات الشامل لمراقبة كافة إجراءات المستخدمين في النظام"""
+    institute = models.ForeignKey(
+        Institute,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activity_logs',
+        verbose_name='المعهد'
+    )
     user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -1781,7 +1971,8 @@ def log_activity(
     description="",
     target_model="",
     target_id="",
-    ip_address=None
+    ip_address=None,
+    institute=None
 ):
     """دالة مركزية لتسجيل وتوثيق أي عملية أو حدث في سجل نشاط المستخدمين"""
     try:
@@ -1790,6 +1981,13 @@ def log_activity(
             current_user = user
         elif request and hasattr(request, 'user') and getattr(request.user, 'is_authenticated', False):
             current_user = request.user
+
+        inst = institute
+        if not inst:
+            if request and hasattr(request, 'institute') and request.institute:
+                inst = request.institute
+            elif current_user and hasattr(current_user, 'profile') and current_user.profile.institute:
+                inst = current_user.profile.institute
 
         username = current_user.username if current_user else "مستخدم غير مسجل"
         user_fullname = current_user.get_full_name() if current_user else ""
@@ -1800,7 +1998,7 @@ def log_activity(
             user_role = current_user.profile.get_role_display()
             user_mil = current_user.profile.military_number or ""
         elif current_user and current_user.is_superuser:
-            user_role = "مدير نظام عام (Superuser)"
+            user_role = "مدير عام المنظومة (Super Admin)"
 
         if not ip_address and request:
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -1810,6 +2008,7 @@ def log_activity(
                 ip_address = request.META.get('REMOTE_ADDR')
 
         return ActivityLog.objects.create(
+            institute=inst,
             user=current_user,
             username=username,
             user_fullname=user_fullname,

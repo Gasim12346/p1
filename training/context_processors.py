@@ -1,9 +1,13 @@
-from .models import SystemSettings, UserRole
+from .models import SystemSettings, UserRole, Institute
 
 def system_settings_processor(request):
-    """توفير إعدادات وهوية وألوان النظام وحالة صلاحيات المستخدمين لجميع القوالب تلقائياً"""
+    """توفير إعدادات وهوية وألوان النظام وحالة صلاحيات المستخدمين وسياق المعهد لجميع القوالب تلقائياً"""
+    active_inst = getattr(request, 'institute', None)
+    is_super_admin = getattr(request, 'is_super_admin', False)
+    super_admin_switched = getattr(request, 'super_admin_switched', False)
+
     try:
-        settings = SystemSettings.get_settings()
+        settings = SystemSettings.get_settings(institute=active_inst)
     except Exception:
         settings = None
 
@@ -49,7 +53,7 @@ def system_settings_processor(request):
             can_grade = can_grade or profile.can_grade or profile.is_admin
             can_approve_results = can_approve_results or profile.can_approve_results or profile.is_admin
 
-            if profile.role == UserRole.ADMIN or can_manage_users:
+            if profile.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or can_manage_users:
                 is_admin = True
                 is_registrar = True
                 is_supervisor = True
@@ -62,8 +66,19 @@ def system_settings_processor(request):
 
             current_instructor = profile.get_instructor()
 
+    all_institutes = None
+    if is_super_admin:
+        try:
+            all_institutes = Institute.objects.filter(is_active=True).order_by('name')
+        except Exception:
+            all_institutes = None
+
     return {
         'system_settings': settings,
+        'active_institute': active_inst,
+        'is_super_admin': is_super_admin,
+        'super_admin_switched': super_admin_switched,
+        'all_institutes': all_institutes,
         'is_admin': is_admin,
         'is_registrar': is_registrar,
         'is_supervisor': is_supervisor,

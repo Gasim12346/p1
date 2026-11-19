@@ -41,6 +41,14 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
+    # القسم 6-ب: بوابة وإدارة السوبر أدمن المركزية للمنظومة الشاملة
+    path('super-admin/', views.super_admin_dashboard_view, name='super_admin_dashboard'),
+    path('super-admin/institutes/create/', views.super_admin_institute_create_view, name='super_admin_institute_create'),
+    path('super-admin/institutes/<int:institute_id>/edit/', views.super_admin_institute_edit_view, name='super_admin_institute_edit'),
+    path('super-admin/institutes/<int:institute_id>/toggle-status/', views.super_admin_institute_toggle_status_view, name='super_admin_institute_toggle_status'),
+    path('super-admin/switch/<int:institute_id>/', views.super_admin_switch_institute_view, name='super_admin_switch_institute'),
+    path('super-admin/exit-switch/', views.super_admin_exit_switch_view, name='super_admin_exit_switch'),
+
     # القسم 7: بوابة القيادة والأدمن المنفصلة (Dedicated Admin Portal)
     path('admin-portal/login/', views.admin_login_view, name='admin_login'),
     path('admin-portal/logout/', views.admin_logout_view, name='admin_logout'),

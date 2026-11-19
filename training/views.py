@@ -15,13 +15,14 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 from .models import (
-    Instructor, SessionSubjectInstructor,
+    Institute, Instructor, SessionSubjectInstructor,
     Trainee, TraineeCategory, CourseCategory, Course, Subject,
     CourseSession, CourseEnrollment, TraineeSubjectGrade, DisciplineInfraction,
     CertificateSettings, MovementOrderSettings, SystemSettings, UserProfile, UserRole,
     has_trainee_passed_course,
     ActivityLog, ActivityAction, ActivityCategory, log_activity
 )
+from .services import initialize_new_institute
 from .forms import (
     InstructorForm, TraineeForm, CourseForm, SubjectForm, CourseSessionForm,
     UserLoginForm, CourseCategoryForm, CertificateSettingsForm,
@@ -31,14 +32,32 @@ from .forms import (
 from .reports import get_report_data, export_report_to_excel, get_default_date_range, get_sessions_subjects_summary
 
 
+def is_super_admin_user(user):
+    """التحقق مما إذا كان المستخدم يملك صلاحية سوبر أدمن (مدير عام المنظومة)"""
+    if not user or not user.is_authenticated:
+        return False
+    return bool(user.is_superuser or (hasattr(user, 'profile') and user.profile.role == UserRole.SUPER_ADMIN))
+
+
+def super_admin_required(view_func):
+    """قيد صلاحية: محصور بالمدير العام للمنظومة (سوبر أدمن)"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not is_super_admin_user(request.user):
+            messages.error(request, 'هذا القسم مخصص للمدير العام للمنظومة (سوبر أدمن) فقط.')
+            return redirect('training:home')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
 def is_admin_user(user):
     """التحقق مما إذا كان المستخدم يملك صلاحية مدير النظام أو تحكم كامل"""
     if not user or not user.is_authenticated:
         return False
     return bool(
-        user.is_superuser or 
+        is_super_admin_user(user) or 
         user.is_staff or 
-        (hasattr(user, 'profile') and (user.profile.role == UserRole.ADMIN or user.profile.can_manage_users))
+        (hasattr(user, 'profile') and (user.profile.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or user.profile.can_manage_users))
     )
 
 
@@ -150,7 +169,11 @@ def trainees_list_view(request):
             elif Instructor.objects.filter(military_number=military_num).exists():
                 messages.error(request, f'النمرة العسكرية "{military_num}" مسجلة مسبقاً في النظام كمعلم في هيئة التدريس! لا يجوز تكرار النمرة العسكرية بين الدارسين والمعلمين.')
             else:
-                new_trainee = form.save()
+                new_trainee = form.save(commit=False)
+                if request.institute:
+                    new_trainee.institute = request.institute
+                new_trainee.save()
+                form.save_relatives(new_trainee)
                 log_activity(
                     request=request,
                     action_type=ActivityAction.CREATE,
@@ -169,6 +192,8 @@ def trainees_list_view(request):
         form = TraineeForm()
 
     trainees = Trainee.objects.all().prefetch_related('relatives', 'enrollments')
+    if request.institute:
+        trainees = trainees.filter(institute=request.institute)
 
     if category_filter in [TraineeCategory.OFFICER, TraineeCategory.NCO, TraineeCategory.CIVILIAN]:
         trainees = trainees.filter(category=category_filter)
@@ -188,11 +213,12 @@ def trainees_list_view(request):
             search_filter |= Q(batch=int(search_query))
         trainees = trainees.filter(search_filter).distinct()
 
+    base_trainees = Trainee.objects.filter(institute=request.institute) if request.institute else Trainee.objects.all()
     counts = {
-        'all': Trainee.objects.count(),
-        'officer': Trainee.objects.filter(category=TraineeCategory.OFFICER).count(),
-        'nco': Trainee.objects.filter(category=TraineeCategory.NCO).count(),
-        'civilian': Trainee.objects.filter(category=TraineeCategory.CIVILIAN).count(),
+        'all': base_trainees.count(),
+        'officer': base_trainees.filter(category=TraineeCategory.OFFICER).count(),
+        'nco': base_trainees.filter(category=TraineeCategory.NCO).count(),
+        'civilian': base_trainees.filter(category=TraineeCategory.CIVILIAN).count(),
     }
 
     context = {
@@ -287,6 +313,8 @@ def courses_catalog_view(request):
         return redirect('training:results_center')
 
     categories = CourseCategory.objects.annotate(courses_count=Count('courses')).all()
+    if request.institute:
+        categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     cat_id = request.GET.get('category_id')
     selected_category = None
@@ -295,7 +323,7 @@ def courses_catalog_view(request):
     if not selected_category and categories.exists():
         selected_category = categories.first()
 
-    courses = []
+    courses = Course.objects.none()
     if selected_category:
         courses = selected_category.courses.annotate(
             subjects_count=Count('subjects', filter=Q(subjects__session__isnull=True))
@@ -308,7 +336,7 @@ def courses_catalog_view(request):
     if not selected_course and courses.exists():
         selected_course = courses.first()
 
-    subjects = []
+    subjects = Subject.objects.none()
     if selected_course:
         subjects = selected_course.subjects.filter(session__isnull=True)
 
@@ -319,7 +347,10 @@ def courses_catalog_view(request):
 
         course_form = CourseForm(request.POST)
         if course_form.is_valid():
-            new_course = course_form.save()
+            new_course = course_form.save(commit=False)
+            if request.institute:
+                new_course.institute = request.institute
+            new_course.save()
             log_activity(
                 request=request,
                 action_type=ActivityAction.CREATE,
@@ -534,7 +565,11 @@ def course_sessions_view(request):
 
     from datetime import datetime
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
+    if request.institute:
+        sessions = sessions.filter(Q(institute=request.institute) | Q(institute__isnull=True))
     categories = CourseCategory.objects.all()
+    if request.institute:
+        categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     db_years = set(d.year for d in CourseSession.objects.dates('start_date', 'year'))
     db_years.update(d.year for d in CourseSession.objects.dates('end_date', 'year'))
@@ -764,8 +799,14 @@ def course_session_create_view(request):
     - حفظ الانعقاد والطلبة.
     """
     categories = CourseCategory.objects.prefetch_related('courses__subjects').all()
+    if request.institute:
+        categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
     trainees = Trainee.objects.all().order_by('category', 'name')
+    if request.institute:
+        trainees = trainees.filter(Q(institute=request.institute) | Q(institute__isnull=True))
     instructors = Instructor.objects.filter(is_active=True).order_by('name')
+    if request.institute:
+        instructors = instructors.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     if request.method == 'POST':
         course_id = request.POST.get('course')
@@ -852,6 +893,7 @@ def course_session_create_view(request):
                     supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
 
                     session = CourseSession.objects.create(
+                        institute=request.institute or (course.institute if course else None),
                         course=course,
                         target_category=target_category,
                         session_code=session_code,
@@ -1407,6 +1449,8 @@ def results_center_view(request):
     2. السجل التاريخي الشامل لجميع نتائج الدارسين والشهادات مع فلاتر وبحث متقدم.
     """
     categories = CourseCategory.objects.all()
+    if request.institute:
+        categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     # فلاتر تبويب الدورات المتاحة لرصد الدرجات
     session_q = request.GET.get('session_q', '').strip()
@@ -1415,6 +1459,8 @@ def results_center_view(request):
     session_year = request.GET.get('session_year', '').strip()
 
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
+    if request.institute:
+        sessions = sessions.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     # إذا كان المستخدم معلماً، قصر الدورات المعروضة على تلك التي يدرس فيها مادة على الأقل
     if is_instructor_user(request.user) and not is_admin_user(request.user):
@@ -1459,6 +1505,10 @@ def results_center_view(request):
     ).prefetch_related(
         'enrollments', 'enrollments__trainee', 'enrollments__grades'
     ).all().order_by('-start_date', '-id')
+
+    if request.institute:
+        historical_enrollments = historical_enrollments.filter(Q(session__institute=request.institute) | Q(session__institute__isnull=True))
+        archive_sessions = archive_sessions.filter(Q(institute=request.institute) | Q(institute__isnull=True))
 
     if is_instructor_user(request.user) and not is_admin_user(request.user):
         inst = get_user_instructor(request.user)
@@ -2201,14 +2251,11 @@ def trainee_transcript_view(request, military_number):
 # القسم 6: تسجيل الدخول والخروج (Authentication)
 # =====================================================================
 def login_view(request):
-    """صفحة تسجيل الدخول الموحدة للنظام - تحويل الأدمن مباشرة لبوابة الأدمن المنفصلة"""
+    """صفحة تسجيل الدخول الموحدة للنظام - توجيه السوبر أدمن للوحة المنظومة الشاملة والأدمن للوحة المعهد"""
     if request.user.is_authenticated:
-        is_admin = (
-            request.user.is_superuser or 
-            request.user.is_staff or 
-            (hasattr(request.user, 'profile') and request.user.profile.role == UserRole.ADMIN)
-        )
-        if is_admin:
+        if is_super_admin_user(request.user) and not request.session.get('active_institute_id'):
+            return redirect('training:super_admin_dashboard')
+        if is_admin_user(request.user):
             return redirect('training:admin_dashboard')
         return redirect('training:home')
 
@@ -2234,15 +2281,17 @@ def login_view(request):
 
             if user is not None:
                 login(request, user)
-                is_admin = (
-                    user.is_superuser or 
-                    user.is_staff or 
-                    (hasattr(user, 'profile') and user.profile.role == UserRole.ADMIN)
-                )
                 
-                # توجيه فوري: إذا كان المستخدم أدمن، يتم توجيهه مباشرة إلى لوحة الأدمن المنفصلة!
+                # توجيه السوبر أدمن
+                if is_super_admin_user(user):
+                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح كمدير عام للمنظومة (سوبر أدمن).')
+                    if redirect_to and not redirect_to.startswith('/login'):
+                        return redirect(redirect_to)
+                    return redirect('training:super_admin_dashboard')
+
+                is_admin = is_admin_user(user)
                 if is_admin:
-                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح ونقلك إلى لوحة الأدمن المنفصلة.')
+                    messages.success(request, f'مرحباً بك {user.get_full_name() or user.username}، تم تسجيل دخولك بنجاح ونقلك إلى لوحة إدارة المعهد.')
                     if redirect_to and redirect_to.startswith('/admin-portal/'):
                         return redirect(redirect_to)
                     return redirect('training:admin_dashboard')
@@ -2357,11 +2406,17 @@ def admin_dashboard_view(request):
 
     # 5. تصنيفات الدورات
     categories = CourseCategory.objects.annotate(courses_count=Count('courses')).order_by('name')
+    if request.institute:
+        categories = categories.filter(institute=request.institute)
 
     # 6. إدارة المستخدمين والصلاحيات
     users = User.objects.select_related('profile', 'profile__instructor').order_by('-date_joined')
+    if request.institute:
+        users = users.filter(profile__institute=request.institute)
     user_create_form = UserCreateForm()
     instructors = Instructor.objects.all().order_by('-created_at')
+    if request.institute:
+        instructors = instructors.filter(institute=request.institute)
     instructor_form = InstructorForm()
 
     role_counts = {
@@ -2374,15 +2429,15 @@ def admin_dashboard_view(request):
     }
 
     # 7. إعدادات الشهادة الرسمية وتعديل اللوغهات
-    cert_settings = CertificateSettings.get_settings()
+    cert_settings = CertificateSettings.get_settings(institute=request.institute)
     cert_form = CertificateSettingsForm(instance=cert_settings)
 
     # 7-ب. إعدادات وتخصيص أمر التحرك الرسمي
-    movement_settings = MovementOrderSettings.get_settings()
+    movement_settings = MovementOrderSettings.get_settings(institute=request.institute)
     movement_form = MovementOrderSettingsForm(instance=movement_settings)
 
     # 8. إعدادات وهوية وألوان وشعار النظام بالكامل
-    system_settings = SystemSettings.get_settings()
+    system_settings = SystemSettings.get_settings(institute=request.institute)
     system_form = SystemSettingsForm(instance=system_settings)
 
     # 9. حزم ألوان وثيمات جاهزة بنقرة واحدة (Color Palettes Presets)
@@ -2620,6 +2675,8 @@ def user_create_view(request):
                 user.is_staff = True
                 user.save(update_fields=['is_staff'])
 
+            if request.institute:
+                profile.institute = request.institute
             profile.save()
 
             log_activity(
@@ -2692,6 +2749,8 @@ def user_edit_view(request, user_id):
                 u.is_staff = False
             u.save()
 
+            if request.institute:
+                profile.institute = request.institute
             profile.save()
 
             log_activity(
@@ -2884,7 +2943,10 @@ def instructor_create_view(request):
             elif Trainee.objects.filter(military_number=mil_num).exists():
                 messages.error(request, f'النمرة العسكرية "{mil_num}" مسجلة مسبقاً في النظام كدارس! لا يجوز تكرار النمرة العسكرية بين المعلمين والدارسين.')
             else:
-                inst = form.save()
+                inst = form.save(commit=False)
+                if request.institute:
+                    inst.institute = request.institute
+                inst.save()
                 log_activity(
                     request=request,
                     action_type=ActivityAction.CREATE,
@@ -2969,7 +3031,7 @@ def instructor_delete_view(request, military_number):
 @admin_access_required
 def certificate_settings_update_view(request):
     """حفظ التعديلات على شكل وبيانات وتوقيعات ولوغهات الشهادة الرسمية"""
-    cert_settings = CertificateSettings.get_settings()
+    cert_settings = CertificateSettings.get_settings(institute=request.institute)
     if request.method == 'POST':
         # إعادة تعيين اللوغو الأيمن إذا طلب
         if 'reset_right_logo' in request.POST:
@@ -3008,7 +3070,7 @@ def certificate_settings_update_view(request):
 @admin_access_required
 def movement_order_settings_update_view(request):
     """حفظ التعديلات على شكل وبيانات ونصوص وتوقيعات أمر التحرك الرسمي"""
-    movement_settings = MovementOrderSettings.get_settings()
+    movement_settings = MovementOrderSettings.get_settings(institute=request.institute)
     if request.method == 'POST':
         # إعادة تعيين العلامة المائية إذا طلب
         if 'reset_watermark' in request.POST:
@@ -3041,7 +3103,7 @@ def movement_order_settings_update_view(request):
 @admin_access_required
 def system_settings_update_view(request):
     """حفظ وتعديل اللوغو الرئيسي وألوان وهوية النظام بالكامل أو تطبيق ثيم جاهز"""
-    system_settings = SystemSettings.get_settings()
+    system_settings = SystemSettings.get_settings(institute=request.institute)
 
     if request.method == 'POST':
         # 1. إزالة الشعار والعودة للافتراضي
@@ -3150,7 +3212,10 @@ def category_create_view(request):
     if request.method == 'POST':
         form = CourseCategoryForm(request.POST)
         if form.is_valid():
-            category = form.save()
+            category = form.save(commit=False)
+            if request.institute:
+                category.institute = request.institute
+            category.save()
             log_activity(
                 request=request,
                 action_type=ActivityAction.CREATE,
@@ -3603,6 +3668,12 @@ def reports_hub_view(request):
     sessions = CourseSession.objects.select_related('course', 'course__category').all().order_by('-start_date')
     instructors = Instructor.objects.all().order_by('name')
 
+    if request.institute:
+        categories = categories.filter(institute=request.institute)
+        courses = courses.filter(institute=request.institute)
+        sessions = sessions.filter(institute=request.institute)
+        instructors = instructors.filter(institute=request.institute)
+
     # القوى العسكرية القياسية ووحداتها المعيارية بالنظام
     DEFAULT_FORCE_UNITS = {
         'القوات البرية': [
@@ -3960,5 +4031,203 @@ def api_delete_discipline_infraction_view(request, infraction_id):
         'drop_reason': result['reason'],
         'infractions': infractions_data
     })
+
+
+# =====================================================================
+# بوابة وإدارة السوبر أدمن المركزية (Super Admin Multi-Institute Portal)
+# =====================================================================
+@login_required
+@super_admin_required
+def super_admin_dashboard_view(request):
+    """لوحة تحكم السوبر أدمن المركزية: عرض كافة الأنظمة والمعاهد وإحصائياتها والتحكم بها"""
+    institutes = Institute.objects.all().order_by('id')
+
+    institutes_data = []
+    for inst in institutes:
+        admin_profiles = inst.user_profiles.filter(role=UserRole.ADMIN).select_related('user')
+        institutes_data.append({
+            'institute': inst,
+            'trainees_count': inst.trainees.count(),
+            'courses_count': inst.courses.count(),
+            'sessions_count': inst.sessions.count(),
+            'active_sessions_count': inst.sessions.filter(status='active').count(),
+            'instructors_count': inst.instructors.count(),
+            'users_count': inst.user_profiles.count(),
+            'admins': admin_profiles,
+        })
+
+    stats = {
+        'institutes_total': institutes.count(),
+        'institutes_active': institutes.filter(is_active=True).count(),
+        'trainees_total': Trainee.objects.count(),
+        'courses_total': Course.objects.count(),
+        'sessions_total': CourseSession.objects.count(),
+        'active_sessions_total': CourseSession.objects.filter(status='active').count(),
+        'instructors_total': Instructor.objects.count(),
+        'users_total': User.objects.count(),
+    }
+
+    recent_activities = ActivityLog.objects.select_related('institute', 'user').order_by('-timestamp')[:20]
+
+    context = {
+        'institutes_data': institutes_data,
+        'stats': stats,
+        'recent_activities': recent_activities,
+    }
+    return render(request, 'training/super_admin/dashboard.html', context)
+
+
+@login_required
+@super_admin_required
+def super_admin_institute_create_view(request):
+    """إنشاء نظام معهد / منشأة تدريبية جديدة مع توليد المعرف وحساب المدير والإعدادات القياسية"""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        code = request.POST.get('code', '').strip().lower()
+        parent_unit = request.POST.get('parent_unit', '').strip()
+        logo = request.FILES.get('logo')
+
+        admin_username = request.POST.get('admin_username', '').strip()
+        admin_password = request.POST.get('admin_password', '').strip()
+        admin_name = request.POST.get('admin_name', '').strip()
+        admin_rank = request.POST.get('admin_rank', '').strip()
+        admin_military_number = request.POST.get('admin_military_number', '').strip()
+        admin_phone = request.POST.get('admin_phone', '').strip()
+
+        errors = []
+        if not name:
+            errors.append('اسم المعهد / المنشأة التعليمية مطلوب.')
+        if not code:
+            errors.append('رمز المعهد (ID فريد) مطلوب.')
+        elif Institute.objects.filter(code=code).exists():
+            errors.append(f'رمز المعهد "{code}" مستخدم مسبقاً! الرجاء اختيار رمز فريد آخر.')
+
+        if not admin_username:
+            errors.append('اسم المستخدم لمدير المعهد مطلوب.')
+        elif User.objects.filter(username=admin_username).exists():
+            errors.append(f'اسم المستخدم "{admin_username}" مسجل مسبقاً! الرجاء اختيار اسم مستخدم آخر.')
+
+        if not admin_password:
+            errors.append('كلمة المرور لمدير المعهد مطلوبة.')
+        elif len(admin_password) < 4:
+            errors.append('كلمة المرور يجب أن لا تقل عن 4 خانات.')
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return render(request, 'training/super_admin/institute_create.html', {
+                'name': name,
+                'code': code,
+                'parent_unit': parent_unit,
+                'admin_username': admin_username,
+                'admin_name': admin_name,
+                'admin_rank': admin_rank,
+                'admin_military_number': admin_military_number,
+                'admin_phone': admin_phone,
+                'officer_ranks': OFFICER_RANKS,
+            })
+
+        # إنشاء المعهد
+        institute = Institute.objects.create(
+            name=name,
+            code=code,
+            parent_unit=parent_unit,
+            logo=logo,
+            is_active=True
+        )
+
+        # تهيئة إعدادات المعهد والقوالب وحساب المدير
+        admin_data = {
+            'username': admin_username,
+            'password': admin_password,
+            'name': admin_name,
+            'rank': admin_rank,
+            'military_number': admin_military_number,
+            'phone': admin_phone,
+        }
+        initialize_new_institute(institute, admin_data=admin_data, created_by_user=request.user)
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.CREATE,
+            action_category=ActivityCategory.SYSTEM,
+            description=f"إنشاء نظام معهد جديد: {institute.name} (رمز: {institute.code}) وحساب مديره: {admin_username}",
+            target_model="Institute",
+            target_id=institute.id,
+            institute=institute
+        )
+
+        messages.success(request, f'تم بنجاح إنشاء نظام "{institute.name}" (ID: {institute.code}) وتجهيز نماذج الدورات القياسية وهوية الشهادات، وحساب المدير المعتمد "{admin_username}".')
+        return redirect('training:super_admin_dashboard')
+
+    return render(request, 'training/super_admin/institute_create.html', {
+        'officer_ranks': OFFICER_RANKS,
+    })
+
+
+@login_required
+@super_admin_required
+def super_admin_institute_edit_view(request, institute_id):
+    """تعديل بيانات المعهد أو تحديث شعاره وحالته"""
+    institute = get_object_or_404(Institute, id=institute_id)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        parent_unit = request.POST.get('parent_unit', '').strip()
+        code = request.POST.get('code', '').strip().lower()
+        is_active = request.POST.get('is_active') == '1'
+
+        if not name:
+            messages.error(request, 'اسم المعهد مطلوب.')
+            return redirect('training:super_admin_dashboard')
+
+        if code and code != institute.code:
+            if Institute.objects.filter(code=code).exclude(id=institute.id).exists():
+                messages.error(request, f'رمز المعهد "{code}" مستخدم لمعهد آخر.')
+                return redirect('training:super_admin_dashboard')
+            institute.code = code
+
+        institute.name = name
+        institute.parent_unit = parent_unit
+        institute.is_active = is_active
+        if request.FILES.get('logo'):
+            institute.logo = request.FILES.get('logo')
+        institute.save()
+
+        messages.success(request, f'تم تحديث بيانات نظام {institute.name} بنجاح.')
+        return redirect('training:super_admin_dashboard')
+
+    return redirect('training:super_admin_dashboard')
+
+
+@login_required
+@super_admin_required
+def super_admin_institute_toggle_status_view(request, institute_id):
+    """تجميد أو تنشيط نظام المعهد"""
+    institute = get_object_or_404(Institute, id=institute_id)
+    institute.is_active = not institute.is_active
+    institute.save()
+    status_label = 'تنشيط' if institute.is_active else 'تجميد'
+    messages.success(request, f'تم {status_label} نظام {institute.name} بنجاح.')
+    return redirect('training:super_admin_dashboard')
+
+
+@login_required
+@super_admin_required
+def super_admin_switch_institute_view(request, institute_id):
+    """تبديل السياق والدخول لإدارة وتصفح نظام معهد معين كمدير كامل الصلاحيات"""
+    institute = get_object_or_404(Institute, id=institute_id)
+    request.session['active_institute_id'] = institute.id
+    messages.success(request, f'أنت الآن تتصفح وتدير نظام: {institute.name} ({institute.code}) بصلاحيات السوبر أدمن الكاملة.')
+    return redirect('training:home')
+
+
+@login_required
+@super_admin_required
+def super_admin_exit_switch_view(request):
+    """الخروج من سياق المعهد والعودة إلى لوحة السوبر أدمن المركزية"""
+    request.session.pop('active_institute_id', None)
+    messages.info(request, 'تمت العودة بنجاح إلى لوحة تحكم السوبر أدمن المركزية.')
+    return redirect('training:super_admin_dashboard')
+
 
 
