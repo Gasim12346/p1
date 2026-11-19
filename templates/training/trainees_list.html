@@ -150,9 +150,9 @@
                             <div class="fw-bold" style="font-size: 1rem;">
                                 <a href="{% url 'training:trainee_transcript' trainee.military_number %}" class="text-decoration-none text-primary" title="عرض السجل التاريخي وجميع دورات وشهادات هذا الدارس">
                                     {{ trainee.name }}
-                                    {% if trainee.enrollments.count > 0 %}
+                                    {% if trainee.inst_courses_count > 0 %}
                                         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0 ms-1 small">
-                                            <i class="bi bi-mortarboard-fill me-1"></i>{{ trainee.enrollments.count }} دورات
+                                            <i class="bi bi-mortarboard-fill me-1"></i>{{ trainee.inst_courses_count }} دورات
                                         </span>
                                     {% endif %}
                                 </a>

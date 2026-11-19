@@ -3713,6 +3713,59 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertContains(res_super_b, "عملية خاصة بمعهد ب فقط")
         self.assertNotContains(res_super_b, "عملية خاصة بمعهد أ فقط")
 
+    def test_trainee_courses_isolated_per_institute(self):
+        """فحص عزل دورات الطالب: إذا أكمل دورة في معهد لا تظهر في سجل الطالب بالمعهد الآخر"""
+        import datetime
+        cat_a = CourseCategory.objects.create(name='حاسوب معهد أ', institute=self.inst_a)
+        course_a = Course.objects.create(name='دورة برمجة معهد أ', category=cat_a, institute=self.inst_a)
+        session_a = CourseSession.objects.create(
+            course=course_a,
+            institute=self.inst_a,
+            session_code='BATCH-A-PROG',
+            start_date=datetime.date(2025, 2, 1),
+            end_date=datetime.date(2025, 3, 1),
+            status='completed'
+        )
+        CourseEnrollment.objects.create(
+            session=session_a,
+            trainee=self.trainee_a,
+            is_graded=True,
+            percentage=92.0,
+            grade_label='ممتاز'
+        )
+
+        cat_b = CourseCategory.objects.create(name='ميكانيكا معهد ب', institute=self.inst_b)
+        course_b = Course.objects.create(name='دورة دروع معهد ب', category=cat_b, institute=self.inst_b)
+        session_b = CourseSession.objects.create(
+            course=course_b,
+            institute=self.inst_b,
+            session_code='BATCH-B-ARMOR',
+            start_date=datetime.date(2025, 3, 1),
+            end_date=datetime.date(2025, 4, 1),
+            status='completed'
+        )
+        CourseEnrollment.objects.create(
+            session=session_b,
+            trainee=self.trainee_a,
+            is_graded=True,
+            percentage=85.0,
+            grade_label='ممتاز'
+        )
+
+        # 1. معاينة السجل التاريخي للدارس كمدير معهد أ
+        self.client.login(username='admin_a', password='Password123!')
+        res_a = self.client.get(reverse('training:trainee_transcript', kwargs={'military_number': self.trainee_a.military_number}))
+        self.assertEqual(res_a.status_code, 200)
+        self.assertContains(res_a, 'دورة برمجة معهد أ')
+        self.assertNotContains(res_a, 'دورة دروع معهد ب')
+
+        # 2. معاينة السجل التاريخي للدارس كمدير معهد ب
+        self.client.login(username='admin_b', password='Password123!')
+        res_b = self.client.get(reverse('training:trainee_transcript', kwargs={'military_number': self.trainee_a.military_number}))
+        self.assertEqual(res_b.status_code, 200)
+        self.assertContains(res_b, 'دورة دروع معهد ب')
+        self.assertNotContains(res_b, 'دورة برمجة معهد أ')
+
 
 
 

@@ -191,8 +191,16 @@ def trainees_list_view(request):
     else:
         form = TraineeForm()
 
-    # الدارسون متاحون ومشاركون لجميع المعاهد
-    trainees = Trainee.objects.all().prefetch_related('relatives', 'enrollments')
+    # الدارسون متاحون ومشاركون لجميع المعاهد مع حصر الدورات بحسب المعهد
+    trainees = Trainee.objects.all().prefetch_related('relatives')
+    if request.institute:
+        trainees = trainees.annotate(
+            inst_courses_count=Count('enrollments', filter=Q(enrollments__session__institute=request.institute, enrollments__is_dropped=False), distinct=True)
+        )
+    else:
+        trainees = trainees.annotate(
+            inst_courses_count=Count('enrollments', filter=Q(enrollments__is_dropped=False), distinct=True)
+        )
 
     if category_filter in [TraineeCategory.OFFICER, TraineeCategory.NCO, TraineeCategory.CIVILIAN]:
         trainees = trainees.filter(category=category_filter)
@@ -1992,7 +2000,7 @@ def certificate_view(request, enrollment_id):
         )
         return redirect('training:results_entry', session_id=enrollment.session.id)
 
-    cert_settings = CertificateSettings.get_settings()
+    cert_settings = CertificateSettings.get_settings(institute=enrollment.session.institute or request.institute)
     return render(request, 'training/certificate.html', {
         'enrollment': enrollment,
         'trainee': enrollment.trainee,
@@ -2045,7 +2053,7 @@ def certificate_detailed_view(request, enrollment_id):
         )
         return redirect('training:results_entry', session_id=enrollment.session.id)
 
-    cert_settings = CertificateSettings.get_settings()
+    cert_settings = CertificateSettings.get_settings(institute=enrollment.session.institute or request.institute)
     page_title = cert_settings.basic_cert_title
     cert_badge = 'شهادة التفاصيل'
 
@@ -2094,7 +2102,7 @@ def movement_order_view(request, enrollment_id):
                 messages.warning(request, 'تنبيه: لا يمكن استخراج أمر التحرك إلا بعد اكتمال رصد كافة درجات الدورة واعتمادها، أو في حال قطع الدورة عن الدارس.')
                 return redirect('training:results_entry', session_id=enrollment.session.id)
 
-    order_settings = MovementOrderSettings.get_settings()
+    order_settings = MovementOrderSettings.get_settings(institute=enrollment.session.institute or request.institute)
 
     # تحديد نوع أمر التحرك (ضابط أو ضابط صف) مع إمكانية التبديل عبر الرابط
     type_param = request.GET.get('type', '').strip().lower()
@@ -2195,9 +2203,12 @@ def session_results_sheet_view(request, session_id):
 
 @login_required
 def trainee_transcript_view(request, military_number):
-    """السجل الأكاديمي التاريخي الكامل لدارس محدد مع دعم الاسترجاع كـ JSON للنوافذ المنبثقة"""
+    """السجل الأكاديمي التاريخي لدارس محدد معزولاً بحسب المعهد الحالي مع دعم الاسترجاع كـ JSON"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
-    enrollments = trainee.enrollments.filter(is_dropped=False).select_related(
+    enrollments = trainee.enrollments.filter(is_dropped=False)
+    if request.institute:
+        enrollments = enrollments.filter(session__institute=request.institute)
+    enrollments = enrollments.select_related(
         'session', 'session__course', 'session__course__category'
     ).prefetch_related('grades__subject').order_by('-session__start_date')
 
