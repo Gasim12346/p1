@@ -690,8 +690,7 @@
                         class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                         <div>
-                            <span>تنبيه نظامي: تجاوز الدارس الحد الأقصى المسموح به لمخالفات الضبط والربط (أكثر من 5
-                                نقاط)، وتم قطع الدورة عنه تلقائياً.</span>
+                            <span>تنبيه نظامي (المادة 6): بلغت خصومات الضبط والربط أكثر من (5) درجات، وتم قطع الدورة عن الدارس تلقائياً.</span>
                             <div class="small fw-normal text-danger-emphasis mt-1" id="discDropReason"></div>
                         </div>
                     </div>
@@ -716,16 +715,15 @@
                                 <label class="form-label small fw-bold text-muted mb-1">نوع المخالفة</label>
                                 <select id="discInfractionType" class="form-select form-select-sm" required
                                     onchange="onDisciplineTypeChange(this)">
-                                    <option value="">-- اختر المخالفة من القائمة --</option>
-                                    <option value="delay_lecture">التأخير عن تمام المحاضرة الواحدة</option>
-                                    <option value="medical_rest">الراحة الطبية ليوم واحد</option>
-                                    <option value="absent_lecture">الغياب عن المحاضرة الواحدة</option>
-                                    <option value="absent_full_day">الغياب ليوم كامل</option>
-                                    <option value="enter_supervisor_office">دخول مكتب المشرف</option>
-                                    <option value="enter_education_commander_office">دخول مكتب قائد جناح التعليم
-                                    </option>
-                                    <option value="enter_chief_instructor_office">دخول مكتب كبير المعلمين</option>
-                                    <option value="enter_commander_office">دخول مكتب القائد</option>
+                                    <option value="">-- اختر المخالفة من القائمة المعتمدة --</option>
+                                    <option value="delay_lecture">أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة)</option>
+                                    <option value="medical_rest">ب. الراحة الطبية لليوم الواحد (خصم نصف درجة)</option>
+                                    <option value="absent_full_day">ج. الغياب ليوم كامل (خصم درجتان)</option>
+                                    <option value="absent_lecture">د. الغياب عن المحاضرة الواحدة (خصم درجة ونصف)</option>
+                                    <option value="enter_supervisor_office">هـ. دخول مكتب المشرف (خصم درجة ونصف)</option>
+                                    <option value="enter_education_commander_office">و. دخول مكتب قائد جناح التعليم (خصم درجتان)</option>
+                                    <option value="enter_chief_instructor_office">ز. دخول مكتب كبير المعلمين (خصم درجتان ونصف)</option>
+                                    <option value="enter_commander_office">ح. دخول مكتب قائد المعهد (خصم ثلاث درجات)</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -893,10 +891,8 @@
             }
         }
 
-        const totalCell = row.querySelector('.total-cell');
-        const percentageCell = row.querySelector('.percentage-cell');
-        const gradeCell = row.querySelector('.grade-cell');
-        const certCell = row.querySelector('.cert-cell');
+        // استخدام متغيرات الخلايا التي تم تعريفها في بداية الدالة
+
 
         // إذا وُجدت أي درجة غير صحيحة (أقل من صفر أو أكبر من العظمى)
         if (hasInvalidInput) {
@@ -1128,6 +1124,10 @@
         currentDiscEnrollmentId = enrollmentId;
         const hiddenInput = document.getElementById('discCurrentEnrollmentId');
         if (hiddenInput) hiddenInput.value = enrollmentId;
+
+        if (!btnEl && enrollmentId) {
+            btnEl = document.getElementById('btn_disc_' + enrollmentId);
+        }
 
         // تعبئة البيانات الأولية فوراً من خصائص الزر لتوفير استجابة سريعة
         if (btnEl) {
@@ -1468,11 +1468,8 @@
                 if (enrollmentId) {
                     updateMainTableRowDiscipline(enrollmentId, data.score, data.is_dropped);
                 }
-            } else {
-                alert(data.message || 'حدث خطأ أثناء حذف المخالفة.');
-    }
             })
-            .catch (err => {
+            .catch(err => {
         console.error('Error deleting infraction:', err);
         alert(err.message || 'حدث خطأ في الاتصال بالخادم.');
     });
@@ -1534,5 +1531,18 @@
         };
         return text.replace(/[&<>"']/g, function (m) { return map[m]; });
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('disciplineModal');
+        if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function (event) {
+                const btn = event.relatedTarget;
+                if (btn && btn.getAttribute('data-enrollment-id')) {
+                    const eid = btn.getAttribute('data-enrollment-id');
+                    openDisciplineModal(eid, btn);
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

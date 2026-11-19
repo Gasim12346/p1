@@ -1149,14 +1149,14 @@ class DisciplineInfraction(models.Model):
     """سجل مخالفات الضبط والربط للدارس في الدورة"""
 
     INFRACTION_CHOICES = [
-        ('delay_lecture', 'التأخير عن تمام المحاضرة الواحدة'),
-        ('medical_rest', 'الراحة الطبية ليوم واحد'),
-        ('absent_full_day', 'الغياب ليوم كامل'),
-        ('absent_lecture', 'الغياب عن المحاضرة الواحدة'),
-        ('enter_supervisor_office', 'دخول مكتب المشرف'),
-        ('enter_education_commander_office', 'دخول مكتب قائد جناح التعليم'),
-        ('enter_chief_instructor_office', 'دخول مكتب كبير المعلمين'),
-        ('enter_commander_office', 'دخول مكتب القائد'),
+        ('delay_lecture', 'أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة)'),
+        ('medical_rest', 'ب. الراحة الطبية لليوم الواحد (خصم نصف درجة)'),
+        ('absent_full_day', 'ج. الغياب ليوم كامل (خصم درجتان)'),
+        ('absent_lecture', 'د. الغياب عن المحاضرة الواحدة (خصم درجة ونصف)'),
+        ('enter_supervisor_office', 'هـ. دخول مكتب المشرف (خصم درجة ونصف)'),
+        ('enter_education_commander_office', 'و. دخول مكتب قائد جناح التعليم (خصم درجتان)'),
+        ('enter_chief_instructor_office', 'ز. دخول مكتب كبير المعلمين (خصم درجتان ونصف)'),
+        ('enter_commander_office', 'ح. دخول مكتب قائد المعهد (خصم ثلاث درجات)'),
     ]
 
     POINTS_MAP = {

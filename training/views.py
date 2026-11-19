@@ -3987,9 +3987,14 @@ def api_add_discipline_infraction_view(request):
         return JsonResponse({'success': False, 'message': 'نوع المخالفة المحدد غير صالح.'}, status=400)
 
     if date_str:
-        try:
-            inf_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
+        inf_date = None
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%Y/%m/%d'):
+            try:
+                inf_date = datetime.strptime(date_str, fmt).date()
+                break
+            except ValueError:
+                pass
+        if not inf_date:
             inf_date = timezone.now().date()
     else:
         inf_date = timezone.now().date()
