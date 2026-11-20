@@ -1398,6 +1398,14 @@
             }
         });
     </script>
+    
+    <!-- Chart.js 4.4.4 Local Bundle with CDN fallback -->
+    <script src="{% static 'js/chart.umd.min.js' %}"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

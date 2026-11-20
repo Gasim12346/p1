@@ -306,45 +306,91 @@
                 </div>
             </div>
 
-            <!-- Grade & Force Charts -->
+            <!-- Grade & Force Interactive Analytics Charts -->
             <div class="row g-4 mb-4">
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                        <h6 class="fw-bold text-dark mb-3">
-                            <i class="bi bi-bar-chart-steps text-primary me-2"></i> توزيع التقديرات للنتائج المعتمدة
-                        </h6>
-                        {% for item in grade_distribution %}
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small">{{ item.label }}</span>
-                                    <span class="small text-muted">{{ item.count }} دارس ({{ item.pct }}%)</span>
-                                </div>
-                                <div class="progress" style="height: 10px; border-radius: 6px;">
-                                    <div class="progress-bar" style="width: {{ item.pct }}%; background-color: {{ item.color }};"></div>
-                                </div>
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                    <span class="rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                                        <i class="bi bi-pie-chart-fill fs-5"></i>
+                                    </span>
+                                    <span>توزيع التقديرات للنتائج المعتمدة</span>
+                                </h6>
+                                <p class="text-muted small mb-0">مخطط بياني تفاعلي بنسب ومستويات تحصيل الدارسين الناجحين</p>
                             </div>
-                        {% endfor %}
+                            <div class="btn-group btn-group-sm rounded-pill p-1 bg-light border" role="group">
+                                <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold btn-primary" id="btnGradeChartDoughnut" onclick="switchGradeChartType('doughnut')">
+                                    <i class="bi bi-circle-half me-1"></i> دائري مجوف
+                                </button>
+                                <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light" id="btnGradeChartBar" onclick="switchGradeChartType('bar')">
+                                    <i class="bi bi-bar-chart-fill me-1"></i> أعمدة
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chart Canvas Container -->
+                        <div class="chart-wrapper position-relative my-2" style="min-height: 270px; height: 270px;">
+                            <canvas id="gradesAnalyticsChart"></canvas>
+                        </div>
+
+                        <!-- Data Breakdown Badges -->
+                        <div class="mt-3 pt-3 border-top">
+                            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                {% for item in grade_distribution %}
+                                    <div class="grade-pill-item d-flex align-items-center gap-2 px-3 py-1 rounded-pill border bg-light shadow-none" style="font-size: 0.8rem; transition: all 0.2s ease;">
+                                        <span class="rounded-circle" style="width: 10px; height: 10px; background-color: {{ item.color }}; display: inline-block;"></span>
+                                        <span class="fw-bold text-dark">{{ item.label }}</span>
+                                        <span class="badge rounded-pill" style="background-color: {{ item.color }}22; color: {{ item.color }}; font-weight: 700;">{{ item.count }} ({{ item.pct }}%)</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                        <h6 class="fw-bold text-dark mb-3">
-                            <i class="bi bi-shield-shaded text-success me-2"></i> توزيع الدارسين بحسب القوات
-                        </h6>
-                        {% for force in forces_list %}
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small">{{ force.name }}</span>
-                                    <span class="small text-muted">{{ force.count }} دارس ({{ force.pct }}%)</span>
-                                </div>
-                                <div class="progress" style="height: 10px; border-radius: 6px;">
-                                    <div class="progress-bar bg-primary" style="width: {{ force.pct }}%;"></div>
-                                </div>
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                    <span class="rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                        <i class="bi bi-shield-shaded fs-5"></i>
+                                    </span>
+                                    <span>توزيع الدارسين بحسب القوات</span>
+                                </h6>
+                                <p class="text-muted small mb-0">مخطط إحصائي تفاعلي لأعداد ونسب منتسبي التشكيلات والقوات</p>
                             </div>
-                        {% empty %}
-                            <p class="text-muted small">لا توجد بيانات قوات حتى الآن.</p>
-                        {% endfor %}
+                            <div class="btn-group btn-group-sm rounded-pill p-1 bg-light border" role="group">
+                                <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold btn-primary" id="btnForceChartBar" onclick="switchForceChartType('bar')">
+                                    <i class="bi bi-distribute-horizontal me-1"></i> أعمدة أفقية
+                                </button>
+                                <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light" id="btnForceChartPolar" onclick="switchForceChartType('polarArea')">
+                                    <i class="bi bi-pie-chart me-1"></i> قطبي
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chart Canvas Container -->
+                        <div class="chart-wrapper position-relative my-2" style="min-height: 270px; height: 270px;">
+                            <canvas id="forcesAnalyticsChart"></canvas>
+                        </div>
+
+                        <!-- Data Breakdown Badges -->
+                        <div class="mt-3 pt-3 border-top">
+                            <div class="d-flex flex-wrap gap-2 justify-content-center" id="forcesBreakdownContainer">
+                                {% for force in forces_list %}
+                                    <div class="force-pill-item d-flex align-items-center gap-2 px-3 py-1 rounded-pill border bg-light shadow-none" data-force-index="{{ forloop.counter0 }}" style="font-size: 0.8rem; transition: all 0.2s ease;">
+                                        <span class="rounded-circle force-color-dot" style="width: 10px; height: 10px; display: inline-block;"></span>
+                                        <span class="fw-bold text-dark">{{ force.name }}</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold">{{ force.count }} دارس ({{ force.pct }}%)</span>
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted small">لا توجد بيانات قوات حتى الآن.</span>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4039,7 +4085,353 @@
         if (matrixSaveBtnBottom) {
             matrixSaveBtnBottom.addEventListener('click', saveMatrixAction);
         }
+
+        // =====================================================================
+        // المخططات البيانية التفاعلية المدعومة بأنيميشن سلس (Animated Charts.js)
+        // =====================================================================
+        initAnalyticsCharts();
     });
+
+    // متغيرات المخططات البيانية وبيانات التحليلات
+    const GRADE_DIST_DATA = {{ grade_distribution_json|safe }};
+    const FORCES_DIST_DATA = {{ forces_list_json|safe }};
+    const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
+    const FORCES_COLOR_PALETTE = [
+        '#0284c7', // أزرق سماوي / جوية
+        '#15803d', // أخضر عسكري / برية
+        '#1e3a8a', // كحلي ملكي / بحرية
+        '#7c3aed', // بنفسجي / دفاع جوي
+        '#d97706', // ذهبي / حرس
+        '#059669', // تركواز / شرطة عسكرية
+        '#e11d48', // أحمر داكن / أمن
+        '#475569'  // رمادي / أخرى
+    ];
+
+    let currentGradeChartType = 'doughnut';
+    let currentForceChartType = 'bar';
+
+    // إضافة ألوان النقاط التعريفية لبطاقات القوات
+    function applyForcePillColors() {
+        const dots = document.querySelectorAll('.force-color-dot');
+        dots.forEach((dot, idx) => {
+            const color = FORCES_COLOR_PALETTE[idx % FORCES_COLOR_PALETTE.length];
+            dot.style.backgroundColor = color;
+        });
+    }
+
+    // إضافة نص إحصائي بمركز المخطط الدائري المجوف
+    const centerDonutGradePlugin = {
+        id: 'centerDonutGradePlugin',
+        afterDraw(chart) {
+            if (chart.config.type !== 'doughnut') return;
+            const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const centerX = left + width / 2;
+            const centerY = top + height / 2;
+
+            ctx.font = '900 26px Cairo, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText(TOTAL_GRADED_TRAINEES, centerX, centerY - 10);
+
+            ctx.font = '700 12px Cairo, sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('دارس معتمد', centerX, centerY + 14);
+            ctx.restore();
+        }
+    };
+
+    function renderGradesChart(chartType) {
+        const canvas = document.getElementById('gradesAnalyticsChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        if (window.gradesChartInstance) {
+            window.gradesChartInstance.destroy();
+        }
+
+        const labels = GRADE_DIST_DATA.map(d => d.label);
+        const dataValues = GRADE_DIST_DATA.map(d => d.count);
+        const backgroundColors = GRADE_DIST_DATA.map(d => d.color);
+
+        Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
+
+        if (chartType === 'doughnut') {
+            window.gradesChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 12,
+                        borderRadius: 6,
+                        spacing: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            rtl: true,
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            boxPadding: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const item = GRADE_DIST_DATA[idx];
+                                    return ` ${item.count} دارس بنسبة (${item.pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [centerDonutGradePlugin]
+            });
+        } else {
+            // نمط الأعمدة
+            window.gradesChartInstance = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'عدد الدارسين',
+                        data: dataValues,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 46
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            rtl: true,
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            boxPadding: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const item = GRADE_DIST_DATA[idx];
+                                    return ` ${item.count} دارس بنسبة (${item.pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { precision: 0, color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function renderForcesChart(chartType) {
+        const canvas = document.getElementById('forcesAnalyticsChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        if (window.forcesChartInstance) {
+            window.forcesChartInstance.destroy();
+        }
+
+        const labels = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.name) : ['لا توجد بيانات'];
+        const dataValues = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.count) : [0];
+        const colors = FORCES_DIST_DATA.length 
+            ? FORCES_DIST_DATA.map((_, i) => FORCES_COLOR_PALETTE[i % FORCES_COLOR_PALETTE.length]) 
+            : ['#cbd5e1'];
+
+        if (chartType === 'bar') {
+            // نمط الأعمدة الأفقية
+            window.forcesChartInstance = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'عدد المنتسبين',
+                        data: dataValues,
+                        backgroundColor: colors,
+                        borderRadius: 8,
+                        maxBarThickness: 34
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            rtl: true,
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
+                                    return ` ${context.raw} دارس بنسبة (${pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { precision: 0, color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { size: 12, weight: '700' }, color: '#334155' }
+                        }
+                    }
+                }
+            });
+        } else {
+            // نمط المخطط القطبي / الدائري
+            window.forcesChartInstance = new Chart(canvas, {
+                type: 'polarArea',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1100,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 11, weight: 'bold' }, boxWidth: 12, padding: 12 }
+                        },
+                        tooltip: {
+                            rtl: true,
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
+                                    return ` ${context.raw} دارس (${pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            ticks: { display: false },
+                            grid: { color: '#f1f5f9' }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // تبديل نمط مخطط التقديرات
+    function switchGradeChartType(type) {
+        currentGradeChartType = type;
+        const btnDoughnut = document.getElementById('btnGradeChartDoughnut');
+        const btnBar = document.getElementById('btnGradeChartBar');
+
+        if (btnDoughnut && btnBar) {
+            if (type === 'doughnut') {
+                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+            } else {
+                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+            }
+        }
+        renderGradesChart(type);
+    }
+
+    // تبديل نمط مخطط القوات
+    function switchForceChartType(type) {
+        currentForceChartType = type;
+        const btnBar = document.getElementById('btnForceChartBar');
+        const btnPolar = document.getElementById('btnForceChartPolar');
+
+        if (btnBar && btnPolar) {
+            if (type === 'bar') {
+                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+            } else {
+                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+            }
+        }
+        renderForcesChart(type);
+    }
+
+    // تهيئة المخططات عند تحميل الصفحة
+    function initAnalyticsCharts() {
+        applyForcePillColors();
+        renderGradesChart(currentGradeChartType);
+        renderForcesChart(currentForceChartType);
+
+        // إعادة تشغيل الأنيميشن تلقائياً عند النقر على تبويب التحليلات
+        const tabAnalyticsBtn = document.getElementById('tab-analytics');
+        if (tabAnalyticsBtn) {
+            tabAnalyticsBtn.addEventListener('shown.bs.tab', function() {
+                if (window.gradesChartInstance) window.gradesChartInstance.update();
+                if (window.forcesChartInstance) window.forcesChartInstance.update();
+            });
+        }
+    }
 
     // دوال التنقل المباشر
     function openUserPermissionsMatrix(userId) {

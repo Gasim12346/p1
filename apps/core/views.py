@@ -384,7 +384,9 @@ def admin_dashboard_view(request):
         'avg_score': avg_score,
         # Analytics
         'grade_distribution': grade_distribution,
+        'grade_distribution_json': json.dumps(grade_distribution),
         'forces_list': forces_list,
+        'forces_list_json': json.dumps(forces_list),
         'top_units': top_units,
         'recent_sessions': recent_sessions,
         # Categories
