@@ -44,8 +44,8 @@
                             <label class="form-label fw-bold small">نوع وصلاحية الحساب <span class="text-danger">*</span></label>
                             {{ form.role }}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small">ربط بملف المعلم (إذا كان الحساب لمعلم)</label>
+                        <div class="col-md-6" id="editUserInstructorWrapper" {% if profile.role != 'instructor' and profile.role != 'supervisor' %}style="display: none;"{% endif %}>
+                            <label class="form-label fw-bold small">ربط بملف المعلم (إذا كان الحساب لمعلم أو مشرف)</label>
                             {{ form.instructor }}
                         </div>
                         <div class="col-md-4">
@@ -361,9 +361,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const gradeEl = document.getElementById('edit_perm_grade');
     const approveEl = document.getElementById('edit_perm_approve');
 
+    function updateEditInstructorVisibility(r) {
+        const instWrap = document.getElementById('editUserInstructorWrapper');
+        if (instWrap) {
+            if (r === 'instructor' || r === 'supervisor') {
+                instWrap.style.display = '';
+            } else {
+                instWrap.style.display = 'none';
+                const instSelect = instWrap.querySelector('select');
+                if (instSelect) instSelect.value = '';
+            }
+        }
+    }
+
     if (roleSelect) {
         roleSelect.addEventListener('change', function() {
             const r = this.value;
+            updateEditInstructorVisibility(r);
             if (r === 'admin') {
                 if (manageEl) manageEl.checked = true; if (viewEl) viewEl.checked = true; if (addEl) addEl.checked = true;
                 if (editEl) editEl.checked = true; if (delEl) delEl.checked = true; if (gradeEl) gradeEl.checked = true; if (approveEl) approveEl.checked = true;
@@ -381,6 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (editEl) editEl.checked = false; if (delEl) delEl.checked = false; if (gradeEl) gradeEl.checked = false; if (approveEl) approveEl.checked = false;
             }
         });
+        updateEditInstructorVisibility(roleSelect.value);
     }
 
     if (manageEl) {

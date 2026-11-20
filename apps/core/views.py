@@ -465,7 +465,10 @@ def user_create_view(request):
             # إنشاء أو تحديث البروفايل
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.role = role
-            profile.instructor = form.cleaned_data.get('instructor')
+            if role in [UserRole.INSTRUCTOR, UserRole.SUPERVISOR]:
+                profile.instructor = form.cleaned_data.get('instructor')
+            else:
+                profile.instructor = None
             profile.military_number = form.cleaned_data.get('military_number', '')
             profile.rank = form.cleaned_data.get('rank', '')
             profile.unit = form.cleaned_data.get('unit', '')
@@ -562,7 +565,10 @@ def user_edit_view(request, user_id):
             u.save()
 
             profile.role = role
-            profile.instructor = form.cleaned_data.get('instructor')
+            if role in [UserRole.INSTRUCTOR, UserRole.SUPERVISOR]:
+                profile.instructor = form.cleaned_data.get('instructor')
+            else:
+                profile.instructor = None
             profile.military_number = form.cleaned_data.get('military_number', '')
             profile.rank = form.cleaned_data.get('rank', '')
             profile.unit = form.cleaned_data.get('unit', '')
@@ -776,12 +782,13 @@ def user_update_role_view(request, user_id):
             target_user.is_staff = False
     target_user.save(update_fields=['is_staff'])
 
-    # ربط المعلم إن وجد
-    if instructor_num:
-        profile.instructor = Instructor.objects.filter(military_number=instructor_num).first()
-    elif (new_role == UserRole.INSTRUCTOR or profile.can_grade) and profile.military_number:
-        profile.instructor = Instructor.objects.filter(military_number=profile.military_number).first()
-    elif new_role != UserRole.INSTRUCTOR and not profile.can_grade:
+    # ربط المعلم إن وجد فقط عند اختيار صلاحية معلم أو مشرف
+    if new_role in [UserRole.INSTRUCTOR, UserRole.SUPERVISOR]:
+        if instructor_num:
+            profile.instructor = Instructor.objects.filter(military_number=instructor_num).first()
+        elif profile.military_number:
+            profile.instructor = Instructor.objects.filter(military_number=profile.military_number).first()
+    else:
         profile.instructor = None
 
     profile.save()
