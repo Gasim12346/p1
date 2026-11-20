@@ -218,7 +218,16 @@ class Course(models.Model):
 
     @property
     def total_max_marks(self):
-        return sum(subject.max_grade for subject in self.subjects.all())
+        val = sum(subject.max_grade for subject in self.subjects.all())
+        if val is not None and val == int(val):
+            return int(val)
+        return val
+
+    @property
+    def natural_attendance_grade(self):
+        if self.attendance_max_grade is None:
+            return 10
+        return int(self.attendance_max_grade) if self.attendance_max_grade == int(self.attendance_max_grade) else self.attendance_max_grade
 
 
 class Subject(models.Model):
@@ -268,6 +277,12 @@ class Subject(models.Model):
         super().clean()
         if self.max_grade is not None and self.max_grade <= 0:
             raise ValidationError({'max_grade': 'الدرجة العظمى للمادة يجب أن تكون أكبر من صفر.'})
+
+    @property
+    def natural_max_grade(self):
+        if self.max_grade is None:
+            return 100
+        return int(self.max_grade) if self.max_grade == int(self.max_grade) else self.max_grade
 
     @classmethod
     def generate_unique_code(cls, course, session=None):
@@ -441,11 +456,18 @@ class CourseSession(models.Model):
         return list(self.course.subjects.filter(session__isnull=True))
 
     @property
+    def natural_attendance_grade(self):
+        if self.attendance_max_grade is None:
+            return 10
+        return int(self.attendance_max_grade) if self.attendance_max_grade == int(self.attendance_max_grade) else self.attendance_max_grade
+
+    @property
     def total_possible_score(self):
         subjects = self.get_subjects()
         subjects_total = sum(s.max_grade for s in subjects)
         att = self.attendance_max_grade if self.attendance_max_grade is not None else (self.course.attendance_max_grade or Decimal('0.00'))
-        return float(subjects_total) + float(att)
+        val = float(subjects_total) + float(att)
+        return int(val) if val.is_integer() else val
 
 
 class SessionSubjectInstructor(models.Model):

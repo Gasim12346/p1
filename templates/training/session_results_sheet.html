@@ -118,14 +118,14 @@
                         {% for sub in subjects %}
                             <th>
                                 <div>{{ sub.name }}</div>
-                                <small class="text-muted">({{ sub.max_grade }})</small>
+                                <small class="text-muted">({{ sub.max_grade|natural_number }})</small>
                             </th>
                         {% endfor %}
                         <th>
                             <div>الضبط والربط</div>
-                            <small class="text-muted">({{ session.attendance_max_grade }})</small>
+                            <small class="text-muted">({{ session.attendance_max_grade|natural_number }})</small>
                         </th>
-                        <th rowspan="2" class="bg-light">المجموع ({{ session.total_possible_score }})</th>
+                        <th rowspan="2" class="bg-light">المجموع ({{ session.total_possible_score|natural_number }})</th>
                         <th rowspan="2" class="bg-light">النسبة (%)</th>
                         <th rowspan="2" class="bg-light">التقدير العام</th>
                     </tr>
@@ -150,9 +150,9 @@
                                     {% endfor %}
                                 </td>
                             {% endfor %}
-                            <td>{% if en.is_graded %}{{ en.attendance_score }}{% else %}-{% endif %}</td>
-                            <td><strong class="text-dark">{% if en.is_graded %}{{ en.total_score }}{% else %}-{% endif %}</strong></td>
-                            <td><strong class="text-primary">{% if en.is_graded %}{{ en.percentage }}%{% else %}-{% endif %}</strong></td>
+                            <td>{% if en.is_graded %}{{ en.attendance_score|natural_number }}{% else %}-{% endif %}</td>
+                            <td><strong class="text-dark">{% if en.is_graded %}{{ en.total_score|natural_number }}{% else %}-{% endif %}</strong></td>
+                            <td><strong class="text-primary">{% if en.is_graded %}{{ en.percentage|natural_number }}%{% else %}-{% endif %}</strong></td>
                             <td>
                                 <strong>{% if en.is_graded %}{{ en.grade_label }}{% else %}<span class="text-muted small">غير مكتمل</span>{% endif %}</strong>
                             </td>

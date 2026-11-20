@@ -293,14 +293,14 @@
                 <div class="col-6 col-lg-3">
                     <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
                         <span class="text-muted small fw-bold">نسبة إنجاز النتائج</span>
-                        <h2 class="fw-bold text-dark mt-1 mb-0">{{ completion_rate }}%</h2>
+                        <h2 class="fw-bold text-dark mt-1 mb-0">{{ completion_rate|natural_number }}%</h2>
                         <div class="mt-2 text-muted small">مرصودة: <strong>{{ enrollments_graded }}</strong> من <strong>{{ enrollments_total }}</strong></div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card border-0 shadow-sm rounded-4 p-3 h-100">
                         <span class="text-muted small fw-bold">متوسط التحصيل التراكمي</span>
-                        <h2 class="fw-bold text-dark mt-1 mb-0">{{ avg_score }}%</h2>
+                        <h2 class="fw-bold text-dark mt-1 mb-0">{{ avg_score|natural_number }}%</h2>
                         <div class="mt-2 text-muted small">معدل التحصيل العام</div>
                     </div>
                 </div>
@@ -342,7 +342,7 @@
                                     <div class="grade-pill-item d-flex align-items-center gap-2 px-3 py-1 rounded-pill border bg-light shadow-none" style="font-size: 0.8rem; transition: all 0.2s ease;">
                                         <span class="rounded-circle" style="width: 10px; height: 10px; background-color: {{ item.color }}; display: inline-block;"></span>
                                         <span class="fw-bold text-dark">{{ item.label }}</span>
-                                        <span class="badge rounded-pill" style="background-color: {{ item.color }}22; color: {{ item.color }}; font-weight: 700;">{{ item.count }} ({{ item.pct }}%)</span>
+                                        <span class="badge rounded-pill" style="background-color: {{ item.color }}22; color: {{ item.color }}; font-weight: 700;">{{ item.count }} ({{ item.pct|natural_number }}%)</span>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -384,7 +384,7 @@
                                     <div class="force-pill-item d-flex align-items-center gap-2 px-3 py-1 rounded-pill border bg-light shadow-none" data-force-index="{{ forloop.counter0 }}" style="font-size: 0.8rem; transition: all 0.2s ease;">
                                         <span class="rounded-circle force-color-dot" style="width: 10px; height: 10px; display: inline-block;"></span>
                                         <span class="fw-bold text-dark">{{ force.name }}</span>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold">{{ force.count }} دارس ({{ force.pct }}%)</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold">{{ force.count }} دارس ({{ force.pct|natural_number }}%)</span>
                                     </div>
                                 {% empty %}
                                     <span class="text-muted small">لا توجد بيانات قوات حتى الآن.</span>

@@ -62,7 +62,16 @@ def admin_report_print_view(request):
     ])
 
     def calc_pct(part, whole):
-        return round((part / whole * 100), 1) if whole > 0 else 0.0
+        if not whole or not part:
+            return 0
+        v = round((part / whole * 100), 1)
+        return int(v) if v.is_integer() else v
+
+    def format_avg(val):
+        if val is None:
+            return 0
+        v = round(float(val), 1)
+        return int(v) if v.is_integer() else v
 
     report_sub_header = ''
     report_category_name = ''
@@ -260,7 +269,7 @@ def admin_report_print_view(request):
 
         # متوسط التحصيل العام
         avg_score_res = enrollments_qs.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
-        avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+        avg_score = format_avg(avg_score_res['avg_score'])
 
         # 2. التوزيع التكراري للتقديرات
         graded_qs = enrollments_qs.filter(is_graded=True, is_dropped=False)
@@ -306,7 +315,7 @@ def admin_report_print_view(request):
 
             enrollments_graded = inst_enrollments.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
             avg_score_res = inst_enrollments.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
-            avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+            avg_score = format_avg(avg_score_res['avg_score'])
 
             graded_qs = inst_enrollments.filter(is_graded=True, is_dropped=False)
             total_eval = graded_qs.count()
@@ -326,7 +335,7 @@ def admin_report_print_view(request):
             raw_forces = inst_enrollments.exclude(current_force__isnull=True).exclude(current_force='').values('current_force').annotate(count=Count('id')).order_by('-count')
             total_trainees = trainees_total or 1
             forces_stats = [
-                {'force': f['current_force'], 'count': f['count'], 'pct': round((f['count'] / total_trainees * 100), 1)}
+                {'force': f['current_force'], 'count': f['count'], 'pct': calc_pct(f['count'], total_trainees)}
                 for f in raw_forces
             ]
         else:
@@ -340,7 +349,7 @@ def admin_report_print_view(request):
 
             enrollments_graded = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50).count()
             avg_score_res = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False).aggregate(avg_score=Avg('percentage'))
-            avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+            avg_score = format_avg(avg_score_res['avg_score'])
 
             graded_qs = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False)
             total_eval = graded_qs.count()

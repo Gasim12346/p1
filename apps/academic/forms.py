@@ -129,7 +129,10 @@ class CourseForm(forms.ModelForm):
         if 'attendance_max_grade' in self.fields:
             self.fields['attendance_max_grade'].required = False
             if not self.instance.pk:
-                self.fields['attendance_max_grade'].initial = 10.00
+                self.fields['attendance_max_grade'].initial = 10
+            elif self.instance and self.instance.attendance_max_grade is not None:
+                if self.instance.attendance_max_grade == int(self.instance.attendance_max_grade):
+                    self.initial['attendance_max_grade'] = int(self.instance.attendance_max_grade)
 
     def clean_attendance_max_grade(self):
         val = self.cleaned_data.get('attendance_max_grade')
@@ -189,6 +192,12 @@ class SubjectForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['code'].required = False
+        if not self.instance.pk:
+            self.fields['max_grade'].initial = 100
+            self.fields['credit_hours'].initial = 10
+        elif self.instance and self.instance.max_grade is not None:
+            if self.instance.max_grade == int(self.instance.max_grade):
+                self.initial['max_grade'] = int(self.instance.max_grade)
 
     def clean_code(self):
         code = self.cleaned_data.get('code', '').strip()
@@ -270,6 +279,15 @@ class CourseSessionForm(forms.ModelForm):
             'attendance_max_grade': 'درجة المواظبة والسلوك العظمى',
             'notes': 'ملاحظات الانعقاد',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'attendance_max_grade' in self.fields:
+            if not self.instance.pk:
+                self.fields['attendance_max_grade'].initial = 10
+            elif self.instance and self.instance.attendance_max_grade is not None:
+                if self.instance.attendance_max_grade == int(self.instance.attendance_max_grade):
+                    self.initial['attendance_max_grade'] = int(self.instance.attendance_max_grade)
 
     def clean_attendance_max_grade(self):
         amg = self.cleaned_data.get('attendance_max_grade')

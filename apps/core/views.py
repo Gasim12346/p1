@@ -163,10 +163,15 @@ def admin_dashboard_view(request):
     enrollments_qs = CourseEnrollment.objects.filter(session__institute=request.institute) if request.institute else CourseEnrollment.objects.all()
     enrollments_total = enrollments_qs.count()
     enrollments_graded = enrollments_qs.filter(is_graded=True).count()
-    completion_rate = round((enrollments_graded / enrollments_total * 100), 1) if enrollments_total > 0 else 0
+    raw_completion = (enrollments_graded / enrollments_total * 100) if enrollments_total > 0 else 0
+    completion_rate = int(raw_completion) if raw_completion == int(raw_completion) else round(raw_completion, 1)
 
     avg_score_res = enrollments_qs.filter(is_graded=True).aggregate(avg_score=Avg('percentage'))
-    avg_score = round(avg_score_res['avg_score'], 1) if avg_score_res['avg_score'] is not None else 0.0
+    if avg_score_res['avg_score'] is not None:
+        raw_avg = float(avg_score_res['avg_score'])
+        avg_score = int(raw_avg) if raw_avg.is_integer() else round(raw_avg, 1)
+    else:
+        avg_score = 0
 
     # 2. توزيع التقديرات (Grade Distribution)
     grade_a = enrollments_qs.filter(is_graded=True, percentage__gte=85).count()
@@ -176,7 +181,10 @@ def admin_dashboard_view(request):
     grade_f = enrollments_qs.filter(is_graded=True, percentage__lt=50).count()
 
     def calc_pct(part, whole):
-        return round((part / whole * 100), 1) if whole > 0 else 0
+        if not whole or not part:
+            return 0
+        v = (part / whole * 100)
+        return int(v) if v.is_integer() else round(v, 1)
 
     grade_distribution = [
         {'label': 'ممتاز (85% فأعلى)', 'count': grade_a, 'pct': calc_pct(grade_a, enrollments_graded), 'color': '#10b981', 'badge': 'badge-grade-a'},

@@ -4140,6 +4140,54 @@ class DynamicPermissionsMatrixTests(TestCase):
         self.assertTrue(data['matrix']['trainees']['view'])
 
 
+class NaturalNumberFormattingTests(TestCase):
+    """اختبارات تنسيق الأرقام والدرجات بالشكل الطبيعي دون أصفار عشرية زائدة"""
+
+    def test_natural_number_filter(self):
+        from training.templatetags.custom_filters import natural_number, natural_grade, natural_percent
+        self.assertEqual(natural_number(Decimal('100.00')), '100')
+        self.assertEqual(natural_number(Decimal('400.00')), '400')
+        self.assertEqual(natural_number(Decimal('10.00')), '10')
+        self.assertEqual(natural_number(Decimal('0.00')), '0')
+        self.assertEqual(natural_number(Decimal('84.50')), '84.5')
+        self.assertEqual(natural_number(Decimal('84.05')), '84.05')
+        self.assertEqual(natural_number(100), '100')
+        self.assertEqual(natural_number('100,00'), '100')
+        self.assertEqual(natural_number('10,00'), '10')
+        self.assertEqual(natural_number(None), '')
+
+        # Alias natural_grade
+        self.assertEqual(natural_grade(Decimal('100.00')), '100')
+
+        # Alias natural_percent
+        self.assertEqual(natural_percent(Decimal('100.00')), '100%')
+        self.assertEqual(natural_percent(Decimal('84.50')), '84.5%')
+        self.assertEqual(natural_percent(0), '0%')
+
+    def test_template_builtin_render(self):
+        from django.template import Template, Context
+        t = Template("{{ num1|natural_number }} / {{ num2|natural_number }} / {{ num3|natural_number }}")
+        c = Context({'num1': Decimal('400.00'), 'num2': Decimal('10.00'), 'num3': Decimal('100.00')})
+        self.assertEqual(t.render(c), "400 / 10 / 100")
+
+    def test_model_natural_properties(self):
+        inst = Institute.objects.create(name="معهد الاختبار", code="INST_NUM_TEST")
+        cat = CourseCategory.objects.create(institute=inst, name="تصنيف تجريبي")
+        course = Course.objects.create(
+            institute=inst,
+            category=cat,
+            name="دورة تدريب الأرقام",
+            attendance_max_grade=Decimal('10.00')
+        )
+        s1 = Subject.objects.create(course=course, name="مادة 1", credit_hours=10, max_grade=Decimal('100.00'))
+        s2 = Subject.objects.create(course=course, name="مادة 2", credit_hours=10, max_grade=Decimal('100.00'))
+
+        self.assertEqual(course.total_max_marks, 200)
+        self.assertEqual(course.natural_attendance_grade, 10)
+        self.assertEqual(s1.natural_max_grade, 100)
+
+
+
 
 
 

@@ -139,12 +139,12 @@
                             <small class="d-block text-muted">إلى: {{ en.session.end_date|date:"Y-m-d" }}</small>
                         </td>
                         <td class="text-center">
-                            <strong class="text-dark">{{ en.total_score }}</strong>
-                            <small class="text-muted d-block font-monospace">/ {{ en.session.total_possible_score }}</small>
+                            <strong class="text-dark">{{ en.total_score|natural_number }}</strong>
+                            <small class="text-muted d-block font-monospace">/ {{ en.session.total_possible_score|natural_number }}</small>
                         </td>
                         <td class="text-center">
                             <span class="badge {% if en.percentage >= 85 %}badge-grade-a{% elif en.percentage >= 75 %}badge-grade-b{% elif en.percentage >= 65 %}badge-grade-c{% else %}badge-grade-d{% endif %} fs-6 px-3 py-1">
-                                {{ en.percentage }}%
+                                {{ en.percentage|natural_number }}%
                             </span>
                         </td>
                         <td class="text-center">

@@ -569,7 +569,7 @@
             <div class="col-6 col-md-4 col-xl-2">
                 <div class="kpi-stat-card border-info">
                     <div class="kpi-title">متوسط النسب</div>
-                    <div class="kpi-num text-info">{{ report_data.stats.avg_percentage }}%</div>
+                    <div class="kpi-num text-info">{{ report_data.stats.avg_percentage|natural_number }}%</div>
                 </div>
             </div>
             <div class="col-6 col-md-4 col-xl-2">
@@ -775,16 +775,16 @@
                                                 {{ sub.instructor_name }}
                                             </td>
                                             <td><span class="badge bg-light text-dark border">{{ sub.credit_hours }} س</span></td>
-                                            <td><span class="badge bg-secondary bg-opacity-10 text-dark border">{{ sub.max_grade|floatformat:0 }}</span></td>
+                                            <td><span class="badge bg-secondary bg-opacity-10 text-dark border">{{ sub.max_grade|natural_number }}</span></td>
                                             <td><span class="badge bg-info text-dark px-2">{{ sub.total_graded }}</span></td>
                                             <td><span class="badge bg-success px-2">{{ sub.passed_count }}</span></td>
-                                            <td class="fw-bold text-dark fs-6">{{ sub.avg_score }}</td>
+                                            <td class="fw-bold text-dark fs-6">{{ sub.avg_score|natural_number }}</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-center gap-2">
                                                     <div class="progress flex-grow-1" style="height: 8px; min-width: 50px;">
                                                         <div class="progress-bar bg-{{ sub.assessment_class }}" role="progressbar" style="width: {{ sub.pass_rate }}%;"></div>
                                                     </div>
-                                                    <strong class="text-{{ sub.assessment_class }} small">{{ sub.pass_rate }}%</strong>
+                                                    <strong class="text-{{ sub.assessment_class }} small">{{ sub.pass_rate|natural_number }}%</strong>
                                                 </div>
                                             </td>
                                             <td>

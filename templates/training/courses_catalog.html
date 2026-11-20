@@ -235,12 +235,12 @@
                         <div class="border-start d-none d-sm-block"></div>
                         <div>
                             <span class="text-muted small d-block">إجمالي درجات المواد</span>
-                            <strong class="text-success fs-5">{{ selected_course.total_max_marks }}</strong> درجة
+                            <strong class="text-success fs-5">{{ selected_course.total_max_marks|natural_number }}</strong> درجة
                         </div>
                         <div class="border-start d-none d-sm-block"></div>
                         <div>
                             <span class="text-muted small d-block">درجة المواظبة</span>
-                            <strong class="text-warning fs-5">{{ selected_course.attendance_max_grade|default:"10" }}</strong> درجة
+                            <strong class="text-warning fs-5">{{ selected_course.attendance_max_grade|natural_number|default:"10" }}</strong> درجة
                         </div>
                         <div class="border-start d-none d-sm-block"></div>
                         <div>
@@ -279,7 +279,7 @@
                                         </td>
                                         <td class="text-center">
                                             <span class="fw-bold text-success">
-                                                {{ sub.max_grade }}
+                                                {{ sub.max_grade|natural_number }}
                                             </span>
                                         </td>
                                         <td class="text-center">

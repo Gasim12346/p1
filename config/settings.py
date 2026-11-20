@@ -67,6 +67,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'training.context_processors.system_settings_processor',
             ],
+            'builtins': [
+                'training.templatetags.custom_filters',
+            ],
         },
     },
 ]
