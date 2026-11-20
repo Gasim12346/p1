@@ -48,6 +48,7 @@ urlpatterns = [
     path('super-admin/institutes/create/', views.super_admin_institute_create_view, name='super_admin_institute_create'),
     path('super-admin/institutes/<int:institute_id>/edit/', views.super_admin_institute_edit_view, name='super_admin_institute_edit'),
     path('super-admin/institutes/<int:institute_id>/toggle-status/', views.super_admin_institute_toggle_status_view, name='super_admin_institute_toggle_status'),
+    path('super-admin/users/create/', views.super_admin_user_create_view, name='super_admin_user_create'),
     path('super-admin/users/<int:user_id>/edit/', views.super_admin_user_edit_view, name='super_admin_user_edit'),
     path('super-admin/switch/<int:institute_id>/', views.super_admin_switch_institute_view, name='super_admin_switch_institute'),
     path('super-admin/exit-switch/', views.super_admin_exit_switch_view, name='super_admin_exit_switch'),

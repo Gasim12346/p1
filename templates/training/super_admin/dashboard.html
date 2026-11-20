@@ -343,6 +343,10 @@
                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small fw-bold">
                     <i class="bi bi-shield-check me-1"></i> {{ stats.admins_count }} مدير معهد معتمد
                 </span>
+                <button type="button" class="btn btn-warning fw-bold text-dark px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSuperAdminModal">
+                    <i class="bi bi-person-plus-fill"></i>
+                    <span>إضافة مستخدم سوبر أدمن</span>
+                </button>
             </div>
         </div>
         <div class="card-body p-0">
@@ -466,6 +470,135 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Creating New Super Admin / Admin User -->
+    <div class="modal fade text-start" id="createSuperAdminModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+                <form method="post" action="{% url 'training:super_admin_user_create' %}">
+                    {% csrf_token %}
+                    <div class="modal-header bg-dark text-warning border-bottom border-warning border-2 py-3 px-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-plus-fill fs-4 text-warning"></i>
+                            <div>
+                                <h5 class="modal-title fw-bold mb-0">إضافة حساب سوبر أدمن جديد للمنظومة</h5>
+                                <small class="text-white-50" style="font-size: 0.78rem;">إنشاء مستخدم جديد وتعيين صلاحية السوبر أدمن العامة أو إدارة معهد</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <!-- القسم الأول: نوع الصلاحية والمعهد -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-lock text-warning"></i>
+                                <span>أولاً: نوع الصلاحية ونطاق الإشراف</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">نوع وصلاحية الحساب *</label>
+                                    <select name="role" class="form-select form-select-sm fw-bold border-warning" required>
+                                        <option value="super_admin" selected>
+                                            👑 سوبر أدمن (المدير العام للمنظومة - تحكم كامل وشامل)
+                                        </option>
+                                        <option value="admin">
+                                            🛡️ مدير نظام معهد (أدمن معهد)
+                                        </option>
+                                    </select>
+                                    <small class="text-muted" style="font-size: 0.72rem;">صلاحية السوبر أدمن تتيح الإشراف والتحكم الكامل في كافة المعاهد.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">المعهد التابع له</label>
+                                    <select name="institute" class="form-select form-select-sm">
+                                        <option value="" selected>-- إدارة مركزية عامة (غير مقيد بمعهد محدد) --</option>
+                                        {% for inst in institutes %}
+                                            <option value="{{ inst.id }}">{{ inst.name }} ({{ inst.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted" style="font-size: 0.72rem;">اختر المعهد فقط في حال رغبت بتعيينه مديراً لمعهد بعينه.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القسم الثاني: بيانات الدخول والحساب -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-key-fill text-warning"></i>
+                                <span>ثانياً: بيانات تسجيل الدخول</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">اسم المستخدم للدخول *</label>
+                                    <input type="text" name="username" class="form-control form-control-sm font-monospace" placeholder="مثال: super_admin2" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">كلمة المرور *</label>
+                                    <input type="password" name="password" class="form-control form-control-sm font-monospace" placeholder="4 خانات على الأقل" required minlength="4">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القسم الثالث: البيانات الشخصية والعسكرية -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-3">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-person-lines-fill text-primary"></i>
+                                <span>ثالثاً: البيانات الشخصية والعسكرية</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الاسم الأول *</label>
+                                    <input type="text" name="first_name" class="form-control form-control-sm" placeholder="الاسم الأول" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">اسم العائلة / اللقب</label>
+                                    <input type="text" name="last_name" class="form-control form-control-sm" placeholder="اسم العائلة">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الرتبة العسكرية</label>
+                                    <select name="rank" class="form-select form-select-sm">
+                                        <option value="">-- اختر الرتبة --</option>
+                                        {% for r in officer_ranks %}
+                                            <option value="{{ r }}">{{ r }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">النمرة العسكرية</label>
+                                    <input type="text" name="military_number" class="form-control form-control-sm font-monospace" placeholder="مثال: 12345">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الوحدة</label>
+                                    <input type="text" name="unit" class="form-control form-control-sm" placeholder="مثال: القيادة العامة">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">رقم الهاتف</label>
+                                    <input type="text" name="phone" class="form-control form-control-sm font-monospace" placeholder="0912345678">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold small text-muted">البريد الإلكتروني</label>
+                                    <input type="email" name="email" class="form-control form-control-sm" placeholder="admin@example.com">
+                                </div>
+                                <div class="col-md-4 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-3">
+                                        <input class="form-check-input" type="checkbox" name="is_active" value="1" id="createActiveCheck" checked>
+                                        <label class="form-check-label fw-bold small" for="createActiveCheck">تفعيل الحساب فوراً</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer bg-light px-4 py-3 rounded-bottom-4">
+                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark px-4 shadow-sm">
+                            <i class="bi bi-shield-check me-1"></i> حفظ وتفعيل حساب السوبر أدمن
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

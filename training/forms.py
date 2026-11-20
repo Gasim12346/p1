@@ -1046,7 +1046,7 @@ class UserCreateForm(forms.ModelForm):
     )
     role = forms.ChoiceField(
         label='نوع وصلاحية المستخدم *',
-        choices=UserRole.choices,
+        choices=[c for c in UserRole.choices if c[0] != UserRole.SUPER_ADMIN],
         widget=forms.Select(attrs={'class': 'form-select form-select-lg', 'required': 'required'})
     )
     instructor = forms.ModelChoiceField(
@@ -1172,7 +1172,7 @@ class UserEditForm(forms.ModelForm):
     """نموذج تعديل بيانات وصلاحيات وكلمة مرور المستخدم"""
     role = forms.ChoiceField(
         label='نوع وصلاحية المستخدم *',
-        choices=UserRole.choices,
+        choices=[c for c in UserRole.choices if c[0] != UserRole.SUPER_ADMIN],
         widget=forms.Select(attrs={'class': 'form-select', 'required': 'required'})
     )
     instructor = forms.ModelChoiceField(

@@ -2661,6 +2661,10 @@ def user_create_view(request):
             
             # تحديد flags في Django بناءً على الدور
             role = form.cleaned_data['role']
+            if role == UserRole.SUPER_ADMIN and not is_super_admin_user(request.user):
+                messages.error(request, 'عفواً، لا يمكن منح صلاحية السوبر أدمن إلا من خلال إدارة المنظومة المركزية.')
+                role = UserRole.ADMIN
+
             if role == UserRole.ADMIN:
                 user.is_staff = True
             else:
@@ -2736,6 +2740,10 @@ def user_edit_view(request, user_id):
                 u.set_password(new_password.strip())
             
             role = form.cleaned_data.get('role')
+            if role == UserRole.SUPER_ADMIN and not is_super_admin_user(request.user):
+                messages.error(request, 'عفواً، لا يمكن منح صلاحية السوبر أدمن إلا من خلال إدارة المنظومة المركزية.')
+                role = UserRole.ADMIN
+
             if role == UserRole.ADMIN:
                 u.is_staff = True
             elif u.id != request.user.id:  # منع المستخدم الحالي من إزالة صفة الإدارة عن نفسه بالخطأ
@@ -4377,6 +4385,101 @@ def super_admin_institute_toggle_status_view(request, institute_id):
     status_label = 'تنشيط' if institute.is_active else 'تجميد'
     messages.success(request, f'تم {status_label} نظام {institute.name} بنجاح.')
     return redirect('training:super_admin_dashboard')
+
+
+@super_admin_required
+def super_admin_user_create_view(request):
+    """إضافة مستخدم سوبر أدمن جديد أو مدير نظام من صفحة السوبر أدمن"""
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        role = request.POST.get('role', UserRole.SUPER_ADMIN).strip()
+        institute_id = request.POST.get('institute', '').strip()
+        rank = request.POST.get('rank', '').strip()
+        military_number = request.POST.get('military_number', '').strip()
+        unit = request.POST.get('unit', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        is_active = request.POST.get('is_active') == '1'
+
+        errors = []
+        if not username:
+            errors.append('اسم المستخدم مطلوب.')
+        elif User.objects.filter(username__iexact=username).exists():
+            errors.append(f'اسم المستخدم "{username}" مسجل مسبقاً! الرجاء اختيار اسم آخر.')
+
+        if not password:
+            errors.append('كلمة المرور مطلوبة.')
+        elif len(password) < 4:
+            errors.append('كلمة المرور يجب أن لا تقل عن 4 خانات.')
+
+        valid_roles = [c[0] for c in UserRole.choices]
+        if role not in valid_roles:
+            role = UserRole.SUPER_ADMIN
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        # إنشاء المستخدم
+        is_super = (role == UserRole.SUPER_ADMIN)
+        is_staff_val = True if (is_super or role == UserRole.ADMIN) else False
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            is_active=is_active
+        )
+        user.is_superuser = is_super
+        user.is_staff = is_staff_val
+        user.save()
+
+        # إنشاء أو تحديث البروفايل
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.role = role
+        if not is_super and institute_id and institute_id.isdigit():
+            inst = Institute.objects.filter(id=int(institute_id)).first()
+            profile.institute = inst
+        else:
+            profile.institute = None
+
+        profile.rank = rank
+        profile.military_number = military_number
+        profile.unit = unit
+        profile.phone = phone
+
+        if is_super or role == UserRole.ADMIN:
+            profile.can_manage_users = True
+            profile.can_view = True
+            profile.can_add = True
+            profile.can_edit = True
+            profile.can_delete = True
+            profile.can_grade = True
+            profile.can_approve_results = True
+        else:
+            profile.sync_permissions_from_role()
+
+        profile.save()
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.CREATE,
+            action_category=ActivityCategory.USERS,
+            description=f"إنشاء حساب {profile.get_role_display()} جديد: {username} بواسطة السوبر أدمن",
+            target_model="User",
+            target_id=user.id,
+            institute=profile.institute
+        )
+
+        messages.success(request, f'تم بنجاح إنشاء وتفعيل حساب "{username}" بصلاحية ({profile.get_role_display()}).')
+        return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+    return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
 
 
 @super_admin_required

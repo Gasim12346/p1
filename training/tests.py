@@ -21,6 +21,7 @@ from training.reports import (
     get_sessions_subjects_summary,
 )
 from training.views import calculate_next_course_session_code
+from training.forms import UserCreateForm, UserEditForm
 
 
 class AuthenticationAndSecurityTests(TestCase):
@@ -3898,6 +3899,71 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         url = reverse('training:super_admin_user_edit', kwargs={'user_id': self.admin_b_user.id})
         res = self.client.post(url, {'role': UserRole.SUPER_ADMIN})
         self.assertRedirects(res, reverse('training:super_admin_login'))
+
+    def test_super_admin_create_new_super_admin_user(self):
+        """فحص إنشاء مستخدم سوبر أدمن جديد من صفحة السوبر أدمن"""
+        self.client.login(username='super_boss', password='Password123!')
+        url = reverse('training:super_admin_user_create')
+
+        post_data = {
+            'username': 'new_central_chief',
+            'password': 'StrongPassword123!',
+            'first_name': 'خالد',
+            'last_name': 'سعيد',
+            'role': UserRole.SUPER_ADMIN,
+            'institute': '',
+            'rank': 'لواء ركن',
+            'military_number': '778899',
+            'unit': 'هيئة العمليات المشتركة',
+            'phone': '0912345678',
+            'email': 'chief@army.mil',
+            'is_active': '1',
+        }
+        res = self.client.post(url, post_data)
+        self.assertRedirects(res, f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        # التحقق من قاعدة البيانات
+        new_user = User.objects.get(username='new_central_chief')
+        self.assertTrue(new_user.is_superuser)
+        self.assertTrue(new_user.is_staff)
+        self.assertEqual(new_user.profile.role, UserRole.SUPER_ADMIN)
+        self.assertTrue(new_user.profile.can_manage_users)
+        self.assertIsNone(new_user.profile.institute)
+        self.assertEqual(new_user.profile.rank, 'لواء ركن')
+
+        # التحقق من إمكانية تسجيل دخول السوبر أدمن الجديد
+        self.client.logout()
+        login_res = self.client.post(reverse('training:super_admin_login'), {
+            'username': 'new_central_chief',
+            'password': 'StrongPassword123!',
+        })
+        self.assertRedirects(login_res, reverse('training:super_admin_dashboard'))
+
+    def test_super_admin_role_hidden_and_blocked_in_institute_forms(self):
+        """فحص حجب ومنع صلاحية السوبر أدمن في المعاهد الأخرى ونماذجها"""
+        # 1. التحقق من عدم وجود خيار السوبر أدمن في نماذج المعاهد
+        create_form = UserCreateForm()
+        edit_form = UserEditForm()
+        create_choice_keys = [c[0] for c in create_form.fields['role'].choices]
+        edit_choice_keys = [c[0] for c in edit_form.fields['role'].choices]
+        self.assertNotIn(UserRole.SUPER_ADMIN, create_choice_keys)
+        self.assertNotIn(UserRole.SUPER_ADMIN, edit_choice_keys)
+        self.assertIn(UserRole.ADMIN, create_choice_keys)
+        self.assertIn(UserRole.REGISTRAR, create_choice_keys)
+
+        # 2. التحقق من حظر تعيين السوبر أدمن عبر مسار إضافة المستخدمين في المعهد
+        self.client.login(username='admin_a', password='Password123!')
+        res_create = self.client.post(reverse('training:user_create'), {
+            'username': 'attacker_admin',
+            'password': 'Password123!',
+            'first_name': 'محاول',
+            'last_name': 'تجاوز',
+            'role': UserRole.SUPER_ADMIN,  # محاولة التلاعب وتمرير سوبر أدمن
+            'is_active': '1',
+        })
+        # يجب رفض الطلب تماماً وعدم إنشاء المستخدم
+        self.assertFalse(User.objects.filter(username='attacker_admin').exists())
+
 
 
 
