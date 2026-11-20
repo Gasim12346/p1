@@ -3812,6 +3812,94 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertContains(res_b, 'دورة دروع معهد ب')
         self.assertNotContains(res_b, 'دورة برمجة معهد أ')
 
+    def test_super_admin_edit_user_role_and_permissions(self):
+        """فحص تعديل صلاحيات حسابات المدراء والسوبر أدمن بواسطة السوبر أدمن"""
+        self.client.login(username='super_boss', password='Password123!')
+        url = reverse('training:super_admin_user_edit', kwargs={'user_id': self.admin_a_user.id})
+
+        # ترقية مدير المعهد admin_a إلى سوبر أدمن
+        post_data = {
+            'role': UserRole.SUPER_ADMIN,
+            'institute': '',
+            'first_name': 'أحمد',
+            'last_name': 'المهندس',
+            'rank': 'عقيد مهندس',
+            'military_number': '55555',
+            'phone': '0912345678',
+            'email': 'ahmed@army.mil',
+            'new_password': 'NewPassword123!',
+            'is_active': '1',
+            'can_manage_users': '1',
+        }
+        res = self.client.post(url, post_data)
+        self.assertRedirects(res, f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        # التحقق من قاعدة البيانات
+        self.admin_a_user.refresh_from_db()
+        self.admin_a_user.profile.refresh_from_db()
+        self.assertEqual(self.admin_a_user.profile.role, UserRole.SUPER_ADMIN)
+        self.assertTrue(self.admin_a_user.is_superuser)
+        self.assertTrue(self.admin_a_user.is_staff)
+        self.assertEqual(self.admin_a_user.profile.rank, 'عقيد مهندس')
+        self.assertEqual(self.admin_a_user.profile.phone, '0912345678')
+        self.assertIsNone(self.admin_a_user.profile.institute)
+        # التحقق من عمل كلمة المرور الجديدة
+        self.assertTrue(self.admin_a_user.check_password('NewPassword123!'))
+
+        # إعادة تعديل الدور إلى مدير معهد ونقله إلى معهد ب
+        post_data_demote = {
+            'role': UserRole.ADMIN,
+            'institute': str(self.inst_b.id),
+            'first_name': 'أحمد',
+            'last_name': 'المهندس',
+            'rank': 'عقيد مهندس',
+            'military_number': '55555',
+            'phone': '0912345678',
+            'email': 'ahmed@army.mil',
+            'is_active': '1',
+        }
+        res_demote = self.client.post(url, post_data_demote)
+        self.assertRedirects(res_demote, f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        self.admin_a_user.refresh_from_db()
+        self.admin_a_user.profile.refresh_from_db()
+        self.assertEqual(self.admin_a_user.profile.role, UserRole.ADMIN)
+        self.assertFalse(self.admin_a_user.is_superuser)
+        self.assertTrue(self.admin_a_user.is_staff)
+        self.assertEqual(self.admin_a_user.profile.institute, self.inst_b)
+
+    def test_super_admin_cannot_demote_or_deactivate_self(self):
+        """فحص حماية السوبر أدمن من إزالة الصلاحية أو تعطيل حسابه الشخصي الحالي"""
+        self.client.login(username='super_boss', password='Password123!')
+        url = reverse('training:super_admin_user_edit', kwargs={'user_id': self.super_user.id})
+
+        # محاولة إزالة صفة السوبر أدمن عن الحساب الحالي
+        res = self.client.post(url, {
+            'role': UserRole.ADMIN,
+            'institute': str(self.inst_a.id),
+            'is_active': '1',
+        })
+        self.super_user.refresh_from_db()
+        self.super_user.profile.refresh_from_db()
+        self.assertEqual(self.super_user.profile.role, UserRole.SUPER_ADMIN)
+        self.assertTrue(self.super_user.is_superuser)
+
+        # محاولة تعطيل الحساب الحالي
+        res_deactivate = self.client.post(url, {
+            'role': UserRole.SUPER_ADMIN,
+            'is_active': '0',
+        })
+        self.super_user.refresh_from_db()
+        self.assertTrue(self.super_user.is_active)
+
+    def test_non_super_admin_blocked_from_editing_roles(self):
+        """فحص حظر غير السوبر أدمن من الوصول لمسار تعديل الصلاحيات"""
+        self.client.login(username='admin_a', password='Password123!')
+        url = reverse('training:super_admin_user_edit', kwargs={'user_id': self.admin_b_user.id})
+        res = self.client.post(url, {'role': UserRole.SUPER_ADMIN})
+        self.assertRedirects(res, reverse('training:super_admin_login'))
+
+
 
 
 

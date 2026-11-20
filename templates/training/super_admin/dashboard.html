@@ -114,7 +114,7 @@
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark mb-1 font-monospace">{{ stats.users_total }}</h3>
-                <small class="text-muted">حسابات وصول</small>
+                <small class="text-danger fw-bold">{{ stats.super_admins_count }} سوبر أدمن • {{ stats.admins_count }} مدير معهد</small>
             </div>
         </div>
     </div>
@@ -207,11 +207,19 @@
                             <td class="py-3">
                                 {% if item.admins %}
                                     {% for admin_prof in item.admins %}
-                                        <div class="d-flex align-items-center gap-1">
-                                            <i class="bi bi-shield-fill-check text-success"></i>
-                                            <strong class="text-dark small">{{ admin_prof.user.first_name|default:admin_prof.user.username }}</strong>
+                                        <div class="d-flex align-items-center justify-content-between gap-1 mb-1 p-1 rounded-2 bg-light border">
+                                            <div>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <i class="bi bi-shield-fill-check text-success"></i>
+                                                    <strong class="text-dark small">{{ admin_prof.user.first_name|default:admin_prof.user.username }}</strong>
+                                                </div>
+                                                <small class="text-muted d-block font-monospace" style="font-size: 0.72rem;">@{{ admin_prof.user.username }}{% if admin_prof.phone %} • {{ admin_prof.phone }}{% endif %}</small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill shadow-xs" data-bs-toggle="modal" data-bs-target="#editUserModal{{ admin_prof.user.id }}" title="تعديل صلاحية وبيانات المدير">
+                                                <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
+                                                <span style="font-size: 0.75rem;">تعديل الصلاحية</span>
+                                            </button>
                                         </div>
-                                        <small class="text-muted d-block font-monospace" style="font-size: 0.72rem;">@{{ admin_prof.user.username }}{% if admin_prof.phone %} • {{ admin_prof.phone }}{% endif %}</small>
                                     {% endfor %}
                                 {% else %}
                                     <span class="badge bg-warning bg-opacity-25 text-dark border border-warning small">لم يتم تعيين أدمن</span>
@@ -315,6 +323,353 @@
             </div>
         </div>
     </div>
+
+    <!-- Management of Admin and Super Admin Accounts & Permissions -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="admin_users_section">
+        <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-warning bg-opacity-25 text-dark p-2 rounded-3 border border-warning border-opacity-50">
+                    <i class="bi bi-shield-lock-fill fs-5 text-warning"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">إدارة حسابات وصلاحيات مدراء الأنظمة والسوبر أدمن</h5>
+                    <small class="text-muted">تعديل صلاحيات الحساب والأدوار لمدراء المعاهد والسوبر أدمن، والترقية أو النقل بين المعاهد وتعيين كلمات المرور</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-warning text-dark border border-warning px-3 py-2 rounded-pill small fw-bold">
+                    <i class="bi bi-motherboard-fill me-1"></i> {{ stats.super_admins_count }} حساب سوبر أدمن
+                </span>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small fw-bold">
+                    <i class="bi bi-shield-check me-1"></i> {{ stats.admins_count }} مدير معهد معتمد
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4 py-3" style="min-width: 220px;">المستخدم والاسم الكامل</th>
+                            <th class="py-3" style="min-width: 170px;">الرتبة والنمرة العسكرية</th>
+                            <th class="py-3" style="min-width: 180px;">نوع وصلاحية الحساب</th>
+                            <th class="py-3" style="min-width: 180px;">المعهد التابع له</th>
+                            <th class="py-3" style="min-width: 150px;">بيانات الاتصال</th>
+                            <th class="py-3" style="min-width: 100px;">الحالة</th>
+                            <th class="pe-4 py-3 text-center" style="min-width: 160px;">إجراءات الصلاحية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in admin_users %}
+                        <tr>
+                            <!-- اسم المستخدم والاسم الكامل -->
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center {% if u.profile.role == 'super_admin' or u.is_superuser %}bg-warning bg-opacity-25 text-dark border border-warning{% else %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25{% endif %}"
+                                         style="width: 40px; height: 40px; font-size: 1.1rem; flex-shrink: 0;">
+                                        <i class="bi {% if u.profile.role == 'super_admin' or u.is_superuser %}bi-shield-shaded{% else %}bi-person-badge-fill{% endif %}"></i>
+                                    </div>
+                                    <div>
+                                        <strong class="text-dark d-block fs-6">{{ u.first_name|default:u.username }} {{ u.last_name|default:'' }}</strong>
+                                        <small class="text-muted font-monospace" style="font-size: 0.75rem;">@{{ u.username }}</small>
+                                        {% if u.id == user.id %}
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-0 ms-1 small">حسابك الحالي</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- الرتبة والنمرة العسكرية -->
+                            <td class="py-3">
+                                {% if u.profile.rank or u.profile.military_number %}
+                                    <div class="fw-semibold text-dark small">{{ u.profile.rank|default:"-" }}</div>
+                                    <small class="text-muted font-monospace">{{ u.profile.military_number|default:"" }}{% if u.profile.unit %} • {{ u.profile.unit }}{% endif %}</small>
+                                {% else %}
+                                    <span class="text-muted small">غير محدد</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- نوع وصلاحية الحساب (الدور) -->
+                            <td class="py-3">
+                                {% if u.profile.role == 'super_admin' or u.is_superuser %}
+                                    <span class="badge bg-warning text-dark border border-warning px-3 py-2 rounded-pill fw-bold shadow-xs">
+                                        <i class="bi bi-motherboard-fill me-1"></i>سوبر أدمن (عام)
+                                    </span>
+                                {% elif u.profile.role == 'admin' %}
+                                    <span class="badge bg-primary bg-opacity-15 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fw-bold">
+                                        <i class="bi bi-shield-lock-fill me-1"></i>مدير نظام (أدمن)
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary bg-opacity-15 text-secondary border px-3 py-2 rounded-pill fw-bold">
+                                        {{ u.profile.get_role_display|default:u.profile.role }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- المعهد التابع له -->
+                            <td class="py-3">
+                                {% if u.profile.institute %}
+                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                        <i class="bi bi-building me-1 text-primary"></i>{{ u.profile.institute.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-dark bg-opacity-10 text-dark border px-2 py-1">
+                                        <i class="bi bi-globe me-1 text-warning"></i>كافة المعاهد (إدارة مركزية)
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- بيانات الاتصال -->
+                            <td class="py-3">
+                                {% if u.profile.phone %}
+                                    <div class="small font-monospace text-dark"><i class="bi bi-telephone text-muted me-1"></i>{{ u.profile.phone }}</div>
+                                {% endif %}
+                                {% if u.email %}
+                                    <div class="small text-muted text-truncate" style="max-width: 160px;" title="{{ u.email }}"><i class="bi bi-envelope text-muted me-1"></i>{{ u.email }}</div>
+                                {% endif %}
+                                {% if not u.profile.phone and not u.email %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- الحالة -->
+                            <td class="py-3">
+                                {% if u.is_active %}
+                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 rounded-pill px-3 py-1">
+                                        <i class="bi bi-check-circle-fill me-1"></i>نشط
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1">
+                                        <i class="bi bi-x-circle-fill me-1"></i>معطل
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- إجراء تعديل الصلاحية -->
+                            <td class="pe-4 py-3 text-center">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 rounded-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editUserModal{{ u.id }}"
+                                        title="تعديل صلاحية وبيانات هذا المستخدم">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <span>تعديل الصلاحية</span>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                لا يوجد حسابات مدراء مسجلة حتى الآن.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Editing Admin & Super Admin Users -->
+    {% for u in admin_users %}
+    <div class="modal fade text-start" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+                <form method="post" action="{% url 'training:super_admin_user_edit' u.id %}">
+                    {% csrf_token %}
+                    
+                    <!-- Header Modal -->
+                    <div class="modal-header {% if u.profile.role == 'super_admin' or u.is_superuser %}bg-dark text-warning border-bottom border-warning border-2{% else %}bg-primary text-white{% endif %} py-3 px-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-gear fs-4"></i>
+                            <div>
+                                <h5 class="modal-title fw-bold mb-0">تعديل صلاحية وحساب: {{ u.username }}</h5>
+                                <small class="opacity-75" style="font-size: 0.78rem;">تحديث الدور الإداري وتعيين المعهد والأذونات وكلمة المرور</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <!-- القسم الأول: نوع وصلاحية الحساب والمعهد -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-lock text-primary"></i>
+                                <span>أولاً: نوع الصلاحية والمعهد التابع له</span>
+                            </h6>
+                            <div class="row g-3">
+                                <!-- نوع وصلاحية الحساب (الدور) -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">نوع وصلاحية الحساب (الدور) *</label>
+                                    <select name="role" class="form-select form-select-sm fw-bold border-primary" required>
+                                        <option value="super_admin" {% if u.profile.role == 'super_admin' or u.is_superuser %}selected{% endif %}>
+                                            👑 سوبر أدمن (المدير العام للمنظومة - تحكم كامل)
+                                        </option>
+                                        <option value="admin" {% if u.profile.role == 'admin' and not u.is_superuser %}selected{% endif %}>
+                                            🛡️ مدير نظام المعهد (أدمن معهد)
+                                        </option>
+                                        <option value="registrar" {% if u.profile.role == 'registrar' %}selected{% endif %}>
+                                            📝 مسجل بيانات
+                                        </option>
+                                        <option value="supervisor" {% if u.profile.role == 'supervisor' %}selected{% endif %}>
+                                            📋 مشرف دورة
+                                        </option>
+                                        <option value="instructor" {% if u.profile.role == 'instructor' %}selected{% endif %}>
+                                            🎓 معلم / هيئة التدريس
+                                        </option>
+                                        <option value="regular" {% if u.profile.role == 'regular' %}selected{% endif %}>
+                                            👤 مستخدم عادي
+                                        </option>
+                                    </select>
+                                    <small class="text-muted" style="font-size: 0.72rem;">ترقية الحساب لسوبر أدمن تمنحه إشرافاً كاملاً عبر كافة المعاهد.</small>
+                                </div>
+
+                                <!-- المعهد التابع له -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">المعهد التابع له</label>
+                                    <select name="institute" class="form-select form-select-sm">
+                                        <option value="">-- إدارة مركزية عامة (غير مقيد بمعهد محدد) --</option>
+                                        {% for inst in institutes %}
+                                            <option value="{{ inst.id }}" {% if u.profile.institute_id == inst.id %}selected{% endif %}>
+                                                {{ inst.name }} ({{ inst.code }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted" style="font-size: 0.72rem;">اختر المعهد المراد تعيين المدير لإدارته، أو اتركه عاماً للسوبر أدمن.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القسم الثاني: البيانات الشخصية والعسكرية -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-person-lines-fill text-primary"></i>
+                                <span>ثانياً: البيانات الشخصية والعسكرية</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">اسم المستخدم</label>
+                                    <input type="text" class="form-control form-control-sm font-monospace bg-white" value="{{ u.username }}" readonly disabled>
+                                    <small class="text-muted" style="font-size: 0.7rem;">اسم المستخدم ثابت للتعريف الأمني.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الاسم الأول</label>
+                                    <input type="text" name="first_name" class="form-control form-control-sm" value="{{ u.first_name|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">اسم العائلة / اللقب</label>
+                                    <input type="text" name="last_name" class="form-control form-control-sm" value="{{ u.last_name|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الرتبة العسكرية</label>
+                                    <select name="rank" class="form-select form-select-sm">
+                                        <option value="">-- اختر الرتبة --</option>
+                                        {% for r in officer_ranks %}
+                                            <option value="{{ r }}" {% if u.profile.rank == r %}selected{% endif %}>{{ r }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">النمرة العسكرية</label>
+                                    <input type="text" name="military_number" class="form-control form-control-sm font-monospace" value="{{ u.profile.military_number|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">الوحدة</label>
+                                    <input type="text" name="unit" class="form-control form-control-sm" value="{{ u.profile.unit|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">رقم الهاتف</label>
+                                    <input type="text" name="phone" class="form-control form-control-sm font-monospace" value="{{ u.profile.phone|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">البريد الإلكتروني</label>
+                                    <input type="email" name="email" class="form-control form-control-sm" value="{{ u.email|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القسم الثالث: أمان الحساب وكلمة المرور -->
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-3">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-key-fill text-warning"></i>
+                                <span>ثالثاً: كلمة المرور وحالة الحساب</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold small text-muted">تعيين كلمة مرور جديدة (اختياري)</label>
+                                    <input type="password" name="new_password" class="form-control form-control-sm font-monospace" placeholder="اترك هذا الحقل فارغاً للإبقاء على كلمة المرور الحالية دون تغيير">
+                                    <small class="text-muted" style="font-size: 0.7rem;">اكتب كلمة مرور جديدة هنا فقط إذا أردت إعادة تعيين كلمة مرور هذا المدير.</small>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-3">
+                                        <input class="form-check-input" type="checkbox" name="is_active" value="1" id="activeUserCheck{{ u.id }}" {% if u.is_active %}checked{% endif %} {% if u.id == user.id %}disabled{% endif %}>
+                                        <label class="form-check-label fw-bold small" for="activeUserCheck{{ u.id }}">الحساب نشط ومفعل</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القسم الرابع: تفاصيل الأذونات التفصيلية -->
+                        <div class="p-2 border rounded-3 bg-white">
+                            <label class="form-label fw-bold small text-muted mb-2 d-block">الأذونات والصلاحيات التفصيلية الممنوحة للحساب:</label>
+                            <div class="row g-2 small">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_manage_users" value="1" id="permUsers{{ u.id }}" {% if u.profile.can_manage_users %}checked{% endif %}>
+                                        <label class="form-check-label" for="permUsers{{ u.id }}">إدارة المستخدمين والتحكم الكامل</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_view" value="1" id="permView{{ u.id }}" {% if u.profile.can_view %}checked{% endif %}>
+                                        <label class="form-check-label" for="permView{{ u.id }}">القراءة والعرض</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_add" value="1" id="permAdd{{ u.id }}" {% if u.profile.can_add %}checked{% endif %}>
+                                        <label class="form-check-label" for="permAdd{{ u.id }}">الإضافة والكتابة</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_edit" value="1" id="permEdit{{ u.id }}" {% if u.profile.can_edit %}checked{% endif %}>
+                                        <label class="form-check-label" for="permEdit{{ u.id }}">التعديل وتحديث البيانات</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_delete" value="1" id="permDelete{{ u.id }}" {% if u.profile.can_delete %}checked{% endif %}>
+                                        <label class="form-check-label" for="permDelete{{ u.id }}">الحذف</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_grade" value="1" id="permGrade{{ u.id }}" {% if u.profile.can_grade %}checked{% endif %}>
+                                        <label class="form-check-label" for="permGrade{{ u.id }}">رصد درجات الطلاب</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="can_approve_results" value="1" id="permApprove{{ u.id }}" {% if u.profile.can_approve_results %}checked{% endif %}>
+                                        <label class="form-check-label" for="permApprove{{ u.id }}">اعتماد النتائج والشهادات</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer bg-light px-4 py-3 rounded-bottom-4">
+                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary fw-bold px-4">
+                            <i class="bi bi-check-lg me-1"></i> حفظ وتحديث الصلاحية
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
     <!-- Recent System Operations Across Institutes -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" id="activity_logs_section">

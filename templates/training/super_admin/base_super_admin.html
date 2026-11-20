@@ -159,6 +159,10 @@
                         <i class="bi bi-grid-fill text-warning"></i>
                         <span>لوحة المنظومة والمعاهد</span>
                     </a>
+                    <a href="{% url 'training:super_admin_dashboard' %}#admin_users_section" class="super-nav-link">
+                        <i class="bi bi-people-fill text-warning"></i>
+                        <span>صلاحيات وحسابات المدراء</span>
+                    </a>
                     <a href="{% url 'training:super_admin_institute_create' %}" class="super-nav-link {% if request.resolver_match.url_name == 'super_admin_institute_create' %}active{% endif %}">
                         <i class="bi bi-plus-circle-fill text-warning"></i>
                         <span>إنشاء نظام معهد جديد</span>

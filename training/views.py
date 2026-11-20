@@ -4212,6 +4212,8 @@ def super_admin_dashboard_view(request):
         'active_sessions_total': CourseSession.objects.filter(status='active').count(),
         'instructors_total': Instructor.objects.count(),
         'users_total': User.objects.count(),
+        'super_admins_count': User.objects.filter(Q(is_superuser=True) | Q(profile__role=UserRole.SUPER_ADMIN)).distinct().count(),
+        'admins_count': UserProfile.objects.filter(role=UserRole.ADMIN).count(),
     }
 
     institute_filter_id = request.GET.get('institute_filter', '').strip()
@@ -4225,6 +4227,13 @@ def super_admin_dashboard_view(request):
 
     recent_activities = activities_qs[:40]
 
+    # جلب حسابات مدراء الأنظمة والسوبر أدمن للتحكم بصلاحياتهم
+    admin_users = User.objects.select_related('profile', 'profile__institute').filter(
+        Q(is_superuser=True) |
+        Q(is_staff=True) |
+        Q(profile__role__in=[UserRole.SUPER_ADMIN, UserRole.ADMIN])
+    ).distinct().order_by('-is_superuser', 'profile__role', 'username')
+
     context = {
         'institutes_data': institutes_data,
         'institutes': institutes,
@@ -4232,6 +4241,9 @@ def super_admin_dashboard_view(request):
         'recent_activities': recent_activities,
         'selected_filter_institute': selected_filter_institute,
         'selected_institute_id': institute_filter_id,
+        'admin_users': admin_users,
+        'officer_ranks': OFFICER_RANKS,
+        'user_roles': UserRole.choices,
     }
     return render(request, 'training/super_admin/dashboard.html', context)
 
@@ -4365,6 +4377,133 @@ def super_admin_institute_toggle_status_view(request, institute_id):
     status_label = 'تنشيط' if institute.is_active else 'تجميد'
     messages.success(request, f'تم {status_label} نظام {institute.name} بنجاح.')
     return redirect('training:super_admin_dashboard')
+
+
+@super_admin_required
+def super_admin_user_edit_view(request, user_id):
+    """تعديل بيانات وصلاحية حسابات مدراء الأنظمة والسوبر أدمن بواسطة السوبر أدمن"""
+    target_user = get_object_or_404(User.objects.select_related('profile', 'profile__institute'), pk=user_id)
+    profile = getattr(target_user, 'profile', None)
+    if not profile:
+        profile = UserProfile.objects.create(user=target_user)
+
+    if request.method == 'POST':
+        is_self = (target_user.id == request.user.id)
+
+        role = request.POST.get('role', '').strip()
+        institute_id = request.POST.get('institute', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        rank = request.POST.get('rank', '').strip()
+        military_number = request.POST.get('military_number', '').strip()
+        unit = request.POST.get('unit', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        new_password = request.POST.get('new_password', '').strip()
+        is_active = request.POST.get('is_active') == '1'
+
+        # منع السوبر أدمن من إزالة صلاحية السوبر أدمن عن نفسه لتجنب قفل الحساب
+        if is_self and role != UserRole.SUPER_ADMIN:
+            messages.error(request, 'لا يمكنك إزالة صلاحية السوبر أدمن عن حسابك الشخصي الحالي لتجنب فقدان الوصول إلى إدارة المنظومة.')
+            return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        # منع السوبر أدمن من تعطيل حسابه الحالي
+        if is_self and not is_active:
+            messages.error(request, 'لا يمكنك تعطيل حسابك الشخصي الحالي.')
+            return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        valid_roles = [c[0] for c in UserRole.choices]
+        if role and role in valid_roles:
+            profile.role = role
+        else:
+            messages.error(request, 'نوع الصلاحية المحدد غير صالح.')
+            return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+        # تعيين المعهد
+        if role == UserRole.SUPER_ADMIN and not institute_id:
+            profile.institute = None
+        elif institute_id and institute_id.isdigit():
+            inst = Institute.objects.filter(id=int(institute_id)).first()
+            profile.institute = inst
+        else:
+            profile.institute = None
+
+        # تحديث بيانات User
+        target_user.first_name = first_name
+        target_user.last_name = last_name
+        target_user.email = email
+        target_user.is_active = is_active
+
+        if role == UserRole.SUPER_ADMIN:
+            target_user.is_superuser = True
+            target_user.is_staff = True
+            profile.can_manage_users = True
+            profile.can_view = True
+            profile.can_add = True
+            profile.can_edit = True
+            profile.can_delete = True
+            profile.can_grade = True
+            profile.can_approve_results = True
+        elif role == UserRole.ADMIN:
+            target_user.is_superuser = False
+            target_user.is_staff = True
+            profile.can_manage_users = True
+            profile.can_view = True
+            profile.can_add = True
+            profile.can_edit = True
+            profile.can_delete = True
+            profile.can_grade = True
+            profile.can_approve_results = True
+        else:
+            if not is_self:
+                target_user.is_superuser = False
+                target_user.is_staff = False
+            profile.sync_permissions_from_role()
+
+        # أذونات مربعات الاختيار
+        if 'can_manage_users' in request.POST:
+            profile.can_manage_users = request.POST.get('can_manage_users') == '1'
+        if 'can_view' in request.POST:
+            profile.can_view = request.POST.get('can_view') == '1'
+        if 'can_add' in request.POST:
+            profile.can_add = request.POST.get('can_add') == '1'
+        if 'can_edit' in request.POST:
+            profile.can_edit = request.POST.get('can_edit') == '1'
+        if 'can_delete' in request.POST:
+            profile.can_delete = request.POST.get('can_delete') == '1'
+        if 'can_grade' in request.POST:
+            profile.can_grade = request.POST.get('can_grade') == '1'
+        if 'can_approve_results' in request.POST:
+            profile.can_approve_results = request.POST.get('can_approve_results') == '1'
+
+        if new_password:
+            if len(new_password) < 4:
+                messages.error(request, 'كلمة المرور الجديدة يجب ألا تقل عن 4 خانات.')
+                return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+            target_user.set_password(new_password)
+
+        target_user.save()
+
+        profile.rank = rank
+        profile.military_number = military_number
+        profile.unit = unit
+        profile.phone = phone
+        profile.save()
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.USERS,
+            description=f"تعديل حساب وصلاحية المستخدم: {target_user.username} إلى ({profile.get_role_display()}) بواسطة السوبر أدمن",
+            target_model="User",
+            target_id=target_user.id,
+            institute=profile.institute
+        )
+
+        messages.success(request, f'تم بنجاح تحديث بيانات وصلاحية حساب "{target_user.username}" ({profile.get_role_display()}).')
+        return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
+
+    return redirect(f"{reverse('training:super_admin_dashboard')}#admin_users_section")
 
 
 @super_admin_required
