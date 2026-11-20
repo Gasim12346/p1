@@ -323,9 +323,6 @@
                     <i class="bi bi-bar-chart-line-fill text-info"></i>
                     {{ report_data.report_title }}
                 </h2>
-                <p class="text-white-50 mb-0 small">
-                    استخراج وتحليل وتصدير البيانات الشاملة بنطاق زمني مخصص (افتراضياً 3 شهور) مع إمكانية التصدير الكامل إلى Microsoft Excel.
-                </p>
             </div>
             <div class="d-flex align-items-center gap-2 btn-action-group flex-wrap">
                 <a href="{% url 'training:reports_export_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success fw-bold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2" title="تنزيل التقرير الحالي كملف إكسل منسق بالكامل">
@@ -368,7 +365,7 @@
                         </label>
                         <div class="d-flex align-items-center gap-1 preset-date-container">
                             <span class="small text-muted me-1">فترات سريعة:</span>
-                            <button type="button" class="preset-date-btn {% if not report_data.use_all_dates %}active{% endif %}" onclick="setDatePreset(90)">3 شهور (الافتراضي)</button>
+                            <button type="button" class="preset-date-btn {% if not report_data.use_all_dates %}active{% endif %}" onclick="setDatePreset(90)">3 شهور</button>
                             <button type="button" class="preset-date-btn" onclick="setDatePreset(180)">6 شهور</button>
                             <button type="button" class="preset-date-btn" onclick="setDatePreset(365)">سنة كاملة</button>
                             <button type="button" class="preset-date-btn {% if report_data.use_all_dates %}active{% endif %}" onclick="setAllDatesPreset()">كامل السجلات</button>
@@ -435,7 +432,7 @@
                         <i class="bi bi-shield-check text-success me-1"></i>حالة الدورة:
                     </label>
                     <select name="session_status" id="filter_session_status" class="form-select form-select-sm border-success fw-semibold searchable-select">
-                        <option value="completed" {% if report_data.session_status == 'completed' or not report_data.session_status %}selected{% endif %}>الدورات المعتمدة والمحفوظة (الافتراضي)</option>
+                        <option value="completed" {% if report_data.session_status == 'completed' or not report_data.session_status %}selected{% endif %}>الدورات المعتمدة والمحفوظة</option>
                         <option value="active" {% if report_data.session_status == 'active' %}selected{% endif %}>الدورات المنعقدة (الجارية حالياً)</option>
                         <option value="all" {% if report_data.session_status == 'all' %}selected{% endif %}>كافة الدورات (المعتمدة والمنعقدة)</option>
                     </select>
@@ -515,7 +512,7 @@
                         <i class="bi bi-printer-fill"></i>
                         <span>طباعة رسمية</span>
                     </a>
-                    <a href="{% url 'training:reports_hub' %}" class="btn btn-outline-secondary btn-sm px-3" title="إعادة تعيين إلى 3 شهور الافتراضية">
+                    <a href="{% url 'training:reports_hub' %}" class="btn btn-outline-secondary btn-sm px-3" title="إعادة تعيين إلى 3 شهور">
                         <i class="bi bi-arrow-counterclockwise"></i>
                         <span>إعادة تعيين</span>
                     </a>

@@ -899,10 +899,10 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold small text-dark">عنوان شهادة التفاصيل</label>
                                         {{ cert_form.basic_cert_title }}
-                                        <div class="form-text text-muted small">العنوان الرسمي المعتمد أعلى شهادة التفاصيل (افتراضياً: شهادة دورة حاسوب أساسية).</div>
+                                        <div class="form-text text-muted small">العنوان الرسمي المعتمد أعلى شهادة التفاصيل (مثال: شهادة دورة حاسوب أساسية).</div>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label fw-bold small text-dark">نص الملحوظة الافتراضي لشهادة التفاصيل</label>
+                                        <label class="form-label fw-bold small text-dark">نص الملحوظة لشهادة التفاصيل</label>
                                         {{ cert_form.default_certificate_note }}
                                         <div class="form-text text-muted small">يظهر هذا النص تلقائياً أسفل كشف درجات المواد لأي دارس مالم يتم كتابة ملحوظة مخصصة له من صفحة رصد درجات الدورة.</div>
                                     </div>
@@ -932,7 +932,7 @@
                                                     {% if cert_settings.right_logo_url %}
                                                         <span class="text-success fw-bold">شعار مخصص مرفوع</span>
                                                     {% else %}
-                                                        شعار صقر الجديان الافتراضي
+                                                        شعار صقر الجديان المعتمد
                                                     {% endif %}
                                                 </small>
                                                 {{ cert_form.right_logo }}
@@ -956,7 +956,7 @@
                                                     {% if cert_settings.left_logo_url %}
                                                         <span class="text-success fw-bold">شعار مخصص مرفوع</span>
                                                     {% else %}
-                                                        شعار نظم المعلومات الافتراضي
+                                                        شعار نظم المعلومات المعتمد
                                                     {% endif %}
                                                 </small>
                                                 {{ cert_form.left_logo }}
@@ -965,7 +965,7 @@
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label small fw-bold text-dark">ارتفاع الشعارات في الشهادة (بالملم - الافتراضي 56)</label>
+                                        <label class="form-label small fw-bold text-dark">ارتفاع الشعارات في الشهادة (بالملم - 56)</label>
                                         {{ cert_form.logo_height_mm }}
                                     </div>
                                 </div>
@@ -1330,7 +1330,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2. بيانات ومسار التحرك (القيم الافتراضية) -->
+                                    <!-- 2. بيانات ومسار التحرك -->
                                     <div class="bg-light p-3 rounded-4 mb-4 border">
                                         <h6 class="fw-bold text-dark mb-3">
                                             <i class="bi bi-geo-alt-fill text-primary me-2"></i>
@@ -1342,9 +1342,9 @@
                                                 {{ movement_form.from_location }}
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label small fw-bold text-dark">الجهة المتحرك إليها الافتراضية (إلـى)</label>
+                                                <label class="form-label small fw-bold text-dark">الجهة المتحرك إليها (إلـى)</label>
                                                 {{ movement_form.to_location_default }}
-                                                <div class="form-text text-muted small">تُستخدم افتراضياً إذا لم تكن للدارس وحدة عسكرية محددة بالدورة.</div>
+                                                <div class="form-text text-muted small">تُستخدم تلقائياً إذا لم تكن للدارس وحدة عسكرية محددة بالدورة.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label small fw-bold text-dark">السلاح</label>
@@ -1447,7 +1447,7 @@
                                                     {% if movement_settings.watermark_url %}
                                                         <span class="text-success fw-bold">شعار مخصص مرفوع</span>
                                                     {% else %}
-                                                        الشعار الافتراضي
+                                                        الشعار المعتمد
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -1465,7 +1465,7 @@
                                                 <div class="col-12 mt-2">
                                                     <button type="submit" name="reset_watermark" value="1" class="btn btn-outline-danger btn-sm rounded-2">
                                                         <i class="bi bi-arrow-counterclockwise me-1"></i>
-                                                        إعادة تعيين العلامة المائية إلى الشعار الافتراضي
+                                                        إعادة تعيين العلامة المائية إلى الشعار المعتمد
                                                     </button>
                                                 </div>
                                             {% endif %}

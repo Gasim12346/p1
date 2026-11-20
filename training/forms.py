@@ -849,7 +849,7 @@ class CertificateSettingsForm(forms.ModelForm):
             'center_signer_title': 'منصب معتمد الشهادة (الوسط)',
             'station_text': 'المحطة / المدينة',
             'seal_notice': 'تنبيه الختم البارز (التذييل الأخضر)',
-            'logo_height_mm': 'ارتفاع الشعارات (بالملم - الافتراضي 56)',
+            'logo_height_mm': 'ارتفاع الشعارات (بالملم - 56)',
             'right_logo': 'تغيير شعار الشهادة الأيمن (صقر الجديان)',
             'left_logo': 'تغيير شعار الشهادة الأيسر (شعار الإدارة)',
         }
@@ -913,7 +913,7 @@ class MovementOrderSettingsForm(forms.ModelForm):
             'order_title': 'عنوان أمر التحرك',
             'issuing_authority_text': 'نص ديباجة الصدور (الصادر بأمر سيادة...)',
             'from_location': 'الجهة المتحرك منها (مـن)',
-            'to_location_default': 'الجهة المتحرك إليها الافتراضية (إلـى)',
+            'to_location_default': 'الجهة المتحرك إليها (إلـى)',
             'arms_default': 'السلاح',
             'ammunition_default': 'الذخيرة',
             'purpose_prefix': 'بادئة الغرض من التحرك',

@@ -3070,13 +3070,13 @@ def certificate_settings_update_view(request):
         if 'reset_right_logo' in request.POST:
             cert_settings.right_logo = None
             cert_settings.save()
-            messages.success(request, 'تمت إعادة تعيين الشعار الأيمن للشهادة إلى الشعار الافتراضي (صقر الجديان).')
+            messages.success(request, 'تمت إعادة تعيين الشعار الأيمن للشهادة إلى الشعار المعتمد (صقر الجديان).')
             return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
         # إعادة تعيين اللوغو الأيسر إذا طلب
         if 'reset_left_logo' in request.POST:
             cert_settings.left_logo = None
             cert_settings.save()
-            messages.success(request, 'تمت إعادة تعيين الشعار الأيسر للشهادة إلى الشعار الافتراضي (شعار نظم المعلومات).')
+            messages.success(request, 'تمت إعادة تعيين الشعار الأيسر للشهادة إلى الشعار المعتمد (شعار نظم المعلومات).')
             return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
 
         form = CertificateSettingsForm(request.POST, request.FILES, instance=cert_settings)
@@ -3109,7 +3109,7 @@ def movement_order_settings_update_view(request):
         if 'reset_watermark' in request.POST:
             movement_settings.watermark_image = None
             movement_settings.save()
-            messages.success(request, 'تمت إعادة تعيين العلامة المائية لأمر التحرك إلى الشعار الافتراضي بنجاح.')
+            messages.success(request, 'تمت إعادة تعيين العلامة المائية لأمر التحرك إلى الشعار المعتمد بنجاح.')
             return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-movement-order")
 
         form = MovementOrderSettingsForm(request.POST, request.FILES, instance=movement_settings)
@@ -3139,11 +3139,11 @@ def system_settings_update_view(request):
     system_settings = SystemSettings.get_settings(institute=request.institute)
 
     if request.method == 'POST':
-        # 1. إزالة الشعار والعودة للافتراضي
+        # 1. إزالة الشعار والعودة للشعار المعتمد
         if 'reset_main_logo' in request.POST:
             system_settings.main_logo = None
             system_settings.save()
-            messages.success(request, 'تمت إعادة تعيين شعار النظام الرئيسي إلى الشعار الافتراضي بنجاح.')
+            messages.success(request, 'تمت إعادة تعيين شعار النظام الرئيسي إلى الشعار المعتمد بنجاح.')
             return redirect('training:admin_dashboard')
 
         # 2. تطبيق ثيم جاهز بنقرة واحدة
