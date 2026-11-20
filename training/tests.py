@@ -3995,6 +3995,152 @@ class MultiInstituteAndSuperAdminTests(TestCase):
         self.assertFalse(User.objects.filter(username='attacker_admin').exists())
 
 
+class DynamicPermissionsMatrixTests(TestCase):
+    """اختبارات مصفوفة الأذونات والصلاحيات الديناميكية المتقدمة (Granular RBAC)"""
+
+    def setUp(self):
+        self.institute = Institute.objects.create(name='معهد اختبار الصلاحيات', code='PERM_INST')
+        
+        # مستخدم أدمن
+        self.admin_user = User.objects.create_user(
+            username='perm_admin',
+            password='Password123!',
+            is_staff=True
+        )
+        self.admin_profile, _ = UserProfile.objects.get_or_create(user=self.admin_user)
+        self.admin_profile.institute = self.institute
+        self.admin_profile.role = UserRole.ADMIN
+        self.admin_profile.sync_permissions_from_role()
+        self.admin_profile.save()
+
+        # مستخدم مسجل
+        self.registrar_user = User.objects.create_user(
+            username='perm_registrar',
+            password='Password123!'
+        )
+        self.registrar_profile, _ = UserProfile.objects.get_or_create(user=self.registrar_user)
+        self.registrar_profile.institute = self.institute
+        self.registrar_profile.role = UserRole.REGISTRAR
+        self.registrar_profile.sync_permissions_from_role()
+        self.registrar_profile.save()
+
+        # مستخدم مخصص
+        self.custom_user = User.objects.create_user(
+            username='perm_custom',
+            password='Password123!'
+        )
+        self.custom_profile, _ = UserProfile.objects.get_or_create(user=self.custom_user)
+        self.custom_profile.institute = self.institute
+        self.custom_profile.role = UserRole.CUSTOM
+        self.custom_profile.permissions_matrix = {}
+        self.custom_profile.save()
+
+    def test_default_role_permissions_matrix(self):
+        """التحقق من الأذونات القياسية الافتراضية لكل دور في المصفوفة"""
+        from apps.core.permissions import get_default_permissions_for_role
+
+        admin_perms = get_default_permissions_for_role(UserRole.ADMIN)
+        self.assertTrue(admin_perms['trainees']['view'])
+        self.assertTrue(admin_perms['trainees']['delete'])
+        self.assertTrue(admin_perms['grades']['approve'])
+        self.assertTrue(admin_perms['users']['permissions'])
+        self.assertTrue(admin_perms['settings']['edit'])
+
+        reg_perms = get_default_permissions_for_role(UserRole.REGISTRAR)
+        self.assertTrue(reg_perms['trainees']['add'])
+        self.assertTrue(reg_perms['sessions']['add'])
+        self.assertFalse(reg_perms['users']['add'])
+        self.assertFalse(reg_perms['settings']['edit'])
+        self.assertFalse(reg_perms['grades']['approve'])
+
+        inst_perms = get_default_permissions_for_role(UserRole.INSTRUCTOR)
+        self.assertTrue(inst_perms['grades']['entry'])
+        self.assertFalse(inst_perms['grades']['approve'])
+        self.assertFalse(inst_perms['trainees']['add'])
+
+    def test_user_effective_permissions_and_has_perm(self):
+        """التحقق من طريقة حساب الأذونات الفعالة ودالة has_perm للمستخدم"""
+        from apps.core.permissions import get_user_permissions_matrix, has_permission
+
+        # الأدمن يملك كافة الصلاحيات
+        self.assertTrue(self.admin_profile.has_perm('trainees', 'delete'))
+        self.assertTrue(has_permission(self.admin_user, 'users', 'permissions'))
+
+        # المسجل يملك صلاحية إضافة دارس، ولا يملك تعديل الإعدادات
+        self.assertTrue(self.registrar_profile.has_perm('trainees', 'add'))
+        self.assertFalse(self.registrar_profile.has_perm('settings', 'edit'))
+
+        # تخصيص أذونات دقيقة للمستخدم المخصص عبر مصفوفة JSON
+        self.custom_profile.permissions_matrix = {
+            'reports': {'view': True, 'excel': True, 'print': False},
+            'trainees': {'view': True, 'add': False}
+        }
+        self.custom_profile.save()
+
+        self.assertTrue(self.custom_profile.has_perm('reports', 'excel'))
+        self.assertFalse(self.custom_profile.has_perm('reports', 'print'))
+        self.assertTrue(self.custom_profile.has_perm('trainees', 'view'))
+        self.assertFalse(self.custom_profile.has_perm('trainees', 'add'))
+
+    def test_sync_legacy_booleans_from_matrix(self):
+        """التحقق من المزامنة العكسية التلقائية من المصفوفة إلى حقول الأذونات السابقة"""
+        profile = self.custom_profile
+        profile.permissions_matrix = {
+            'trainees': {'view': True, 'add': True, 'edit': True, 'delete': False},
+            'grades': {'view': True, 'entry': True, 'approve': False},
+            'users': {'view': False, 'permissions': False}
+        }
+        profile.sync_legacy_booleans_from_matrix()
+        profile.save()
+
+        self.assertTrue(profile.can_view)
+        self.assertTrue(profile.can_add)
+        self.assertTrue(profile.can_edit)
+        self.assertFalse(profile.can_delete)
+        self.assertTrue(profile.can_grade)
+        self.assertFalse(profile.can_approve_results)
+        self.assertFalse(profile.can_manage_users)
+
+    def test_user_update_permissions_matrix_ajax(self):
+        """التحقق من نقطة النهاية (Endpoint) لتحديث مصفوفة الأذونات للمستخدم عبر AJAX"""
+        self.client.login(username='perm_admin', password='Password123!')
+        url = reverse('training:user_update_permissions_matrix', kwargs={'user_id': self.custom_user.id})
+
+        new_matrix = {
+            'trainees': {'view': True, 'add': True, 'edit': False, 'delete': False, 'export': True},
+            'reports': {'view': True, 'excel': True, 'print': True}
+        }
+        import json
+        res = self.client.post(
+            url,
+            data=json.dumps({'permissions_matrix': new_matrix}),
+            content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data['status'], 'success')
+
+        self.custom_user.refresh_from_db()
+        profile = self.custom_user.profile
+        self.assertTrue(profile.has_perm('reports', 'excel'))
+        self.assertTrue(profile.has_perm('trainees', 'export'))
+        self.assertFalse(profile.has_perm('trainees', 'edit'))
+
+    def test_api_get_permissions_matrix(self):
+        """التحقق من استرجاع مصفوفة الصلاحيات عبر الـ API"""
+        self.client.login(username='perm_admin', password='Password123!')
+        url = reverse('training:api_permissions_matrix')
+        res = self.client.get(f"{url}?user_id={self.registrar_user.id}")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertEqual(data['username'], 'perm_registrar')
+        self.assertIn('matrix', data)
+        self.assertTrue(data['matrix']['trainees']['view'])
+
+
+
 
 
 

@@ -153,6 +153,78 @@
                         </div>
                     </div>
 
+                    <!-- مصفوفة الأذونات والصلاحيات الديناميكية المتقدمة (Granular Permissions Matrix) -->
+                    <input type="hidden" name="permissions_matrix_json" id="userEditPermissionsMatrixInput">
+
+                    <div class="card border rounded-3 overflow-hidden shadow-sm mb-4">
+                        <div class="card-header p-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important; color: white;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-grid-3x3-gap-fill text-warning fs-5"></i>
+                                <span class="fw-bold">مصفوفة الأذونات والصلاحيات الديناميكية المتقدمة (Granular RBAC)</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-2 py-0" id="btnEditMatrixSelectAll" style="font-size: 0.75rem;">
+                                    منح الكل
+                                </button>
+                                <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-2 py-0" id="btnEditMatrixDeselectAll" style="font-size: 0.75rem;">
+                                    حجب الكل
+                                </button>
+                                <button type="button" class="btn btn-warning btn-sm rounded-pill px-2 py-0 fw-bold" id="btnEditMatrixResetRole" style="font-size: 0.75rem;">
+                                    استعادة إعدادات الدور
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2 small">
+                            <span class="text-muted">التحكم الدقيق في كافة العمليات لـ 11 قسماً، مع التزامن التلقائي مع الدور المختار:</span>
+                            <span class="badge bg-primary rounded-pill px-3 py-1" id="editMatrixCountBadge">0 / 0 ممنوحة</span>
+                        </div>
+
+                        <div class="p-3" style="max-height: 480px; overflow-y: auto;">
+                            <div class="accordion" id="editMatrixAccordion">
+                                {% for mod_id, mod_info in modules_permissions_catalog.items %}
+                                <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-none">
+                                    <h2 class="accordion-header" id="heading_{{ mod_id }}">
+                                        <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ mod_id }}" aria-expanded="false" aria-controls="collapse_{{ mod_id }}">
+                                            <div class="d-flex align-items-center justify-content-between w-100 pe-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="{{ mod_info.icon }}" style="color: {{ mod_info.badge_color }};"></i>
+                                                    <span class="fw-bold text-dark small">{{ mod_info.name }}</span>
+                                                    <code class="text-muted" style="font-size: 0.7rem;">({{ mod_id }})</code>
+                                                </div>
+                                                <span class="badge rounded-pill border bg-white text-dark small edit-mod-badge" id="editModBadge_{{ mod_id }}">
+                                                    0 / {{ mod_info.actions|length }}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse_{{ mod_id }}" class="accordion-collapse collapse" aria-labelledby="heading_{{ mod_id }}" data-bs-parent="#editMatrixAccordion">
+                                        <div class="accordion-body p-3 bg-white">
+                                            <div class="row g-2">
+                                                {% for act_id, act_info in mod_info.actions.items %}
+                                                <div class="col-12 col-md-6">
+                                                    <div class="p-2 border rounded-3 bg-light edit-perm-box" id="editPermBox_{{ mod_id }}_{{ act_id }}">
+                                                        <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
+                                                            <label class="form-check-label fw-bold small text-dark cursor-pointer pe-2" for="editPermCheck_{{ mod_id }}_{{ act_id }}" style="user-select: none;">
+                                                                {{ act_info.name }}
+                                                            </label>
+                                                            <input class="form-check-input edit-matrix-checkbox m-0" type="checkbox" id="editPermCheck_{{ mod_id }}_{{ act_id }}" data-module="{{ mod_id }}" data-action="{{ act_id }}">
+                                                        </div>
+                                                        <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                                            {{ act_info.description }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Password Reset Section -->
                     <div class="p-3 bg-light rounded-3 border mb-4">
                         <h6 class="fw-bold text-dark mb-2">
@@ -321,6 +393,146 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 if (roleSelect) roleSelect.value = 'custom';
             }
+        });
+    }
+
+    // =====================================================================
+    // مزامنة مصفوفة الصلاحيات والأذونات الديناميكية المتقدمة
+    // =====================================================================
+    const EDIT_MODULES_CATALOG = {{ modules_permissions_catalog_json|safe }};
+    const EDIT_ROLE_DEFAULTS = {{ default_role_permissions_json|safe }};
+    const INITIAL_USER_MATRIX = {{ user_matrix_json|safe }};
+    const matrixHiddenInput = document.getElementById('userEditPermissionsMatrixInput');
+
+    function updateEditPermBox(cb) {
+        const modId = cb.getAttribute('data-module');
+        const actId = cb.getAttribute('data-action');
+        const box = document.getElementById(`editPermBox_${modId}_${actId}`);
+        if (box) {
+            if (cb.checked) {
+                box.style.borderColor = '#10b981';
+                box.style.backgroundColor = '#f0fdf4';
+            } else {
+                box.style.borderColor = '#e2e8f0';
+                box.style.backgroundColor = '#f8fafc';
+            }
+        }
+    }
+
+    function refreshEditMatrixCounters() {
+        let total = 0;
+        let granted = 0;
+        for (const modId in EDIT_MODULES_CATALOG) {
+            let modTotal = 0;
+            let modGranted = 0;
+            for (const actId in EDIT_MODULES_CATALOG[modId].actions) {
+                total++;
+                modTotal++;
+                const cb = document.getElementById(`editPermCheck_${modId}_${actId}`);
+                if (cb && cb.checked) {
+                    granted++;
+                    modGranted++;
+                }
+            }
+            const badge = document.getElementById(`editModBadge_${modId}`);
+            if (badge) {
+                badge.textContent = `${modGranted} / ${modTotal}`;
+                if (modGranted === modTotal) {
+                    badge.className = 'badge rounded-pill border bg-success text-white small edit-mod-badge';
+                } else if (modGranted > 0) {
+                    badge.className = 'badge rounded-pill border bg-primary text-white small edit-mod-badge';
+                } else {
+                    badge.className = 'badge rounded-pill border bg-white text-dark small edit-mod-badge';
+                }
+            }
+        }
+        const countBadge = document.getElementById('editMatrixCountBadge');
+        if (countBadge) {
+            countBadge.textContent = `${granted} / ${total} ممنوحة`;
+        }
+    }
+
+    function applyEditMatrixData(matrix) {
+        for (const modId in EDIT_MODULES_CATALOG) {
+            for (const actId in EDIT_MODULES_CATALOG[modId].actions) {
+                const cb = document.getElementById(`editPermCheck_${modId}_${actId}`);
+                if (cb) {
+                    cb.checked = Boolean(matrix && matrix[modId] && matrix[modId][actId]);
+                    updateEditPermBox(cb);
+                }
+            }
+        }
+        refreshEditMatrixCounters();
+    }
+
+    function serializeEditMatrix() {
+        const payload = {};
+        for (const modId in EDIT_MODULES_CATALOG) {
+            payload[modId] = {};
+            for (const actId in EDIT_MODULES_CATALOG[modId].actions) {
+                const cb = document.getElementById(`editPermCheck_${modId}_${actId}`);
+                payload[modId][actId] = cb ? Boolean(cb.checked) : false;
+            }
+        }
+        if (matrixHiddenInput) {
+            matrixHiddenInput.value = JSON.stringify(payload);
+        }
+    }
+
+    // تهيئة المصفوفة الأولية
+    applyEditMatrixData(INITIAL_USER_MATRIX);
+
+    document.querySelectorAll('.edit-matrix-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            updateEditPermBox(this);
+            refreshEditMatrixCounters();
+        });
+    });
+
+    const btnEditSelectAll = document.getElementById('btnEditMatrixSelectAll');
+    if (btnEditSelectAll) {
+        btnEditSelectAll.addEventListener('click', function() {
+            document.querySelectorAll('.edit-matrix-checkbox').forEach(cb => {
+                cb.checked = true;
+                updateEditPermBox(cb);
+            });
+            refreshEditMatrixCounters();
+        });
+    }
+
+    const btnEditDeselectAll = document.getElementById('btnEditMatrixDeselectAll');
+    if (btnEditDeselectAll) {
+        btnEditDeselectAll.addEventListener('click', function() {
+            document.querySelectorAll('.edit-matrix-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateEditPermBox(cb);
+            });
+            refreshEditMatrixCounters();
+        });
+    }
+
+    const btnEditResetRole = document.getElementById('btnEditMatrixResetRole');
+    if (btnEditResetRole) {
+        btnEditResetRole.addEventListener('click', function() {
+            if (roleSelect && roleSelect.value && EDIT_ROLE_DEFAULTS[roleSelect.value]) {
+                applyEditMatrixData(EDIT_ROLE_DEFAULTS[roleSelect.value]);
+            }
+        });
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const role = this.value;
+            if (role && EDIT_ROLE_DEFAULTS[role]) {
+                applyEditMatrixData(EDIT_ROLE_DEFAULTS[role]);
+            }
+        });
+    }
+
+    const userEditForm = document.querySelector('form');
+    if (userEditForm) {
+        userEditForm.addEventListener('submit', function() {
+            serializeEditMatrix();
         });
     }
 });

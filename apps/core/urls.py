@@ -29,8 +29,10 @@ urlpatterns = [
     path('admin-portal/users/create/', views.user_create_view, name='user_create'),
     path('admin-portal/users/<int:user_id>/edit/', views.user_edit_view, name='user_edit'),
     path('admin-portal/users/<int:user_id>/update-role/', views.user_update_role_view, name='user_update_role'),
+    path('admin-portal/users/<int:user_id>/update-permissions-matrix/', views.user_update_permissions_matrix_view, name='user_update_permissions_matrix'),
     path('admin-portal/users/<int:user_id>/delete/', views.user_delete_view, name='user_delete'),
     path('admin-portal/users/<int:user_id>/toggle-active/', views.user_toggle_active_view, name='user_toggle_active'),
+    path('admin-portal/api/permissions-matrix/', views.api_get_permissions_matrix_view, name='api_permissions_matrix'),
 
     # هوية وشعار وألوان النظام
     path('admin-portal/settings/system/', views.system_settings_update_view, name='system_settings_update'),

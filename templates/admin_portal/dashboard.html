@@ -180,7 +180,7 @@
                             <i class="bi bi-grid-fill text-primary fs-5"></i>
                             <h6 class="fw-bold mb-0 text-dark">قوائم الأدمن</h6>
                         </div>
-                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">8 أقسام</span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">9 أقسام</span>
                     </div>
 
                     <div class="card-body p-2">
@@ -199,7 +199,14 @@
                                 <span class="badge bg-success bg-opacity-10 text-success rounded-pill ms-auto count-badge">{{ users|length }}</span>
                             </button>
 
-                            <!-- 3. هيئة التعليم والمعلمون -->
+                            <!-- 3. مصفوفة الأذونات والصلاحيات الديناميكية -->
+                            <button class="nav-link" id="tab-permissions-matrix" data-bs-toggle="pill" data-bs-target="#pane-permissions-matrix" type="button" role="tab">
+                                <i class="bi bi-grid-3x3-gap-fill icon-tab" style="color: #6366f1 !important;"></i>
+                                <span class="tab-title">مصفوفة الأذونات الديناميكية</span>
+                                <span class="badge rounded-pill ms-auto count-badge" style="background-color: #e0e7ff !important; color: #4338ca !important;">11 قسماً</span>
+                            </button>
+
+                            <!-- 4. هيئة التعليم والمعلمون -->
                             <button class="nav-link" id="tab-instructors" data-bs-toggle="pill" data-bs-target="#pane-instructors" type="button" role="tab">
                                 <i class="bi bi-person-workspace icon-tab text-primary"></i>
                                 <span class="tab-title">هيئة التعليم والمعلمون</span>
@@ -550,6 +557,11 @@
                                                 <i class="bi bi-shield-check"></i>
                                             </button>
 
+                                            <!-- زر مصفوفة الأذونات والصلاحيات الديناميكية -->
+                                            <button type="button" class="btn btn-sm rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background-color: #e0e7ff; color: #4338ca !important;" title="مصفوفة الأذونات الديناميكية المتقدمة" onclick="openUserPermissionsMatrix('{{ u.id }}')">
+                                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                                            </button>
+
                                             <!-- زر تعديل المستخدم كاملاً -->
                                             <a href="{% url 'training:user_edit' u.id %}" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="تعديل بيانات المستخدم">
                                                 <i class="bi bi-pencil-fill"></i>
@@ -657,6 +669,209 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================================
+             PANE: مصفوفة الأذونات والصلاحيات الديناميكية المتقدمة
+             ======================================================== -->
+        <div class="tab-pane fade" id="pane-permissions-matrix" role="tabpanel">
+
+            <!-- ترويسة مصفوفة الصلاحيات والأذونات -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);">
+                <div class="card-body p-4 text-white">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-4 d-flex align-items-center justify-content-center shadow" style="width: 56px; height: 56px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25);">
+                                <i class="bi bi-grid-3x3-gap-fill text-warning fs-3"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-1 text-white">مصفوفة الأذونات والصلاحيات الديناميكية المتقدمة</h4>
+                                <p class="text-white-50 mb-0 small">نظام التحكم الدقيق بالوصول والصلاحيات (Granular RBAC) لـ 11 قسماً رئيسياً و 40+ إجراءً تشغيلياً مع التزامن الفوري</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap align-items-center">
+                            <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-2 fw-normal small">
+                                <i class="bi bi-shield-check text-warning me-1"></i> حماية إلكترونية نشطة
+                            </span>
+                            <span class="badge bg-success bg-opacity-25 text-white rounded-pill px-3 py-2 fw-normal small">
+                                <i class="bi bi-arrow-repeat me-1"></i> تزامن تلقائي مع الأدوار
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- بطاقة اختيار المستخدم وشريط التحكم السريع -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-lg-5">
+                            <label class="form-label fw-bold small text-muted mb-1">
+                                <i class="bi bi-person-badge-fill text-primary me-1"></i> اختر حساب المستخدم لضبط مصفوفة صلاحياته:
+                            </label>
+                            <select id="matrixUserSelect" class="form-select form-select-lg rounded-pill border-primary border-opacity-50 shadow-sm fw-bold">
+                                {% for u in users %}
+                                    <option value="{{ u.id }}" 
+                                            data-username="{{ u.username }}" 
+                                            data-role="{{ u.profile.role }}" 
+                                            data-role-display="{{ u.profile.get_role_display }}" 
+                                            data-rank="{{ u.profile.rank|default:'' }}" 
+                                            data-mil="{{ u.profile.military_number|default:'' }}" 
+                                            data-unit="{{ u.profile.unit|default:'' }}"
+                                            data-active="{% if u.is_active %}1{% else %}0{% endif %}"
+                                            {% if selected_matrix_user and selected_matrix_user.id == u.id %}selected{% endif %}>
+                                        {{ u.get_full_name|default:u.username }} (@{{ u.username }}) - {{ u.profile.get_role_display }}
+                                    </option>
+                                {% empty %}
+                                    <option value="">لا يوجد مستخدمون مسجلون</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-lg-7">
+                            <div class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center pt-lg-4">
+                                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold" id="btnMatrixSelectAll">
+                                    <i class="bi bi-check-all me-1"></i> منح الكل
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" id="btnMatrixDeselectAll">
+                                    <i class="bi bi-x-circle me-1"></i> حجب الكل
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-bold" id="btnMatrixResetRole">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> استعادة أذونات الدور القياسية
+                                </button>
+                                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold" id="btnMatrixSave">
+                                    <span class="spinner-border spinner-border-sm me-1 d-none" id="matrixSaveSpinner" role="status"></span>
+                                    <i class="bi bi-floppy-fill me-1" id="matrixSaveIcon"></i>
+                                    <span>حفظ مصفوفة الصلاحيات</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- شريط معلومات الحساب المختار وحالته -->
+                    <div class="mt-3 pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2 small" id="matrixSelectedUserMeta">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold" id="matrixSelectedRoleBadge">
+                                <i class="bi bi-award me-1"></i> <span id="matrixRoleDisplay">--</span>
+                            </span>
+                            <span class="text-muted" id="matrixMilRankInfo">--</span>
+                            <span class="text-muted" id="matrixUnitInfo">--</span>
+                        </div>
+                        <div id="matrixStatusBadge">
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1">حساب نشط</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- بطاقات مؤشرات الأداء الحية (Live Real-time KPI Stats) -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-muted small fw-bold mb-1">الأقسام المدعومة</div>
+                            <div class="fs-4 fw-bold text-dark">11 قسماً</div>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill small mt-1">تغطية تشغيلية كاملة</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-success small fw-bold mb-1"><i class="bi bi-check-circle-fill me-1"></i>الأذونات الممنوحة</div>
+                            <div class="fs-4 fw-bold text-success" id="matrixStatsGranted">0</div>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill small mt-1">سماح بالتشغيل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-danger small fw-bold mb-1"><i class="bi bi-slash-circle-fill me-1"></i>الأذونات المحجوبة</div>
+                            <div class="fs-4 fw-bold text-danger" id="matrixStatsDenied">0</div>
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill small mt-1">حظر تشغيل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-primary small fw-bold mb-1"><i class="bi bi-pie-chart-fill me-1"></i>نسبة الصلاحيات الممنوحة</div>
+                            <div class="fs-4 fw-bold text-primary" id="matrixStatsPercent">0%</div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-primary" id="matrixStatsProgressBar" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شبكة الأقسام الـ 11 والأذونات الدقيقة لكل قسم -->
+            <div class="row g-3" id="matrixModulesContainer">
+                {% for mod_id, mod_info in modules_permissions_catalog.items %}
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden module-perm-card" data-module="{{ mod_id }}">
+                        <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; background: {{ mod_info.badge_bg }}; color: {{ mod_info.badge_color }};">
+                                    <i class="{{ mod_info.icon }} fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark">{{ mod_info.name }}</h6>
+                                    <small class="text-muted">معرف القسم: <code>{{ mod_id }}</code> | عدد العمليات: {{ mod_info.actions|length }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill border px-3 py-1 bg-light text-dark fw-bold mod-counter-badge" id="modCount_{{ mod_id }}">
+                                    0 / {{ mod_info.actions|length }}
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 btn-toggle-module" data-module="{{ mod_id }}" title="تحديد أو إلغاء تحديد كافة عمليات هذا القسم">
+                                    <i class="bi bi-toggles me-1"></i> تبديل القسم
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3 bg-light bg-opacity-25">
+                            <div class="row g-2">
+                                {% for act_id, act_info in mod_info.actions.items %}
+                                <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                                    <div class="card h-100 border rounded-3 p-3 bg-white perm-action-card transition-all" id="permCard_{{ mod_id }}_{{ act_id }}" style="cursor: pointer; transition: all 0.2s ease;">
+                                        <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
+                                            <label class="form-check-label fw-bold small text-dark cursor-pointer pe-2" for="permCheck_{{ mod_id }}_{{ act_id }}" style="user-select: none;">
+                                                {{ act_info.name }}
+                                            </label>
+                                            <input class="form-check-input matrix-checkbox m-0" type="checkbox" id="permCheck_{{ mod_id }}_{{ act_id }}" data-module="{{ mod_id }}" data-action="{{ act_id }}">
+                                        </div>
+                                        <div class="text-muted mt-2" style="font-size: 0.75rem; line-height: 1.4;">
+                                            {{ act_info.description }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- شريط الحفظ العائم السفلي -->
+            <div class="card border-0 shadow-lg rounded-4 mt-4 sticky-bottom p-3 bg-white border border-primary border-opacity-25" style="z-index: 1020;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill text-primary"></i>
+                        <span class="small text-muted">أي تعديلات تجريها على مصفوفة الأذونات تنعكس تلقائياً على وصول المستخدم لأقسام النظام.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="switchToUsersTab()">
+                            إلغاء والعودة لقائمة المستخدمين
+                        </button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnMatrixSaveBottom">
+                            <i class="bi bi-floppy-fill me-1"></i> حفظ مصفوفة الصلاحيات الآن
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -3329,6 +3544,12 @@
                     movTab.show();
                 }
             }
+        } else if (urlParams.get('tab') === 'permissions-matrix' || urlParams.get('matrix_user')) {
+            const matrixTabBtn = document.getElementById('tab-permissions-matrix');
+            if (matrixTabBtn) {
+                const tab = new bootstrap.Tab(matrixTabBtn);
+                tab.show();
+            }
         }
 
         // مزامنة فورية حية لحقول نصوص الشهادة مع المعاينة
@@ -3517,6 +3738,340 @@
             // Initial call if modal is somehow active
             modalUpdateRanks();
         }
+
+        // =====================================================================
+        // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
+        // =====================================================================
+        const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json|safe }};
+        const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json|safe }};
+        const matrixUserSelect = document.getElementById('matrixUserSelect');
+        const matrixSaveBtn = document.getElementById('btnMatrixSave');
+        const matrixSaveBtnBottom = document.getElementById('btnMatrixSaveBottom');
+        const matrixSaveSpinner = document.getElementById('matrixSaveSpinner');
+        const matrixSaveIcon = document.getElementById('matrixSaveIcon');
+
+        function updatePermCardStyle(cb) {
+            const modId = cb.getAttribute('data-module');
+            const actId = cb.getAttribute('data-action');
+            const card = document.getElementById(`permCard_${modId}_${actId}`);
+            if (card) {
+                if (cb.checked) {
+                    card.style.borderColor = '#10b981';
+                    card.style.backgroundColor = '#f0fdf4';
+                } else {
+                    card.style.borderColor = '#e2e8f0';
+                    card.style.backgroundColor = '#ffffff';
+                }
+            }
+        }
+
+        function refreshMatrixCounters() {
+            let totalAvailable = 0;
+            let totalGranted = 0;
+
+            for (const modId in MODULES_PERM_CATALOG) {
+                let modTotal = 0;
+                let modGranted = 0;
+                for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                    totalAvailable++;
+                    modTotal++;
+                    const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                    if (cb && cb.checked) {
+                        totalGranted++;
+                        modGranted++;
+                    }
+                }
+                const modBadge = document.getElementById(`modCount_${modId}`);
+                if (modBadge) {
+                    modBadge.textContent = `${modGranted} / ${modTotal}`;
+                    if (modGranted === modTotal) {
+                        modBadge.className = 'badge rounded-pill border px-3 py-1 bg-success text-white fw-bold mod-counter-badge';
+                    } else if (modGranted > 0) {
+                        modBadge.className = 'badge rounded-pill border px-3 py-1 bg-primary text-white fw-bold mod-counter-badge';
+                    } else {
+                        modBadge.className = 'badge rounded-pill border px-3 py-1 bg-light text-dark fw-bold mod-counter-badge';
+                    }
+                }
+            }
+
+            const totalDenied = totalAvailable - totalGranted;
+            const percent = totalAvailable > 0 ? Math.round((totalGranted / totalAvailable) * 100) : 0;
+
+            const grantedElem = document.getElementById('matrixStatsGranted');
+            const deniedElem = document.getElementById('matrixStatsDenied');
+            const percentElem = document.getElementById('matrixStatsPercent');
+            const progressElem = document.getElementById('matrixStatsProgressBar');
+
+            if (grantedElem) grantedElem.textContent = totalGranted;
+            if (deniedElem) deniedElem.textContent = totalDenied;
+            if (percentElem) percentElem.textContent = `${percent}%`;
+            if (progressElem) {
+                progressElem.style.width = `${percent}%`;
+                if (percent >= 80) {
+                    progressElem.className = 'progress-bar bg-success';
+                } else if (percent >= 40) {
+                    progressElem.className = 'progress-bar bg-primary';
+                } else {
+                    progressElem.className = 'progress-bar bg-warning';
+                }
+            }
+        }
+
+        function applyMatrixData(matrix) {
+            for (const modId in MODULES_PERM_CATALOG) {
+                for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                    const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                    if (cb) {
+                        const isAllowed = Boolean(matrix && matrix[modId] && matrix[modId][actId]);
+                        cb.checked = isAllowed;
+                        updatePermCardStyle(cb);
+                    }
+                }
+            }
+            refreshMatrixCounters();
+        }
+
+        function updateSelectedUserMeta() {
+            if (!matrixUserSelect || !matrixUserSelect.selectedOptions.length) return;
+            const opt = matrixUserSelect.selectedOptions[0];
+            const roleDisplay = opt.getAttribute('data-role-display') || '--';
+            const rank = opt.getAttribute('data-rank') || '';
+            const mil = opt.getAttribute('data-mil') || '';
+            const unit = opt.getAttribute('data-unit') || '';
+            const active = opt.getAttribute('data-active') === '1';
+
+            const roleDisplayElem = document.getElementById('matrixRoleDisplay');
+            const milRankElem = document.getElementById('matrixMilRankInfo');
+            const unitElem = document.getElementById('matrixUnitInfo');
+            const statusElem = document.getElementById('matrixStatusBadge');
+
+            if (roleDisplayElem) roleDisplayElem.textContent = roleDisplay;
+            if (milRankElem) milRankElem.textContent = rank || mil ? `الرتبة/النمرة: ${rank} ${mil}`.trim() : 'المعلومات العسكرية: غير محددة';
+            if (unitElem) unitElem.textContent = unit ? `الوحدة: ${unit}` : '';
+            if (statusElem) {
+                statusElem.innerHTML = active 
+                    ? '<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold">حساب نشط ومفعل</span>'
+                    : '<span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fw-bold">حساب معطل</span>';
+            }
+        }
+
+        function loadUserMatrix(userId) {
+            if (!userId) return;
+            updateSelectedUserMeta();
+            
+            // جلب أذونات المستخدم عبر الـ API
+            fetch(`{% url 'training:api_permissions_matrix' %}?user_id=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.matrix) {
+                        applyMatrixData(data.matrix);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching user permissions matrix:', err);
+                });
+        }
+
+        if (matrixUserSelect) {
+            matrixUserSelect.addEventListener('change', function() {
+                loadUserMatrix(this.value);
+            });
+            // تحميل البيانات الأولية للمستخدم المختار
+            updateSelectedUserMeta();
+            const initialMatrix = {{ selected_matrix_json|safe }};
+            if (initialMatrix && Object.keys(initialMatrix).length > 0) {
+                applyMatrixData(initialMatrix);
+            } else if (matrixUserSelect.value) {
+                loadUserMatrix(matrixUserSelect.value);
+            }
+        }
+
+        // تفاعل البطاقات عند النقر على أي مكان فيها
+        document.querySelectorAll('.matrix-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                updatePermCardStyle(this);
+                refreshMatrixCounters();
+            });
+        });
+
+        document.querySelectorAll('.perm-action-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') {
+                    return;
+                }
+                const cb = this.querySelector('.matrix-checkbox');
+                if (cb) {
+                    cb.checked = !cb.checked;
+                    updatePermCardStyle(cb);
+                    refreshMatrixCounters();
+                }
+            });
+        });
+
+        // زر تبديل قسم محدد بالكامل
+        document.querySelectorAll('.btn-toggle-module').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const modId = this.getAttribute('data-module');
+                const checkboxes = document.querySelectorAll(`.matrix-checkbox[data-module="${modId}"]`);
+                if (!checkboxes.length) return;
+                const allChecked = Array.from(checkboxes).every(c => c.checked);
+                checkboxes.forEach(c => {
+                    c.checked = !allChecked;
+                    updatePermCardStyle(c);
+                });
+                refreshMatrixCounters();
+            });
+        });
+
+        // زر تحديد الكل لكافة الأقسام
+        const btnSelectAll = document.getElementById('btnMatrixSelectAll');
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', function() {
+                document.querySelectorAll('.matrix-checkbox').forEach(c => {
+                    c.checked = true;
+                    updatePermCardStyle(c);
+                });
+                refreshMatrixCounters();
+            });
+        }
+
+        // زر حجب الكل لكافة الأقسام
+        const btnDeselectAll = document.getElementById('btnMatrixDeselectAll');
+        if (btnDeselectAll) {
+            btnDeselectAll.addEventListener('click', function() {
+                document.querySelectorAll('.matrix-checkbox').forEach(c => {
+                    c.checked = false;
+                    updatePermCardStyle(c);
+                });
+                refreshMatrixCounters();
+            });
+        }
+
+        // زر استعادة إعدادات الدور الافتراضية
+        const btnResetRole = document.getElementById('btnMatrixResetRole');
+        if (btnResetRole) {
+            btnResetRole.addEventListener('click', function() {
+                if (!matrixUserSelect || !matrixUserSelect.selectedOptions.length) return;
+                const opt = matrixUserSelect.selectedOptions[0];
+                const role = opt.getAttribute('data-role');
+                if (!role || !ROLE_DEFAULT_PERMISSIONS[role]) {
+                    alert('لم يتم العثور على أذونات افتراضية لهذا الدور.');
+                    return;
+                }
+                if (confirm(`هل أنت متأكد من استعادة الأذونات الافتراضية المخصصة لدور (${opt.getAttribute('data-role-display')})؟`)) {
+                    applyMatrixData(ROLE_DEFAULT_PERMISSIONS[role]);
+                }
+            });
+        }
+
+        // حفظ المصفوفة عبر AJAX
+        function saveMatrixAction() {
+            if (!matrixUserSelect || !matrixUserSelect.value) {
+                alert('يرجى اختيار مستخدم أولاً.');
+                return;
+            }
+            const userId = matrixUserSelect.value;
+            const matrixPayload = {};
+            for (const modId in MODULES_PERM_CATALOG) {
+                matrixPayload[modId] = {};
+                for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                    const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                    matrixPayload[modId][actId] = cb ? Boolean(cb.checked) : false;
+                }
+            }
+
+            if (matrixSaveSpinner) matrixSaveSpinner.classList.remove('d-none');
+            if (matrixSaveIcon) matrixSaveIcon.classList.add('d-none');
+            if (matrixSaveBtn) matrixSaveBtn.disabled = true;
+            if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = true;
+
+            const saveUrl = `{% url 'training:user_update_permissions_matrix' 0 %}`.replace('/0/', `/${userId}/`);
+
+            fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ permissions_matrix: matrixPayload })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (matrixSaveSpinner) matrixSaveSpinner.classList.add('d-none');
+                if (matrixSaveIcon) matrixSaveIcon.classList.remove('d-none');
+                if (matrixSaveBtn) matrixSaveBtn.disabled = false;
+                if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = false;
+
+                if (data.status === 'success') {
+                    // إشعار نجاح عائم
+                    const toastDiv = document.createElement('div');
+                    toastDiv.className = 'alert alert-success shadow-lg border-0 rounded-4 position-fixed bottom-0 end-0 m-4 p-3 d-flex align-items-center gap-3';
+                    toastDiv.style.zIndex = '9999';
+                    toastDiv.innerHTML = `
+                        <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+                        <div>
+                            <div class="fw-bold">${data.message}</div>
+                            <div class="small text-muted">تم تحديث صلاحيات الحساب ومزامنة أذونات النظام بنجاح.</div>
+                        </div>
+                    `;
+                    document.body.appendChild(toastDiv);
+                    setTimeout(() => {
+                        toastDiv.remove();
+                    }, 4000);
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء حفظ مصفوفة الصلاحيات.');
+                }
+            })
+            .catch(err => {
+                if (matrixSaveSpinner) matrixSaveSpinner.classList.add('d-none');
+                if (matrixSaveIcon) matrixSaveIcon.classList.remove('d-none');
+                if (matrixSaveBtn) matrixSaveBtn.disabled = false;
+                if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = false;
+                console.error('Error saving permissions matrix:', err);
+                alert('تعذر الاتصال بالخادم لحفظ مصفوفة الصلاحيات.');
+            });
+        }
+
+        if (matrixSaveBtn) {
+            matrixSaveBtn.addEventListener('click', saveMatrixAction);
+        }
+        if (matrixSaveBtnBottom) {
+            matrixSaveBtnBottom.addEventListener('click', saveMatrixAction);
+        }
     });
+
+    // دوال التنقل المباشر
+    function openUserPermissionsMatrix(userId) {
+        const matrixTabBtn = document.getElementById('tab-permissions-matrix');
+        if (matrixTabBtn) {
+            const tab = new bootstrap.Tab(matrixTabBtn);
+            tab.show();
+        }
+        const sel = document.getElementById('matrixUserSelect');
+        if (sel) {
+            sel.value = userId;
+            sel.dispatchEvent(new Event('change'));
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchToPermissionsMatrixTab() {
+        const btn = document.getElementById('tab-permissions-matrix');
+        if (btn) {
+            const tab = new bootstrap.Tab(btn);
+            tab.show();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function switchToUsersTab() {
+        const btn = document.getElementById('tab-users');
+        if (btn) {
+            const tab = new bootstrap.Tab(btn);
+            tab.show();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
 </script>
 {% endblock %}

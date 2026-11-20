@@ -19,7 +19,10 @@ from apps.core.permissions import (
     is_super_admin_user, super_admin_required,
     is_admin_user, admin_access_required, admin_required,
     is_registrar_user, registrar_required,
-    is_supervisor_user, is_instructor_user, get_user_instructor
+    is_supervisor_user, is_instructor_user, get_user_instructor,
+    MODULES_PERMISSIONS_CATALOG, DEFAULT_ROLE_PERMISSIONS,
+    get_default_permissions_for_role, get_user_permissions_matrix,
+    has_permission, check_perm
 )
 from training.models import (
     Institute, Instructor, SessionSubjectInstructor,
@@ -421,6 +424,13 @@ def admin_dashboard_view(request):
         'activity_date': activity_date,
         'activity_q': activity_q,
         'activity_users_list': activity_users_list,
+        # مصفوفة الأذونات والصلاحيات الديناميكية
+        'modules_permissions_catalog': MODULES_PERMISSIONS_CATALOG,
+        'modules_permissions_catalog_json': json.dumps(MODULES_PERMISSIONS_CATALOG),
+        'default_role_permissions_json': json.dumps(DEFAULT_ROLE_PERMISSIONS),
+        'selected_matrix_user': (users.filter(id=request.GET.get('matrix_user') or request.GET.get('user_id')).first() if (request.GET.get('matrix_user') or request.GET.get('user_id')) else users.first()) if users.exists() else None,
+        'selected_matrix': get_user_permissions_matrix((users.filter(id=request.GET.get('matrix_user') or request.GET.get('user_id')).first() if (request.GET.get('matrix_user') or request.GET.get('user_id')) else users.first())) if users.exists() else {},
+        'selected_matrix_json': json.dumps(get_user_permissions_matrix((users.filter(id=request.GET.get('matrix_user') or request.GET.get('user_id')).first() if (request.GET.get('matrix_user') or request.GET.get('user_id')) else users.first()))) if users.exists() else '{}',
     }
     return render(request, 'admin_portal/dashboard.html', context)
 
@@ -485,6 +495,26 @@ def user_create_view(request):
 
             if request.institute:
                 profile.institute = request.institute
+
+            # تحديث مصفوفة الأذونات والصلاحيات إن تم إرسالها
+            matrix_raw = request.POST.get('permissions_matrix') or request.POST.get('permissions_matrix_json')
+            if matrix_raw:
+                try:
+                    matrix_data = json.loads(matrix_raw)
+                    if isinstance(matrix_data, dict):
+                        clean_matrix = {}
+                        for mod_id, mod_info in MODULES_PERMISSIONS_CATALOG.items():
+                            clean_matrix[mod_id] = {}
+                            mod_input = matrix_data.get(mod_id, {})
+                            if isinstance(mod_input, dict):
+                                for act_id in mod_info['actions']:
+                                    clean_matrix[mod_id][act_id] = bool(mod_input.get(act_id, False))
+                        profile.permissions_matrix = clean_matrix
+                except Exception:
+                    pass
+            elif role != UserRole.CUSTOM and not profile.permissions_matrix:
+                profile.permissions_matrix = get_default_permissions_for_role(role)
+
             profile.save()
 
             log_activity(
@@ -563,6 +593,26 @@ def user_edit_view(request, user_id):
 
             if request.institute:
                 profile.institute = request.institute
+
+            # تحديث مصفوفة الأذونات والصلاحيات إن تم إرسالها
+            matrix_raw = request.POST.get('permissions_matrix') or request.POST.get('permissions_matrix_json')
+            if matrix_raw:
+                try:
+                    matrix_data = json.loads(matrix_raw)
+                    if isinstance(matrix_data, dict):
+                        clean_matrix = {}
+                        for mod_id, mod_info in MODULES_PERMISSIONS_CATALOG.items():
+                            clean_matrix[mod_id] = {}
+                            mod_input = matrix_data.get(mod_id, {})
+                            if isinstance(mod_input, dict):
+                                for act_id in mod_info['actions']:
+                                    clean_matrix[mod_id][act_id] = bool(mod_input.get(act_id, False))
+                        profile.permissions_matrix = clean_matrix
+                except Exception:
+                    pass
+            elif role != UserRole.CUSTOM and not profile.permissions_matrix:
+                profile.permissions_matrix = get_default_permissions_for_role(role)
+
             profile.save()
 
             log_activity(
@@ -604,6 +654,11 @@ def user_edit_view(request, user_id):
         'target_user': target_user,
         'profile': profile,
         'instructors': instructors,
+        'modules_permissions_catalog': MODULES_PERMISSIONS_CATALOG,
+        'modules_permissions_catalog_json': json.dumps(MODULES_PERMISSIONS_CATALOG),
+        'user_matrix': get_user_permissions_matrix(target_user),
+        'user_matrix_json': json.dumps(get_user_permissions_matrix(target_user)),
+        'default_role_permissions_json': json.dumps(DEFAULT_ROLE_PERMISSIONS),
     })
 
 
@@ -738,6 +793,140 @@ def user_update_role_view(request, user_id):
     )
     messages.success(request, f'تم حفظ وتطبيق أذونات وصلاحيات المستخدم "{target_user.username}" بنجاح.')
     return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
+
+
+@admin_access_required
+def user_update_permissions_matrix_view(request, user_id):
+    """تحديث مصفوفة الصلاحيات والأذونات الديناميكية لمستخدم محدد (عبر AJAX أو نموذج عادي)"""
+    target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+    profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
+
+    if not is_super_admin_user(request.user):
+        if hasattr(request, 'institute') and request.institute and profile.institute:
+            if profile.institute != request.institute:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                    return JsonResponse({'status': 'error', 'message': 'لا يمكنك تعديل صلاحيات مستخدم في معهد آخر.'}, status=403)
+                messages.error(request, 'لا يمكنك تعديل صلاحيات مستخدم في معهد آخر.')
+                return redirect(f"{reverse('training:admin_dashboard')}?tab=permissions-matrix")
+
+    if request.method == 'POST':
+        reset_to_role = request.POST.get('reset_to_role') == 'true'
+        role = request.POST.get('role')
+        if role and role in dict(UserRole.choices):
+            profile.role = role
+
+        if reset_to_role:
+            profile.permissions_matrix = get_default_permissions_for_role(profile.role)
+        else:
+            matrix_data = None
+            if request.content_type == 'application/json':
+                try:
+                    body = json.loads(request.body)
+                    matrix_data = body.get('permissions_matrix', body)
+                    if 'role' in body and body['role'] in dict(UserRole.choices):
+                        profile.role = body['role']
+                except Exception:
+                    pass
+            elif 'permissions_matrix' in request.POST:
+                try:
+                    matrix_data = json.loads(request.POST['permissions_matrix'])
+                except Exception:
+                    pass
+            elif 'permissions_matrix_json' in request.POST:
+                try:
+                    matrix_data = json.loads(request.POST['permissions_matrix_json'])
+                except Exception:
+                    pass
+            else:
+                matrix_data = {}
+                for mod_id, mod_info in MODULES_PERMISSIONS_CATALOG.items():
+                    matrix_data[mod_id] = {}
+                    for act_id in mod_info['actions']:
+                        key = f"perm_{mod_id}_{act_id}"
+                        matrix_data[mod_id][act_id] = bool(request.POST.get(key) in ['on', 'true', '1'])
+
+            if matrix_data and isinstance(matrix_data, dict):
+                clean_matrix = {}
+                for mod_id, mod_info in MODULES_PERMISSIONS_CATALOG.items():
+                    clean_matrix[mod_id] = {}
+                    mod_input = matrix_data.get(mod_id, {})
+                    if isinstance(mod_input, dict):
+                        for act_id in mod_info['actions']:
+                            clean_matrix[mod_id][act_id] = bool(mod_input.get(act_id, False))
+                    else:
+                        for act_id in mod_info['actions']:
+                            clean_matrix[mod_id][act_id] = False
+                profile.permissions_matrix = clean_matrix
+
+        profile.sync_legacy_booleans_from_matrix()
+        if request.institute and not profile.institute:
+            profile.institute = request.institute
+        profile.save()
+
+        # Update user is_staff if can_manage_users
+        if profile.can_manage_users or profile.role == UserRole.ADMIN:
+            target_user.is_staff = True
+        elif target_user.id != request.user.id and not target_user.is_superuser:
+            target_user.is_staff = False
+        target_user.save()
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.USERS,
+            description=f"تحديث مصفوفة الصلاحيات والأذونات الديناميكية للمستخدم: {target_user.username}",
+            target_model="UserProfile",
+            target_id=profile.id
+        )
+
+        msg = f'تم حفظ وتحديث مصفوفة الأذونات للمستخدم "{target_user.username}" بنجاح.'
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({
+                'status': 'success',
+                'message': msg,
+                'role': profile.role,
+                'role_display': profile.get_role_display(),
+                'permissions_matrix': profile.get_effective_permissions()
+            })
+
+        messages.success(request, msg)
+        return redirect(f"{reverse('training:admin_dashboard')}?tab=permissions-matrix&matrix_user={target_user.id}")
+
+    return redirect(f"{reverse('training:admin_dashboard')}?tab=permissions-matrix")
+
+
+@admin_access_required
+def api_get_permissions_matrix_view(request):
+    """API لجلب مصفوفة الصلاحيات لمستخدم أو لدور محدد أو الدليل الكامل"""
+    user_id = request.GET.get('user_id')
+    role = request.GET.get('role')
+
+    if user_id:
+        target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+        matrix = get_user_permissions_matrix(target_user)
+        user_role = target_user.profile.role if hasattr(target_user, 'profile') else UserRole.REGULAR
+        role_display = target_user.profile.get_role_display() if hasattr(target_user, 'profile') else 'مستخدم عادي'
+        return JsonResponse({
+            'status': 'success',
+            'user_id': target_user.id,
+            'username': target_user.username,
+            'role': user_role,
+            'role_display': role_display,
+            'matrix': matrix
+        })
+    elif role:
+        matrix = get_default_permissions_for_role(role)
+        return JsonResponse({
+            'status': 'success',
+            'role': role,
+            'matrix': matrix
+        })
+
+    return JsonResponse({
+        'status': 'success',
+        'catalog': MODULES_PERMISSIONS_CATALOG,
+        'role_defaults': DEFAULT_ROLE_PERMISSIONS
+    })
 
 
 # =====================================================================

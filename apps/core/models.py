@@ -259,6 +259,13 @@ class UserProfile(models.Model):
         verbose_name='اعتماد النتائج (Approve Results)'
     )
 
+    # مصفوفة الأذونات والصلاحيات الديناميكية الشاملة (Dynamic Permissions Matrix)
+    permissions_matrix = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='مصفوفة الأذونات والصلاحيات الديناميكية'
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='تاريخ الإضافة'
@@ -272,8 +279,48 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
 
+    def get_effective_permissions(self):
+        """إرجاع مصفوفة الصلاحيات الفعلية الكاملة للمستخدم"""
+        from apps.core.permissions import get_user_permissions_matrix
+        if hasattr(self, 'user') and self.user:
+            self.user.profile = self
+        return get_user_permissions_matrix(self.user)
+
+    def has_perm(self, module, action):
+        """التحقق من امتلاك المستخدم لصلاحية محددة في مصفوفة الصلاحيات الديناميكية"""
+        from apps.core.permissions import has_permission
+        if hasattr(self, 'user') and self.user:
+            self.user.profile = self
+        return has_permission(self.user, module, action)
+
+    def sync_legacy_booleans_from_matrix(self):
+        """مزامنة الحقول البولينية القديمة من مصفوفة الصلاحيات لضمان التوافقية الكاملة"""
+        matrix = self.get_effective_permissions()
+        trainees = matrix.get('trainees', {})
+        courses = matrix.get('courses', {})
+        grades = matrix.get('grades', {})
+        users = matrix.get('users', {})
+        settings = matrix.get('settings', {})
+
+        self.can_manage_users = bool(
+            self.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or
+            (self.user and (self.user.is_superuser or self.user.is_staff)) or
+            users.get('permissions') or
+            settings.get('edit')
+        )
+        self.can_view = bool(self.can_manage_users or trainees.get('view') or courses.get('view'))
+        self.can_add = bool(self.can_manage_users or trainees.get('add') or courses.get('add'))
+        self.can_edit = bool(self.can_manage_users or trainees.get('edit') or courses.get('edit'))
+        self.can_delete = bool(self.can_manage_users or trainees.get('delete') or courses.get('delete'))
+        self.can_grade = bool(self.can_manage_users or grades.get('entry'))
+        self.can_approve_results = bool(self.can_manage_users or grades.get('approve'))
+
     def sync_permissions_from_role(self):
         """مزامنة خانات الاختيار للأذونات تلقائياً بناءً على الدور المختار"""
+        from apps.core.permissions import get_default_permissions_for_role
+        if self.role != UserRole.CUSTOM or not self.permissions_matrix:
+            self.permissions_matrix = get_default_permissions_for_role(self.role)
+
         if self.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or (self.user and (self.user.is_superuser or self.user.is_staff)):
             self.can_manage_users = True
             self.can_view = True
@@ -314,6 +361,8 @@ class UserProfile(models.Model):
             self.can_delete = False
             self.can_grade = False
             self.can_approve_results = False
+        elif self.role == UserRole.CUSTOM:
+            self.sync_legacy_booleans_from_matrix()
 
     @property
     def is_super_admin(self):
