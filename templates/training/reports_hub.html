@@ -869,7 +869,7 @@
                                             <i class="bi bi-file-earmark-person"></i> أمر التحرك
                                         </a>
                                     {% elif row.percentage_num and row.percentage_num >= 50 %}
-                                        <a href="{% url 'training:certificate' row.id %}" class="btn btn-sm btn-outline-warning fw-bold py-1 px-2 text-dark" title="استعراض الشهادة" target="_blank">
+                                        <a href="{% url 'training:certificate_detailed' row.id %}" class="btn btn-sm btn-outline-warning fw-bold py-1 px-2 text-dark" title="استعراض شهادة التفاصيل" target="_blank">
                                             <i class="bi bi-award-fill text-warning"></i> الشهادة
                                         </a>
                                         <a href="{% url 'training:movement_order' row.id %}" class="btn btn-sm btn-outline-secondary fw-bold py-1 px-2" title="أمر التحرك بعد التخرج" target="_blank">

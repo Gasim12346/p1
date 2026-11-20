@@ -3179,6 +3179,19 @@ class CourseSubjectsAndInstructorsReportTests(TestCase):
         self.assertIn('مقدمة الحاسوب ونظم التشغيل', content)
         self.assertIn('أحمد البشير محمد', content)
 
+    def test_reports_hub_renders_detailed_certificate_link(self):
+        """التحقق من أن زر الشهادة في شاشة التقارير يفتح شهادة التفاصيل وليس الشهادة التقديرية"""
+        self.en1.calculate_results()
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:reports_hub'), {
+            'report_type': 'trainees',
+            'session_id': str(self.session.id),
+            'all_dates': '1'
+        })
+        self.assertEqual(res.status_code, 200)
+        detailed_url = reverse('training:certificate_detailed', kwargs={'enrollment_id': self.en1.id})
+        self.assertContains(res, detailed_url)
+
     def test_admin_report_print_subjects_section(self):
         """التحقق من طباعة قسم رابعاً: بيان المواد الدراسية وهيئة التدريس في نموذج الطباعة المعتمد"""
         self.client.force_login(self.admin)
