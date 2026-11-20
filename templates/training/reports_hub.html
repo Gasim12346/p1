@@ -435,7 +435,7 @@
                     <select name="session_id" id="filter_session" class="form-select form-select-sm searchable-select" onchange="onSessionChange()">
                         <option value="">-- كافة الدفعات --</option>
                         {% for s in sessions %}
-                            <option value="{{ s.id }}" data-course="{{ s.course_id }}" data-category="{{ s.course.category_id }}" data-target-category="{{ s.target_category }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} (الدفعة {{ s.session_code }}{% if s.get_target_category_display %} - {{ s.get_target_category_display }}{% endif %}) - {% if s.status == 'completed' %}معتمدة ومحفوظة{% else %}منعقدة{% endif %}</option>
+                            <option value="{{ s.id }}" data-course="{{ s.course_id }}" data-category="{{ s.course.category_id }}" data-target-category="{{ s.target_category }}" data-status="{{ s.status }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} (الدفعة {{ s.session_code }}{% if s.get_target_category_display %} - {{ s.get_target_category_display }}{% endif %}) - {% if s.status == 'completed' %}معتمدة ومحفوظة{% else %}منعقدة{% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -445,7 +445,7 @@
                     <label class="form-label small text-dark fw-bold mb-1">
                         <i class="bi bi-shield-check text-success me-1"></i>حالة الدورة:
                     </label>
-                    <select name="session_status" id="filter_session_status" class="form-select form-select-sm border-success fw-semibold searchable-select">
+                    <select name="session_status" id="filter_session_status" class="form-select form-select-sm border-success fw-semibold searchable-select" onchange="onSessionStatusChange()">
                         <option value="completed" {% if report_data.session_status == 'completed' or not report_data.session_status %}selected{% endif %}>الدورات المعتمدة والمحفوظة</option>
                         <option value="active" {% if report_data.session_status == 'active' %}selected{% endif %}>الدورات المنعقدة (الجارية حالياً)</option>
                         <option value="all" {% if report_data.session_status == 'all' %}selected{% endif %}>كافة الدورات (المعتمدة والمنعقدة)</option>
@@ -1038,17 +1038,28 @@
         }
     }
 
-    // دالة مساعدة لتحديث خيارات الدفعات بناءً على الدورة أو التصنيف أو تصنيف الدارس
+    // 4-ب. الربط الديناميكي: حالة الدورة -> فلترة أرقام الدفعات بحسب الحالة المعتمدة أو المنعقدة
+    function onSessionStatusChange() {
+        updateSessionOptions();
+        const sessionSelect = document.getElementById('filter_session');
+        if (sessionSelect && sessionSelect._refreshSearchable) {
+            sessionSelect._refreshSearchable();
+        }
+    }
+
+    // دالة مساعدة لتحديث خيارات الدفعات بناءً على الدورة أو التصنيف أو تصنيف الدارس أو حالة الدورة
     function updateSessionOptions() {
         const catSelect = document.getElementById('filter_category');
         const courseSelect = document.getElementById('filter_course');
         const traineeCatSelect = document.getElementById('filter_trainee_category');
+        const sessionStatusSelect = document.getElementById('filter_session_status');
         const sessionSelect = document.getElementById('filter_session');
         if (!sessionSelect) return;
 
         const selectedCourseId = courseSelect ? courseSelect.value : '';
         const selectedCatId = catSelect ? catSelect.value : '';
         const selectedTraineeCat = traineeCatSelect ? traineeCatSelect.value : '';
+        const selectedStatus = sessionStatusSelect ? sessionStatusSelect.value : 'completed';
         const currentSessionId = sessionSelect.value;
 
         let filteredSessions = SESSIONS_DATA;
@@ -1065,6 +1076,18 @@
             });
         }
 
+        // فلترة رقم الدفعة بحسب حالة الدورة (معتمدة ومحفوظة / جارية منعقدة / كافة الدورات)
+        if (selectedStatus && selectedStatus !== 'all') {
+            filteredSessions = filteredSessions.filter(s => {
+                if (selectedStatus === 'completed') {
+                    return s.status === 'completed';
+                } else if (selectedStatus === 'active') {
+                    return s.status === 'active' || s.status === 'planned';
+                }
+                return s.status === selectedStatus;
+            });
+        }
+
         sessionSelect.innerHTML = '<option value="">-- كافة الدفعات --</option>';
         let sessionStillValid = false;
         filteredSessions.forEach(s => {
@@ -1074,6 +1097,7 @@
             opt.setAttribute('data-course', s.course_id);
             opt.setAttribute('data-category', s.category_id);
             opt.setAttribute('data-target-category', s.target_category || '');
+            opt.setAttribute('data-status', s.status || '');
             if (String(s.id) === String(currentSessionId)) {
                 opt.selected = true;
                 sessionStillValid = true;
@@ -1086,11 +1110,12 @@
         }
     }
 
-    // 5. مزامنة الدفعة المنعقدة -> تحديد الدورة والتصنيف وتصنيف الدارس تلقائياً
+    // 5. مزامنة الدفعة المنعقدة -> تحديد الدورة والتصنيف وتصنيف الدارس وحالة الدورة تلقائياً
     function onSessionChange() {
         const catSelect = document.getElementById('filter_category');
         const courseSelect = document.getElementById('filter_course');
         const traineeCatSelect = document.getElementById('filter_trainee_category');
+        const sessionStatusSelect = document.getElementById('filter_session_status');
         const sessionSelect = document.getElementById('filter_session');
         if (!sessionSelect) return;
 
@@ -1101,6 +1126,7 @@
                 let catChanged = false;
                 let courseChanged = false;
                 let traineeCatChanged = false;
+                let statusChanged = false;
 
                 if (catSelect && sessionObj.category_id && String(catSelect.value) !== String(sessionObj.category_id)) {
                     catSelect.value = sessionObj.category_id;
@@ -1129,9 +1155,20 @@
                     }
                 }
 
+                if (sessionStatusSelect && sessionObj.status) {
+                    if (sessionObj.status === 'completed' && sessionStatusSelect.value === 'active') {
+                        sessionStatusSelect.value = 'completed';
+                        statusChanged = true;
+                    } else if ((sessionObj.status === 'active' || sessionObj.status === 'planned') && sessionStatusSelect.value === 'completed') {
+                        sessionStatusSelect.value = 'active';
+                        statusChanged = true;
+                    }
+                }
+
                 if (catChanged && catSelect._refreshSearchable) catSelect._refreshSearchable();
                 if (courseChanged && courseSelect._refreshSearchable) courseSelect._refreshSearchable();
                 if (traineeCatChanged && traineeCatSelect._refreshSearchable) traineeCatSelect._refreshSearchable();
+                if (statusChanged && sessionStatusSelect._refreshSearchable) sessionStatusSelect._refreshSearchable();
             }
         }
     }
@@ -1375,6 +1412,8 @@
             onCourseChange();
         } else if (traineeCatSelect && traineeCatSelect.value) {
             onTraineeCategoryChange();
+        } else {
+            updateSessionOptions();
         }
 
         // تفعيل محرك البحث الداخلي على كافة القوائم المنسدلة

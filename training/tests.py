@@ -3051,6 +3051,15 @@ class ComprehensiveReportsAndExcelTests(TestCase):
         new_trainee = Trainee.objects.create(military_number='12345678', name='دارس تجريبي جديد')
         self.assertEqual(new_trainee.rank, '')
 
+    def test_reports_hub_session_status_batch_linkage(self):
+        """التحقق من ربط حالة الدورة برقم الدفعة وتمرير بيانات الحالة data-status في شاشة التقارير"""
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('training:reports_hub'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'onSessionStatusChange()')
+        self.assertContains(res, 'id="filter_session_status"')
+        self.assertContains(res, 'data-status="completed"')
+
 
 class CourseSubjectsAndInstructorsReportTests(TestCase):
     """حزمة اختبارات شاملة لبيان المواد الدراسية وهيئة التدريس ومعدلات النجاح بالتقارير"""
