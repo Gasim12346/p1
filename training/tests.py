@@ -2940,15 +2940,32 @@ class ComprehensiveReportsAndExcelTests(TestCase):
 
         sessions_data = json.loads(res.context['sessions_json'])
         self.assertTrue(any(s['course_id'] == self.course.id for s in sessions_data))
+        self.assertTrue(any('target_category' in s for s in sessions_data))
 
-        # 4. التحقق من اشتمال القالب على فئات البحث المنسدل
+        # 4. التحقق من اشتمال القالب على فئات البحث المنسدل وترتيب الحقول والربط
         content = res.content.decode('utf-8')
         self.assertIn('searchable-select', content)
         self.assertIn('filter_category', content)
         self.assertIn('filter_course', content)
+        self.assertIn('filter_trainee_category', content)
         self.assertIn('filter_session', content)
+        self.assertIn('onTraineeCategoryChange()', content)
+        self.assertIn('رقم دفعة الدورة', content)
         self.assertIn('filter_force', content)
         self.assertIn('filter_unit', content)
+
+    def test_reports_hub_session_filter_by_trainee_category(self):
+        """التحقق من فلترة تقارير الدارسين والدفعات وفق تصنيف الدارس (ضباط أو ضباط صف)"""
+        self.client.force_login(self.admin)
+        res_officer = self.client.get(reverse('training:reports_hub'), {
+            'report_type': 'trainees',
+            'trainee_category': 'officer',
+            'all_dates': '1'
+        })
+        self.assertEqual(res_officer.status_code, 200)
+        # التحقق من أن سجلات الضباط فقط هي المعروضة
+        for rec in res_officer.context['report_data']['records']:
+            self.assertEqual(rec['category_label'], 'ضباط')
 
     def test_admin_report_print_official_layout(self):
         """التحقق من مطابقة تقرير الطباعة الرسمي للتصميم العسكري المعتمد وتطبيق الفلاتر"""

@@ -257,7 +257,7 @@ def get_report_data(params, institute=None):
 
     if trainee_category:
         cat_map = {'officer': 'ضباط', 'nco': 'ضباط صف', 'civilian': 'مدنيين'}
-        filter_desc_items.append(f"الفئة: {cat_map.get(trainee_category, trainee_category)}")
+        filter_desc_items.append(f"تصنيف الدارس: {cat_map.get(trainee_category, trainee_category)}")
 
     if status and status != 'all':
         status_map = {
@@ -303,6 +303,10 @@ def get_report_data(params, institute=None):
         sessions_filter_qs = sessions_filter_qs.filter(course__category_id=category_id)
     if course_id:
         sessions_filter_qs = sessions_filter_qs.filter(course_id=course_id)
+    if trainee_category:
+        sessions_filter_qs = sessions_filter_qs.filter(
+            Q(target_category=trainee_category) | Q(target_category='joint') | Q(enrollments__trainee__category=trainee_category)
+        ).distinct()
     if session_id:
         filtered_by_session = sessions_filter_qs.filter(id=session_id)
         if filtered_by_session.exists():
@@ -600,6 +604,10 @@ def get_report_data(params, institute=None):
             qs = qs.filter(course__category_id=category_id)
         if course_id:
             qs = qs.filter(course_id=course_id)
+        if trainee_category:
+            qs = qs.filter(
+                Q(target_category=trainee_category) | Q(target_category='joint') | Q(enrollments__trainee__category=trainee_category)
+            ).distinct()
         if session_id:
             qs = qs.filter(id=session_id)
         if instructor_id:

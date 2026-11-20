@@ -395,7 +395,7 @@
 
                 <hr class="my-2 border-slate-200">
 
-                <!-- 3. Course Dimensions -->
+                <!-- 3. Course & Trainee Dimensions -->
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">تصنيف الدورة:</label>
                     <select name="category_id" id="filter_category" class="form-select form-select-sm searchable-select" onchange="onCategoryChange()">
@@ -417,16 +417,30 @@
                 </div>
 
                 <div class="col-6 col-md-4 col-lg-3">
-                    <label class="form-label small text-muted mb-1">الدفعة المنعقدة:</label>
-                    <select name="session_id" id="filter_session" class="form-select form-select-sm searchable-select" onchange="onSessionChange()">
-                        <option value="">-- كافة الدفعات --</option>
-                        {% for s in sessions %}
-                            <option value="{{ s.id }}" data-course="{{ s.course_id }}" data-category="{{ s.course.category_id }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} ({{ s.session_code }}) - {% if s.status == 'completed' %}معتمدة ومحفوظة{% else %}منعقدة{% endif %}</option>
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-people-fill text-primary me-1"></i>تصنيف الدارس:
+                    </label>
+                    <select name="trainee_category" id="filter_trainee_category" class="form-select form-select-sm searchable-select" onchange="onTraineeCategoryChange()">
+                        <option value="">-- كافة الدارسين --</option>
+                        {% for c_code, c_name in trainee_categories %}
+                            <option value="{{ c_code }}" {% if current_filters.trainee_category == c_code %}selected{% endif %}>{{ c_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- حقل حالة الدورة: معتمدة ومحفوظة، أو منعقدة حالياً، أو الكل -->
+                <div class="col-6 col-md-4 col-lg-3">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-collection-fill text-primary me-1"></i>رقم دفعة الدورة:
+                    </label>
+                    <select name="session_id" id="filter_session" class="form-select form-select-sm searchable-select" onchange="onSessionChange()">
+                        <option value="">-- كافة الدفعات --</option>
+                        {% for s in sessions %}
+                            <option value="{{ s.id }}" data-course="{{ s.course_id }}" data-category="{{ s.course.category_id }}" data-target-category="{{ s.target_category }}" {% if current_filters.session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.course.name }} (الدفعة {{ s.session_code }}{% if s.get_target_category_display %} - {{ s.get_target_category_display }}{% endif %}) - {% if s.status == 'completed' %}معتمدة ومحفوظة{% else %}منعقدة{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 4. Military Unit, Forces & Session Status -->
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-dark fw-bold mb-1">
                         <i class="bi bi-shield-check text-success me-1"></i>حالة الدورة:
@@ -438,7 +452,7 @@
                     </select>
                 </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small text-muted mb-1">القوة العسكرية:</label>
                     <select name="force" id="filter_force" class="form-select form-select-sm searchable-select" onchange="onForceChange()">
                         <option value="">-- كافة القوى --</option>
@@ -448,7 +462,6 @@
                     </select>
                 </div>
 
-                <!-- 4. Military Unit & Trainee Dimensions -->
                 <div class="col-6 col-md-4 col-lg-3">
                     <label class="form-label small text-muted mb-1">الوحدة العسكرية:</label>
                     <select name="unit" id="filter_unit" class="form-select form-select-sm searchable-select">
@@ -459,17 +472,7 @@
                     </select>
                 </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
-                    <label class="form-label small text-muted mb-1">فئة الدارس:</label>
-                    <select name="trainee_category" id="filter_trainee_category" class="form-select form-select-sm searchable-select">
-                        <option value="">-- كافة الفئات --</option>
-                        {% for c_code, c_name in trainee_categories %}
-                            <option value="{{ c_code }}" {% if current_filters.trainee_category == c_code %}selected{% endif %}>{{ c_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small text-muted mb-1">حالة النتيجة:</label>
                     <select name="status" id="filter_status" class="form-select form-select-sm searchable-select">
                         <option value="all" {% if current_filters.status == 'all' or not current_filters.status %}selected{% endif %}>-- كافة الحالات --</option>
@@ -480,7 +483,7 @@
                     </select>
                 </div>
 
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small text-muted mb-1">المعلم / المشرف:</label>
                     <select name="instructor_id" id="filter_instructor" class="form-select form-select-sm searchable-select">
                         <option value="">-- كافة المعلمين --</option>
@@ -1026,15 +1029,26 @@
         if (sessionSelect._refreshSearchable) sessionSelect._refreshSearchable();
     }
 
-    // دالة مساعدة لتحديث خيارات الدفعات بناءً على الدورة أو التصنيف
+    // 4. الربط الديناميكي: تصنيف الدارس -> فلترة أرقام الدفعات الخاصة به
+    function onTraineeCategoryChange() {
+        updateSessionOptions();
+        const sessionSelect = document.getElementById('filter_session');
+        if (sessionSelect && sessionSelect._refreshSearchable) {
+            sessionSelect._refreshSearchable();
+        }
+    }
+
+    // دالة مساعدة لتحديث خيارات الدفعات بناءً على الدورة أو التصنيف أو تصنيف الدارس
     function updateSessionOptions() {
         const catSelect = document.getElementById('filter_category');
         const courseSelect = document.getElementById('filter_course');
+        const traineeCatSelect = document.getElementById('filter_trainee_category');
         const sessionSelect = document.getElementById('filter_session');
         if (!sessionSelect) return;
 
         const selectedCourseId = courseSelect ? courseSelect.value : '';
         const selectedCatId = catSelect ? catSelect.value : '';
+        const selectedTraineeCat = traineeCatSelect ? traineeCatSelect.value : '';
         const currentSessionId = sessionSelect.value;
 
         let filteredSessions = SESSIONS_DATA;
@@ -1042,6 +1056,13 @@
             filteredSessions = SESSIONS_DATA.filter(s => String(s.course_id) === String(selectedCourseId));
         } else if (selectedCatId) {
             filteredSessions = SESSIONS_DATA.filter(s => String(s.category_id) === String(selectedCatId));
+        }
+
+        // فلترة رقم الدفعة بحسب تصنيف الدارس (ضباط / ضباط صف / مدنيين / كافة الدارسين)
+        if (selectedTraineeCat) {
+            filteredSessions = filteredSessions.filter(s => {
+                return !s.target_category || s.target_category === selectedTraineeCat || s.target_category === 'joint';
+            });
         }
 
         sessionSelect.innerHTML = '<option value="">-- كافة الدفعات --</option>';
@@ -1052,6 +1073,7 @@
             opt.textContent = s.name;
             opt.setAttribute('data-course', s.course_id);
             opt.setAttribute('data-category', s.category_id);
+            opt.setAttribute('data-target-category', s.target_category || '');
             if (String(s.id) === String(currentSessionId)) {
                 opt.selected = true;
                 sessionStillValid = true;
@@ -1064,10 +1086,11 @@
         }
     }
 
-    // 4. مزامنة الدفعة المنعقدة -> تحديد الدورة والتصنيف تلقائياً
+    // 5. مزامنة الدفعة المنعقدة -> تحديد الدورة والتصنيف وتصنيف الدارس تلقائياً
     function onSessionChange() {
         const catSelect = document.getElementById('filter_category');
         const courseSelect = document.getElementById('filter_course');
+        const traineeCatSelect = document.getElementById('filter_trainee_category');
         const sessionSelect = document.getElementById('filter_session');
         if (!sessionSelect) return;
 
@@ -1077,6 +1100,7 @@
             if (sessionObj) {
                 let catChanged = false;
                 let courseChanged = false;
+                let traineeCatChanged = false;
 
                 if (catSelect && sessionObj.category_id && String(catSelect.value) !== String(sessionObj.category_id)) {
                     catSelect.value = sessionObj.category_id;
@@ -1098,8 +1122,16 @@
                     courseChanged = true;
                 }
 
+                if (traineeCatSelect && sessionObj.target_category && sessionObj.target_category !== 'joint') {
+                    if (String(traineeCatSelect.value) !== String(sessionObj.target_category)) {
+                        traineeCatSelect.value = sessionObj.target_category;
+                        traineeCatChanged = true;
+                    }
+                }
+
                 if (catChanged && catSelect._refreshSearchable) catSelect._refreshSearchable();
                 if (courseChanged && courseSelect._refreshSearchable) courseSelect._refreshSearchable();
+                if (traineeCatChanged && traineeCatSelect._refreshSearchable) traineeCatSelect._refreshSearchable();
             }
         }
     }
@@ -1336,10 +1368,13 @@
 
         const catSelect = document.getElementById('filter_category');
         const courseSelect = document.getElementById('filter_course');
+        const traineeCatSelect = document.getElementById('filter_trainee_category');
         if (catSelect && catSelect.value) {
             onCategoryChange();
         } else if (courseSelect && courseSelect.value) {
             onCourseChange();
+        } else if (traineeCatSelect && traineeCatSelect.value) {
+            onTraineeCategoryChange();
         }
 
         // تفعيل محرك البحث الداخلي على كافة القوائم المنسدلة

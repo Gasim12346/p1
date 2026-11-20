@@ -3821,17 +3821,22 @@ def reports_hub_view(request):
         {'id': c.id, 'name': c.name, 'category_id': c.category_id}
         for c in courses
     ]
-    sessions_data = [
-        {
+    sessions_data = []
+    for s in sessions:
+        code_str = str(s.session_code or '').strip()
+        batch_text = code_str if code_str.startswith('الدفعة') else f"الدفعة {code_str}"
+        target_display = s.get_target_category_display() or ''
+        status_label = 'معتمدة ومحفوظة' if s.status == 'completed' else 'منعقدة'
+        full_name = f"{s.course.name} ({batch_text} - {target_display}) - {status_label}"
+        sessions_data.append({
             'id': s.id,
             'session_code': s.session_code,
-            'name': f"{s.course.name} ({s.session_code}) - {'معتمدة ومحفوظة' if s.status == 'completed' else 'منعقدة'}",
+            'name': full_name,
             'course_id': s.course_id,
             'category_id': s.course.category_id if s.course else None,
+            'target_category': s.target_category or '',
             'status': s.status
-        }
-        for s in sessions
-    ]
+        })
 
     # جلب بيانات التقرير المفلترة مع عزل بيانات المعهد
     report_data = get_report_data(request.GET, institute=request.institute)
