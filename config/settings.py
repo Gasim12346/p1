@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-    load_dotenv(BASE_DIR / '.env')
+    load_dotenv(BASE_DIR / '.env', override=True)
 except ImportError:
     env_file = BASE_DIR / '.env'
     if env_file.exists():
@@ -19,7 +19,7 @@ except ImportError:
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
                     key, val = line.split('=', 1)
-                    os.environ.setdefault(key.strip(), val.strip())
+                    os.environ[key.strip()] = val.strip()
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-_d*(x4puqc^o997)4$g6$&w1bfbf3q)uqasqt0v)!7v-3c62!%')
 
@@ -80,25 +80,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database configuration: supports PostgreSQL with SQLite fallback
-DB_TYPE = os.getenv('DB_TYPE', 'sqlite3').lower()
+# Database configuration: PostgreSQL as the primary database
+DB_TYPE = os.getenv('DB_TYPE', 'postgresql').lower()
 
-if DB_TYPE == 'postgresql' or DB_TYPE == 'postgres':
+if DB_TYPE == 'sqlite3':
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'academy_db'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'academy_db'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'Game3d'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 
