@@ -46,6 +46,8 @@ db.sqlite3
 datadump*.json
 /media/
 /staticfiles/
+/logs/
+/backups/
 
 # IDE / Editor artifacts
 .idea/

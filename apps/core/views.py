@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 
@@ -58,8 +59,16 @@ def home_view(request):
 # ==========================================
 
 
+def get_client_ip(request):
+    """استخراج عنوان IP الحقيقي للجهاز المتصل"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '127.0.0.1')
+
+
 def login_view(request):
-    """صفحة تسجيل الدخول الموحدة للنظام - توجيه السوبر أدمن للوحة المنظومة الشاملة والأدمن للوحة المعهد"""
+    """صفحة تسجيل الدخول الموحدة للنظام - مع حماية القفل التلقائي وتدوين محاولات الدخول الفاشلة"""
     if request.user.is_authenticated:
         if is_super_admin_user(request.user) and not request.session.get('active_institute_id'):
             return redirect('training:super_admin_dashboard')
@@ -80,15 +89,40 @@ def login_view(request):
     if not is_safe_redirect:
         redirect_to = ''
 
+    client_ip = get_client_ip(request)
+
     if request.method == 'POST':
         form = UserLoginForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username'].strip()
             password = form.cleaned_data['password']
+
+            # فحص قفل المحاولات التكرارية (Brute-Force Rate Limiting)
+            lockout_key = f"login_lockout_{client_ip}_{username}"
+            attempts_key = f"login_attempts_{client_ip}_{username}"
+
+            if cache.get(lockout_key):
+                messages.error(request, 'تم قفل محاولات تسجيل الدخول مؤقتاً لتجاوز الحد المسموح به من المحاولات الخاطئة (5 محاولات). يرجى الانتظار لمدة 15 دقيقة قبل إعادة المحاولة.')
+                return render(request, 'auth/login.html', {'form': form, 'next': redirect_to})
+
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
+                # تصفير عداد المحاولات الفاشلة عند نجاح الدخول
+                cache.delete(attempts_key)
+                cache.delete(lockout_key)
+
                 login(request, user)
+
+                # تدوين عملية الدخول الناجحة
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.LOGIN,
+                    action_category=ActivityCategory.AUTH,
+                    description=f"تسجيل دخول ناجح للمستخدم '{user.username}' من عنوان IP: {client_ip}",
+                    target_model="User",
+                    target_id=user.id
+                )
                 
                 # توجيه السوبر أدمن
                 if is_super_admin_user(user):
@@ -109,7 +143,27 @@ def login_view(request):
                         return redirect(redirect_to)
                     return redirect('training:home')
             else:
-                messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة.')
+                # احتساب وتدوين المحاولة الفاشلة
+                failed_attempts = cache.get(attempts_key, 0) + 1
+                cache.set(attempts_key, failed_attempts, timeout=900)
+
+                log_desc = f"محاولة دخول فاشلة بكلمة مرور خاطئة لاسم المستخدم '{username}' من عنوان IP: {client_ip} (المحاولة {failed_attempts} من 5)"
+                if failed_attempts >= 5:
+                    cache.set(lockout_key, True, timeout=900)
+                    log_desc += " - تم تفعيل قفل الحساب المؤقت لمدة 15 دقيقة"
+                    messages.error(request, 'تم تجاوز الحد الأقصى للمحاولات الخاطئة (5 محاولات). تم قفل تسجيل الدخول مؤقتاً لمدة 15 دقيقة لحماية الحساب.')
+                else:
+                    messages.error(request, f'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة (المحاولة {failed_attempts} من 5).')
+
+                ActivityLog.objects.create(
+                    username=username,
+                    user_fullname="فشل مصادقة",
+                    user_role="غير مصرح",
+                    action_type=ActivityAction.OTHER,
+                    action_category=ActivityCategory.AUTH,
+                    description=log_desc,
+                    ip_address=client_ip
+                )
         else:
             messages.error(request, 'يرجى إدخال اسم المستخدم وكلمة المرور بشكل صحيح.')
     else:
@@ -119,6 +173,16 @@ def login_view(request):
         'form': form,
         'next': redirect_to,
     })
+
+
+def custom_404_view(request, exception=None):
+    """صفحة خطأ 404 مخصصة بهوية المنظومة الرسمية"""
+    return render(request, '404.html', status=404)
+
+
+def custom_500_view(request):
+    """صفحة خطأ 500 مخصصة بهوية المنظومة الرسمية"""
+    return render(request, '500.html', status=500)
 
 
 def logout_view(request):

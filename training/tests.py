@@ -11,7 +11,8 @@ from training.models import (
     Institute, UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
-    CertificateSettings, MovementOrderSettings, DisciplineInfraction, ActivityLog
+    CertificateSettings, MovementOrderSettings, DisciplineInfraction, ActivityLog,
+    ActivityCategory
 )
 from training.services import initialize_new_institute
 from training.reports import (
@@ -4465,6 +4466,64 @@ class DataIntegrityAndPerformanceRemediationTests(TestCase):
         # استعلام مسبق
         en_qs = CourseEnrollment.objects.filter(pk=self.enrollment.pk).prefetch_related('grades').first()
         self.assertTrue(en_qs.has_complete_data_and_grades)
+
+
+class ProductionHardeningAndSecurityTests(TestCase):
+    """اختبارات الجاهزية التشغيلية للإنتاج وحماية تسجيل الدخول والتسجيلات وصفحات الأخطاء"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='lockout_target', password='CorrectPassword123!')
+        self.profile = self.user.profile
+        self.profile.role = UserRole.REGULAR
+        self.profile.save()
+
+    def test_login_rate_limiting_locks_out_after_five_failed_attempts(self):
+        """التحقق من قفل تسجيل الدخول بعد 5 محاولات خاطئة متتالية وتدوينها في سجل النشاط"""
+        from django.core.cache import cache
+        cache.clear()
+        login_url = reverse('training:login')
+
+        # 4 محاولات فاشلة
+        for i in range(1, 5):
+            res = self.client.post(login_url, {'username': 'lockout_target', 'password': 'WrongPassword!'})
+            self.assertEqual(res.status_code, 200)
+
+        # المحاولة الخامسة تؤدي للقفل
+        res_lockout = self.client.post(login_url, {'username': 'lockout_target', 'password': 'WrongPassword!'})
+        self.assertEqual(res_lockout.status_code, 200)
+
+        # التحقق من وجود سجل في ActivityLog
+        failed_log = ActivityLog.objects.filter(username='lockout_target', action_category=ActivityCategory.AUTH).first()
+        self.assertIsNotNone(failed_log)
+
+        # المحاولة السادسة حتى بكلمة المرور الصحيحة يتم حظرها أثناء فترة القفل
+        res_blocked = self.client.post(login_url, {'username': 'lockout_target', 'password': 'CorrectPassword123!'})
+        self.assertEqual(res_blocked.status_code, 200)
+        self.assertFalse('_auth_user_id' in self.client.session)
+
+    def test_custom_error_views_status_codes(self):
+        """التحقق من عمل صفحات الخطأ 404 و 500 المخصصة بهوية المنظومة"""
+        from apps.core.views import custom_404_view, custom_500_view
+        from django.test.client import RequestFactory
+
+        rf = RequestFactory()
+        req404 = rf.get('/nonexistent-path-test/')
+        res404 = custom_404_view(req404)
+        self.assertEqual(res404.status_code, 404)
+
+        req500 = rf.get('/test-500/')
+        res500 = custom_500_view(req500)
+        self.assertEqual(res500.status_code, 500)
+
+    def test_whitenoise_and_session_settings(self):
+        """التحقق من تفعيل خادم وايت نويز وضبط أمان الجلسات للبيئة الإنتاجية"""
+        from django.conf import settings
+        self.assertIn('whitenoise.middleware.WhiteNoiseMiddleware', settings.MIDDLEWARE)
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 28800)
+        self.assertTrue(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
+        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+
 
 
 

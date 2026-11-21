@@ -27,7 +27,7 @@ def system_settings_processor(request):
     can_grade = False
     can_approve_results = False
 
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user.is_authenticated:
         if request.user.is_superuser or request.user.is_staff:
             is_admin = True
             is_registrar = True
