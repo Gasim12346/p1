@@ -45,6 +45,7 @@ venv.bak/
 db.sqlite3
 datadump*.json
 /media/
+/staticfiles/
 
 # IDE / Editor artifacts
 .idea/
