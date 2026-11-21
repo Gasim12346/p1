@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from apps.core.models import Institute
+from apps.core.validators import validate_movement_order_file
 from apps.trainees.models import Trainee, TraineeCategory, numeric_only_validator, phone_10_digits_validator
 
 
@@ -384,6 +385,7 @@ class CourseSession(models.Model):
         upload_to='movement_orders/',
         null=True,
         blank=True,
+        validators=[validate_movement_order_file],
         verbose_name='صورة أمر التحرك (Scan)',
         help_text='صورة ضوئية أو مستند PDF لأمر التحرك'
     )
@@ -545,6 +547,7 @@ class CourseEnrollment(models.Model):
         upload_to='trainee_movement_orders/',
         null=True,
         blank=True,
+        validators=[validate_movement_order_file],
         verbose_name='صورة أمر التحرك الخاص بالدارس (Scan)'
     )
     attendance_score = models.DecimalField(

@@ -5,6 +5,26 @@ from training.models import (
     CourseCategory, Course, Subject, UserProfile, UserRole, ActivityLog,
     ActivityAction, ActivityCategory
 )
+from apps.core.permissions import (
+    MODULES_PERMISSIONS_CATALOG,
+    DEFAULT_ROLE_PERMISSIONS,
+    get_default_permissions_for_role,
+    get_user_permissions_matrix,
+    has_permission,
+    check_perm,
+    is_super_admin_user,
+    super_admin_required,
+    is_admin_user,
+    admin_access_required,
+    is_registrar_user,
+    is_supervisor_user,
+    is_instructor_user,
+    get_user_instructor,
+    admin_required,
+    registrar_required,
+    check_institute_access,
+    check_user_management_access,
+)
 
 
 @transaction.atomic

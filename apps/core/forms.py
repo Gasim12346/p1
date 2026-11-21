@@ -1,8 +1,10 @@
 from django import forms
 from django.core.validators import validate_email
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from apps.core.models import SystemSettings, UserProfile, UserRole
 from apps.academic.models import Instructor
+from apps.core.validators import validate_image_file
 
 def validate_and_clean_phone(phone_val, field_label='رقم الهاتف'):
     """
@@ -251,6 +253,12 @@ class SystemSettingsForm(forms.ModelForm):
             'sidebar_bg_end': 'نهاية تدرج القائمة الجانبية (Sidebar Gradient Bottom)',
         }
 
+    def clean_main_logo(self):
+        f = self.cleaned_data.get('main_logo')
+        if f:
+            validate_image_file(f)
+        return f
+
 
 
 class UserCreateForm(forms.ModelForm):
@@ -382,6 +390,12 @@ class UserCreateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'password', 'first_name', 'last_name', 'email', 'is_active']
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            validate_password(password)
+        return password
 
     def clean_phone(self):
         return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
@@ -538,6 +552,12 @@ class UserEditForm(forms.ModelForm):
         if val == '__custom__':
             return custom_val
         return val
+
+    def clean_new_password(self):
+        new_password = self.cleaned_data.get('new_password')
+        if new_password and new_password.strip():
+            validate_password(new_password.strip(), user=self.instance)
+        return new_password
 
     def clean_phone(self):
         return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')

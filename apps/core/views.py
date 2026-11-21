@@ -22,7 +22,8 @@ from apps.core.permissions import (
     is_supervisor_user, is_instructor_user, get_user_instructor,
     MODULES_PERMISSIONS_CATALOG, DEFAULT_ROLE_PERMISSIONS,
     get_default_permissions_for_role, get_user_permissions_matrix,
-    has_permission, check_perm
+    has_permission, check_perm,
+    check_institute_access, check_user_management_access
 )
 from training.models import (
     Institute, Instructor, SessionSubjectInstructor,
@@ -551,6 +552,7 @@ def user_create_view(request):
 def user_edit_view(request, user_id):
     """تعديل بيانات وصلاحيات وكلمة مرور المستخدم"""
     target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+    check_user_management_access(request, target_user)
     profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
 
     if request.method == 'POST':
@@ -682,6 +684,7 @@ def user_edit_view(request, user_id):
 def user_delete_view(request, user_id):
     """حذف مستخدم من النظام مع الحماية التامة لحساب المدير الحالي"""
     target_user = get_object_or_404(User, pk=user_id)
+    check_user_management_access(request, target_user)
 
     if target_user.id == request.user.id:
         messages.error(request, 'إجراء محظور: لا يمكنك حذف حسابك الحالي الذي تستخدمه لتسجيل الدخول!')
@@ -715,6 +718,7 @@ def user_toggle_active_view(request, user_id):
         return redirect('training:admin_dashboard')
 
     target_user = get_object_or_404(User, pk=user_id)
+    check_user_management_access(request, target_user)
     if target_user.id == request.user.id:
         messages.error(request, 'إجراء محظور: لا يمكنك تعطيل حسابك الحالي!')
     else:
@@ -740,6 +744,7 @@ def user_update_role_view(request, user_id):
         return redirect(f"{reverse('training:admin_dashboard')}?tab=users")
 
     target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+    check_user_management_access(request, target_user)
     profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
 
     new_role = request.POST.get('role', '').strip()
@@ -816,6 +821,7 @@ def user_update_role_view(request, user_id):
 def user_update_permissions_matrix_view(request, user_id):
     """تحديث مصفوفة الصلاحيات والأذونات الديناميكية لمستخدم محدد (عبر AJAX أو نموذج عادي)"""
     target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+    check_user_management_access(request, target_user)
     profile = target_user.profile if hasattr(target_user, 'profile') else UserProfile.objects.create(user=target_user)
 
     if not is_super_admin_user(request.user):
@@ -920,6 +926,7 @@ def api_get_permissions_matrix_view(request):
 
     if user_id:
         target_user = get_object_or_404(User.objects.select_related('profile'), pk=user_id)
+        check_user_management_access(request, target_user)
         matrix = get_user_permissions_matrix(target_user)
         user_role = target_user.profile.role if hasattr(target_user, 'profile') else UserRole.REGULAR
         role_display = target_user.profile.get_role_display() if hasattr(target_user, 'profile') else 'مستخدم عادي'

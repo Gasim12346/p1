@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 
@@ -19,7 +20,8 @@ from apps.core.permissions import (
     is_super_admin_user, super_admin_required,
     is_admin_user, admin_access_required, admin_required,
     is_registrar_user, registrar_required,
-    is_supervisor_user, is_instructor_user, get_user_instructor
+    is_supervisor_user, is_instructor_user, get_user_instructor,
+    has_permission, check_institute_access
 )
 from training.models import (
     Institute, Instructor, SessionSubjectInstructor,
@@ -48,6 +50,9 @@ def certificate_view(request, enrollment_id):
         CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
         pk=enrollment_id
     )
+    check_institute_access(request, enrollment)
+    if not (is_admin_user(request.user) or is_registrar_user(request.user) or is_supervisor_user(request.user) or has_permission(request.user, 'certificates', 'view') or (hasattr(request.user, 'profile') and request.user.profile.can_view)):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية استعراض الشهادات في المنظومة.")
 
     if enrollment.is_dropped:
         messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن تظهر نتيجته أو شهادته.')
@@ -101,6 +106,9 @@ def certificate_detailed_view(request, enrollment_id):
         CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
         pk=enrollment_id
     )
+    check_institute_access(request, enrollment)
+    if not (is_admin_user(request.user) or is_registrar_user(request.user) or is_supervisor_user(request.user) or has_permission(request.user, 'certificates', 'view') or (hasattr(request.user, 'profile') and request.user.profile.can_view)):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية استعراض الشهادات في المنظومة.")
 
     if enrollment.is_dropped:
         messages.error(request, 'إجراء محظور: تم قطع الدورة عن هذا الدارس ولن تظهر نتيجته أو شهادته.')
@@ -178,6 +186,9 @@ def movement_order_view(request, enrollment_id):
         CourseEnrollment.objects.select_related('trainee', 'session', 'session__course', 'session__course__category'),
         pk=enrollment_id
     )
+    check_institute_access(request, enrollment)
+    if not (is_admin_user(request.user) or is_supervisor_user(request.user) or is_registrar_user(request.user) or has_permission(request.user, 'movement_orders', 'view') or (hasattr(request.user, 'profile') and request.user.profile.can_view)):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية استعراض أوامر التحرك في المنظومة.")
 
     # التحقق من شروط استخراج أمر التحرك (يصدر في حالتين: 1. بعد اعتماد الدورة واكتمالها، أو 2. أثناء الدورة عند قطع الدورة عن الدارس)
     if not enrollment.is_dropped:

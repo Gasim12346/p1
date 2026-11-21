@@ -4196,6 +4196,154 @@ class NaturalNumberFormattingTests(TestCase):
         self.assertEqual(s1.natural_max_grade, 100)
 
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError
+from apps.core.validators import validate_movement_order_file, validate_image_file
+
+
+class CriticalSecurityRemediationTests(TestCase):
+    """اختبارات الحزمة الأمنية الحرجة: عزل المعاهد (IDOR)، حماية الإدارة العليا، والتحقق الصارم من الملفات"""
+
+    def setUp(self):
+        self.client = Client()
+
+        # معهد 1 ومعهد 2
+        self.inst1 = Institute.objects.create(name="معهد نظم المعلومات 1", code="SEC_INST_1", is_active=True)
+        self.inst2 = Institute.objects.create(name="معهد المدرعات 2", code="SEC_INST_2", is_active=True)
+
+        # حساب سوبر أدمن
+        self.super_user = User.objects.create_user(username='sec_super', password='Password123!', is_superuser=True)
+        p_super, _ = UserProfile.objects.get_or_create(user=self.super_user)
+        p_super.role = UserRole.SUPER_ADMIN
+        p_super.save()
+
+        # حساب أدمن معهد 1
+        self.admin1 = User.objects.create_user(username='sec_admin1', password='Password123!', is_staff=True)
+        p1, _ = UserProfile.objects.get_or_create(user=self.admin1)
+        p1.role = UserRole.ADMIN
+        p1.institute = self.inst1
+        p1.sync_permissions_from_role()
+        p1.save()
+
+        # حساب أدمن معهد 2
+        self.admin2 = User.objects.create_user(username='sec_admin2', password='Password123!', is_staff=True)
+        p2, _ = UserProfile.objects.get_or_create(user=self.admin2)
+        p2.role = UserRole.ADMIN
+        p2.institute = self.inst2
+        p2.sync_permissions_from_role()
+        p2.save()
+
+        # بيانات تابعة لمعهد 2
+        self.cat2 = CourseCategory.objects.create(name="تصنيف معهد 2", institute=self.inst2)
+        self.course2 = Course.objects.create(name="دورة معهد 2", course_number="SEC-002", category=self.cat2, institute=self.inst2)
+        self.subject2 = Subject.objects.create(course=self.course2, name="مادة 2", code="S2-01", max_grade=Decimal('100.00'))
+        self.session2 = CourseSession.objects.create(
+            course=self.course2, institute=self.inst2, session_code="1",
+            start_date=date.today(), end_date=date.today() + timedelta(days=30)
+        )
+        self.trainee2 = Trainee.objects.create(
+            name="دارس معهد 2", military_number="SEC9999", institute=self.inst2, category=TraineeCategory.OFFICER
+        )
+        self.enrollment2 = CourseEnrollment.objects.create(session=self.session2, trainee=self.trainee2)
+
+    def test_idor_prevented_course_edit_across_institutes(self):
+        """منع تعديل دورة تتبع معهداً آخر بواسطة مدير معهد منافس (IDOR)"""
+        self.client.login(username='sec_admin1', password='Password123!')
+        session = self.client.session
+        session['active_institute_id'] = self.inst1.id
+        session.save()
+
+        # محاولة تعديل دورة معهد 2
+        res = self.client.post(reverse('training:course_edit', args=[self.course2.id]), {
+            'name': 'اختراق دورة معهد 2',
+            'course_number': 'HACK-01',
+            'category': self.cat2.id,
+            'attendance_max_grade': 10
+        })
+        self.assertEqual(res.status_code, 403)
+
+    def test_idor_prevented_course_delete_across_institutes(self):
+        """منع حذف دورة تتبع معهداً آخر بواسطة مدير معهد منافس (IDOR)"""
+        self.client.login(username='sec_admin1', password='Password123!')
+        session = self.client.session
+        session['active_institute_id'] = self.inst1.id
+        session.save()
+
+        res = self.client.post(reverse('training:course_delete', args=[self.course2.id]))
+        self.assertEqual(res.status_code, 403)
+
+    def test_idor_prevented_trainee_edit_and_delete_across_institutes(self):
+        """منع تعديل أو حذف دارس يتبع معهداً آخر (IDOR)"""
+        self.client.login(username='sec_admin1', password='Password123!')
+        session = self.client.session
+        session['active_institute_id'] = self.inst1.id
+        session.save()
+
+        # محاولة تعديل دارس معهد 2
+        res_edit = self.client.post(reverse('training:trainee_edit', args=[self.trainee2.military_number]), {
+            'name': 'تعديل مخترق',
+            'category': TraineeCategory.OFFICER
+        })
+        self.assertEqual(res_edit.status_code, 403)
+
+        # محاولة حذف دارس معهد 2
+        res_del = self.client.post(reverse('training:trainee_delete', args=[self.trainee2.military_number]))
+        self.assertEqual(res_del.status_code, 403)
+
+    def test_idor_prevented_certificate_view_across_institutes(self):
+        """منع استعراض شهادة تسجيل يتبع دورة معهد آخر (IDOR)"""
+        self.client.login(username='sec_admin1', password='Password123!')
+        session = self.client.session
+        session['active_institute_id'] = self.inst1.id
+        session.save()
+
+        res_cert = self.client.get(reverse('training:certificate', args=[self.enrollment2.id]))
+        self.assertEqual(res_cert.status_code, 403)
+
+    def test_super_admin_protection_from_institute_admin(self):
+        """منع مدراء المعاهد من تعديل أو حذف حساب السوبر أدمن أو تغيير حالته"""
+        self.client.login(username='sec_admin1', password='Password123!')
+        session = self.client.session
+        session['active_institute_id'] = self.inst1.id
+        session.save()
+
+        # محاولة تعديل بيانات أو كلمة مرور السوبر أدمن
+        res_edit = self.client.post(reverse('training:user_edit', args=[self.super_user.id]), {
+            'first_name': 'Hacked',
+            'role': 'regular'
+        })
+        self.assertEqual(res_edit.status_code, 403)
+
+        # محاولة حذف السوبر أدمن
+        res_del = self.client.post(reverse('training:user_delete', args=[self.super_user.id]))
+        self.assertEqual(res_del.status_code, 403)
+
+        # محاولة تعطيل حساب السوبر أدمن
+        res_toggle = self.client.post(reverse('training:user_toggle_active', args=[self.super_user.id]))
+        self.assertEqual(res_toggle.status_code, 403)
+
+    def test_file_upload_validation_strict(self):
+        """فحص الرفض الأمني لملفات الترويسة والمسح المخالفة أو المزورة"""
+        # 1. ملف بامتداد غير مسموح به (تنفيذي exe)
+        fake_exe = SimpleUploadedFile("malware.exe", b"MZ\x90\x00\x03\x00\x00\x00", content_type="application/x-msdownload")
+        with self.assertRaises(ValidationError):
+            validate_movement_order_file(fake_exe)
+
+        # 2. ملف بامتداد pdf ولكنه نص عادي بدون ترويسة PDF حقيقية (Spoofed file)
+        fake_pdf = SimpleUploadedFile("fake.pdf", b"echo 'malicious script'", content_type="application/pdf")
+        with self.assertRaises(ValidationError):
+            validate_movement_order_file(fake_pdf)
+
+        # 3. ملف PDF سليم يبدأ بـ %PDF
+        valid_pdf = SimpleUploadedFile("order.pdf", b"%PDF-1.4 real pdf content", content_type="application/pdf")
+        validate_movement_order_file(valid_pdf)
+
+        # 4. ملف PNG سليم يبدأ بـ \x89PNG
+        valid_png = SimpleUploadedFile("scan.png", b"\x89PNG\r\n\x1a\nimage data", content_type="image/png")
+        validate_movement_order_file(valid_png)
+
+
+
 
 
 

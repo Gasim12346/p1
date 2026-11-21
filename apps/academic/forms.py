@@ -3,6 +3,7 @@ from django import forms
 from apps.academic.models import Instructor, CourseCategory, Course, Subject, CourseSession
 from apps.trainees.models import Trainee
 from apps.core.forms import validate_and_clean_phone
+from apps.core.validators import validate_movement_order_file
 
 class InstructorForm(forms.ModelForm):
     class Meta:
@@ -294,6 +295,12 @@ class CourseSessionForm(forms.ModelForm):
         if amg is not None and amg < 0:
             raise forms.ValidationError('الدرجة العظمى للمواظبة لا يمكن أن تكون أقل من صفر.')
         return amg
+
+    def clean_movement_order_file(self):
+        f = self.cleaned_data.get('movement_order_file')
+        if f:
+            validate_movement_order_file(f)
+        return f
 
 
 

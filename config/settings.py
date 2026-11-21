@@ -25,7 +25,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-_d*(x4puqc^o997)4$g6$&w1bf
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()
+]
+if DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -134,3 +138,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'training:login'
 LOGIN_REDIRECT_URL = 'training:home'
 LOGOUT_REDIRECT_URL = 'training:login'
+
+# =====================================================================
+# إعدادات الأمان وحماية الجلسات والترويسات (Security Hardening)
+# =====================================================================
+X_FRAME_OPTIONS = 'DENY'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+

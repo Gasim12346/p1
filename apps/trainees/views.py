@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 
@@ -19,7 +20,8 @@ from apps.core.permissions import (
     is_super_admin_user, super_admin_required,
     is_admin_user, admin_access_required, admin_required,
     is_registrar_user, registrar_required,
-    is_supervisor_user, is_instructor_user, get_user_instructor
+    is_supervisor_user, is_instructor_user, get_user_instructor,
+    has_permission, check_institute_access
 )
 from training.models import (
     Institute, Instructor, SessionSubjectInstructor,
@@ -52,8 +54,8 @@ def trainees_list_view(request):
     search_query = request.GET.get('q', '').strip()
 
     if request.method == 'POST' and 'add_trainee' in request.POST:
-        if not is_registrar_user(request.user):
-            messages.error(request, 'عفواً، إضافة دارس جديد محصورة بمسجل البيانات أو مدير النظام.')
+        if not is_registrar_user(request.user) or not has_permission(request.user, 'trainees', 'add'):
+            messages.error(request, 'عفواً، إضافة دارس جديد محصورة بمسجل البيانات أو من يملك صلاحية الإضافة.')
             return redirect('training:trainees_list')
 
         form = TraineeForm(request.POST)
@@ -137,6 +139,10 @@ def trainees_list_view(request):
 def trainee_edit_view(request, military_number):
     """تعديل بيانات الدارس"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
+    check_institute_access(request, trainee)
+    if not has_permission(request.user, 'trainees', 'edit'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية تعديل بيانات الدارسين في المنظومة.")
+
     if request.method == 'POST':
         form = TraineeForm(request.POST, instance=trainee)
         form.fields['military_number'].disabled = True
@@ -170,6 +176,10 @@ def trainee_edit_view(request, military_number):
 def trainee_delete_view(request, military_number):
     """حذف دارس مع الحماية الصارمة من حذف الدارسين المسجلين بدورات أو شهادات"""
     trainee = get_object_or_404(Trainee, military_number=military_number)
+    check_institute_access(request, trainee)
+    if not has_permission(request.user, 'trainees', 'delete'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية حذف الدارسين في المنظومة.")
+
     has_enrollments = trainee.enrollments.exists()
     enrollments_count = trainee.enrollments.count()
 

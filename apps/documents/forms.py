@@ -1,5 +1,6 @@
 from django import forms
 from apps.documents.models import CertificateSettings, MovementOrderSettings
+from apps.core.validators import validate_image_file
 
 class CertificateSettingsForm(forms.ModelForm):
     """نموذج تخصيص شكل وتوقيعات ونصوص الشهادة الرسمية"""
@@ -145,6 +146,18 @@ class CertificateSettingsForm(forms.ModelForm):
             'left_logo': 'تغيير شعار الشهادة الأيسر (شعار الإدارة)',
         }
 
+    def clean_right_logo(self):
+        f = self.cleaned_data.get('right_logo')
+        if f:
+            validate_image_file(f)
+        return f
+
+    def clean_left_logo(self):
+        f = self.cleaned_data.get('left_logo')
+        if f:
+            validate_image_file(f)
+        return f
+
 
 
 class MovementOrderSettingsForm(forms.ModelForm):
@@ -223,5 +236,11 @@ class MovementOrderSettingsForm(forms.ModelForm):
             'watermark_image': 'صورة العلامة المائية المخصصة',
             'watermark_opacity': 'درجة شفافية العلامة المائية (0.05 - 1.0)',
         }
+
+    def clean_watermark_image(self):
+        f = self.cleaned_data.get('watermark_image')
+        if f:
+            validate_image_file(f)
+        return f
 
 

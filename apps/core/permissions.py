@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from apps.core.models import UserRole
 
 
@@ -270,8 +271,8 @@ def get_user_permissions_matrix(user):
     role = profile.role if profile else UserRole.REGULAR
     base_perms = get_default_permissions_for_role(role)
 
-    # دمج التخصيصات المخزنة في permissions_matrix للمستخدم إن وجدت
-    if profile and isinstance(profile.permissions_matrix, dict) and profile.permissions_matrix:
+    # دمج التخصيصات المخزنة في permissions_matrix للمستخدم عندما يكون الدور مخصصاً CUSTOM
+    if profile and profile.role == UserRole.CUSTOM and isinstance(profile.permissions_matrix, dict) and profile.permissions_matrix:
         custom_matrix = profile.permissions_matrix
         for mod, acts in custom_matrix.items():
             if mod in base_perms and isinstance(acts, dict):
@@ -297,6 +298,27 @@ def has_permission(user, module, action):
     if profile:
         if profile.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN] or profile.can_manage_users:
             return True
+
+        # صلاحيات مسجل البيانات الافتراضية
+        if profile.role == UserRole.REGISTRAR:
+            if module in ['trainees', 'courses', 'sessions']:
+                return True
+            if module in ['certificates', 'movement_orders', 'reports'] and action in ['view', 'issue', 'excel', 'print']:
+                return True
+
+        # صلاحيات مشرف الدورة الافتراضية
+        if profile.role == UserRole.SUPERVISOR:
+            if module in ['trainees', 'courses', 'sessions', 'reports', 'certificates', 'movement_orders'] and action in ['view', 'export', 'issue', 'excel', 'print']:
+                return True
+            if module == 'grades' and action in ['view', 'entry', 'approve']:
+                return True
+
+        # صلاحيات المعلم الافتراضية
+        if profile.role == UserRole.INSTRUCTOR:
+            if module == 'grades' and action in ['view', 'entry']:
+                return True
+            if module == 'courses' and action == 'view':
+                return True
 
     matrix = get_user_permissions_matrix(user)
     return bool(matrix.get(module, {}).get(action, False))
@@ -460,3 +482,61 @@ def registrar_required(view_func):
 
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+
+
+# =====================================================================
+# التحقق الأمني من عزل المعاهد المتعددة وحماية الحسابات الإدارية
+# =====================================================================
+def check_institute_access(request, obj, error_msg=None):
+    """
+    التحقق الصارم من عزل المعاهد المتعددة ومنع ثغرات الوصول المباشر للسجلات (IDOR).
+    يمنع أي مستخدم أو مدير معهد فرعي من الوصول إلى أو تعديل أو حذف سجل يتبع معهداً آخر.
+    السوبر أدمن العام فقط يُسمح له بالوصول العابر في حال لم يكن قد قام بتفعيل معهد محدد في الجلسة.
+    """
+    if not obj:
+        return
+
+    # إذا كان المستخدم سوبر أدمن ولم يتم تعيين معهد نشط محدد في الطلب
+    if is_super_admin_user(request.user) and not getattr(request, 'institute', None):
+        return
+
+    current_inst = getattr(request, 'institute', None)
+    if not current_inst:
+        return
+
+    # استخراج المعهد المرتبط بالكائن بطرق متعددة
+    obj_inst = getattr(obj, 'institute', None)
+    if obj_inst is None and hasattr(obj, 'course'):
+        obj_inst = getattr(obj.course, 'institute', None)
+    if obj_inst is None and hasattr(obj, 'session'):
+        obj_inst = getattr(obj.session, 'institute', None)
+    if obj_inst is None and hasattr(obj, 'enrollment'):
+        session = getattr(obj.enrollment, 'session', None)
+        obj_inst = getattr(session, 'institute', None) if session else None
+
+    if obj_inst and obj_inst.id != current_inst.id:
+        raise PermissionDenied(error_msg or "إجراء محظور: هذا السجل يتبع معهداً آخر ولا تملك صلاحية الوصول إليه.")
+
+
+def check_user_management_access(request, target_user):
+    """
+    حماية حسابات الإدارة العليا وعزل مدراء المعاهد ومنع التلاعب بالحسابات:
+    1. لا يجوز لأي مستخدم غير سوبر أدمن تعديل أو حذف أو تعطيل أو تغيير مصفوفة صلاحيات حساب سوبر أدمن.
+    2. لا يجوز للمستخدم حذف أو تعطيل حسابه الحالي.
+    3. لا يجوز لمدير معهد تعديل أو حذف مستخدم يتبع معهداً آخر.
+    """
+    if not request.user.is_authenticated:
+        raise PermissionDenied("يرجى تسجيل الدخول أولاً.")
+
+    target_profile = getattr(target_user, 'profile', None)
+    target_is_super = target_user.is_superuser or (target_profile and target_profile.role == UserRole.SUPER_ADMIN)
+
+    # 1. منع غير السوبر أدمن من لمس حسابات السوبر أدمن
+    if target_is_super and not is_super_admin_user(request.user):
+        raise PermissionDenied("إجراء محظور: لا يمكن تعديل أو إدارة حسابات الإدارة العامة المركزية (سوبر أدمن) إلا من خلال الإدارة العليا.")
+
+    # 2. عزل المعاهد للمستخدمين
+    if not is_super_admin_user(request.user) and getattr(request, 'institute', None):
+        if target_profile and target_profile.institute and target_profile.institute.id != request.institute.id:
+            raise PermissionDenied("إجراء محظور: هذا المستخدم يتبع معهداً آخر ولا تملك صلاحية إدارته.")
+

@@ -13,13 +13,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 
 from apps.core.permissions import (
     is_super_admin_user, super_admin_required,
     is_admin_user, admin_access_required, admin_required,
     is_registrar_user, registrar_required,
-    is_supervisor_user, is_instructor_user, get_user_instructor
+    is_supervisor_user, is_instructor_user, get_user_instructor,
+    has_permission, check_institute_access
 )
 from training.models import (
     Institute, Instructor, SessionSubjectInstructor,
@@ -77,8 +79,8 @@ def courses_catalog_view(request):
         subjects = selected_course.subjects.filter(session__isnull=True)
 
     if request.method == 'POST' and 'add_course' in request.POST:
-        if not is_registrar_user(request.user):
-            messages.error(request, 'عفواً، إضافة دورة جديدة محصورة بمسجل البيانات أو مدير النظام.')
+        if not is_registrar_user(request.user) or not has_permission(request.user, 'courses', 'add'):
+            messages.error(request, 'عفواً، إضافة دورة جديدة محصورة بمسجل البيانات أو من يملك صلاحية الإضافة.')
             return redirect(request.path)
 
         course_form = CourseForm(request.POST)
@@ -106,12 +108,13 @@ def courses_catalog_view(request):
         course_form = CourseForm(initial={'category': initial_cat})
 
     if request.method == 'POST' and 'add_subject' in request.POST:
-        if not is_registrar_user(request.user):
-            messages.error(request, 'عفواً، إضافة مادة دراسية جديدة محصورة بمسجل البيانات أو مدير النظام.')
+        if not is_registrar_user(request.user) or not has_permission(request.user, 'courses', 'add'):
+            messages.error(request, 'عفواً، إضافة مادة دراسية جديدة محصورة بمسجل البيانات أو من يملك صلاحية الإضافة.')
             return redirect(request.path)
 
         target_course_id = request.POST.get('target_course_id')
         target_course = get_object_or_404(Course, pk=target_course_id)
+        check_institute_access(request, target_course)
         subject_form = SubjectForm(request.POST)
         if subject_form.is_valid():
             new_subject = subject_form.save(commit=False)
@@ -152,6 +155,10 @@ def courses_catalog_view(request):
 def course_edit_view(request, course_id):
     """تعديل دورة موجودة"""
     course = get_object_or_404(Course, pk=course_id)
+    check_institute_access(request, course)
+    if not has_permission(request.user, 'courses', 'edit'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية تعديل الدورات في المنظومة.")
+
     if request.method == 'POST':
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
@@ -181,6 +188,10 @@ def course_edit_view(request, course_id):
 def course_delete_view(request, course_id):
     """حذف دورة مع حماية الانعقادات والشهادات التاريخية"""
     course = get_object_or_404(Course, pk=course_id)
+    check_institute_access(request, course)
+    if not has_permission(request.user, 'courses', 'delete'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية حذف الدورات في المنظومة.")
+
     category_id = course.category_id
     has_sessions = course.sessions.exists()
     sessions_count = course.sessions.count()
@@ -221,6 +232,10 @@ def course_delete_view(request, course_id):
 def subject_edit_view(request, subject_id):
     """تعديل مادة دراسية"""
     subject = get_object_or_404(Subject, pk=subject_id)
+    check_institute_access(request, subject)
+    if not has_permission(request.user, 'courses', 'edit'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية تعديل المواد في المنظومة.")
+
     course = subject.course
     if request.method == 'POST':
         form = SubjectForm(request.POST, instance=subject)
@@ -252,6 +267,10 @@ def subject_edit_view(request, subject_id):
 def subject_delete_view(request, subject_id):
     """حذف مادة دراسية مع حماية درجات الدارسين المرصودة"""
     subject = get_object_or_404(Subject, pk=subject_id)
+    check_institute_access(request, subject)
+    if not has_permission(request.user, 'courses', 'delete'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية حذف المواد في المنظومة.")
+
     course = subject.course
     has_grades = subject.trainee_grades.exists()
     grades_count = subject.trainee_grades.count()
@@ -446,6 +465,7 @@ def api_add_course_subject_view(request):
             return JsonResponse({'success': False, 'message': 'يرجى تحديد الدورة التدريبية أولاً.'}, status=400)
         try:
             course = Course.objects.get(pk=course_id)
+            check_institute_access(request, course)
         except Course.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'الدورة التدريبية المحددة غير موجودة.'}, status=404)
 
@@ -534,6 +554,9 @@ def course_session_create_view(request):
     - اختيار الطلبة الدارسين مع إمكانية تعديل الرتبة والوحدة وقت الدورة.
     - حفظ الانعقاد والطلبة.
     """
+    if not has_permission(request.user, 'sessions', 'add'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية فتح انعقاد دورة جديدة في المنظومة.")
+
     categories = CourseCategory.objects.prefetch_related('courses__subjects').all()
     if request.institute:
         categories = categories.filter(Q(institute=request.institute) | Q(institute__isnull=True))
@@ -775,6 +798,7 @@ def course_session_manage_view(request, session_id):
         return redirect('training:results_center')
 
     session = get_object_or_404(CourseSession.objects.select_related('course', 'course__category', 'supervisor'), pk=session_id)
+    check_institute_access(request, session)
     enrollments = session.enrollments.select_related('trainee').all()
     instructors = Instructor.objects.filter(is_active=True).order_by('name')
 
@@ -1100,6 +1124,10 @@ def course_session_manage_view(request, session_id):
 def course_session_edit_view(request, session_id):
     """تعديل بيانات انعقاد الدورة (التواريخ، الحالة، الملاحظات)"""
     session = get_object_or_404(CourseSession, pk=session_id)
+    check_institute_access(request, session)
+    if not has_permission(request.user, 'sessions', 'edit'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية تعديل بيانات انعقاد الدورة في المنظومة.")
+
     if request.method == 'POST':
         form = CourseSessionForm(request.POST, request.FILES, instance=session)
         if form.is_valid():
@@ -1129,6 +1157,10 @@ def course_session_edit_view(request, session_id):
 def course_session_delete_view(request, session_id):
     """حذف انعقاد دورة مع حماية تسجيلات ونتائج الدارسين"""
     session = get_object_or_404(CourseSession, pk=session_id)
+    check_institute_access(request, session)
+    if not has_permission(request.user, 'sessions', 'delete'):
+        raise PermissionDenied("إجراء محظور: حسابك لا يملك صلاحية حذف انعقاد الدورة في المنظومة.")
+
     has_enrollments = session.enrollments.exists()
     enrollments_count = session.enrollments.count()
     has_graded = session.enrollments.filter(is_graded=True).exists()
@@ -1389,6 +1421,7 @@ def results_entry_view(request, session_id):
         .prefetch_related('course__subjects', 'subject_instructors__instructor'),
         pk=session_id
     )
+    check_institute_access(request, session)
     subjects = session.get_subjects()
     enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
     dropped_enrollments = session.enrollments.filter(is_dropped=True).select_related('trainee').all()
@@ -1695,6 +1728,7 @@ def session_results_sheet_view(request, session_id):
         CourseSession.objects.select_related('course', 'course__category').prefetch_related('course__subjects'),
         pk=session_id
     )
+    check_institute_access(request, session)
     subjects = session.get_subjects()
     enrollments = session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').order_by('-total_score')
 
@@ -1748,6 +1782,7 @@ def instructor_create_view(request):
 def instructor_edit_view(request, military_number):
     """تعديل بيانات معلم"""
     instructor = get_object_or_404(Instructor, military_number=military_number)
+    check_institute_access(request, instructor)
     if request.method == 'POST':
         form = InstructorForm(request.POST, instance=instructor)
         form.fields['military_number'].disabled = True
@@ -1781,6 +1816,7 @@ def instructor_edit_view(request, military_number):
 def instructor_delete_view(request, military_number):
     """حذف معلم من النظام مع حماية الدورات المسندة له"""
     instructor = get_object_or_404(Instructor, military_number=military_number)
+    check_institute_access(request, instructor)
     has_sessions = instructor.supervised_sessions.exists()
     has_assignments = instructor.teaching_assignments.exists()
 
@@ -1841,6 +1877,7 @@ def category_create_view(request):
 def category_edit_view(request, category_id):
     """تعديل تصنيف دورة تدريبية"""
     category = get_object_or_404(CourseCategory, pk=category_id)
+    check_institute_access(request, category)
     if request.method == 'POST':
         form = CourseCategoryForm(request.POST, instance=category)
         if form.is_valid():
@@ -1872,6 +1909,7 @@ def category_edit_view(request, category_id):
 def category_delete_view(request, category_id):
     """حذف تصنيف دورات تدريبية (مع التحقق من عدم وجود دورات مرتبطة به)"""
     category = get_object_or_404(CourseCategory, pk=category_id)
+    check_institute_access(request, category)
     linked_courses_count = category.courses.count()
 
     if request.method == 'POST':
