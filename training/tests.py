@@ -232,6 +232,60 @@ class AuthenticationAndSecurityTests(TestCase):
         self.assertEqual(res_arch_2025.status_code, 200)
         self.assertEqual(len(res_arch_2025.context['historical_enrollments']), 0)
 
+    def test_results_center_trainee_category_filters(self):
+        """التحقق من عمل فلتر تصنيف وفئة الدارسين في مركز النتائج والسجل التاريخي"""
+        self.client.login(username='user_test', password='Password123!')
+        from training.models import CourseCategory, Course, CourseSession
+
+        cat = CourseCategory.objects.create(name="تصنيف اختبار فلاتر النتائج")
+        course_officer = Course.objects.create(name="دورة قيادة ضباط", category=cat)
+        course_nco = Course.objects.create(name="دورة إشارة ضباط صف", category=cat)
+        course_joint = Course.objects.create(name="دورة أمن مشتركة", category=cat)
+
+        session_officer = CourseSession.objects.create(
+            course=course_officer,
+            session_code="دفعة-ضباط-01",
+            target_category="officer",
+            start_date="2026-02-01",
+            end_date="2026-02-28",
+            status="active"
+        )
+        session_nco = CourseSession.objects.create(
+            course=course_nco,
+            session_code="دفعة-صف-01",
+            target_category="nco",
+            start_date="2026-02-01",
+            end_date="2026-02-28",
+            status="active"
+        )
+        session_joint_archived = CourseSession.objects.create(
+            course=course_joint,
+            session_code="دفعة-مشتركة-01",
+            target_category="joint",
+            start_date="2026-01-01",
+            end_date="2026-01-25",
+            status="completed"
+        )
+
+        # 1. فحص فلترة دورات الضباط في تبويب رصد الدرجات
+        res_officer = self.client.get(reverse('training:results_center'), {'tab': 'sessions', 'session_target_cat': 'officer'})
+        self.assertEqual(res_officer.status_code, 200)
+        self.assertIn(session_officer, res_officer.context['sessions'])
+        self.assertNotIn(session_nco, res_officer.context['sessions'])
+        self.assertEqual(res_officer.context['session_target_cat'], 'officer')
+
+        # 2. فحص فلترة دورات ضباط الصف في تبويب رصد الدرجات
+        res_nco = self.client.get(reverse('training:results_center'), {'tab': 'sessions', 'session_target_cat': 'nco'})
+        self.assertEqual(res_nco.status_code, 200)
+        self.assertIn(session_nco, res_nco.context['sessions'])
+        self.assertNotIn(session_officer, res_nco.context['sessions'])
+
+        # 3. فحص فلترة السجل التاريخي حسب الفئة المشتركة
+        res_joint_arch = self.client.get(reverse('training:results_center'), {'tab': 'archive', 'archive_target_cat': 'joint'})
+        self.assertEqual(res_joint_arch.status_code, 200)
+        self.assertIn(session_joint_archived, res_joint_arch.context['archive_sessions'])
+        self.assertNotIn(session_officer, res_joint_arch.context['archive_sessions'])
+
     def test_results_center_archive_courses_and_students_view(self):
         """التحقق من عرض الدورات في تبويب السجل التاريخي والوصول لطلبة ونتائج الدورة"""
         self.client.login(username='user_test', password='Password123!')

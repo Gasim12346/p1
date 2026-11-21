@@ -1236,6 +1236,7 @@ def results_center_view(request):
     session_cat = request.GET.get('session_cat', '').strip()
     session_status = request.GET.get('session_status', '').strip()
     session_year = request.GET.get('session_year', '').strip()
+    session_target_cat = request.GET.get('session_target_cat', '').strip() or request.GET.get('target_cat', '').strip()
 
     sessions = CourseSession.objects.select_related('course', 'course__category').prefetch_related('enrollments').all()
     if request.institute:
@@ -1264,10 +1265,21 @@ def results_center_view(request):
     if session_year and session_year.isdigit():
         sessions = sessions.filter(start_date__year=int(session_year))
 
+    # حساب أعداد دورات كل تصنيف للدارسين قبل تصفية الفئة
+    session_counts = {
+        'all': sessions.count(),
+        'officer': sessions.filter(target_category='officer').count(),
+        'nco': sessions.filter(target_category='nco').count(),
+        'joint': sessions.filter(target_category='joint').count(),
+        'civilian': sessions.filter(target_category='civilian').count(),
+    }
+    if session_target_cat and session_target_cat != 'all':
+        sessions = sessions.filter(target_category=session_target_cat)
+
     # فلاتر تبويب السجل التاريخي للنتائج والشهادات (عرض الدورات التدريبية في السجل التاريخي)
     search_query = request.GET.get('q', '').strip() or request.GET.get('archive_q', '').strip()
     grade_filter = request.GET.get('grade', '').strip()
-    trainee_cat_filter = request.GET.get('trainee_category', '').strip()
+    trainee_cat_filter = request.GET.get('trainee_category', '').strip() or request.GET.get('archive_target_cat', '').strip()
     selected_session_filter = request.GET.get('session_filter', '').strip()
     year_filter = request.GET.get('year', '').strip() or request.GET.get('archive_year', '').strip()
     archive_cat = request.GET.get('archive_cat', '').strip()
@@ -1326,20 +1338,34 @@ def results_center_view(request):
     if grade_filter:
         historical_enrollments = historical_enrollments.filter(grade_label__icontains=grade_filter)
 
-    if trainee_cat_filter:
-        historical_enrollments = historical_enrollments.filter(trainee__category=trainee_cat_filter)
-        archive_sessions = archive_sessions.filter(enrollments__trainee__category=trainee_cat_filter).distinct()
-
-    if selected_session_filter:
-        historical_enrollments = historical_enrollments.filter(session_id=selected_session_filter)
-        archive_sessions = archive_sessions.filter(id=selected_session_filter)
-
     if year_filter and year_filter.isdigit():
         historical_enrollments = historical_enrollments.filter(session__start_date__year=int(year_filter))
         archive_sessions = archive_sessions.filter(start_date__year=int(year_filter))
 
     if archive_status:
         archive_sessions = archive_sessions.filter(status=archive_status)
+
+    # حساب أعداد دورات السجل التاريخي لكل تصنيف للدارسين قبل التصفية
+    archive_counts = {
+        'all': archive_sessions.count(),
+        'officer': archive_sessions.filter(Q(target_category='officer') | Q(enrollments__trainee__category='officer')).distinct().count(),
+        'nco': archive_sessions.filter(Q(target_category='nco') | Q(enrollments__trainee__category='nco')).distinct().count(),
+        'joint': archive_sessions.filter(target_category='joint').count(),
+        'civilian': archive_sessions.filter(Q(target_category='civilian') | Q(enrollments__trainee__category='civilian')).distinct().count(),
+    }
+
+    if trainee_cat_filter and trainee_cat_filter != 'all':
+        historical_enrollments = historical_enrollments.filter(trainee__category=trainee_cat_filter)
+        if trainee_cat_filter == 'joint':
+            archive_sessions = archive_sessions.filter(target_category='joint')
+        else:
+            archive_sessions = archive_sessions.filter(
+                Q(target_category=trainee_cat_filter) | Q(enrollments__trainee__category=trainee_cat_filter)
+            ).distinct()
+
+    if selected_session_filter:
+        historical_enrollments = historical_enrollments.filter(session_id=selected_session_filter)
+        archive_sessions = archive_sessions.filter(id=selected_session_filter)
 
     # قائمة السنوات الميلادية المتاحة للفلترة
     from datetime import datetime
@@ -1358,11 +1384,17 @@ def results_center_view(request):
     pass_count = CourseEnrollment.objects.filter(is_graded=True, is_dropped=False, percentage__gte=50, percentage__lt=65).count()
 
     # تحديد التبويب النشط بناءً على المعاملات
-    active_tab = 'archive' if (
+    if request.GET.get('tab') == 'sessions':
+        active_tab = 'sessions'
+    elif request.GET.get('tab') == 'archive':
+        active_tab = 'archive'
+    elif (
         search_query or grade_filter or trainee_cat_filter or selected_session_filter or
-        year_filter or archive_cat or archive_status or archive_session_id or
-        request.GET.get('tab') == 'archive'
-    ) else 'sessions'
+        year_filter or archive_cat or archive_status or archive_session_id
+    ):
+        active_tab = 'archive'
+    else:
+        active_tab = 'sessions'
 
     # التحقق مما إذا تم طلب عرض دورة محددة ضمن السجل التاريخي
     selected_archive_session = None
@@ -1396,12 +1428,16 @@ def results_center_view(request):
         'session_cat': session_cat,
         'session_status': session_status,
         'session_year': session_year,
+        'session_target_cat': session_target_cat,
+        'session_counts': session_counts,
         'search_query': search_query,
         'archive_q': search_query,
         'archive_cat': archive_cat,
         'archive_status': archive_status,
         'grade_filter': grade_filter,
         'trainee_cat_filter': trainee_cat_filter,
+        'archive_target_cat': trainee_cat_filter,
+        'archive_counts': archive_counts,
         'session_filter': selected_session_filter,
         'year_filter': year_filter,
         'archive_year': year_filter,
