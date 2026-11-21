@@ -2088,6 +2088,37 @@ class CertificateOptionsAndNoteTests(TestCase):
         self.assertEqual(data['next_number'], '1')
         self.assertTrue(data['is_special'])
 
+        # 3. التحقق من توحيد رقم الدفعة للدورات الخاصة على مستوى التصنيف وكافة المواد والفئات
+        course_pc = Course.objects.create(name='أساسيات حاسوب', category=cat_special)
+        course_net = Course.objects.create(name='شبكات', category=cat_special)
+
+        # انعقاد دورة أساسيات حاسوب (ضباط) في 2026 يأخذ رقم 1
+        num_pc = calculate_next_course_session_code(course_pc, datetime.date(2026, 3, 1), target_category='officer')
+        self.assertEqual(num_pc, '1')
+        CourseSession.objects.create(
+            course=course_pc,
+            target_category='officer',
+            session_code='1',
+            start_date=datetime.date(2026, 3, 1),
+            end_date=datetime.date(2026, 3, 30)
+        )
+
+        # انعقاد دورة شبكات (ضباط صف) في 2026 تحت نفس التصنيف يأخذ رقم 2 تلقائياً
+        num_net = calculate_next_course_session_code(course_net, datetime.date(2026, 4, 1), target_category='nco')
+        self.assertEqual(num_net, '2')
+        CourseSession.objects.create(
+            course=course_net,
+            target_category='nco',
+            session_code='2',
+            start_date=datetime.date(2026, 4, 1),
+            end_date=datetime.date(2026, 4, 30)
+        )
+
+        # انعقاد دورة ذكاء اصطناعي (مشتركة) في 2026 تحت نفس التصنيف يأخذ رقم 3 تلقائياً
+        course_ai = Course.objects.create(name='ذكاء اصطناعي', category=cat_special)
+        num_ai = calculate_next_course_session_code(course_ai, datetime.date(2026, 5, 1), target_category='joint')
+        self.assertEqual(num_ai, '3')
+
     def test_quick_add_subject_api_and_integration(self):
         """التحقق من إضافة مادة دراسية سريعة عبر API للدورة وربطها بالدورة المنعقدة وظهورها في صفحة الإنشاء"""
         cat = CourseCategory.objects.create(name='دورات حاسوب عامة')

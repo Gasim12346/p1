@@ -344,9 +344,9 @@ def course_sessions_view(request):
 def calculate_next_course_session_code(course, start_date=None, target_category=None):
     """
     احتساب رقم الدفعة التالي تلقائياً وفق القواعد:
-    1. ترقيم مستقل لكل فئة من فئات الدارسين (الضباط لهم تسلسل مستقل، وضباط الصف لهم تسلسل مستقل، والدورات المشتركة لها تسلسل مستقل).
-    2. دورات المرشد: ترقيم تراكمي مستمر لا يتكرر أبداً ولا يتصفر بالسنة (أعلى رقم دفعة سابق لنفس الدورة ونفس الفئة + 1).
-    3. الدورات الخاصة: ترقيم يتكرر سنوياً، بحيث تبدأ الدفعة في كل بداية سنة من الرقم 1 لنفس الفئة (أعلى رقم دفعة في تلك السنة لنفس الفئة + 1).
+    1. دورات المرشد: ترقيم تراكمي مستمر مستقل لكل دورة ولكل فئة من فئات الدارسين (الضباط لهم تسلسل مستقل، وضباط الصف لهم تسلسل مستقل، والدورات المشتركة لها تسلسل مستقل).
+    2. الدورات الخاصة: ترقيم موحد وشامل على مستوى التصنيف وكافة المواد والفئات، يتكرر سنوياً (أعلى رقم دفعة لأي دورة خاصة في تلك السنة + 1).
+       مثال: إذا انعقدت دورة أساسيات حاسوب (ضباط) برقم دفعة 1، فإن دورة شبكات (ضباط صف) التالية لها تأخذ رقم دفعة 2 تلقائياً.
     """
     import re
     from datetime import date
@@ -378,13 +378,24 @@ def calculate_next_course_session_code(course, start_date=None, target_category=
         if not target_year:
             target_year = date.today().year
 
-        sessions = CourseSession.objects.filter(course=course, start_date__year=target_year)
+        # الدورات الخاصة: رقم الدفعة موحد لكامل تصنيف الدورات الخاصة ولكافة المواد والفئات
+        sessions = CourseSession.objects.filter(
+            Q(course__category=course.category) | Q(course__category__name__icontains='خاص'),
+            start_date__year=target_year
+        )
+        if course.institute:
+            sessions = sessions.filter(
+                Q(institute=course.institute) | Q(course__institute=course.institute)
+            )
     else:
-        # دورات المرشد لا تتكرر: ترقيم مستمر لا يعاد تصفيره بحسب السنة
+        # دورات المرشد لا تتكرر: ترقيم مستمر لكل دورة ولكل فئة لا يعاد تصفيره بحسب السنة
         sessions = CourseSession.objects.filter(course=course)
-
-    if target_category:
-        sessions = sessions.filter(target_category=target_category)
+        if target_category:
+            sessions = sessions.filter(target_category=target_category)
+        if course.institute:
+            sessions = sessions.filter(
+                Q(institute=course.institute) | Q(course__institute=course.institute)
+            )
 
     max_num = 0
     for s in sessions:

@@ -88,7 +88,7 @@
                             <option value="joint">مشتركة (ضباط وضباط صف)</option>
                             <option value="civilian">مدنيين</option>
                         </select>
-                        <div class="form-text small text-muted">تحديد فئة الدورة لعزل تسلسل الدفعات وتصفية الدارسين.</div>
+                        <div class="form-text small text-muted" id="targetCategoryHint">تحديد فئة الدورة لتصفية الدارسين (وفي الدورات الخاصة يكون تسلسل الدفعات موحداً).</div>
                     </div>
 
                     <!-- رقم الدفعة (توليد وإدخال تلقائي معتمد) -->
@@ -647,7 +647,7 @@
             sessionCodeInput.value = data[targetCat];
             if (hintEl) {
                 if (data.is_special) {
-                    hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة (${catName}): ترقيم الدفعة لهذه السنة يبدأ من (<strong>${data[targetCat]}</strong>) ويتكرر سنوياً.</span>`;
+                    hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدفعة موحد لكافة دورات ومواد التصنيف لهذه السنة هو (<strong>${data[targetCat]}</strong>) ويتكرر سنوياً.</span>`;
                 } else {
                     hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد (${catName}): ترقيم الدفعة التراكمي المستمر غير المكرر هو (<strong>${data[targetCat]}</strong>).</span>`;
                 }
@@ -674,7 +674,7 @@
                     if (hintEl) {
                         const displayCat = res.target_category_display || catName;
                         if (res.is_special) {
-                            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة (${displayCat}): ترقيم الدفعة لهذه السنة يبدأ من (<strong>${res.next_number}</strong>) ويتكرر سنوياً.</span>`;
+                            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-calendar-check me-1"></i>دورة خاصة: ترقيم الدفعة موحد لكافة دورات ومواد التصنيف لهذه السنة هو (<strong>${res.next_number}</strong>) ويتكرر سنوياً.</span>`;
                         } else {
                             hintEl.innerHTML = `<span class="text-primary"><i class="bi bi-shield-check me-1"></i>دورة مرشد (${displayCat}): ترقيم الدفعة التراكمي المستمر غير المكرر هو (<strong>${res.next_number}</strong>).</span>`;
                         }
