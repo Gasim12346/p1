@@ -1,5 +1,5 @@
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, date, timedelta
 from functools import wraps
 from urllib.parse import quote
@@ -14,6 +14,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Q, Count, Avg, Sum, Max, Min, ProtectedError
 
 from apps.core.permissions import (
@@ -649,77 +650,78 @@ def course_session_create_view(request):
                 else:
                     supervisor = Instructor.objects.filter(military_number=supervisor_num).first() if supervisor_num else None
 
-                    session = CourseSession.objects.create(
-                        institute=request.institute or (course.institute if course else None),
-                        course=course,
-                        target_category=target_category,
-                        session_code=session_code,
-                        start_date=start_date,
-                        end_date=end_date,
-                        movement_order_date=movement_order_date if movement_order_date else None,
-                        movement_order_file=movement_order_file if movement_order_file else None,
-                        status=status,
-                        attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
-                        supervisor=supervisor,
-                        notes=notes
-                    )
-
-                # تعيين المعلمين لمواد الدورة العامة
-                for sub in course.subjects.filter(session__isnull=True):
-                    teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
-                    inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
-                    SessionSubjectInstructor.objects.create(
-                        session=session,
-                        subject=sub,
-                        instructor=inst
-                    )
-
-                # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
-                enrolled_count = 0
-                for num in selected_trainee_nums:
-                    try:
-                        t = Trainee.objects.get(military_number=num)
-                        # قراءة الرتبة والقوة والوحدة وأمر التحرك المعدلة من النموذج
-                        current_rank = request.POST.get(f'rank_{num}', '').strip()
-                        current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
-                        current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
-                        m_date = request.POST.get(f'movement_order_date_{num}', '').strip()
-                        m_file = request.FILES.get(f'movement_order_file_{num}')
-
-                        CourseEnrollment.objects.create(
-                            session=session,
-                            trainee=t,
-                            current_rank=current_rank,
-                            current_force=current_force,
-                            current_unit=current_unit,
-                            movement_order_date=m_date if m_date else None,
-                            movement_order_file=m_file if m_file else None
+                    with transaction.atomic():
+                        session = CourseSession.objects.create(
+                            institute=request.institute or (course.institute if course else None),
+                            course=course,
+                            target_category=target_category,
+                            session_code=session_code,
+                            start_date=start_date,
+                            end_date=end_date,
+                            movement_order_date=movement_order_date if movement_order_date else None,
+                            movement_order_file=movement_order_file if movement_order_file else None,
+                            status=status,
+                            attendance_max_grade=attendance_max_grade if attendance_max_grade is not None else course.attendance_max_grade,
+                            supervisor=supervisor,
+                            notes=notes
                         )
-                        
-                        has_changes = False
-                        if current_force and current_force != t.force:
-                            t.force = current_force
-                            has_changes = True
-                        if current_unit and current_unit != t.unit:
-                            t.unit = current_unit
-                            has_changes = True
-                        if has_changes:
-                            t.save(update_fields=['force', 'unit'])
-                        enrolled_count += 1
-                    except Trainee.DoesNotExist:
-                        pass
 
-                log_activity(
-                    request=request,
-                    action_type=ActivityAction.CREATE,
-                    action_category=ActivityCategory.SESSIONS,
-                    description=f"إنشاء انعقاد دورة جديدة: {session.session_code} لدورة '{course.name}' وتسجيل {enrolled_count} دارس بها",
-                    target_model="CourseSession",
-                    target_id=session.id
-                )
+                        # تعيين المعلمين لمواد الدورة العامة
+                        for sub in course.subjects.filter(session__isnull=True):
+                            teacher_num = request.POST.get(f'subject_teacher_{sub.id}', '').strip()
+                            inst = Instructor.objects.filter(military_number=teacher_num).first() if teacher_num else None
+                            SessionSubjectInstructor.objects.create(
+                                session=session,
+                                subject=sub,
+                                instructor=inst
+                            )
 
-                messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
-                return redirect('training:course_session_manage', session_id=session.id)
+                        # تسجيل الطلبة مع حفظ الرتبة والقوة والوحدة المحدثة وقت الدورة
+                        enrolled_count = 0
+                        for num in selected_trainee_nums:
+                            try:
+                                t = Trainee.objects.get(military_number=num)
+                                # قراءة الرتبة والقوة والوحدة وأمر التحرك المعدلة من النموذج
+                                current_rank = request.POST.get(f'rank_{num}', '').strip()
+                                current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
+                                current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
+                                m_date = request.POST.get(f'movement_order_date_{num}', '').strip()
+                                m_file = request.FILES.get(f'movement_order_file_{num}')
+
+                                CourseEnrollment.objects.create(
+                                    session=session,
+                                    trainee=t,
+                                    current_rank=current_rank,
+                                    current_force=current_force,
+                                    current_unit=current_unit,
+                                    movement_order_date=m_date if m_date else None,
+                                    movement_order_file=m_file if m_file else None
+                                )
+                                
+                                has_changes = False
+                                if current_force and current_force != t.force:
+                                    t.force = current_force
+                                    has_changes = True
+                                if current_unit and current_unit != t.unit:
+                                    t.unit = current_unit
+                                    has_changes = True
+                                if has_changes:
+                                    t.save(update_fields=['force', 'unit'])
+                                enrolled_count += 1
+                            except Trainee.DoesNotExist:
+                                pass
+
+                        log_activity(
+                            request=request,
+                            action_type=ActivityAction.CREATE,
+                            action_category=ActivityCategory.SESSIONS,
+                            description=f"إنشاء انعقاد دورة جديدة: {session.session_code} لدورة '{course.name}' وتسجيل {enrolled_count} دارس بها",
+                            target_model="CourseSession",
+                            target_id=session.id
+                        )
+
+                    messages.success(request, f'تم حفظ انعقاد دورة "{course.name}" بنجاح، وتعيين مشرف الدورة ومعلمي المواد، وتسجيل {enrolled_count} دارس بها.')
+                    return redirect('training:course_session_manage', session_id=session.id)
 
     officer_count = trainees.filter(category=TraineeCategory.OFFICER).count()
     nco_count = trainees.filter(category=TraineeCategory.NCO).count()
@@ -1551,21 +1553,22 @@ def results_entry_view(request, session_id):
                 return redirect('training:results_entry', session_id=session.id)
 
             # احتساب النتائج للجميع واعتماد الدورة مع حفظ أي ملحوظات مدخلة
-            for en in enrollments:
-                num = en.trainee.military_number
-                if f'cert_note_{num}' in request.POST:
-                    en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
-                en.calculate_results()
-            session.status = 'completed'
-            session.save()
-            log_activity(
-                request=request,
-                action_type=ActivityAction.GRADE_APPROVAL,
-                action_category=ActivityCategory.GRADES,
-                description=f"اعتماد وإقفال نتائج دورة '{session.course.name}' (دفعة: {session.session_code}) رسمياً",
-                target_model="CourseSession",
-                target_id=session.id
-            )
+            with transaction.atomic():
+                for en in enrollments:
+                    num = en.trainee.military_number
+                    if f'cert_note_{num}' in request.POST:
+                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
+                    en.calculate_results()
+                session.status = 'completed'
+                session.save()
+                log_activity(
+                    request=request,
+                    action_type=ActivityAction.GRADE_APPROVAL,
+                    action_category=ActivityCategory.GRADES,
+                    description=f"اعتماد وإقفال نتائج دورة '{session.course.name}' (دفعة: {session.session_code}) رسمياً",
+                    target_model="CourseSession",
+                    target_id=session.id
+                )
             messages.success(request, f'تم اعتماد وإقفال نتيجة دورة "{session.course.name}" بنجاح بعد اكتمال رصد كافة المواد من هيئة التدريس.')
             from_param = request.POST.get('from', '').strip() or request.GET.get('from', '').strip()
             redirect_url = reverse('training:results_entry', kwargs={'session_id': session.id})
@@ -1584,12 +1587,13 @@ def results_entry_view(request, session_id):
                     grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
                     if grade_raw != '':
                         try:
-                            score = float(grade_raw)
-                            if score < 0:
+                            score = Decimal(grade_raw)
+                            max_sub_grade = Decimal(str(sub.max_grade))
+                            if score < Decimal('0.00'):
                                 validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
-                            elif score > float(sub.max_grade):
+                            elif score > max_sub_grade:
                                 validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" ({score}) تتجاوز الحد الأقصى للمادة ({sub.max_grade}).')
-                        except ValueError:
+                        except (ValueError, InvalidOperation):
                             validation_errors.append(f'درجة مادة "{sub.name}" المدخلة للدارس "{en.trainee.name}" غير صالحة ({grade_raw}).')
 
             # 2. التحقق من درجة المواظبة إذا كان مصرحاً له برصدها
@@ -1597,52 +1601,58 @@ def results_entry_view(request, session_id):
                 att_raw = request.POST.get(f'att_{num}', '').strip()
                 if att_raw != '':
                     try:
-                        att_val = float(att_raw)
-                        if att_val < 0:
+                        att_val = Decimal(att_raw)
+                        max_att = Decimal(str(session.attendance_max_grade)) if session.attendance_max_grade is not None else Decimal('10.00')
+                        if att_val < Decimal('0.00'):
                             validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
-                        elif att_val > float(session.attendance_max_grade):
+                        elif att_val > max_att:
                             validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" ({att_val}) تتجاوز الحد الأقصى للمواظبة ({session.attendance_max_grade}).')
-                    except ValueError:
+                    except (ValueError, InvalidOperation):
                         validation_errors.append(f'درجة المواظبة للدارس "{en.trainee.name}" غير صالحة ({att_raw}).')
 
         if validation_errors:
             for err in validation_errors[:10]:
                 messages.error(request, err)
         else:
-            # تطبيق الحفظ على الحقول المصرح بها فقط دون المساس بدرجات المواد الأخرى
-            for en in enrollments:
-                num = en.trainee.military_number
+            with transaction.atomic():
+                # تطبيق الحفظ على الحقول المصرح بها فقط دون المساس بدرجات المواد الأخرى
+                for en in enrollments:
+                    num = en.trainee.military_number
 
-                # حفظ الملحوظة
-                if f'cert_note_{num}' in request.POST:
-                    en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
+                    # حفظ الملحوظة
+                    if f'cert_note_{num}' in request.POST:
+                        en.certificate_note = request.POST.get(f'cert_note_{num}', '').strip()
 
-                # حفظ درجات المواد المسموح بها لهذا المعلم أو الأدمن
-                for sub in subjects:
-                    if sub.id in allowed_subject_ids:
-                        grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
-                        if grade_raw != '':
-                            score = float(grade_raw)
-                            TraineeSubjectGrade.objects.update_or_create(
-                                enrollment=en,
-                                subject=sub,
-                                defaults={'score': score}
-                            )
-                        else:
-                            TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
+                    # حفظ درجات المواد المسموح بها لهذا المعلم أو الأدمن
+                    for sub in subjects:
+                        if sub.id in allowed_subject_ids:
+                            grade_raw = request.POST.get(f'grade_{num}_{sub.id}', '').strip()
+                            if grade_raw != '':
+                                score = Decimal(grade_raw)
+                                TraineeSubjectGrade.objects.update_or_create(
+                                    enrollment=en,
+                                    subject=sub,
+                                    defaults={'score': score}
+                                )
+                            else:
+                                TraineeSubjectGrade.objects.filter(enrollment=en, subject=sub).delete()
 
-                # حفظ درجة المواظبة إذا كان مصرحاً له
-                if can_edit_attendance:
-                    att_raw = request.POST.get(f'att_{num}', '').strip()
-                    en.attendance_score = float(att_raw) if att_raw != '' else None
+                    # حفظ درجة المواظبة إذا كان مصرحاً له
+                    if can_edit_attendance:
+                        att_raw = request.POST.get(f'att_{num}', '').strip()
+                        en.attendance_score = Decimal(att_raw) if att_raw != '' else None
 
-                # إذا اكتملت جميع درجات المواد والمواظبة، يتم احتساب النتيجة تلقائياً
-                total_recorded = en.grades.filter(score__isnull=False, subject__in=subjects).count()
-                if total_recorded == len(subjects) and en.attendance_score is not None:
-                    en.calculate_results()
-                else:
-                    en.is_graded = False
-                    en.save(update_fields=['attendance_score', 'certificate_note', 'is_graded'])
+                    # إذا اكتملت جميع درجات المواد والمواظبة، يتم احتساب النتيجة تلقائياً
+                    total_recorded = TraineeSubjectGrade.objects.filter(
+                        enrollment=en,
+                        score__isnull=False,
+                        subject__in=subjects
+                    ).count()
+                    if total_recorded == len(subjects) and en.attendance_score is not None:
+                        en.calculate_results()
+                    else:
+                        en.is_graded = False
+                        en.save(update_fields=['attendance_score', 'certificate_note', 'is_graded'])
 
             # رسالة نجاح واضحة حسب طبيعة الحفظ
             if allowed_subject_ids and not can_edit_attendance:

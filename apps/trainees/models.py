@@ -116,6 +116,13 @@ class Trainee(models.Model):
         verbose_name = 'دارس'
         verbose_name_plural = 'الدارسون'
         ordering = ['category', 'military_number']
+        indexes = [
+            models.Index(fields=['military_number']),
+            models.Index(fields=['category']),
+            models.Index(fields=['force']),
+            models.Index(fields=['unit']),
+            models.Index(fields=['institute', 'category']),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.military_number})"

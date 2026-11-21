@@ -11,7 +11,7 @@ from training.models import (
     Institute, UserProfile, UserRole, CourseCategory, Course, Subject,
     CourseSession, Trainee, TraineeCategory, CourseEnrollment,
     TraineeSubjectGrade, Instructor, InstructorCategory, SessionSubjectInstructor,
-    CertificateSettings, MovementOrderSettings, DisciplineInfraction
+    CertificateSettings, MovementOrderSettings, DisciplineInfraction, ActivityLog
 )
 from training.services import initialize_new_institute
 from training.reports import (
@@ -4341,6 +4341,100 @@ class CriticalSecurityRemediationTests(TestCase):
         # 4. ملف PNG سليم يبدأ بـ \x89PNG
         valid_png = SimpleUploadedFile("scan.png", b"\x89PNG\r\n\x1a\nimage data", content_type="image/png")
         validate_movement_order_file(valid_png)
+
+
+class DataIntegrityAndPerformanceRemediationTests(TestCase):
+    """اختبارات مسار أداء قاعدة البيانات وسلامة العمليات الحسابية والذرية"""
+
+    def setUp(self):
+        self.inst = Institute.objects.create(name="معهد الاتصالات التجريبي", code="TEST-COMM", is_active=True)
+        self.cat = CourseCategory.objects.create(name="دورات تقنية", institute=self.inst)
+        self.course = Course.objects.create(name="هندسة شبكات", category=self.cat, institute=self.inst, attendance_max_grade=Decimal('10.00'))
+        self.sub1 = Subject.objects.create(course=self.course, name="راوترات", max_grade=Decimal('100.00'), credit_hours=30)
+        self.sub2 = Subject.objects.create(course=self.course, name="سويتشات", max_grade=Decimal('100.00'), credit_hours=30)
+        self.sub3 = Subject.objects.create(course=self.course, name="أمن شبكات", max_grade=Decimal('100.00'), credit_hours=30)
+
+        self.trainee = Trainee.objects.create(
+            institute=self.inst,
+            military_number="PERF-9901",
+            name="طارق الأحمدي",
+            category=TraineeCategory.OFFICER,
+            force="القوات البرية",
+            unit="سلاح الإشارة"
+        )
+        self.session = CourseSession.objects.create(
+            institute=self.inst,
+            course=self.course,
+            session_code="NET-P01",
+            start_date=date.today(),
+            end_date=date.today() + timedelta(days=60),
+            status="active",
+            attendance_max_grade=Decimal('10.00')
+        )
+        self.enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank="نقيب",
+            current_force="القوات البرية",
+            current_unit="سلاح الإشارة",
+            attendance_score=Decimal('9.75')
+        )
+
+    def test_calculate_results_exact_decimal_precision(self):
+        """التحقق من دقة الحساب العشري للنتائج وتجنب تقريب الفلوت"""
+        # مجموع المواد: 300 + 10 مواظبة = 310
+        # درجات: 91.33 + 87.25 + 95.10 + 9.75 مواظبة = 283.43
+        # النسبة: (283.43 * 100) / 310 = 91.429032... -> 91.43
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub1, score=Decimal('91.33'))
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub2, score=Decimal('87.25'))
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub3, score=Decimal('95.10'))
+
+        res = self.enrollment.calculate_results()
+        self.assertIsNotNone(res)
+        self.enrollment.refresh_from_db()
+        self.assertEqual(self.enrollment.total_score, Decimal('283.43'))
+        self.assertEqual(self.enrollment.percentage, Decimal('91.43'))
+        self.assertEqual(self.enrollment.grade_label, 'ممتاز (أ)')
+        self.assertTrue(self.enrollment.is_graded)
+
+    def test_models_database_indexes_registered(self):
+        """التحقق من إنشاء وتسجيل الفهارس في نماذج النظام الأساسية"""
+        session_idx_fields = [tuple(idx.fields) for idx in CourseSession._meta.indexes]
+        self.assertIn(('status', '-start_date'), session_idx_fields)
+        self.assertIn(('target_category',), session_idx_fields)
+        self.assertIn(('institute', 'status'), session_idx_fields)
+        self.assertIn(('start_date', 'end_date'), session_idx_fields)
+
+        enrollment_idx_fields = [tuple(idx.fields) for idx in CourseEnrollment._meta.indexes]
+        self.assertIn(('session', 'is_graded'), enrollment_idx_fields)
+        self.assertIn(('session', 'is_dropped'), enrollment_idx_fields)
+        self.assertIn(('is_graded', 'is_dropped'), enrollment_idx_fields)
+        self.assertIn(('percentage',), enrollment_idx_fields)
+
+        trainee_idx_fields = [tuple(idx.fields) for idx in Trainee._meta.indexes]
+        self.assertIn(('military_number',), trainee_idx_fields)
+        self.assertIn(('category',), trainee_idx_fields)
+        self.assertIn(('institute', 'category'), trainee_idx_fields)
+
+        grade_idx_fields = [tuple(idx.fields) for idx in TraineeSubjectGrade._meta.indexes]
+        self.assertIn(('enrollment', 'subject'), grade_idx_fields)
+        self.assertIn(('score',), grade_idx_fields)
+
+        activity_idx_fields = [tuple(idx.fields) for idx in ActivityLog._meta.indexes]
+        self.assertIn(('action_type', '-timestamp'), activity_idx_fields)
+        self.assertIn(('institute', '-timestamp'), activity_idx_fields)
+
+    def test_prefetched_grades_in_has_complete_data_and_grades(self):
+        """التحقق من استغلال التخزين المسبق للدرجات لتفادي استعلامات N+1"""
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub1, score=Decimal('90.00'))
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub2, score=Decimal('85.00'))
+        TraineeSubjectGrade.objects.create(enrollment=self.enrollment, subject=self.sub3, score=Decimal('95.00'))
+        self.enrollment.calculate_results()
+
+        # استعلام مسبق
+        en_qs = CourseEnrollment.objects.filter(pk=self.enrollment.pk).prefetch_related('grades').first()
+        self.assertTrue(en_qs.has_complete_data_and_grades)
+
 
 
 

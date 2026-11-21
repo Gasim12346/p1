@@ -518,6 +518,11 @@ class ActivityLog(models.Model):
         ordering = ['-timestamp']
         verbose_name = 'سجل النشاط والعمليات'
         verbose_name_plural = 'سجل الأنشطة والعمليات'
+        indexes = [
+            models.Index(fields=['action_type', '-timestamp']),
+            models.Index(fields=['action_category', '-timestamp']),
+            models.Index(fields=['institute', '-timestamp']),
+        ]
 
     def __str__(self):
         return f"[{self.timestamp.strftime('%Y-%m-%d %H:%M')}] {self.username} - {self.get_action_type_display()}: {self.description[:40]}"

@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -404,6 +404,12 @@ class CourseSession(models.Model):
         verbose_name = 'انعقاد دورة'
         verbose_name_plural = 'الدورات المنعقدة'
         ordering = ['-start_date']
+        indexes = [
+            models.Index(fields=['status', '-start_date']),
+            models.Index(fields=['target_category']),
+            models.Index(fields=['institute', 'status']),
+            models.Index(fields=['start_date', 'end_date']),
+        ]
 
     def clean(self):
         super().clean()
@@ -605,6 +611,14 @@ class CourseEnrollment(models.Model):
         verbose_name_plural = 'تسجيلات الدارسين'
         unique_together = ('session', 'trainee')
         ordering = ['-total_score', 'trainee__name']
+        indexes = [
+            models.Index(fields=['session', 'is_graded']),
+            models.Index(fields=['session', 'is_dropped']),
+            models.Index(fields=['is_graded', 'is_dropped']),
+            models.Index(fields=['percentage']),
+            models.Index(fields=['current_force']),
+            models.Index(fields=['current_unit']),
+        ]
 
     def __str__(self):
         return f"{self.trainee.name} في {self.session}"
@@ -639,7 +653,11 @@ class CourseEnrollment(models.Model):
         if total_subjects == 0:
             return False
 
-        actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self, subject__in=session_subjects))
+        if hasattr(self, '_prefetched_objects_cache') and 'grades' in self._prefetched_objects_cache:
+            session_sub_ids = {s.id for s in session_subjects}
+            actual_grades = [g for g in self.grades.all() if g.subject_id in session_sub_ids]
+        else:
+            actual_grades = list(TraineeSubjectGrade.objects.filter(enrollment=self, subject__in=session_subjects))
         graded_count = len(actual_grades)
         if graded_count < total_subjects:
             return False
@@ -708,7 +726,7 @@ class CourseEnrollment(models.Model):
             }
 
     def calculate_results(self):
-        """حساب المجموع الكلي، النسبة المئوية، والتقدير"""
+        """حساب المجموع الكلي، النسبة المئوية، والتقدير بدقة عشرية صارمة"""
         if self.is_dropped:
             self.is_graded = False
             self.total_score = Decimal('0.00')
@@ -723,28 +741,29 @@ class CourseEnrollment(models.Model):
 
         if total_subjects == 0 or graded_count < total_subjects:
             self.is_graded = False
-            self.total_score = 0.0
-            self.percentage = 0.0
+            self.total_score = Decimal('0.00')
+            self.percentage = Decimal('0.00')
             self.grade_label = ''
-            self.save()
+            self.save(update_fields=['is_graded', 'total_score', 'percentage', 'grade_label'])
             return None
 
-        subjects_scores = sum(float(g.score) for g in actual_grades)
-        total_obtained = subjects_scores + float(self.attendance_score or 0.0)
-        max_total = self.session.total_possible_score
+        subjects_scores = sum(Decimal(str(g.score)) for g in actual_grades if g.score is not None)
+        att_score = Decimal(str(self.attendance_score)) if self.attendance_score is not None else Decimal('0.00')
+        total_obtained = subjects_scores + att_score
+        max_total = Decimal(str(self.session.total_possible_score))
 
-        if max_total > 0:
-            pct = round((total_obtained * 100.0) / max_total, 2)
+        if max_total > Decimal('0.00'):
+            pct = ((total_obtained * Decimal('100.00')) / max_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         else:
-            pct = 0.0
+            pct = Decimal('0.00')
 
-        if pct >= 85:
+        if pct >= Decimal('85.00'):
             grade = 'ممتاز (أ)'
-        elif pct >= 75:
+        elif pct >= Decimal('75.00'):
             grade = 'جيد جداً (ب)'
-        elif pct >= 65:
+        elif pct >= Decimal('65.00'):
             grade = 'جيد (ج)'
-        elif pct >= 50:
+        elif pct >= Decimal('50.00'):
             grade = 'مقبول (د)'
         else:
             grade = 'دون المستوى / راسب'
@@ -753,10 +772,10 @@ class CourseEnrollment(models.Model):
         self.percentage = pct
         self.grade_label = grade
         self.is_graded = True
-        self.save()
+        self.save(update_fields=['attendance_score', 'certificate_note', 'total_score', 'percentage', 'grade_label', 'is_graded'])
         return {
-            'total': total_obtained,
-            'percentage': pct,
+            'total': float(total_obtained),
+            'percentage': float(pct),
             'grade': grade
         }
 
@@ -861,6 +880,10 @@ class TraineeSubjectGrade(models.Model):
         verbose_name = 'درجة مادة'
         verbose_name_plural = 'درجات المواد'
         unique_together = ('enrollment', 'subject')
+        indexes = [
+            models.Index(fields=['enrollment', 'subject']),
+            models.Index(fields=['score']),
+        ]
 
     def clean(self):
         super().clean()
