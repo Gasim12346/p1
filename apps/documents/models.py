@@ -63,7 +63,7 @@ DEFAULT_MOVEMENT_LAYOUT = {
     'declaration_line_height': 1.65,
     'declaration_margin_top': 10,
     'declaration_align': 'center',
-    'traveler_sig_position': 'declaration',
+    'traveler_sig_position': 'top_left',
     'traveler_sig_align': 'left',
     'traveler_sig_size': 14,
     'traveler_sig_margin_top': 4,
