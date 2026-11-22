@@ -639,8 +639,7 @@
                                     {% else %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;{% endif %}">
                         <div class="card-part fw-bold fs-6"
                             style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
-                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number
-                                }}</span>
+                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
                         </div>
                         <div class="name-part fw-bold fs-6"
                             style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
@@ -656,8 +655,7 @@
             {% else %}
             <div class="trainee-line nco-line">
                 <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
-                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{
-                        enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.current_rank }}
+                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.current_rank }}
                     &nbsp;&nbsp; {{ enrollment.trainee.name }}
                 </div>
             </div>
@@ -701,8 +699,7 @@
                             {% if movement_date %}
                             {{ movement_date|date:"d / m / Y" }}م
                             {% else %}
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{
-                            current_year }}م
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{ current_year }}م
                             {% endif %}
                         </td>
                     </tr>

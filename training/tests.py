@@ -5218,16 +5218,7 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         self.assertEqual(layout['traveler_sig_size'], 14)
         self.assertEqual(layout['traveler_sig_margin_top'], 4)
 
-        # تغيير الموضع إلى بداية الصفحة في نفس السطر على اليسار
-        self.movement_settings.layout_config = {
-            'traveler_sig_position': 'top_left',
-            'traveler_sig_size': 14,
-        }
-        self.movement_settings.save()
-        updated_top_left = self.movement_settings.get_layout()
-        self.assertEqual(updated_top_left['traveler_sig_position'], 'top_left')
-
-        # تغيير الموضع إلى بداية الصفحة (سطر مستقل)
+        # تغيير الموضع إلى بداية الصفحة
         self.movement_settings.layout_config = {
             'traveler_sig_position': 'top',
             'traveler_sig_align': 'right',

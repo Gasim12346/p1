@@ -2905,55 +2905,47 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                                <!-- سطر توقيع المسافر في بداية الصفحة -->
-                                                                <div class="col-12 mt-2">
-                                                                    <div class="p-3 rounded-3 border border-primary border-opacity-25 bg-white shadow-sm">
-                                                                        <div class="row g-2 align-items-center">
-                                                                            <div class="col-md-6">
-                                                                                <label class="form-label small fw-bold text-primary mb-1">
-                                                                                    <i class="bi bi-pen me-1"></i>موضع سطر توقيع المسافر
-                                                                                </label>
-                                                                                <select id="mov_cfg_traveler_sig_position" class="form-select form-select-sm fw-bold border-primary shadow-sm" onchange="syncTravelerSigPosition(this.value)">
-                                                                                    <option value="top_left">في بداية الصفحة (مقابل بيانات الدارس على اليسار في نفس السطر) ★</option>
-                                                                                    <option value="top">في بداية الصفحة (سطر مستقل أسفل الدارس وقبل الجدول)</option>
-                                                                                    <option value="after_table">وسط الصفحة (أسفل جدول التحرك وقبل التعليمات)</option>
-                                                                                    <option value="declaration">أسفل إقرار الشهادة (الموضع النظامي الافتراضي)</option>
-                                                                                </select>
-                                                                                <div class="form-text text-muted small mt-1">
-                                                                                    <i class="bi bi-info-circle me-1"></i>اختر <strong>في بداية الصفحة مقابل بيانات الدارس</strong> لوضعه مباشرة في نفس السطر جهة اليسار.
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <label class="form-label small fw-bold text-dark mb-1">حجم خط توقيع المسافر (px)</label>
-                                                                                <input type="number" id="mov_cfg_traveler_sig_size_trainee" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="syncTravelerSigSize(this.value)">
-                                                                            </div>
-                                                                            <div class="col-md-3">
-                                                                                <label class="form-label small fw-bold text-dark mb-1">المسافة أعلاه (px)</label>
-                                                                                <input type="number" id="mov_cfg_traveler_sig_margin_top_trainee" class="form-control form-control-sm" min="0" max="40" step="1" oninput="syncTravelerSigMargin(this.value)">
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
                                                         </div>
 
                                                         <!-- 4. جدول التحرك -->
                                                         <div class="tab-pane fade" id="movtab-table" role="tabpanel">
                                                             <div class="row g-3">
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">حجم خط نصوص الجدول (px)</label>
-                                                                    <input type="number" id="mov_cfg_table_font_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">حجم
+                                                                        خط نصوص الجدول (px)</label>
+                                                                    <input type="number" id="mov_cfg_table_font_size"
+                                                                        class="form-control form-control-sm" min="10"
+                                                                        max="22" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">تباعد وارتفاع أسطر الجدول (px)</label>
-                                                                    <input type="number" id="mov_cfg_table_row_padding" class="form-control form-control-sm" min="0.5" max="10" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">تباعد
+                                                                        وارتفاع أسطر الجدول (px)</label>
+                                                                    <input type="number" id="mov_cfg_table_row_padding"
+                                                                        class="form-control form-control-sm" min="0.5"
+                                                                        max="10" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">عرض عمود المسميات (العناوين px)</label>
-                                                                    <input type="number" id="mov_cfg_table_label_width" class="form-control form-control-sm" min="80" max="200" step="5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">عرض
+                                                                        عمود المسميات (العناوين px)</label>
+                                                                    <input type="number" id="mov_cfg_table_label_width"
+                                                                        class="form-control form-control-sm" min="80"
+                                                                        max="200" step="5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-6">
-                                                                    <label class="form-label small fw-bold text-dark">المسافة أسفل جدول التحرك (px)</label>
-                                                                    <input type="number" id="mov_cfg_table_margin_bottom" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">المسافة
+                                                                        أسفل جدول التحرك (px)</label>
+                                                                    <input type="number"
+                                                                        id="mov_cfg_table_margin_bottom"
+                                                                        class="form-control form-control-sm" min="0"
+                                                                        max="40" step="1"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -2963,82 +2955,184 @@
                                                             <div class="row g-3">
                                                                 <!-- التعليمات الإدارية -->
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى التعليمات (px)</label>
-                                                                    <input type="number" id="mov_cfg_admin_inst_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">المسافة
+                                                                        أعلى التعليمات (px)</label>
+                                                                    <input type="number"
+                                                                        id="mov_cfg_admin_inst_margin_top"
+                                                                        class="form-control form-control-sm" min="0"
+                                                                        max="40" step="1"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">حجم خط التعليمات (px)</label>
-                                                                    <input type="number" id="mov_cfg_admin_inst_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">حجم
+                                                                        خط التعليمات (px)</label>
+                                                                    <input type="number" id="mov_cfg_admin_inst_size"
+                                                                        class="form-control form-control-sm" min="10"
+                                                                        max="22" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">محاذاة نص التعليمات الإدارية</label>
-                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_right" value="right" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_inst_right">يمين</label>
-                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_center" value="center" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_inst_center">وسط</label>
-                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_left" value="left" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_inst_left">يسار</label>
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">محاذاة
+                                                                        نص التعليمات الإدارية</label>
+                                                                    <div class="btn-group w-100 btn-group-sm"
+                                                                        role="group">
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_admin_inst_align"
+                                                                            id="mov_inst_right" value="right"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_inst_right">يمين</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_admin_inst_align"
+                                                                            id="mov_inst_center" value="center"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_inst_center">وسط</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_admin_inst_align"
+                                                                            id="mov_inst_left" value="left"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_inst_left">يسار</label>
                                                                     </div>
                                                                 </div>
 
                                                                 <!-- إقرار الشهادة -->
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى إقرار الشهادة (px)</label>
-                                                                    <input type="number" id="mov_cfg_declaration_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">المسافة
+                                                                        أعلى إقرار الشهادة (px)</label>
+                                                                    <input type="number"
+                                                                        id="mov_cfg_declaration_margin_top"
+                                                                        class="form-control form-control-sm" min="0"
+                                                                        max="40" step="1"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">حجم خط إقرار الشهادة (px)</label>
-                                                                    <input type="number" id="mov_cfg_declaration_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">حجم
+                                                                        خط إقرار الشهادة (px)</label>
+                                                                    <input type="number" id="mov_cfg_declaration_size"
+                                                                        class="form-control form-control-sm" min="10"
+                                                                        max="22" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">محاذاة نص إقرار الشهادة</label>
-                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_right" value="right" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_decl_right">يمين</label>
-                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_center" value="center" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_decl_center">وسط</label>
-                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_left" value="left" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_decl_left">يسار</label>
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">محاذاة
+                                                                        نص إقرار الشهادة</label>
+                                                                    <div class="btn-group w-100 btn-group-sm"
+                                                                        role="group">
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_declaration_align"
+                                                                            id="mov_decl_right" value="right"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_decl_right">يمين</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_declaration_align"
+                                                                            id="mov_decl_center" value="center"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_decl_center">وسط</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_declaration_align"
+                                                                            id="mov_decl_left" value="left"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_decl_left">يسار</label>
                                                                     </div>
                                                                 </div>
 
                                                                 <!-- سطر توقيع المسافر (التحكم في الموضع والشكل) -->
                                                                 <div class="col-12">
-                                                                    <div class="p-3 rounded-3 border border-primary border-opacity-25 bg-white shadow-sm">
+                                                                    <div
+                                                                        class="p-3 rounded-3 border border-primary border-opacity-25 bg-white shadow-sm">
                                                                         <div class="row g-3 align-items-center">
                                                                             <div class="col-md-5">
-                                                                                <label class="form-label small fw-bold text-primary mb-1">
-                                                                                    <i class="bi bi-pen me-1"></i>موضع سطر توقيع المسافر
+                                                                                <label
+                                                                                    class="form-label small fw-bold text-primary mb-1">
+                                                                                    <i class="bi bi-pen me-1"></i>موضع
+                                                                                    سطر توقيع المسافر
                                                                                 </label>
-                                                                                <select id="mov_cfg_traveler_sig_position_footer" class="form-select form-select-sm fw-bold border-primary shadow-sm" onchange="syncTravelerSigPosition(this.value)">
-                                                                                    <option value="top_left">في بداية الصفحة (مقابل بيانات الدارس على اليسار في نفس السطر) ★</option>
-                                                                                    <option value="top">في بداية الصفحة (سطر مستقل أسفل الدارس وقبل الجدول)</option>
-                                                                                    <option value="after_table">وسط الصفحة (أسفل جدول التحرك وقبل التعليمات)</option>
-                                                                                    <option value="declaration">أسفل إقرار الشهادة (الموضع النظامي الافتراضي)</option>
+                                                                                <select
+                                                                                    id="mov_cfg_traveler_sig_position"
+                                                                                    class="form-select form-select-sm fw-bold border-primary shadow-sm"
+                                                                                    onchange="updateMovementLayout()">
+                                                                                    <option value="top">في بداية الصفحة
+                                                                                        (أسفل بيانات الدارس وقبل الجدول)
+                                                                                    </option>
+                                                                                    <option value="after_table">وسط
+                                                                                        الصفحة (أسفل جدول التحرك وقبل
+                                                                                        التعليمات)</option>
+                                                                                    <option value="declaration">أسفل
+                                                                                        إقرار الشهادة (الموضع النظامي
+                                                                                        الافتراضي)</option>
                                                                                 </select>
-                                                                                <div class="form-text text-muted small mt-1">
-                                                                                    <i class="bi bi-info-circle me-1"></i>يمكنك نقله إلى بداية الصفحة مباشرة بجانب أو أسفل بيانات الدارس.
+                                                                                <div
+                                                                                    class="form-text text-muted small mt-1">
+                                                                                    <i
+                                                                                        class="bi bi-info-circle me-1"></i>يمكنك
+                                                                                    نقله إلى بداية الصفحة مباشرة بجانب
+                                                                                    أو أسفل بيانات الدارس.
                                                                                 </div>
                                                                             </div>
                                                                             <div class="col-md-3">
-                                                                                <label class="form-label small fw-bold text-dark mb-1">محاذاة سطر توقيع المسافر</label>
-                                                                                <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_right" value="right" onchange="updateMovementLayout()">
-                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_right">يمين</label>
-                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_center" value="center" onchange="updateMovementLayout()">
-                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_center">وسط</label>
-                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_left" value="left" onchange="updateMovementLayout()">
-                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_left">يسار</label>
+                                                                                <label
+                                                                                    class="form-label small fw-bold text-dark mb-1">محاذاة
+                                                                                    سطر توقيع المسافر</label>
+                                                                                <div class="btn-group w-100 btn-group-sm"
+                                                                                    role="group">
+                                                                                    <input type="radio"
+                                                                                        class="btn-check"
+                                                                                        name="mov_traveler_sig_align"
+                                                                                        id="mov_trav_right"
+                                                                                        value="right"
+                                                                                        onchange="updateMovementLayout()">
+                                                                                    <label
+                                                                                        class="btn btn-outline-secondary"
+                                                                                        for="mov_trav_right">يمين</label>
+                                                                                    <input type="radio"
+                                                                                        class="btn-check"
+                                                                                        name="mov_traveler_sig_align"
+                                                                                        id="mov_trav_center"
+                                                                                        value="center"
+                                                                                        onchange="updateMovementLayout()">
+                                                                                    <label
+                                                                                        class="btn btn-outline-secondary"
+                                                                                        for="mov_trav_center">وسط</label>
+                                                                                    <input type="radio"
+                                                                                        class="btn-check"
+                                                                                        name="mov_traveler_sig_align"
+                                                                                        id="mov_trav_left" value="left"
+                                                                                        onchange="updateMovementLayout()">
+                                                                                    <label
+                                                                                        class="btn btn-outline-secondary"
+                                                                                        for="mov_trav_left">يسار</label>
                                                                                 </div>
                                                                             </div>
                                                                             <div class="col-md-2">
-                                                                                <label class="form-label small fw-bold text-dark mb-1">حجم الخط (px)</label>
-                                                                                <input type="number" id="mov_cfg_traveler_sig_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                                <label
+                                                                                    class="form-label small fw-bold text-dark mb-1">حجم
+                                                                                    الخط (px)</label>
+                                                                                <input type="number"
+                                                                                    id="mov_cfg_traveler_sig_size"
+                                                                                    class="form-control form-control-sm"
+                                                                                    min="10" max="22" step="0.5"
+                                                                                    oninput="updateMovementLayout()">
                                                                             </div>
                                                                             <div class="col-md-2">
-                                                                                <label class="form-label small fw-bold text-dark mb-1">المسافة أعلاه (px)</label>
-                                                                                <input type="number" id="mov_cfg_traveler_sig_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                                <label
+                                                                                    class="form-label small fw-bold text-dark mb-1">المسافة
+                                                                                    أعلاه (px)</label>
+                                                                                <input type="number"
+                                                                                    id="mov_cfg_traveler_sig_margin_top"
+                                                                                    class="form-control form-control-sm"
+                                                                                    min="0" max="40" step="1"
+                                                                                    oninput="updateMovementLayout()">
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -3046,71 +3140,129 @@
 
                                                                 <!-- التواقيع السفلية وتوزيع النسخ -->
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى التوقيعات (px)</label>
-                                                                    <input type="number" id="mov_cfg_signatures_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">المسافة
+                                                                        أعلى التوقيعات (px)</label>
+                                                                    <input type="number"
+                                                                        id="mov_cfg_signatures_margin_top"
+                                                                        class="form-control form-control-sm" min="0"
+                                                                        max="40" step="1"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">حجم خط توقيع القائد (px)</label>
-                                                                    <input type="number" id="mov_cfg_signer_box_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">حجم
+                                                                        خط توقيع القائد (px)</label>
+                                                                    <input type="number" id="mov_cfg_signer_box_size"
+                                                                        class="form-control form-control-sm" min="10"
+                                                                        max="22" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">محاذاة كتلة القائد الموقع</label>
-                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()" checked>
-                                                                        <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
-                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_center" value="center" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_sign_center">وسط</label>
-                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_left" value="left" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_sign_left">يسار</label>
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">محاذاة
+                                                                        كتلة القائد الموقع</label>
+                                                                    <div class="btn-group w-100 btn-group-sm"
+                                                                        role="group">
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_signer_align" id="mov_sign_right"
+                                                                            value="right"
+                                                                            onchange="updateMovementLayout()" checked>
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_sign_right">يمين</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_signer_align" id="mov_sign_center"
+                                                                            value="center"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_sign_center">وسط</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_signer_align" id="mov_sign_left"
+                                                                            value="left"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_sign_left">يسار</label>
                                                                     </div>
                                                                 </div>
 
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">ترتيب النسخ والتواقيع في الأسفل</label>
-                                                                    <select id="mov_cfg_footer_layout" class="form-select form-select-sm" onchange="updateMovementLayout()">
-                                                                        <option value="copies_first">النسخ أولاً (يمين) ثم التواقيع (يسار) - المعتمد</option>
-                                                                        <option value="signer_first">التواقيع أولاً (يمين) ثم النسخ (يسار)</option>
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">ترتيب
+                                                                        النسخ والتواقيع في الأسفل</label>
+                                                                    <select id="mov_cfg_footer_layout"
+                                                                        class="form-select form-select-sm"
+                                                                        onchange="updateMovementLayout()">
+                                                                        <option value="copies_first">النسخ أولاً (يمين)
+                                                                            ثم التواقيع (يسار) - المعتمد</option>
+                                                                        <option value="signer_first">التواقيع أولاً
+                                                                            (يمين) ثم النسخ (يسار)</option>
                                                                     </select>
                                                                 </div>
 
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">حجم خط توزيع النسخ (px)</label>
-                                                                    <input type="number" id="mov_cfg_copies_box_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">حجم
+                                                                        خط توزيع النسخ (px)</label>
+                                                                    <input type="number" id="mov_cfg_copies_box_size"
+                                                                        class="form-control form-control-sm" min="10"
+                                                                        max="20" step="0.5"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">محاذاة توزيع النسخ</label>
-                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_right" value="right" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_copy_right">يمين</label>
-                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_center" value="center" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_copy_center">وسط</label>
-                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_left" value="left" onchange="updateMovementLayout()">
-                                                                        <label class="btn btn-outline-secondary" for="mov_copy_left">يسار</label>
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">محاذاة
+                                                                        توزيع النسخ</label>
+                                                                    <div class="btn-group w-100 btn-group-sm"
+                                                                        role="group">
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_copies_align" id="mov_copy_right"
+                                                                            value="right"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_copy_right">يمين</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_copies_align" id="mov_copy_center"
+                                                                            value="center"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_copy_center">وسط</label>
+                                                                        <input type="radio" class="btn-check"
+                                                                            name="mov_copies_align" id="mov_copy_left"
+                                                                            value="left"
+                                                                            onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary"
+                                                                            for="mov_copy_left">يسار</label>
                                                                     </div>
                                                                 </div>
 
                                                                 <div class="col-md-4">
-                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى السرية السفلية (px)</label>
-                                                                    <input type="number" id="mov_cfg_security_bottom_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                    <label
+                                                                        class="form-label small fw-bold text-dark">المسافة
+                                                                        أعلى السرية السفلية (px)</label>
+                                                                    <input type="number"
+                                                                        id="mov_cfg_security_bottom_margin_top"
+                                                                        class="form-control form-control-sm" min="0"
+                                                                        max="40" step="1"
+                                                                        oninput="updateMovementLayout()">
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                            <!-- زر الحفظ -->
-                                            <div
-                                                class="d-flex align-items-center justify-content-between pt-3 border-top">
-                                                <button type="submit"
-                                                    onclick="if (typeof updateMovementLayout === 'function') { updateMovementLayout(); }"
-                                                    class="btn btn-success fw-bold px-4 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
-                                                    <i class="bi bi-check-circle-fill"></i>
-                                                    <span>حفظ وتحديث أمر التحرك الرسمي</span>
-                                                </button>
-                                                <small class="text-muted">
-                                                    <i class="bi bi-info-circle me-1"></i>
-                                                    التغييرات تُطبق فوراً على جميع أوامر التحرك للدارسين
-                                                </small>
-                                            </div>
+                                                    <!-- زر الحفظ -->
+                                                    <div
+                                                        class="d-flex align-items-center justify-content-between pt-3 border-top">
+                                                        <button type="submit"
+                                                            onclick="if (typeof updateMovementLayout === 'function') { updateMovementLayout(); }"
+                                                            class="btn btn-success fw-bold px-4 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
+                                                            <i class="bi bi-check-circle-fill"></i>
+                                                            <span>حفظ وتحديث أمر التحرك الرسمي</span>
+                                                        </button>
+                                                        <small class="text-muted">
+                                                            <i class="bi bi-info-circle me-1"></i>
+                                                            التغييرات تُطبق فوراً على جميع أوامر التحرك للدارسين
+                                                        </small>
+                                                    </div>
                                         </form>
                                     </div>
                                 </div>
@@ -3166,44 +3318,62 @@
                                             <div style="position: relative; z-index: 2; background: transparent;">
                                                 <div class="text-center">
                                                     <div id="previewMovBismillah" style="font-size: 0.76rem;">{{ movement_settings.bismillah_text }}</div>
-                                                    <div id="previewMovSecurity" style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">{{ movement_settings.security_label }}</div>
-                                                    <div id="previewMovTitle" style="font-weight: 800; text-decoration: underline; font-size: 0.95rem; margin-top: 2px;">{{ movement_settings.order_title }}</div>
+                                                    <div id="previewMovSecurity"
+                                                        style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">
+                                                        {{ movement_settings.security_label }}</div>
+                                                    <div id="previewMovTitle"
+                                                        style="font-weight: 800; text-decoration: underline; font-size: 0.95rem; margin-top: 2px;">
+                                                        {{ movement_settings.order_title }}</div>
                                                 </div>
 
-                                                <!-- ديباجة الصدور -->
-                                                <div id="previewMovIssuing" style="font-size: 0.68rem; text-align: center; margin-top: 4px; line-height: 1.35;">
-                                                    {{ movement_settings.issuing_authority_text }}
-                                                </div>
-
-                                                <!-- سطر بيانات الدارس الضابط -->
-                                                <div id="previewMovOfficerLine" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                                    <div id="previewMovOfficerLineInner" class="d-flex align-items-center justify-content-between" style="width: 100%;">
-                                                        <div id="previewMovOfficerTraineePart" class="d-flex align-items-center" style="gap: 16px;">
-                                                            <span id="previewMovCardPart" style="white-space: nowrap;">رقم البطاقة : 235402384</span>
-                                                            <span id="previewMovNamePart" style="white-space: nowrap;">ملازم تقني / علي أحمد النيل</span>
-                                                        </div>
-                                                        <div id="previewMovOfficerTravelerSignSameLine" class="fw-bold text-nowrap" style="display: none; font-size: 0.67rem;">
-                                                            توقيع المسافر : ............................
-                                                        </div>
+                                                <!-- المحتوى -->
+                                                <div style="position: relative; z-index: 2; background: transparent;">
+                                                    <div class="text-center">
+                                                        <div id="previewMovBismillah" style="font-size: 0.76rem;">{{ movement_settings.bismillah_text }}</div>
+                                                        <div id="previewMovSecurity"
+                                                            style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">
+                                                            {{ movement_settings.security_label }}</div>
+                                                        <div id="previewMovTitle"
+                                                            style="font-weight: 800; text-decoration: underline; font-size: 0.95rem; margin-top: 2px;">
+                                                            {{ movement_settings.order_title }}</div>
                                                     </div>
-                                                </div>
 
-                                                <!-- سطر بيانات الدارس ضابط الصف -->
-                                                <div id="previewMovNcoLine" style="display: none; margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                                    <div id="previewMovNcoLineInner" class="d-flex align-items-center justify-content-between" style="width: 100%;">
-                                                        <span id="previewMovNcoText">الأشخاص : نمرة 23431531 رقيب أول إدارة أحمد صديق كرار</span>
-                                                        <div id="previewMovNcoTravelerSignSameLine" class="fw-bold text-nowrap" style="display: none; font-size: 0.67rem;">
-                                                            توقيع المسافر : ............................
+                                                    <!-- سطر بيانات الدارس الضابط -->
+                                                    <div id="previewMovOfficerLine"
+                                                        style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
+                                                        <div id="previewMovOfficerLineInner"
+                                                            class="d-flex align-items-center"
+                                                            style="gap: 16px; justify-content: flex-start;">
+                                                            <span id="previewMovCardPart"
+                                                                style="white-space: nowrap;">رقم البطاقة :
+                                                                235402384</span>
+                                                            <span id="previewMovNamePart"
+                                                                style="white-space: nowrap;">ملازم تقني / علي أحمد
+                                                                النيل</span>
                                                         </div>
-                                                    </div>
-                                                </div>
 
-                                                <!-- سطر توقيع المسافر المستقل (بداية الصفحة قبل الجدول) -->
-                                                <div id="previewMovTravelerSignTop" style="display: none; margin-top: 4px; margin-bottom: 4px; font-size: 0.67rem; font-weight: bold; text-align: left;">
-                                                    توقيع المسافر : ............................
-                                                </div>
+                                                        <!-- سطر بيانات الدارس الضابط -->
+                                                        <div id="previewMovOfficerLine"
+                                                            style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
+                                                            <div id="previewMovOfficerLineInner"
+                                                                class="d-flex justify-content-between">
+                                                                <span id="previewMovCardPart">رقم البطاقة :
+                                                                    235402384</span>
+                                                                <span id="previewMovNamePart">ملازم تقني / علي أحمد
+                                                                    النيل</span>
+                                                            </div>
+                                                        </div>
 
-                                                <!-- جدول بيانات ومسار التحرك -->
+                                                        <!-- سطر بيانات الدارس ضابط الصف -->
+                                                        <div id="previewMovNcoLine"
+                                                            style="display: none; margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
+                                                            <div id="previewMovNcoLineInner">
+                                                                <span>الأشخاص : نمرة 23431531 رقيب أول إدارة أحمد صديق
+                                                                    كرار</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- جدول بيانات ومسار التحرك -->
                                                         <table id="previewMovTable"
                                                             style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
                                                             <tr>
@@ -3273,11 +3443,6 @@
                                                                 <td id="previewMovRatification">{{ movement_settings.ratification_text }}</td>
                                                             </tr>
                                                         </table>
-
-                                                        <!-- سطر توقيع المسافر (وسط الصفحة بعد الجدول) -->
-                                                        <div id="previewMovTravelerSignAfterTable" style="display: none; margin-top: 4px; margin-bottom: 4px; font-size: 0.67rem; font-weight: bold; text-align: left;">
-                                                            توقيع المسافر : ............................
-                                                        </div>
 
                                                         <!-- التعليمات الإدارية -->
                                                         <div id="previewMovAdminInstWrapper" style="margin-top: 8px;">
@@ -5368,121 +5533,112 @@
                     { key: 'copies_box_align', name: 'mov_copies_align' },
                 ];
 
-    // ========================================================
-    // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
-    // ========================================================
-    const DEFAULT_MOV_LAYOUT = {
-        page_padding_top: 20,
-        page_padding_bottom: 18,
-        page_padding_horizontal: 22,
-        bismillah_size: 17,
-        bismillah_margin_bottom: 6,
-        bismillah_align: 'center',
-        security_size: 18,
-        security_margin_bottom: 6,
-        security_align: 'center',
-        title_size: 24,
-        title_margin_bottom: 10,
-        title_align: 'center',
-        issuing_size: 15,
-        issuing_line_height: 1.6,
-        issuing_margin_bottom: 6,
-        issuing_align: 'center',
-        trainee_line_size: 16,
-        trainee_line_margin_bottom: 8,
-        trainee_line_layout: 'side_by_side_right',
-        trainee_line_gap: 20,
-        trainee_nco_align: 'right',
-        table_font_size: 15.5,
-        table_row_padding: 2.8,
-        table_label_width: 135,
-        table_margin_bottom: 12,
-        admin_inst_header_align: 'center',
-        admin_inst_size: 14.5,
-        admin_inst_line_height: 1.65,
-        admin_inst_margin_top: 10,
-        admin_inst_align: 'center',
-        declaration_header_align: 'center',
-        declaration_size: 14.5,
-        declaration_line_height: 1.65,
-        declaration_margin_top: 10,
-        declaration_align: 'center',
-        traveler_sig_position: 'top_left',
-        traveler_sig_align: 'left',
-        traveler_sig_size: 14,
-        traveler_sig_margin_top: 4,
-        signatures_margin_top: 16,
-        footer_layout: 'copies_first',
-        signer_box_size: 15,
-        signer_box_align: 'right',
-        copies_box_size: 14,
-        copies_box_align: 'right',
-        security_bottom_margin_top: 14
-    };
+                // ========================================================
+                // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
+                // ========================================================
+                const DEFAULT_MOV_LAYOUT = {
+                    page_padding_top: 20,
+                    page_padding_bottom: 18,
+                    page_padding_horizontal: 22,
+                    bismillah_size: 17,
+                    bismillah_margin_bottom: 6,
+                    bismillah_align: 'center',
+                    security_size: 18,
+                    security_margin_bottom: 6,
+                    security_align: 'center',
+                    title_size: 24,
+                    title_margin_bottom: 10,
+                    title_align: 'center',
+                    issuing_size: 15,
+                    issuing_line_height: 1.6,
+                    issuing_margin_bottom: 6,
+                    issuing_align: 'center',
+                    trainee_line_size: 16,
+                    trainee_line_margin_bottom: 8,
+                    trainee_line_layout: 'side_by_side_right',
+                    trainee_line_gap: 20,
+                    trainee_nco_align: 'right',
+                    table_font_size: 15.5,
+                    table_row_padding: 2.8,
+                    table_label_width: 135,
+                    table_margin_bottom: 12,
+                    admin_inst_header_align: 'center',
+                    admin_inst_size: 14.5,
+                    admin_inst_line_height: 1.65,
+                    admin_inst_margin_top: 10,
+                    admin_inst_align: 'center',
+                    declaration_header_align: 'center',
+                    declaration_size: 14.5,
+                    declaration_line_height: 1.65,
+                    declaration_margin_top: 10,
+                    declaration_align: 'center',
+                    traveler_sig_position: 'declaration',
+                    traveler_sig_align: 'left',
+                    traveler_sig_size: 14,
+                    traveler_sig_margin_top: 4,
+                    signatures_margin_top: 16,
+                    footer_layout: 'copies_first',
+                    signer_box_size: 15,
+                    signer_box_align: 'right',
+                    copies_box_size: 14,
+                    copies_box_align: 'right',
+                    security_bottom_margin_top: 14
+                };
 
-                    const numFields = [
-                        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                        'bismillah_size', 'bismillah_margin_bottom',
-                        'security_size', 'security_margin_bottom',
-                        'title_size', 'title_margin_bottom',
-                        'issuing_size', 'issuing_margin_bottom',
-                        'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-                        'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-                        'admin_inst_size', 'admin_inst_margin_top',
-                        'declaration_size', 'declaration_margin_top',
-                        'signatures_margin_top', 'signer_box_size',
-                        'copies_box_size', 'security_bottom_margin_top'
-                    ];
+                const numFields = [
+                    'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+                    'bismillah_size', 'bismillah_margin_bottom',
+                    'security_size', 'security_margin_bottom',
+                    'title_size', 'title_margin_bottom',
+                    'issuing_size', 'issuing_margin_bottom',
+                    'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+                    'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+                    'admin_inst_size', 'admin_inst_margin_top',
+                    'declaration_size', 'declaration_margin_top',
+                    'signatures_margin_top', 'signer_box_size',
+                    'copies_box_size', 'security_bottom_margin_top'
+                ];
 
-                    numFields.forEach(f => {
-                        const el = document.getElementById('mov_cfg_' + f);
-                        if (el && cfg[f] !== undefined) {
-                            el.value = cfg[f];
-                        }
-                    });
+                numFields.forEach(f => {
+                    const el = document.getElementById('mov_cfg_' + f);
+                    if (el && cfg[f] !== undefined) {
+                        el.value = cfg[f];
+                    }
+                });
 
-                    const footerSelect = document.getElementById('mov_cfg_footer_layout');
-                    if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+                const footerSelect = document.getElementById('mov_cfg_footer_layout');
+                if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
 
-            const numFields = [
-                'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                'bismillah_size', 'bismillah_margin_bottom',
-                'security_size', 'security_margin_bottom',
-                'title_size', 'title_margin_bottom',
-                'issuing_size', 'issuing_margin_bottom',
-                'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-                'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-                'admin_inst_size', 'admin_inst_margin_top',
-                'declaration_size', 'declaration_margin_top',
-                'traveler_sig_size', 'traveler_sig_margin_top',
-                'signatures_margin_top', 'signer_box_size',
-                'copies_box_size', 'security_bottom_margin_top'
-            ];
+                const numFields = [
+                    'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+                    'bismillah_size', 'bismillah_margin_bottom',
+                    'security_size', 'security_margin_bottom',
+                    'title_size', 'title_margin_bottom',
+                    'issuing_size', 'issuing_margin_bottom',
+                    'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+                    'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+                    'admin_inst_size', 'admin_inst_margin_top',
+                    'declaration_size', 'declaration_margin_top',
+                    'traveler_sig_size', 'traveler_sig_margin_top',
+                    'signatures_margin_top', 'signer_box_size',
+                    'copies_box_size', 'security_bottom_margin_top'
+                ];
 
-                    const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
-                    if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
+                const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+                if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
 
-                    movRadioGroupDefinitions.forEach(rg => {
-                        const val = cfg[rg.key];
-                        if (val) {
-                            const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
-                            if (radio) radio.checked = true;
-                        }
-                    });
+                movRadioGroupDefinitions.forEach(rg => {
+                    const val = cfg[rg.key];
+                    if (val) {
+                        const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
+                        if (radio) radio.checked = true;
+                    }
+                });
 
-        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
-        const travSigPosFooter = document.getElementById('mov_cfg_traveler_sig_position_footer');
-        const initialPos = cfg.traveler_sig_position || 'top_left';
-        if (travSigPosSelect) travSigPosSelect.value = initialPos;
-        if (travSigPosFooter) travSigPosFooter.value = initialPos;
+                const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+                if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
 
-        const travSizeTrainee = document.getElementById('mov_cfg_traveler_sig_size_trainee');
-        if (travSizeTrainee && cfg.traveler_sig_size) travSizeTrainee.value = cfg.traveler_sig_size;
-        const travMarginTrainee = document.getElementById('mov_cfg_traveler_sig_margin_top_trainee');
-        if (travMarginTrainee && cfg.traveler_sig_margin_top != null) travMarginTrainee.value = cfg.traveler_sig_margin_top;
-        if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
-
-                    window.applyMovementLayoutToPreview(cfg);
+                window.applyMovementLayoutToPreview(cfg);
                 };
 
                 window.updateMovementLayout = function () {
@@ -5511,779 +5667,710 @@
                     const footerSelect = document.getElementById('mov_cfg_footer_layout');
                     if (footerSelect) cfg.footer_layout = footerSelect.value;
 
-        window.updateMovementLayout = function () {
-            const numFields = [
-                'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                'bismillah_size', 'bismillah_margin_bottom',
-                'security_size', 'security_margin_bottom',
-                'title_size', 'title_margin_bottom',
-                'issuing_size', 'issuing_margin_bottom',
-                'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-                'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-                'admin_inst_size', 'admin_inst_margin_top',
-                'declaration_size', 'declaration_margin_top',
-                'traveler_sig_size', 'traveler_sig_margin_top',
-                'signatures_margin_top', 'signer_box_size',
-                'copies_box_size', 'security_bottom_margin_top'
-            ];
+                    window.updateMovementLayout = function () {
+                        const numFields = [
+                            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+                            'bismillah_size', 'bismillah_margin_bottom',
+                            'security_size', 'security_margin_bottom',
+                            'title_size', 'title_margin_bottom',
+                            'issuing_size', 'issuing_margin_bottom',
+                            'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+                            'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+                            'admin_inst_size', 'admin_inst_margin_top',
+                            'declaration_size', 'declaration_margin_top',
+                            'traveler_sig_size', 'traveler_sig_margin_top',
+                            'signatures_margin_top', 'signer_box_size',
+                            'copies_box_size', 'security_bottom_margin_top'
+                        ];
 
-                    const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
-                    if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
+                        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+                        if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
 
-                    movRadioGroupDefinitions.forEach(rg => {
-                        const radio = document.querySelector(`input[name="${rg.name}"]:checked`);
-                        if (radio) cfg[rg.key] = radio.value;
-                    });
-
-        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
-        if (travSigPosSelect) cfg.traveler_sig_position = travSigPosSelect.value;
-
-                    const merged = Object.assign({}, DEFAULT_MOV_LAYOUT, cfg);
-
-                    const hiddenInput = document.getElementById('id_movement_layout_config');
-                    if (hiddenInput) {
-                        hiddenInput.value = JSON.stringify(merged);
-                    }
-
-                    window.applyMovementLayoutToPreview(merged);
-                };
-
-                        window.syncTravelerSigPosition = function(val) {
-            const el1 = document.getElementById('mov_cfg_traveler_sig_position');
-            const el2 = document.getElementById('mov_cfg_traveler_sig_position_footer');
-            if (el1) el1.value = val;
-            if (el2) el2.value = val;
-            updateMovementLayout();
-        };
-
-        window.syncTravelerSigSize = function(val) {
-            const el1 = document.getElementById('mov_cfg_traveler_sig_size');
-            const el2 = document.getElementById('mov_cfg_traveler_sig_size_trainee');
-            if (el1) el1.value = val;
-            if (el2) el2.value = val;
-            updateMovementLayout();
-        };
-
-        window.syncTravelerSigMargin = function(val) {
-            const el1 = document.getElementById('mov_cfg_traveler_sig_margin_top');
-            const el2 = document.getElementById('mov_cfg_traveler_sig_margin_top_trainee');
-            if (el1) el1.value = val;
-            if (el2) el2.value = val;
-            updateMovementLayout();
-        };
-
-        window.applyMovementLayoutToPreview = function (cfg) {
-                    const paper = document.getElementById('previewMovementPaper');
-                    if (!paper) return;
-
-                    const scale = 0.52;
-
-                    const padTop = (cfg.page_padding_top || 16) * 0.9;
-                    const padBottom = (cfg.page_padding_bottom || 14) * 0.9;
-                    const padHoriz = (cfg.page_padding_horizontal || 20) * 0.7;
-                    paper.style.padding = `${padTop}px ${padHoriz}px ${padBottom}px ${padHoriz}px`;
-
-                    const bismillah = document.getElementById('previewMovBismillah');
-                    if (bismillah) {
-                        bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
-                        bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
-                        bismillah.style.textAlign = cfg.bismillah_align || 'center';
-                    }
-
-                    const security = document.getElementById('previewMovSecurity');
-                    if (security) {
-                        security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
-                        security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
-                        security.style.textAlign = cfg.security_align || 'center';
-                    }
-
-                    const title = document.getElementById('previewMovTitle');
-                    if (title) {
-                        title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
-                        title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
-                        title.style.textAlign = cfg.title_align || 'center';
-                    }
-
-                    const officerLine = document.getElementById('previewMovOfficerLine');
-                    if (officerLine) {
-                        officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
-                        officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
-                    }
-
-                    const officerInner = document.getElementById('previewMovOfficerLineInner');
-                    const cardPart = document.getElementById('previewMovCardPart');
-                    const namePart = document.getElementById('previewMovNamePart');
-                    const layout = cfg.trainee_line_layout || 'side_by_side_right';
-                    const gap = (cfg.trainee_line_gap || 20) * scale;
-
-                    if (officerInner) {
-                        officerInner.style.display = 'flex';
-                        officerInner.style.alignItems = 'center';
-                        officerInner.style.width = '100%';
-
-                        if (layout === 'split' || layout === 'reverse') {
-                            officerInner.style.setProperty('justify-content', 'space-between', 'important');
-                            officerInner.style.gap = '0px';
-                        } else if (layout === 'side_by_side_right' || layout === 'name_first_right') {
-                            officerInner.style.setProperty('justify-content', 'flex-start', 'important');
-                            officerInner.style.gap = `${gap}px`;
-                        } else if (layout === 'side_by_side_center' || layout === 'name_first_center' || layout === 'center') {
-                            officerInner.style.setProperty('justify-content', 'center', 'important');
-                            officerInner.style.gap = `${gap}px`;
-                        } else if (layout === 'side_by_side_left' || layout === 'name_first_left') {
-                            officerInner.style.setProperty('justify-content', 'flex-end', 'important');
-                            officerInner.style.gap = `${gap}px`;
-                        } else {
-                            officerInner.style.setProperty('justify-content', 'flex-start', 'important');
-                            officerInner.style.gap = `${gap}px`;
-                        }
-                    }
-
-                    if (cardPart && namePart) {
-                        if (layout === 'name_first_right' || layout === 'name_first_center' || layout === 'name_first_left' || layout === 'reverse') {
-                            namePart.style.order = '1';
-                            cardPart.style.order = '2';
-                        } else {
-                            cardPart.style.order = '1';
-                            namePart.style.order = '2';
-                        }
-                    }
-
-                    const ncoLine = document.getElementById('previewMovNcoLine');
-                    if (ncoLine) {
-                        ncoLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
-                        ncoLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
-                        ncoLine.style.textAlign = cfg.trainee_nco_align || 'right';
-                    }
-
-                    const table = document.getElementById('previewMovTable');
-                    if (table) {
-                        table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
-                        table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
-                        const labels = table.querySelectorAll('.mov-label-col');
-                        labels.forEach(lbl => {
-                            lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
-                            lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+                        movRadioGroupDefinitions.forEach(rg => {
+                            const radio = document.querySelector(`input[name="${rg.name}"]:checked`);
+                            if (radio) cfg[rg.key] = radio.value;
                         });
-                        const allTds = table.querySelectorAll('td');
-                        allTds.forEach(td => {
-                            td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
-                        });
-                    }
 
-                    const adminInstHeader = document.getElementById('previewMovAdminInstHeader');
-                    if (adminInstHeader) {
-                        adminInstHeader.style.textAlign = cfg.admin_inst_header_align || 'center';
-                    }
-                    const adminInst = document.getElementById('previewMovAdminInst');
-                    if (adminInst) {
-                        adminInst.style.fontSize = `${(cfg.admin_inst_size || 14.5) * scale}px`;
-                        adminInst.style.textAlign = cfg.admin_inst_align || 'center';
-                    }
+                        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+                        if (travSigPosSelect) cfg.traveler_sig_position = travSigPosSelect.value;
 
-                    const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-                    if (declWrapper) {
-                        declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
-                    }
-                    const declHeader = document.getElementById('previewMovDeclarationHeader');
-                    if (declHeader) {
-                        declHeader.style.textAlign = cfg.declaration_header_align || 'center';
-                    }
-                    const declaration = document.getElementById('previewMovDeclaration');
-                    if (declaration) {
-                        declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
-                        declaration.style.textAlign = cfg.declaration_align || 'center';
-                    }
-                    // تطبيق موضع وتنسيق توقيع المسافر في المعاينة
-            const pos = cfg.traveler_sig_position || 'top_left';
-            const sigAlign = cfg.traveler_sig_align || 'left';
-            const sigSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
-            const sigMarginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
+                        const merged = Object.assign({}, DEFAULT_MOV_LAYOUT, cfg);
 
-            const signSameOfficer = document.getElementById('previewMovOfficerTravelerSignSameLine');
-            const signSameNco = document.getElementById('previewMovNcoTravelerSignSameLine');
-            const signTop = document.getElementById('previewMovTravelerSignTop');
-            const signAfterTable = document.getElementById('previewMovTravelerSignAfterTable');
-            const signDecl = document.getElementById('previewMovTravelerSign');
-
-            if (signSameOfficer) signSameOfficer.style.display = 'none';
-            if (signSameNco) signSameNco.style.display = 'none';
-            if (signTop) signTop.style.display = 'none';
-            if (signAfterTable) signAfterTable.style.display = 'none';
-            if (signDecl) signDecl.style.display = 'none';
-
-            if (pos === 'top_left' || pos === 'top_same_line') {
-                if (signSameOfficer) {
-                    signSameOfficer.style.display = 'block';
-                    signSameOfficer.style.fontSize = sigSize;
-                }
-                if (signSameNco) {
-                    signSameNco.style.display = 'block';
-                    signSameNco.style.fontSize = sigSize;
-                }
-            } else if (pos === 'top') {
-                if (signTop) {
-                    signTop.style.display = 'block';
-                    signTop.style.textAlign = sigAlign;
-                    signTop.style.fontSize = sigSize;
-                    signTop.style.marginTop = sigMarginTop;
-                }
-            } else if (pos === 'after_table') {
-                if (signAfterTable) {
-                    signAfterTable.style.display = 'block';
-                    signAfterTable.style.textAlign = sigAlign;
-                    signAfterTable.style.fontSize = sigSize;
-                    signAfterTable.style.marginTop = sigMarginTop;
-                }
-            } else {
-                if (signDecl) {
-                    signDecl.style.display = 'block';
-                    signDecl.style.textAlign = sigAlign;
-                    signDecl.style.fontSize = sigSize;
-                    signDecl.style.marginTop = sigMarginTop;
-                }
-            }
-
-            const signersWrapper = document.getElementById('previewMovSignersWrapper');
-                    if (signersWrapper) {
-                        signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
-                    }
-                    const copiesBlock = document.getElementById('previewMovCopiesBlock');
-                    const signerBlock = document.getElementById('previewMovSignerBlock');
-                    const footerLayout = cfg.footer_layout || 'copies_first';
-
-                    if (copiesBlock && signerBlock) {
-                        if (footerLayout === 'signer_first') {
-                            signerBlock.style.order = '1';
-                            copiesBlock.style.order = '2';
-                        } else {
-                            copiesBlock.style.order = '1';
-                            signerBlock.style.order = '2';
-                        }
-                    }
-
-            const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-            if (declWrapper) {
-                declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
-            }
-            const declHeader = document.getElementById('previewMovDeclarationHeader');
-            if (declHeader) {
-                declHeader.style.textAlign = cfg.declaration_header_align || 'center';
-            }
-            const declaration = document.getElementById('previewMovDeclaration');
-            if (declaration) {
-                declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
-                declaration.style.textAlign = cfg.declaration_align || 'center';
-            }
-            const travSig = document.getElementById('previewMovTravelerSign');
-            if (travSig) {
-                travSig.style.textAlign = cfg.traveler_sig_align || 'left';
-                travSig.style.fontSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
-                travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
-
-                const pos = cfg.traveler_sig_position || 'declaration';
-                const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-                const table = document.getElementById('previewMovTable');
-                const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
-
-                if (pos === 'top' && table && table.parentNode) {
-                    table.parentNode.insertBefore(travSig, table);
-                } else if (pos === 'after_table' && table && table.parentNode) {
-                    if (adminInstWrapper) {
-                        adminInstWrapper.parentNode.insertBefore(travSig, adminInstWrapper);
-                    } else {
-                        table.parentNode.insertBefore(travSig, table.nextSibling);
-                    }
-                } else if (declWrapper) {
-                    declWrapper.appendChild(travSig);
-                }
-            }
-
-                // ========================================================
-                // تخصيص المسافات ومواقع الكلمات للشهادة (Certificate Layout)
-                // ========================================================
-                const DEFAULT_CERT_LAYOUT = {
-                    page_padding_top: 12,
-                    page_padding_bottom: 12,
-                    page_padding_horizontal: 18,
-                    header_margin_bottom: 6,
-                    bismillah_size: 15,
-                    bismillah_margin_bottom: 2,
-                    bismillah_align: 'center',
-                    header_line1_size: 16,
-                    header_line2_size: 16,
-                    header_align: 'center',
-                    title_size: 32,
-                    title_margin_top: 3,
-                    title_margin_bottom: 4,
-                    title_align: 'center',
-                    body_text_size: 15,
-                    body_line_height: 1.8,
-                    body_margin_bottom: 6,
-                    body_align: 'center',
-                    signers_margin_top: 8,
-                    signers_font_size: 14,
-                    footer_margin_top: 5,
-                    footer_font_size: 11
-                };
-
-                window.getCertLayoutData = function () {
-                    const hiddenInput = document.getElementById('id_cert_layout_config');
-                    let current = {};
-                    if (hiddenInput && hiddenInput.value) {
-                        try {
-                            current = JSON.parse(hiddenInput.value);
-                        } catch (e) {
-                            current = {};
-                        }
-                    }
-                    return Object.assign({}, DEFAULT_CERT_LAYOUT, current);
-                };
-
-                window.initCertLayout = function () {
-                    const cfg = window.getCertLayoutData();
-
-                    const numFields = [
-                        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                        'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
-                        'header_line1_size', 'header_line2_size',
-                        'title_size', 'title_margin_top', 'title_margin_bottom',
-                        'body_text_size', 'body_line_height', 'body_margin_bottom',
-                        'signers_margin_top', 'signers_font_size',
-                        'footer_margin_top', 'footer_font_size'
-                    ];
-
-                    numFields.forEach(f => {
-                        const el = document.getElementById('cert_cfg_' + f);
-                        if (el && cfg[f] !== undefined) {
-                            el.value = cfg[f];
-                        }
-                    });
-
-                    ['header_align', 'title_align', 'body_align'].forEach(radioGroup => {
-                        const val = cfg[radioGroup];
-                        if (val) {
-                            const radio = document.querySelector(`input[name="cert_${radioGroup}"][value="${val}"]`);
-                            if (radio) radio.checked = true;
-                        }
-                    });
-
-                    window.applyCertLayoutToPreview(cfg);
-                };
-
-                window.updateCertLayout = function () {
-                    const numFields = [
-                        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                        'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
-                        'header_line1_size', 'header_line2_size',
-                        'title_size', 'title_margin_top', 'title_margin_bottom',
-                        'body_text_size', 'body_line_height', 'body_margin_bottom',
-                        'signers_margin_top', 'signers_font_size',
-                        'footer_margin_top', 'footer_font_size'
-                    ];
-
-                    const cfg = {};
-                    numFields.forEach(f => {
-                        const el = document.getElementById('cert_cfg_' + f);
-                        if (el && el.value !== '') {
-                            cfg[f] = parseFloat(el.value);
-                        }
-                    });
-
-                    const headerRadio = document.querySelector('input[name="cert_header_align"]:checked');
-                    if (headerRadio) cfg.header_align = headerRadio.value;
-
-                    const titleRadio = document.querySelector('input[name="cert_title_align"]:checked');
-                    if (titleRadio) cfg.title_align = titleRadio.value;
-
-                    const bodyRadio = document.querySelector('input[name="cert_body_align"]:checked');
-                    if (bodyRadio) cfg.body_align = bodyRadio.value;
-
-                    const merged = Object.assign({}, DEFAULT_CERT_LAYOUT, cfg);
-
-                    const hiddenInput = document.getElementById('id_cert_layout_config');
-                    if (hiddenInput) {
-                        hiddenInput.value = JSON.stringify(merged);
-                    }
-
-                    window.applyCertLayoutToPreview(merged);
-                };
-
-                window.applyCertLayoutToPreview = function (cfg) {
-                    const scale = 0.55;
-
-                    // تطبيق على الشهادة التقديرية العرضية
-                    const landscape = document.getElementById('previewLandscapeCert');
-                    if (landscape) {
-                        landscape.style.padding = `${(cfg.page_padding_top || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px ${(cfg.page_padding_bottom || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px`;
-
-                        const titleCenter = landscape.querySelector('.title-center-box');
-                        if (titleCenter) {
-                            titleCenter.style.textAlign = cfg.header_align || 'center';
+                        const hiddenInput = document.getElementById('id_movement_layout_config');
+                        if (hiddenInput) {
+                            hiddenInput.value = JSON.stringify(merged);
                         }
 
-                        const titleSpan = landscape.querySelector('.my-2 span');
-                        if (titleSpan) {
-                            titleSpan.style.fontSize = `${(cfg.title_size || 32) * scale * 0.9}px`;
-                        }
-                        const titleBox = landscape.querySelector('.my-2');
-                        if (titleBox) {
-                            titleBox.style.marginTop = `${(cfg.title_margin_top || 3) * scale * 2}px`;
-                            titleBox.style.marginBottom = `${(cfg.title_margin_bottom || 4) * scale * 2}px`;
-                            titleBox.style.textAlign = cfg.title_align || 'center';
-                        }
+                        window.applyMovementLayoutToPreview(merged);
+                    };
 
-                        const bodyBox = landscape.querySelector('.text-muted.small.px-2');
-                        if (bodyBox) {
-                            bodyBox.style.fontSize = `${(cfg.body_text_size || 15) * scale}px`;
-                            bodyBox.style.lineHeight = cfg.body_line_height || 1.8;
-                            bodyBox.style.marginBottom = `${(cfg.body_margin_bottom || 6) * scale * 2}px`;
-                            bodyBox.style.textAlign = cfg.body_align || 'center';
-                        }
+                    window.applyMovementLayoutToPreview = function (cfg) {
+                        const paper = document.getElementById('previewMovementPaper');
+                        if (!paper) return;
 
-                        const signersRow = landscape.querySelector('.row.g-1.text-center');
-                        if (signersRow) {
-                            signersRow.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 2}px`;
-                            signersRow.style.fontSize = `${(cfg.signers_font_size || 14) * scale}px`;
+                        const scale = 0.52;
+
+                        const padTop = (cfg.page_padding_top || 16) * 0.9;
+                        const padBottom = (cfg.page_padding_bottom || 14) * 0.9;
+                        const padHoriz = (cfg.page_padding_horizontal || 20) * 0.7;
+                        paper.style.padding = `${padTop}px ${padHoriz}px ${padBottom}px ${padHoriz}px`;
+
+                        const bismillah = document.getElementById('previewMovBismillah');
+                        if (bismillah) {
+                            bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
+                            bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
+                            bismillah.style.textAlign = cfg.bismillah_align || 'center';
                         }
 
-                        const footerDiv = landscape.querySelector('.border-top.d-flex');
-                        if (footerDiv) {
-                            footerDiv.style.marginTop = `${(cfg.footer_margin_top || 5) * scale * 2}px`;
-                            footerDiv.style.fontSize = `${(cfg.footer_font_size || 11) * scale}px`;
-                        }
-                    }
-
-                    // تطبيق على الشهادة التفصيلية الطولية
-                    const detailed = document.getElementById('previewDetailedCert');
-                    if (detailed) {
-                        detailed.style.padding = `${(cfg.page_padding_top || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px ${(cfg.page_padding_bottom || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px`;
-
-                        const detHead = detailed.querySelector('.text-center.mb-2');
-                        if (detHead) {
-                            detHead.style.textAlign = cfg.header_align || 'center';
+                        const security = document.getElementById('previewMovSecurity');
+                        if (security) {
+                            security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
+                            security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
+                            security.style.textAlign = cfg.security_align || 'center';
                         }
 
-                        const basicTitle = document.getElementById('previewDetailedBasicTitle');
-                        if (basicTitle) {
-                            basicTitle.style.fontSize = `${(cfg.title_size || 32) * scale * 0.75}px`;
-                            basicTitle.style.textAlign = cfg.title_align || 'center';
+                        const title = document.getElementById('previewMovTitle');
+                        if (title) {
+                            title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
+                            title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
+                            title.style.textAlign = cfg.title_align || 'center';
                         }
 
-                        const h1 = document.getElementById('previewDetailedHeader1');
-                        if (h1) h1.style.fontSize = `${(cfg.header_line1_size || 16) * scale}px`;
-                        const h2 = document.getElementById('previewDetailedHeader2');
-                        if (h2) h2.style.fontSize = `${(cfg.header_line2_size || 16) * scale}px`;
-
-                        const signersDet = detailed.querySelector('.row.g-1.text-center');
-                        if (signersDet) {
-                            signersDet.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 1.5}px`;
-                            signersDet.style.fontSize = `${(cfg.signers_font_size || 14) * scale * 0.85}px`;
+                        const officerLine = document.getElementById('previewMovOfficerLine');
+                        if (officerLine) {
+                            officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
+                            officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
                         }
-                    }
-                };
 
-                document.addEventListener('DOMContentLoaded', function () {
-                    if (typeof window.initMovementLayout === 'function') {
-                        window.initMovementLayout();
-                    }
-                    if (typeof window.initCertLayout === 'function') {
-                        window.initCertLayout();
-                    }
-                    // تعبئة كافة بيانات المعلم تلقائياً عند اختياره في نافذة إضافة مستخدم
-                    const createInstSelect = document.querySelector('#addUserModal select[name="instructor"]');
-                    if (createInstSelect) {
-                        createInstSelect.addEventListener('change', function () {
-                            applyInstructorDataToUserForm(this.value, 'createUser');
-                        });
-                    }
-                    function updateCreateInstructorVisibility(r) {
-                        const instCol = document.getElementById('createUserInstructorWrapper');
-                        if (instCol) {
-                            if (r === 'instructor' || r === 'supervisor') {
-                                instCol.style.display = 'block';
-                                const sel = instCol.querySelector('select');
-                                if (sel && sel.value) {
-                                    applyInstructorDataToUserForm(sel.value, 'createUser');
-                                }
+                        const officerInner = document.getElementById('previewMovOfficerLineInner');
+                        const cardPart = document.getElementById('previewMovCardPart');
+                        const namePart = document.getElementById('previewMovNamePart');
+                        const layout = cfg.trainee_line_layout || 'side_by_side_right';
+                        const gap = (cfg.trainee_line_gap || 20) * scale;
+
+                        if (officerInner) {
+                            officerInner.style.display = 'flex';
+                            officerInner.style.alignItems = 'center';
+                            officerInner.style.width = '100%';
+
+                            if (layout === 'split' || layout === 'reverse') {
+                                officerInner.style.setProperty('justify-content', 'space-between', 'important');
+                                officerInner.style.gap = '0px';
+                            } else if (layout === 'side_by_side_right' || layout === 'name_first_right') {
+                                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
+                                officerInner.style.gap = `${gap}px`;
+                            } else if (layout === 'side_by_side_center' || layout === 'name_first_center' || layout === 'center') {
+                                officerInner.style.setProperty('justify-content', 'center', 'important');
+                                officerInner.style.gap = `${gap}px`;
+                            } else if (layout === 'side_by_side_left' || layout === 'name_first_left') {
+                                officerInner.style.setProperty('justify-content', 'flex-end', 'important');
+                                officerInner.style.gap = `${gap}px`;
                             } else {
-                                instCol.style.display = 'none';
-                                const sel = instCol.querySelector('select');
-                                if (sel) sel.value = '';
-                                const notice = document.getElementById('createUserInstNotice');
-                                if (notice) notice.style.display = 'none';
+                                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
+                                officerInner.style.gap = `${gap}px`;
                             }
                         }
-                    }
 
-                    // مزامنة الأذونات في نافذة إضافة مستخدم جديد
-                    const createRoleSelect = document.querySelector('#addUserModal select[name="role"]');
-                    if (createRoleSelect) {
-                        createRoleSelect.addEventListener('change', function () {
-                            const r = this.value;
-                            updateCreateInstructorVisibility(r);
-                            const m = document.getElementById('create_perm_manage_users');
-                            const v = document.getElementById('create_perm_view');
-                            const a = document.getElementById('create_perm_add');
-                            const e = document.getElementById('create_perm_edit');
-                            const d = document.getElementById('create_perm_delete');
-                            const g = document.getElementById('create_perm_grade');
-                            const ap = document.getElementById('create_perm_approve');
-                            if (r === 'admin') {
-                                if (m) m.checked = true; if (v) v.checked = true; if (a) a.checked = true;
-                                if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = true; if (ap) ap.checked = true;
-                            } else if (r === 'registrar') {
-                                if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = true;
-                                if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = false; if (ap) ap.checked = false;
-                            } else if (r === 'supervisor') {
-                                if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
-                                if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = true;
-                            } else if (r === 'instructor') {
-                                if (m) m.checked = false; if (v) v.checked = false; if (a) a.checked = false;
-                                if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = false;
-                            } else if (r === 'regular') {
-                                if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
-                                if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = false; if (ap) ap.checked = false;
+                        if (cardPart && namePart) {
+                            if (layout === 'name_first_right' || layout === 'name_first_center' || layout === 'name_first_left' || layout === 'reverse') {
+                                namePart.style.order = '1';
+                                cardPart.style.order = '2';
+                            } else {
+                                cardPart.style.order = '1';
+                                namePart.style.order = '2';
                             }
-                        });
-                        updateCreateInstructorVisibility(createRoleSelect.value);
-                    }
+                        }
 
-                    const addUserModalElem = document.getElementById('addUserModal');
-                    if (addUserModalElem) {
-                        addUserModalElem.addEventListener('show.bs.modal', function () {
+                        const ncoLine = document.getElementById('previewMovNcoLine');
+                        if (ncoLine) {
+                            ncoLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
+                            ncoLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
+                            ncoLine.style.textAlign = cfg.trainee_nco_align || 'right';
+                        }
+
+                        const table = document.getElementById('previewMovTable');
+                        if (table) {
+                            table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
+                            table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
+                            const labels = table.querySelectorAll('.mov-label-col');
+                            labels.forEach(lbl => {
+                                lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
+                                lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+                            });
+                            const allTds = table.querySelectorAll('td');
+                            allTds.forEach(td => {
+                                td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+                            });
+                        }
+
+                        const adminInstHeader = document.getElementById('previewMovAdminInstHeader');
+                        if (adminInstHeader) {
+                            adminInstHeader.style.textAlign = cfg.admin_inst_header_align || 'center';
+                        }
+                        const adminInst = document.getElementById('previewMovAdminInst');
+                        if (adminInst) {
+                            adminInst.style.fontSize = `${(cfg.admin_inst_size || 14.5) * scale}px`;
+                            adminInst.style.textAlign = cfg.admin_inst_align || 'center';
+                        }
+
+                        const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+                        if (declWrapper) {
+                            declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
+                        }
+                        const declHeader = document.getElementById('previewMovDeclarationHeader');
+                        if (declHeader) {
+                            declHeader.style.textAlign = cfg.declaration_header_align || 'center';
+                        }
+                        const declaration = document.getElementById('previewMovDeclaration');
+                        if (declaration) {
+                            declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
+                            declaration.style.textAlign = cfg.declaration_align || 'center';
+                        }
+                        const travSig = document.getElementById('previewMovTravelerSign');
+                        if (travSig) {
+                            travSig.style.textAlign = cfg.traveler_sig_align || 'left';
+                        }
+
+                        const signersWrapper = document.getElementById('previewMovSignersWrapper');
+                        if (signersWrapper) {
+                            signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
+                        }
+                        const copiesBlock = document.getElementById('previewMovCopiesBlock');
+                        const signerBlock = document.getElementById('previewMovSignerBlock');
+                        const footerLayout = cfg.footer_layout || 'copies_first';
+
+                        if (copiesBlock && signerBlock) {
+                            if (footerLayout === 'signer_first') {
+                                signerBlock.style.order = '1';
+                                copiesBlock.style.order = '2';
+                            } else {
+                                copiesBlock.style.order = '1';
+                                signerBlock.style.order = '2';
+                            }
+                        }
+
+                        const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+                        if (declWrapper) {
+                            declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
+                        }
+                        const declHeader = document.getElementById('previewMovDeclarationHeader');
+                        if (declHeader) {
+                            declHeader.style.textAlign = cfg.declaration_header_align || 'center';
+                        }
+                        const declaration = document.getElementById('previewMovDeclaration');
+                        if (declaration) {
+                            declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
+                            declaration.style.textAlign = cfg.declaration_align || 'center';
+                        }
+                        const travSig = document.getElementById('previewMovTravelerSign');
+                        if (travSig) {
+                            travSig.style.textAlign = cfg.traveler_sig_align || 'left';
+                            travSig.style.fontSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
+                            travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
+
+                            const pos = cfg.traveler_sig_position || 'declaration';
+                            const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+                            const table = document.getElementById('previewMovTable');
+                            const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
+
+                            if (pos === 'top' && table && table.parentNode) {
+                                table.parentNode.insertBefore(travSig, table);
+                            } else if (pos === 'after_table' && table && table.parentNode) {
+                                if (adminInstWrapper) {
+                                    adminInstWrapper.parentNode.insertBefore(travSig, adminInstWrapper);
+                                } else {
+                                    table.parentNode.insertBefore(travSig, table.nextSibling);
+                                }
+                            } else if (declWrapper) {
+                                declWrapper.appendChild(travSig);
+                            }
+                        }
+
+                        // ========================================================
+                        // تخصيص المسافات ومواقع الكلمات للشهادة (Certificate Layout)
+                        // ========================================================
+                        const DEFAULT_CERT_LAYOUT = {
+                            page_padding_top: 12,
+                            page_padding_bottom: 12,
+                            page_padding_horizontal: 18,
+                            header_margin_bottom: 6,
+                            bismillah_size: 15,
+                            bismillah_margin_bottom: 2,
+                            bismillah_align: 'center',
+                            header_line1_size: 16,
+                            header_line2_size: 16,
+                            header_align: 'center',
+                            title_size: 32,
+                            title_margin_top: 3,
+                            title_margin_bottom: 4,
+                            title_align: 'center',
+                            body_text_size: 15,
+                            body_line_height: 1.8,
+                            body_margin_bottom: 6,
+                            body_align: 'center',
+                            signers_margin_top: 8,
+                            signers_font_size: 14,
+                            footer_margin_top: 5,
+                            footer_font_size: 11
+                        };
+
+                        window.getCertLayoutData = function () {
+                            const hiddenInput = document.getElementById('id_cert_layout_config');
+                            let current = {};
+                            if (hiddenInput && hiddenInput.value) {
+                                try {
+                                    current = JSON.parse(hiddenInput.value);
+                                } catch (e) {
+                                    current = {};
+                                }
+                            }
+                            return Object.assign({}, DEFAULT_CERT_LAYOUT, current);
+                        };
+
+                        window.initCertLayout = function () {
+                            const cfg = window.getCertLayoutData();
+
+                            const numFields = [
+                                'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+                                'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
+                                'header_line1_size', 'header_line2_size',
+                                'title_size', 'title_margin_top', 'title_margin_bottom',
+                                'body_text_size', 'body_line_height', 'body_margin_bottom',
+                                'signers_margin_top', 'signers_font_size',
+                                'footer_margin_top', 'footer_font_size'
+                            ];
+
+                            numFields.forEach(f => {
+                                const el = document.getElementById('cert_cfg_' + f);
+                                if (el && cfg[f] !== undefined) {
+                                    el.value = cfg[f];
+                                }
+                            });
+
+                            ['header_align', 'title_align', 'body_align'].forEach(radioGroup => {
+                                const val = cfg[radioGroup];
+                                if (val) {
+                                    const radio = document.querySelector(`input[name="cert_${radioGroup}"][value="${val}"]`);
+                                    if (radio) radio.checked = true;
+                                }
+                            });
+
+                            window.applyCertLayoutToPreview(cfg);
+                        };
+
+                        window.updateCertLayout = function () {
+                            const numFields = [
+                                'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+                                'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
+                                'header_line1_size', 'header_line2_size',
+                                'title_size', 'title_margin_top', 'title_margin_bottom',
+                                'body_text_size', 'body_line_height', 'body_margin_bottom',
+                                'signers_margin_top', 'signers_font_size',
+                                'footer_margin_top', 'footer_font_size'
+                            ];
+
+                            const cfg = {};
+                            numFields.forEach(f => {
+                                const el = document.getElementById('cert_cfg_' + f);
+                                if (el && el.value !== '') {
+                                    cfg[f] = parseFloat(el.value);
+                                }
+                            });
+
+                            const headerRadio = document.querySelector('input[name="cert_header_align"]:checked');
+                            if (headerRadio) cfg.header_align = headerRadio.value;
+
+                            const titleRadio = document.querySelector('input[name="cert_title_align"]:checked');
+                            if (titleRadio) cfg.title_align = titleRadio.value;
+
+                            const bodyRadio = document.querySelector('input[name="cert_body_align"]:checked');
+                            if (bodyRadio) cfg.body_align = bodyRadio.value;
+
+                            const merged = Object.assign({}, DEFAULT_CERT_LAYOUT, cfg);
+
+                            const hiddenInput = document.getElementById('id_cert_layout_config');
+                            if (hiddenInput) {
+                                hiddenInput.value = JSON.stringify(merged);
+                            }
+
+                            window.applyCertLayoutToPreview(merged);
+                        };
+
+                        window.applyCertLayoutToPreview = function (cfg) {
+                            const scale = 0.55;
+
+                            // تطبيق على الشهادة التقديرية العرضية
+                            const landscape = document.getElementById('previewLandscapeCert');
+                            if (landscape) {
+                                landscape.style.padding = `${(cfg.page_padding_top || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px ${(cfg.page_padding_bottom || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px`;
+
+                                const titleCenter = landscape.querySelector('.title-center-box');
+                                if (titleCenter) {
+                                    titleCenter.style.textAlign = cfg.header_align || 'center';
+                                }
+
+                                const titleSpan = landscape.querySelector('.my-2 span');
+                                if (titleSpan) {
+                                    titleSpan.style.fontSize = `${(cfg.title_size || 32) * scale * 0.9}px`;
+                                }
+                                const titleBox = landscape.querySelector('.my-2');
+                                if (titleBox) {
+                                    titleBox.style.marginTop = `${(cfg.title_margin_top || 3) * scale * 2}px`;
+                                    titleBox.style.marginBottom = `${(cfg.title_margin_bottom || 4) * scale * 2}px`;
+                                    titleBox.style.textAlign = cfg.title_align || 'center';
+                                }
+
+                                const bodyBox = landscape.querySelector('.text-muted.small.px-2');
+                                if (bodyBox) {
+                                    bodyBox.style.fontSize = `${(cfg.body_text_size || 15) * scale}px`;
+                                    bodyBox.style.lineHeight = cfg.body_line_height || 1.8;
+                                    bodyBox.style.marginBottom = `${(cfg.body_margin_bottom || 6) * scale * 2}px`;
+                                    bodyBox.style.textAlign = cfg.body_align || 'center';
+                                }
+
+                                const signersRow = landscape.querySelector('.row.g-1.text-center');
+                                if (signersRow) {
+                                    signersRow.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 2}px`;
+                                    signersRow.style.fontSize = `${(cfg.signers_font_size || 14) * scale}px`;
+                                }
+
+                                const footerDiv = landscape.querySelector('.border-top.d-flex');
+                                if (footerDiv) {
+                                    footerDiv.style.marginTop = `${(cfg.footer_margin_top || 5) * scale * 2}px`;
+                                    footerDiv.style.fontSize = `${(cfg.footer_font_size || 11) * scale}px`;
+                                }
+                            }
+
+                            // تطبيق على الشهادة التفصيلية الطولية
+                            const detailed = document.getElementById('previewDetailedCert');
+                            if (detailed) {
+                                detailed.style.padding = `${(cfg.page_padding_top || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px ${(cfg.page_padding_bottom || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px`;
+
+                                const detHead = detailed.querySelector('.text-center.mb-2');
+                                if (detHead) {
+                                    detHead.style.textAlign = cfg.header_align || 'center';
+                                }
+
+                                const basicTitle = document.getElementById('previewDetailedBasicTitle');
+                                if (basicTitle) {
+                                    basicTitle.style.fontSize = `${(cfg.title_size || 32) * scale * 0.75}px`;
+                                    basicTitle.style.textAlign = cfg.title_align || 'center';
+                                }
+
+                                const h1 = document.getElementById('previewDetailedHeader1');
+                                if (h1) h1.style.fontSize = `${(cfg.header_line1_size || 16) * scale}px`;
+                                const h2 = document.getElementById('previewDetailedHeader2');
+                                if (h2) h2.style.fontSize = `${(cfg.header_line2_size || 16) * scale}px`;
+
+                                const signersDet = detailed.querySelector('.row.g-1.text-center');
+                                if (signersDet) {
+                                    signersDet.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 1.5}px`;
+                                    signersDet.style.fontSize = `${(cfg.signers_font_size || 14) * scale * 0.85}px`;
+                                }
+                            }
+                        };
+
+                        document.addEventListener('DOMContentLoaded', function () {
+                            if (typeof window.initMovementLayout === 'function') {
+                                window.initMovementLayout();
+                            }
+                            if (typeof window.initCertLayout === 'function') {
+                                window.initCertLayout();
+                            }
+                            // تعبئة كافة بيانات المعلم تلقائياً عند اختياره في نافذة إضافة مستخدم
+                            const createInstSelect = document.querySelector('#addUserModal select[name="instructor"]');
+                            if (createInstSelect) {
+                                createInstSelect.addEventListener('change', function () {
+                                    applyInstructorDataToUserForm(this.value, 'createUser');
+                                });
+                            }
+                            function updateCreateInstructorVisibility(r) {
+                                const instCol = document.getElementById('createUserInstructorWrapper');
+                                if (instCol) {
+                                    if (r === 'instructor' || r === 'supervisor') {
+                                        instCol.style.display = 'block';
+                                        const sel = instCol.querySelector('select');
+                                        if (sel && sel.value) {
+                                            applyInstructorDataToUserForm(sel.value, 'createUser');
+                                        }
+                                    } else {
+                                        instCol.style.display = 'none';
+                                        const sel = instCol.querySelector('select');
+                                        if (sel) sel.value = '';
+                                        const notice = document.getElementById('createUserInstNotice');
+                                        if (notice) notice.style.display = 'none';
+                                    }
+                                }
+                            }
+
+                            // مزامنة الأذونات في نافذة إضافة مستخدم جديد
+                            const createRoleSelect = document.querySelector('#addUserModal select[name="role"]');
                             if (createRoleSelect) {
+                                createRoleSelect.addEventListener('change', function () {
+                                    const r = this.value;
+                                    updateCreateInstructorVisibility(r);
+                                    const m = document.getElementById('create_perm_manage_users');
+                                    const v = document.getElementById('create_perm_view');
+                                    const a = document.getElementById('create_perm_add');
+                                    const e = document.getElementById('create_perm_edit');
+                                    const d = document.getElementById('create_perm_delete');
+                                    const g = document.getElementById('create_perm_grade');
+                                    const ap = document.getElementById('create_perm_approve');
+                                    if (r === 'admin') {
+                                        if (m) m.checked = true; if (v) v.checked = true; if (a) a.checked = true;
+                                        if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = true; if (ap) ap.checked = true;
+                                    } else if (r === 'registrar') {
+                                        if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = true;
+                                        if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = false; if (ap) ap.checked = false;
+                                    } else if (r === 'supervisor') {
+                                        if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
+                                        if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = true;
+                                    } else if (r === 'instructor') {
+                                        if (m) m.checked = false; if (v) v.checked = false; if (a) a.checked = false;
+                                        if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = false;
+                                    } else if (r === 'regular') {
+                                        if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
+                                        if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = false; if (ap) ap.checked = false;
+                                    }
+                                });
                                 updateCreateInstructorVisibility(createRoleSelect.value);
                             }
-                        });
-                    }
-                    // فحص رابط المعلمات لتفعيل تبويب قسم الصلاحيات والمستخدمين مباشرة
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('tab') === 'users') {
-                        const usersTabBtn = document.getElementById('tab-users');
-                        if (usersTabBtn) {
-                            const tab = new bootstrap.Tab(usersTabBtn);
-                            tab.show();
-                        }
-                    } else if (urlParams.get('tab') === 'activity-log' || urlParams.get('activity_user') || urlParams.get('activity_action') || urlParams.get('activity_category') || urlParams.get('activity_q')) {
-                        const actTabBtn = document.getElementById('tab-activity-log');
-                        if (actTabBtn) {
-                            const tab = new bootstrap.Tab(actTabBtn);
-                            tab.show();
-                        }
-                    } else if (urlParams.get('tab') === 'certificate') {
-                        const certTabBtn = document.getElementById('tab-certificate');
-                        if (certTabBtn) {
-                            const tab = new bootstrap.Tab(certTabBtn);
-                            tab.show();
-                        }
-                        if (window.location.hash === '#subpane-movement-order' || window.location.hash === '#pane-movement-order') {
-                            const movBtn = document.getElementById('subtab-movement-btn');
-                            if (movBtn) {
-                                const movTab = new bootstrap.Tab(movBtn);
-                                movTab.show();
+
+                            const addUserModalElem = document.getElementById('addUserModal');
+                            if (addUserModalElem) {
+                                addUserModalElem.addEventListener('show.bs.modal', function () {
+                                    if (createRoleSelect) {
+                                        updateCreateInstructorVisibility(createRoleSelect.value);
+                                    }
+                                });
                             }
-                        }
-                    } else if (urlParams.get('tab') === 'permissions-matrix' || urlParams.get('matrix_user')) {
-                        const matrixTabBtn = document.getElementById('tab-permissions-matrix');
-                        if (matrixTabBtn) {
-                            const tab = new bootstrap.Tab(matrixTabBtn);
-                            tab.show();
-                        }
-                    }
-
-                    // مزامنة فورية حية لحقول نصوص الشهادة مع المعاينة
-                    const certSyncMap = [
-                        { inputId: 'id_basic_cert_title', targetId: 'previewDetailedBasicTitle' },
-                        { inputId: 'id_header_line_1', targetId: 'previewDetailedHeader1' },
-                        { inputId: 'id_header_line_2', targetId: 'previewDetailedHeader2' },
-                        { inputId: 'id_default_certificate_note', targetId: 'previewDetailedNote' },
-                        { inputId: 'id_station_text', targetId: 'previewDetailedStation' },
-                        { inputId: 'id_seal_notice', targetId: 'previewDetailedSeal' },
-                        { inputId: 'id_right_signer_rank', targetId: 'previewDetailedRightRank' },
-                        { inputId: 'id_right_signer_name', targetId: 'previewDetailedRightName' },
-                        { inputId: 'id_right_signer_title', targetId: 'previewDetailedRightTitle' },
-                        { inputId: 'id_left_signer_rank', targetId: 'previewDetailedLeftRank' },
-                        { inputId: 'id_left_signer_name', targetId: 'previewDetailedLeftName' },
-                        { inputId: 'id_left_signer_title', targetId: 'previewDetailedLeftTitle' },
-                        { inputId: 'id_center_signer_rank', targetId: 'previewDetailedCenterRank' },
-                        { inputId: 'id_center_signer_name', targetId: 'previewDetailedCenterName' },
-                        { inputId: 'id_center_signer_title', targetId: 'previewDetailedCenterTitle' },
-                    ];
-                    certSyncMap.forEach(item => {
-                        const inputEl = document.getElementById(item.inputId);
-                        const targetEl = document.getElementById(item.targetId);
-                        if (inputEl && targetEl) {
-                            inputEl.addEventListener('input', function () {
-                                targetEl.textContent = this.value;
-                            });
-                        }
-                    });
-
-                    // مزامنة فورية حية لحقول نصوص أمر التحرك مع المعاينة
-                    const movSyncMap = [
-                        { name: 'bismillah_text', targetId: 'previewMovBismillah' },
-                        { name: 'security_label', targetId: 'previewMovSecurity' },
-                        { name: 'security_label', targetId: 'previewMovSecurityBottom' },
-                        { name: 'order_title', targetId: 'previewMovTitle' },
-                        { name: 'issuing_authority_text', targetId: 'previewMovIssuing' },
-                        { name: 'from_location', targetId: 'previewMovFrom' },
-                        { name: 'to_location_default', targetId: 'previewMovTo' },
-                        { name: 'arms_default', targetId: 'previewMovArms' },
-                        { name: 'ammunition_default', targetId: 'previewMovAmmo' },
-                        { name: 'purpose_prefix', targetId: 'previewMovPurposePrefix' },
-                        { name: 'clothing_instructions', targetId: 'previewMovClothing' },
-                        { name: 'travel_means', targetId: 'previewMovTravel' },
-                        { name: 'ratification_text', targetId: 'previewMovRatification' },
-                        { name: 'admin_instructions', targetId: 'previewMovAdminInst' },
-                        { name: 'certificate_declaration', targetId: 'previewMovDeclaration' },
-                        { name: 'signer_rank', targetId: 'previewMovSignerRank' },
-                        { name: 'signer_name', targetId: 'previewMovSignerName' },
-                        { name: 'signer_title', targetId: 'previewMovSignerTitle' },
-                        { name: 'signer_dept', targetId: 'previewMovSignerDept' },
-                        { name: 'copy_to_1', targetId: 'previewMovCopy1' },
-                        { name: 'copy_to_2', targetId: 'previewMovCopy2' },
-                    ];
-                    movSyncMap.forEach(item => {
-                        const inputEl = document.querySelector(`#subpane-movement-order [name="${item.name}"]`);
-                        const targetEl = document.getElementById(item.targetId);
-                        if (inputEl && targetEl) {
-                            inputEl.addEventListener('input', function () {
-                                let val = this.value;
-                                if (item.name === 'admin_instructions' || item.name === 'copy_to_1') {
-                                    val = val.replace(/\{unit\}/g, 'سلاح الإشارة');
+                            // فحص رابط المعلمات لتفعيل تبويب قسم الصلاحيات والمستخدمين مباشرة
+                            const urlParams = new URLSearchParams(window.location.search);
+                            if (urlParams.get('tab') === 'users') {
+                                const usersTabBtn = document.getElementById('tab-users');
+                                if (usersTabBtn) {
+                                    const tab = new bootstrap.Tab(usersTabBtn);
+                                    tab.show();
                                 }
-                                targetEl.textContent = val;
-                            });
-                        }
-                    });
-
-                    // مزامنة شفافية العلامة المائية لأمر التحرك لحظياً
-                    const opacityInput = document.querySelector('#subpane-movement-order input[name="watermark_opacity"]');
-                    const watermarkImg = document.getElementById('previewMovWatermarkImg');
-                    if (opacityInput && watermarkImg) {
-                        opacityInput.addEventListener('input', function () {
-                            const val = parseFloat(this.value);
-                            if (!isNaN(val)) {
-                                watermarkImg.style.opacity = val;
+                            } else if (urlParams.get('tab') === 'activity-log' || urlParams.get('activity_user') || urlParams.get('activity_action') || urlParams.get('activity_category') || urlParams.get('activity_q')) {
+                                const actTabBtn = document.getElementById('tab-activity-log');
+                                if (actTabBtn) {
+                                    const tab = new bootstrap.Tab(actTabBtn);
+                                    tab.show();
+                                }
+                            } else if (urlParams.get('tab') === 'certificate') {
+                                const certTabBtn = document.getElementById('tab-certificate');
+                                if (certTabBtn) {
+                                    const tab = new bootstrap.Tab(certTabBtn);
+                                    tab.show();
+                                }
+                                if (window.location.hash === '#subpane-movement-order' || window.location.hash === '#pane-movement-order') {
+                                    const movBtn = document.getElementById('subtab-movement-btn');
+                                    if (movBtn) {
+                                        const movTab = new bootstrap.Tab(movBtn);
+                                        movTab.show();
+                                    }
+                                }
+                            } else if (urlParams.get('tab') === 'permissions-matrix' || urlParams.get('matrix_user')) {
+                                const matrixTabBtn = document.getElementById('tab-permissions-matrix');
+                                if (matrixTabBtn) {
+                                    const tab = new bootstrap.Tab(matrixTabBtn);
+                                    tab.show();
+                                }
                             }
-                        });
-                    }
 
-                    // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
-                    const hash = window.location.hash;
-                    if (hash) {
-                        const triggerEl = document.querySelector(`.admin-sidebar-nav [data-bs-target="${hash}"]`);
-                        if (triggerEl) {
-                            const tab = new bootstrap.Tab(triggerEl);
-                            tab.show();
-                        }
-                    }
-                    const tabButtons = document.querySelectorAll('.admin-sidebar-nav button[data-bs-toggle="pill"]');
-                    tabButtons.forEach(btn => {
-                        btn.addEventListener('shown.bs.tab', function (e) {
-                            const target = e.target.getAttribute('data-bs-target');
-                            if (target) {
-                                history.replaceState(null, null, target);
-                            }
-                        });
-                    });
-
-                    // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
-                    const filterCards = document.querySelectorAll('.role-filter-card');
-                    const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
-                    const countBadge = document.getElementById('usersFilterCountBadge');
-
-                    filterCards.forEach(card => {
-                        card.addEventListener('click', function () {
-                            filterCards.forEach(c => {
-                                c.classList.remove('active', 'border-primary', 'shadow');
-                                c.style.backgroundColor = '';
-                            });
-                            this.classList.add('active', 'border-primary', 'shadow');
-                            this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
-
-                            const filterRole = this.getAttribute('data-filter-role');
-                            let visibleCount = 0;
-
-                            userRows.forEach(row => {
-                                const rowRole = row.getAttribute('data-role');
-                                if (filterRole === 'all' || rowRole === filterRole) {
-                                    row.style.display = '';
-                                    visibleCount++;
-                                } else {
-                                    row.style.display = 'none';
+                            // مزامنة فورية حية لحقول نصوص الشهادة مع المعاينة
+                            const certSyncMap = [
+                                { inputId: 'id_basic_cert_title', targetId: 'previewDetailedBasicTitle' },
+                                { inputId: 'id_header_line_1', targetId: 'previewDetailedHeader1' },
+                                { inputId: 'id_header_line_2', targetId: 'previewDetailedHeader2' },
+                                { inputId: 'id_default_certificate_note', targetId: 'previewDetailedNote' },
+                                { inputId: 'id_station_text', targetId: 'previewDetailedStation' },
+                                { inputId: 'id_seal_notice', targetId: 'previewDetailedSeal' },
+                                { inputId: 'id_right_signer_rank', targetId: 'previewDetailedRightRank' },
+                                { inputId: 'id_right_signer_name', targetId: 'previewDetailedRightName' },
+                                { inputId: 'id_right_signer_title', targetId: 'previewDetailedRightTitle' },
+                                { inputId: 'id_left_signer_rank', targetId: 'previewDetailedLeftRank' },
+                                { inputId: 'id_left_signer_name', targetId: 'previewDetailedLeftName' },
+                                { inputId: 'id_left_signer_title', targetId: 'previewDetailedLeftTitle' },
+                                { inputId: 'id_center_signer_rank', targetId: 'previewDetailedCenterRank' },
+                                { inputId: 'id_center_signer_name', targetId: 'previewDetailedCenterName' },
+                                { inputId: 'id_center_signer_title', targetId: 'previewDetailedCenterTitle' },
+                            ];
+                            certSyncMap.forEach(item => {
+                                const inputEl = document.getElementById(item.inputId);
+                                const targetEl = document.getElementById(item.targetId);
+                                if (inputEl && targetEl) {
+                                    inputEl.addEventListener('input', function () {
+                                        targetEl.textContent = this.value;
+                                    });
                                 }
                             });
 
-                            if (countBadge) {
-                                countBadge.textContent = `${visibleCount} مستخدم`;
-                            }
-                        });
-                    });
-
-                    // حقل البحث السريع في جدول المستخدمين
-                    const usersSearchInput = document.getElementById('usersSearchInput');
-                    if (usersSearchInput) {
-                        usersSearchInput.addEventListener('input', function () {
-                            const query = this.value.toLowerCase().trim();
-                            let visibleCount = 0;
-                            userRows.forEach(row => {
-                                const username = row.getAttribute('data-username') || '';
-                                const fullname = row.getAttribute('data-fullname') || '';
-                                const military = row.getAttribute('data-military') || '';
-                                if (username.includes(query) || fullname.includes(query) || military.includes(query)) {
-                                    row.style.display = '';
-                                    visibleCount++;
-                                } else {
-                                    row.style.display = 'none';
+                            // مزامنة فورية حية لحقول نصوص أمر التحرك مع المعاينة
+                            const movSyncMap = [
+                                { name: 'bismillah_text', targetId: 'previewMovBismillah' },
+                                { name: 'security_label', targetId: 'previewMovSecurity' },
+                                { name: 'security_label', targetId: 'previewMovSecurityBottom' },
+                                { name: 'order_title', targetId: 'previewMovTitle' },
+                                { name: 'issuing_authority_text', targetId: 'previewMovIssuing' },
+                                { name: 'from_location', targetId: 'previewMovFrom' },
+                                { name: 'to_location_default', targetId: 'previewMovTo' },
+                                { name: 'arms_default', targetId: 'previewMovArms' },
+                                { name: 'ammunition_default', targetId: 'previewMovAmmo' },
+                                { name: 'purpose_prefix', targetId: 'previewMovPurposePrefix' },
+                                { name: 'clothing_instructions', targetId: 'previewMovClothing' },
+                                { name: 'travel_means', targetId: 'previewMovTravel' },
+                                { name: 'ratification_text', targetId: 'previewMovRatification' },
+                                { name: 'admin_instructions', targetId: 'previewMovAdminInst' },
+                                { name: 'certificate_declaration', targetId: 'previewMovDeclaration' },
+                                { name: 'signer_rank', targetId: 'previewMovSignerRank' },
+                                { name: 'signer_name', targetId: 'previewMovSignerName' },
+                                { name: 'signer_title', targetId: 'previewMovSignerTitle' },
+                                { name: 'signer_dept', targetId: 'previewMovSignerDept' },
+                                { name: 'copy_to_1', targetId: 'previewMovCopy1' },
+                                { name: 'copy_to_2', targetId: 'previewMovCopy2' },
+                            ];
+                            movSyncMap.forEach(item => {
+                                const inputEl = document.querySelector(`#subpane-movement-order [name="${item.name}"]`);
+                                const targetEl = document.getElementById(item.targetId);
+                                if (inputEl && targetEl) {
+                                    inputEl.addEventListener('input', function () {
+                                        let val = this.value;
+                                        if (item.name === 'admin_instructions' || item.name === 'copy_to_1') {
+                                            val = val.replace(/\{unit\}/g, 'سلاح الإشارة');
+                                        }
+                                        targetEl.textContent = val;
+                                    });
                                 }
                             });
-                            if (countBadge) {
-                                countBadge.textContent = `${visibleCount} مستخدم`;
+
+                            // مزامنة شفافية العلامة المائية لأمر التحرك لحظياً
+                            const opacityInput = document.querySelector('#subpane-movement-order input[name="watermark_opacity"]');
+                            const watermarkImg = document.getElementById('previewMovWatermarkImg');
+                            if (opacityInput && watermarkImg) {
+                                opacityInput.addEventListener('input', function () {
+                                    const val = parseFloat(this.value);
+                                    if (!isNaN(val)) {
+                                        watermarkImg.style.opacity = val;
+                                    }
+                                });
                             }
-                        });
-                    }
 
-                    // تصفية فورية حية في جدول سجل النشاط
-                    const liveActivitySearchInput = document.getElementById('liveActivitySearchInput');
-                    const activityRows = document.querySelectorAll('#activityLogsTable tbody tr.activity-row');
-                    const activityCountBadge = document.getElementById('activityVisibleCountBadge');
-
-                    if (liveActivitySearchInput) {
-                        liveActivitySearchInput.addEventListener('input', function () {
-                            const q = this.value.toLowerCase().trim();
-                            let count = 0;
-                            activityRows.forEach(row => {
-                                const text = row.getAttribute('data-search-text') || '';
-                                if (!q || text.includes(q)) {
-                                    row.style.display = '';
-                                    count++;
-                                } else {
-                                    row.style.display = 'none';
+                            // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
+                            const hash = window.location.hash;
+                            if (hash) {
+                                const triggerEl = document.querySelector(`.admin-sidebar-nav [data-bs-target="${hash}"]`);
+                                if (triggerEl) {
+                                    const tab = new bootstrap.Tab(triggerEl);
+                                    tab.show();
                                 }
-                            });
-                            if (activityCountBadge) {
-                                activityCountBadge.textContent = `${count} عملية معروضة`;
                             }
-                        });
-                    }
+                            const tabButtons = document.querySelectorAll('.admin-sidebar-nav button[data-bs-toggle="pill"]');
+                            tabButtons.forEach(btn => {
+                                btn.addEventListener('shown.bs.tab', function (e) {
+                                    const target = e.target.getAttribute('data-bs-target');
+                                    if (target) {
+                                        history.replaceState(null, null, target);
+                                    }
+                                });
+                            });
 
-                    const modal = document.getElementById('addInstructorModal');
-                    if (modal) {
-                        modal.addEventListener('show.bs.modal', function () {
-                            modalUpdateRanks();
-                            modalUpdateUnits();
-                        });
-                        // Initial call if modal is somehow active
-                        modalUpdateRanks();
-                    }
+                            // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
+                            const filterCards = document.querySelectorAll('.role-filter-card');
+                            const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
+                            const countBadge = document.getElementById('usersFilterCountBadge');
 
-                    // =====================================================================
-                    // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
-                    // =====================================================================
-                    const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe }};
-                const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json| safe }};
+                            filterCards.forEach(card => {
+                                card.addEventListener('click', function () {
+                                    filterCards.forEach(c => {
+                                        c.classList.remove('active', 'border-primary', 'shadow');
+                                        c.style.backgroundColor = '';
+                                    });
+                                    this.classList.add('active', 'border-primary', 'shadow');
+                                    this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+
+                                    const filterRole = this.getAttribute('data-filter-role');
+                                    let visibleCount = 0;
+
+                                    userRows.forEach(row => {
+                                        const rowRole = row.getAttribute('data-role');
+                                        if (filterRole === 'all' || rowRole === filterRole) {
+                                            row.style.display = '';
+                                            visibleCount++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+
+                                    if (countBadge) {
+                                        countBadge.textContent = `${visibleCount} مستخدم`;
+                                    }
+                                });
+                            });
+
+                            // حقل البحث السريع في جدول المستخدمين
+                            const usersSearchInput = document.getElementById('usersSearchInput');
+                            if (usersSearchInput) {
+                                usersSearchInput.addEventListener('input', function () {
+                                    const query = this.value.toLowerCase().trim();
+                                    let visibleCount = 0;
+                                    userRows.forEach(row => {
+                                        const username = row.getAttribute('data-username') || '';
+                                        const fullname = row.getAttribute('data-fullname') || '';
+                                        const military = row.getAttribute('data-military') || '';
+                                        if (username.includes(query) || fullname.includes(query) || military.includes(query)) {
+                                            row.style.display = '';
+                                            visibleCount++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+                                    if (countBadge) {
+                                        countBadge.textContent = `${visibleCount} مستخدم`;
+                                    }
+                                });
+                            }
+
+                            // تصفية فورية حية في جدول سجل النشاط
+                            const liveActivitySearchInput = document.getElementById('liveActivitySearchInput');
+                            const activityRows = document.querySelectorAll('#activityLogsTable tbody tr.activity-row');
+                            const activityCountBadge = document.getElementById('activityVisibleCountBadge');
+
+                            if (liveActivitySearchInput) {
+                                liveActivitySearchInput.addEventListener('input', function () {
+                                    const q = this.value.toLowerCase().trim();
+                                    let count = 0;
+                                    activityRows.forEach(row => {
+                                        const text = row.getAttribute('data-search-text') || '';
+                                        if (!q || text.includes(q)) {
+                                            row.style.display = '';
+                                            count++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+                                    if (activityCountBadge) {
+                                        activityCountBadge.textContent = `${count} عملية معروضة`;
+                                    }
+                                });
+                            }
+
+                            const modal = document.getElementById('addInstructorModal');
+                            if (modal) {
+                                modal.addEventListener('show.bs.modal', function () {
+                                    modalUpdateRanks();
+                                    modalUpdateUnits();
+                                });
+                                // Initial call if modal is somehow active
+                                modalUpdateRanks();
+                            }
+
+                            // =====================================================================
+                            // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
+                            // =====================================================================
+                            const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe }};
+                    const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json| safe }};
                 const matrixUserSelect = document.getElementById('matrixUserSelect');
                 const matrixSaveBtn = document.getElementById('btnMatrixSave');
                 const matrixSaveBtnBottom = document.getElementById('btnMatrixSaveBottom');
