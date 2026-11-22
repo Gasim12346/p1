@@ -305,8 +305,7 @@
                 كشف نتيجة امتحان تحديد المستوى الرسمي
             </span>
             <span class="text-muted small">
-                مطابق 1:1 للقالب المعتمد (العدد الفعلي للمشاركين: <strong class="text-dark">{{ total_participants
-                    }}</strong> دارس)
+                مطابق 1:1 للقالب المعتمد (العدد الفعلي للمشاركين: <strong class="text-dark">{{ total_participants }}</strong> دارس)
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -335,8 +334,7 @@
                 <div class="h-dept">{{ dept_name }}</div>
                 <div class="h-institute">{{ institute_name }}</div>
                 <div class="h-subject">
-                    نتيجة أمتحان تحديد مستوى <span class="sheet-subject-val">{{ exam.subject|default:"اللغة الإنجليزية
-                        العسكرية" }}</span>
+                    نتيجة أمتحان تحديد مستوى <span class="sheet-subject-val">{{ exam.subject|default:"اللغة الإنجليزية العسكرية" }}</span>
                     {% if page.total_pages > 1 and page.page_number > 1 %}
                     <span class="small fw-normal">(تابع صفحة {{ page.page_number }})</span>
                     {% endif %}

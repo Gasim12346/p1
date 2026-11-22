@@ -159,8 +159,7 @@
                         <p class="text-white-50 small mb-0 mt-1">
                             مرحباً بك <strong class="text-white">{{ user.get_full_name|default:user.username }}</strong>
                             • الصلاحية: <span
-                                class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50">{{
-                                user.profile.get_role_display|default:"مدير نظام عام" }}</span>
+                                class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50">{{ user.profile.get_role_display|default:"مدير نظام عام" }}</span>
                         </p>
                     </div>
                 </div>
@@ -228,8 +227,7 @@
                                 <i class="bi bi-shield-lock-fill icon-tab text-success"></i>
                                 <span class="tab-title">قسم الصلاحيات والمستخدمين</span>
                                 <span
-                                    class="badge bg-success bg-opacity-10 text-success rounded-pill ms-auto count-badge">{{
-                                    users|length }}</span>
+                                    class="badge bg-success bg-opacity-10 text-success rounded-pill ms-auto count-badge">{{ users|length }}</span>
                             </button>
 
                             <!-- 3. مصفوفة الأذونات والصلاحيات الديناميكية -->
@@ -248,8 +246,7 @@
                                 <i class="bi bi-person-workspace icon-tab text-primary"></i>
                                 <span class="tab-title">هيئة التعليم والمعلمون</span>
                                 <span
-                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{
-                                    instructors|length }}</span>
+                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{ instructors|length }}</span>
                             </button>
 
                             <!-- 4. تصنيفات الدورات -->
@@ -258,8 +255,7 @@
                                 <i class="bi bi-tags-fill icon-tab text-info"></i>
                                 <span class="tab-title">تصنيفات الدورات</span>
                                 <span
-                                    class="badge bg-info bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{
-                                    categories_total }}</span>
+                                    class="badge bg-info bg-opacity-10 text-primary rounded-pill ms-auto count-badge">{{ categories_total }}</span>
                             </button>
 
                             <!-- 5. تخصيص الشهادة وتعديل اللوغهات وأمر التحرك -->
@@ -411,8 +407,7 @@
                                                 style="width: 10px; height: 10px; background-color: {{ item.color }}; display: inline-block;"></span>
                                             <span class="fw-bold text-dark">{{ item.label }}</span>
                                             <span class="badge rounded-pill"
-                                                style="background-color: {{ item.color }}22; color: {{ item.color }}; font-weight: 700;">{{
-                                                item.count }} ({{ item.pct|natural_number }}%)</span>
+                                                style="background-color: {{ item.color }}22; color: {{ item.color }}; font-weight: 700;">{{ item.count }} ({{ item.pct|natural_number }}%)</span>
                                         </div>
                                         {% endfor %}
                                     </div>
@@ -466,8 +461,7 @@
                                                 style="width: 10px; height: 10px; display: inline-block;"></span>
                                             <span class="fw-bold text-dark">{{ force.name }}</span>
                                             <span
-                                                class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold">{{
-                                                force.count }} دارس ({{ force.pct|natural_number }}%)</span>
+                                                class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold">{{ force.count }} دارس ({{ force.pct|natural_number }}%)</span>
                                         </div>
                                         {% empty %}
                                         <span class="text-muted small">لا توجد بيانات قوات حتى الآن.</span>
@@ -725,15 +719,13 @@
                                             <span
                                                 class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-link-45deg"></i>
-                                                <span>{{ u.profile.instructor.name }} ({{
-                                                    u.profile.instructor.military_number }})</span>
+                                                <span>{{ u.profile.instructor.name }} ({{ u.profile.instructor.military_number }})</span>
                                             </span>
                                             {% elif u.profile.get_instructor %}
                                             <span
                                                 class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-link-45deg"></i>
-                                                <span>{{ u.profile.get_instructor.name }} ({{
-                                                    u.profile.get_instructor.military_number }})</span>
+                                                <span>{{ u.profile.get_instructor.name }} ({{ u.profile.get_instructor.military_number }})</span>
                                             </span>
                                             {% else %}
                                             <span
@@ -745,10 +737,8 @@
                                             {% endif %}
                                         </td>
                                         <td class="small">
-                                            <div><span class="fw-bold">{{ u.profile.rank|default:"" }}</span> {{
-                                                u.profile.military_number|default:"-" }}</div>
-                                            <div class="text-muted" style="font-size: 0.75rem;">{{
-                                                u.profile.unit|default:"-" }}</div>
+                                            <div><span class="fw-bold">{{ u.profile.rank|default:"" }}</span> {{ u.profile.military_number|default:"-" }}</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;">{{ u.profile.unit|default:"-" }}</div>
                                         </td>
                                         <td>
                                             {% if u.is_active %}
@@ -996,8 +986,7 @@
                                             data-mil="{{ u.profile.military_number|default:'' }}"
                                             data-unit="{{ u.profile.unit|default:'' }}"
                                             data-active="{% if u.is_active %}1{% else %}0{% endif %}" {% if selected_matrix_user and selected_matrix_user.id == u.id %}selected{% endif %}>
-                                            {{ u.get_full_name|default:u.username }} (@{{ u.username }}) - {{
-                                            u.profile.get_role_display }}
+                                            {{ u.get_full_name|default:u.username }} (@{{ u.username }}) - {{ u.profile.get_role_display }}
                                         </option>
                                         {% empty %}
                                         <option value="">لا يوجد مستخدمون مسجلون</option>
@@ -2153,47 +2142,36 @@
                                                 style="text-align: right; margin-bottom: 6px; font-size: 0.65rem; padding: 0 4px; line-height: 1.4;">
                                                 <span
                                                     style="font-weight: bold; text-decoration: underline;">ملحوظة:</span>
-                                                <span id="previewDetailedNote">{{ cert_settings.default_certificate_note
-                                                    }}</span>
+                                                <span id="previewDetailedNote">{{ cert_settings.default_certificate_note }}</span>
                                             </div>
 
                                             <!-- التوقيعات الثلاثة -->
                                             <div class="row g-1 text-center"
                                                 style="font-size: 0.63rem; font-weight: bold; margin-bottom: 5px;">
                                                 <div class="col-6 text-end pe-2">
-                                                    <div id="previewDetailedRightRank">{{
-                                                        cert_settings.right_signer_rank }}</div>
-                                                    <div id="previewDetailedRightName" style="font-size: 0.68rem;">{{
-                                                        cert_settings.right_signer_name }}</div>
+                                                    <div id="previewDetailedRightRank">{{ cert_settings.right_signer_rank }}</div>
+                                                    <div id="previewDetailedRightName" style="font-size: 0.68rem;">{{ cert_settings.right_signer_name }}</div>
                                                     <div id="previewDetailedRightTitle" class="text-muted"
-                                                        style="font-size: 0.58rem;">{{ cert_settings.right_signer_title
-                                                        }}</div>
+                                                        style="font-size: 0.58rem;">{{ cert_settings.right_signer_title }}</div>
                                                 </div>
                                                 <div class="col-6 text-start ps-2">
-                                                    <div id="previewDetailedLeftRank">{{ cert_settings.left_signer_rank
-                                                        }}</div>
-                                                    <div id="previewDetailedLeftName" style="font-size: 0.68rem;">{{
-                                                        cert_settings.left_signer_name }}</div>
+                                                    <div id="previewDetailedLeftRank">{{ cert_settings.left_signer_rank }}</div>
+                                                    <div id="previewDetailedLeftName" style="font-size: 0.68rem;">{{ cert_settings.left_signer_name }}</div>
                                                     <div id="previewDetailedLeftTitle" class="text-muted"
-                                                        style="font-size: 0.58rem;">{{ cert_settings.left_signer_title
-                                                        }}</div>
+                                                        style="font-size: 0.58rem;">{{ cert_settings.left_signer_title }}</div>
                                                 </div>
                                                 <div class="col-12 mt-1">
-                                                    <div id="previewDetailedCenterRank">{{
-                                                        cert_settings.center_signer_rank }}</div>
-                                                    <div id="previewDetailedCenterName" style="font-size: 0.7rem;">{{
-                                                        cert_settings.center_signer_name }}</div>
+                                                    <div id="previewDetailedCenterRank">{{ cert_settings.center_signer_rank }}</div>
+                                                    <div id="previewDetailedCenterName" style="font-size: 0.7rem;">{{ cert_settings.center_signer_name }}</div>
                                                     <div id="previewDetailedCenterTitle" class="text-muted"
-                                                        style="font-size: 0.58rem;">{{ cert_settings.center_signer_title
-                                                        }}</div>
+                                                        style="font-size: 0.58rem;">{{ cert_settings.center_signer_title }}</div>
                                                 </div>
                                             </div>
 
                                             <!-- التذييل والمقياس -->
                                             <div class="d-flex justify-content-between align-items-center pt-1 border-top"
                                                 style="font-size: 0.62rem; font-weight: bold;">
-                                                <span>المحطة: <span id="previewDetailedStation">{{
-                                                        cert_settings.station_text }}</span></span>
+                                                <span>المحطة: <span id="previewDetailedStation">{{ cert_settings.station_text }}</span></span>
                                                 <span>التاريخ: من 02/11/2026م إلى 18/11/2026م</span>
                                             </div>
                                             <table
@@ -2225,8 +2203,7 @@
                                                 {% endif %}
 
                                                 <div>
-                                                    <div style="font-size: 0.68rem; font-weight: bold;">{{
-                                                        cert_settings.bismillah_text }}</div>
+                                                    <div style="font-size: 0.68rem; font-weight: bold;">{{ cert_settings.bismillah_text }}</div>
                                                     <div
                                                         style="font-size: 0.82rem; font-weight: 800; text-decoration: underline;">
                                                         {{ cert_settings.header_line_1 }}</div>
@@ -2269,10 +2246,8 @@
                                                     <div class="text-muted">{{ cert_settings.left_signer_title }}</div>
                                                 </div>
                                                 <div class="col-12 mt-2">
-                                                    <div class="badge bg-secondary bg-opacity-10 text-dark">{{
-                                                        cert_settings.center_approval_prefix }}</div>
-                                                    <div>{{ cert_settings.center_signer_rank }} / {{
-                                                        cert_settings.center_signer_name }}</div>
+                                                    <div class="badge bg-secondary bg-opacity-10 text-dark">{{ cert_settings.center_approval_prefix }}</div>
+                                                    <div>{{ cert_settings.center_signer_rank }} / {{ cert_settings.center_signer_name }}</div>
                                                     <div class="text-muted">{{ cert_settings.center_signer_title }}
                                                     </div>
                                                 </div>
@@ -2281,8 +2256,7 @@
                                             <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center"
                                                 style="font-size: 0.65rem;">
                                                 <span>المحطة: {{ cert_settings.station_text }}</span>
-                                                <span class="text-success fw-bold">{{ cert_settings.seal_notice
-                                                    }}</span>
+                                                <span class="text-success fw-bold">{{ cert_settings.seal_notice }}</span>
                                             </div>
                                         </div>
 
@@ -3354,8 +3328,7 @@
                                             <!-- المحتوى -->
                                             <div style="position: relative; z-index: 2; background: transparent;">
                                                 <div class="text-center">
-                                                    <div id="previewMovBismillah" style="font-size: 0.76rem;">{{
-                                                        movement_settings.bismillah_text }}</div>
+                                                    <div id="previewMovBismillah" style="font-size: 0.76rem;">{{ movement_settings.bismillah_text }}</div>
                                                     <div id="previewMovSecurity"
                                                         style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">
                                                         {{ movement_settings.security_label }}</div>
@@ -3410,8 +3383,7 @@
                                                         <td class="mov-label-col"
                                                             style="font-weight: bold; padding: 1.5px 0;">
                                                             الـــــــــــــــــي :</td>
-                                                        <td id="previewMovTo">{{ movement_settings.to_location_default
-                                                            }}</td>
+                                                        <td id="previewMovTo">{{ movement_settings.to_location_default }}</td>
                                                     </tr>
                                                     <tr>
                                                         <td class="mov-label-col"
@@ -3426,16 +3398,14 @@
                                                             style="font-weight: bold; padding: 1.5px 0;">
                                                             الذخيـــــــرة
                                                             :</td>
-                                                        <td id="previewMovAmmo">{{ movement_settings.ammunition_default
-                                                            }}</td>
+                                                        <td id="previewMovAmmo">{{ movement_settings.ammunition_default }}</td>
                                                     </tr>
                                                     <tr>
                                                         <td class="mov-label-col"
                                                             style="font-weight: bold; padding: 1.5px 0;">
                                                             الغــــــــرض :
                                                         </td>
-                                                        <td><span id="previewMovPurposePrefix">{{
-                                                                movement_settings.purpose_prefix }}</span>دورة
+                                                        <td><span id="previewMovPurposePrefix">{{ movement_settings.purpose_prefix }}</span>دورة
                                                             أمن
                                                             سيبراني</td>
                                                     </tr>
@@ -3451,8 +3421,7 @@
                                                         <td class="mov-label-col"
                                                             style="font-weight: bold; padding: 1.5px 0;">
                                                             اللبـــــــــــس :</td>
-                                                        <td id="previewMovClothing">{{
-                                                            movement_settings.clothing_instructions }}</td>
+                                                        <td id="previewMovClothing">{{ movement_settings.clothing_instructions }}</td>
                                                     </tr>
                                                     <tr>
                                                         <td class="mov-label-col"
@@ -3468,8 +3437,7 @@
                                                             style="font-weight: bold; padding: 1.5px 0;">التصديق
                                                             :
                                                         </td>
-                                                        <td id="previewMovRatification">{{
-                                                            movement_settings.ratification_text }}</td>
+                                                        <td id="previewMovRatification">{{ movement_settings.ratification_text }}</td>
                                                     </tr>
                                                 </table>
 
@@ -3515,25 +3483,19 @@
                                             <div id="previewMovCopiesBlock"
                                                 style="font-size: 0.65rem; line-height: 1.35; text-align: right; order: 1;">
                                                 <div style="font-weight: bold;">نسخة الي :</div>
-                                                <div id="previewMovCopy1">{{ movement_settings.copy_to_1
-                                                    }}
+                                                <div id="previewMovCopy1">{{ movement_settings.copy_to_1 }}
                                                 </div>
-                                                <div id="previewMovCopy2">{{ movement_settings.copy_to_2
-                                                    }}
+                                                <div id="previewMovCopy2">{{ movement_settings.copy_to_2 }}
                                                 </div>
                                             </div>
                                             <!-- التواقيع في الجهة الأخرى (على اليسار) بمحاذاة اليمين -->
                                             <div id="previewMovSignerBlock"
                                                 style="font-size: 0.68rem; line-height: 1.3; text-align: right; min-width: 120px; order: 2;">
-                                                <div id="previewMovSignerRank" style="font-weight: bold;">{{
-                                                    movement_settings.signer_rank }}</div>
+                                                <div id="previewMovSignerRank" style="font-weight: bold;">{{ movement_settings.signer_rank }}</div>
                                                 <div id="previewMovSignerName"
-                                                    style="font-weight: bold; margin: 1px 0;">{{
-                                                    movement_settings.signer_name }}</div>
-                                                <div id="previewMovSignerTitle">{{
-                                                    movement_settings.signer_title }}</div>
-                                                <div id="previewMovSignerDept" style="font-weight: bold;">{{
-                                                    movement_settings.signer_dept }}</div>
+                                                    style="font-weight: bold; margin: 1px 0;">{{ movement_settings.signer_name }}</div>
+                                                <div id="previewMovSignerTitle">{{ movement_settings.signer_title }}</div>
+                                                <div id="previewMovSignerDept" style="font-weight: bold;">{{ movement_settings.signer_dept }}</div>
                                             </div>
                                         </div>
 
@@ -3893,8 +3855,7 @@
                 <option value="">-- جميع المستخدمين (عرض عام) --</option>
                 {% for u in activity_users_list %}
                 <option value="{{ u.username }}" {% if activity_user == u.username %}selected{% endif %}>
-                    {{ u.username }} ({{ u.get_full_name|default:u.username }} - {{
-                    u.profile.get_role_display|default:"مستخدم" }})
+                    {{ u.username }} ({{ u.get_full_name|default:u.username }} - {{ u.profile.get_role_display|default:"مستخدم" }})
                 </option>
                 {% endfor %}
             </select>
@@ -3930,8 +3891,7 @@
             <select name="activity_category" class="form-select form-select-sm rounded-3">
                 <option value="ALL">الكل (كافة الأقسام)</option>
                 {% for cat_code, cat_label in activity_categories %}
-                <option value="{{ cat_code }}" {% if activity_category == cat_code %}selected{% endif %}>{{
-                    cat_label }}</option>
+                <option value="{{ cat_code }}" {% if activity_category == cat_code %}selected{% endif %}>{{ cat_label }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -3982,8 +3942,7 @@
             <i class="bi bi-person-lines-fill"></i>
         </div>
         <div>
-            <h6 class="fw-bold mb-0 text-dark">تتبع مسار نشاط وجلسات المستخدم: <span class="text-primary">{{
-                    activity_user }}</span></h6>
+            <h6 class="fw-bold mb-0 text-dark">تتبع مسار نشاط وجلسات المستخدم: <span class="text-primary">{{ activity_user }}</span></h6>
             <small class="text-muted">يتم عرض كافة العمليات التي أجراها هذا المستخدم مرتبة
                 زمنياً،
                 منذ لحظة تسجيل دخوله إلى خروجه وما تم بينهما من إضافة وتعديل وحذف ورصد
@@ -4004,8 +3963,7 @@
         <div class="d-flex align-items-center gap-2">
             <i class="bi bi-list-check text-primary fs-5"></i>
             <h6 class="fw-bold mb-0 text-dark">سجل العمليات الزمني</h6>
-            <span class="badge bg-secondary rounded-pill px-2" id="activityVisibleCountBadge">{{
-                activity_logs|length }} عملية معروضة</span>
+            <span class="badge bg-secondary rounded-pill px-2" id="activityVisibleCountBadge">{{ activity_logs|length }} عملية معروضة</span>
         </div>
 
         <!-- بحث فوري حي في الجدول -->
@@ -4045,9 +4003,7 @@
                         </div>
                         <div class="text-primary small font-monospace">
                             {{ log.timestamp|time:"H:i:s" }}
-                            <span class="text-muted" style="font-size: 0.75rem;">({{
-                                log.timestamp|timesince
-                                }} مضت)</span>
+                            <span class="text-muted" style="font-size: 0.75rem;">({{ log.timestamp|timesince }} مضت)</span>
                         </div>
                     </td>
 
@@ -4063,8 +4019,7 @@
                                     <span>{{ log.username }}</span>
                                     {% if log.user_military_number %}
                                     <span class="badge bg-light text-secondary border font-monospace"
-                                        style="font-size: 0.7rem;">#{{ log.user_military_number
-                                        }}</span>
+                                        style="font-size: 0.7rem;">#{{ log.user_military_number }}</span>
                                     {% endif %}
                                 </div>
                                 <div class="text-muted small" style="font-size: 0.78rem;">
@@ -4115,8 +4070,7 @@
                     <td>
                         <span class="badge bg-light text-secondary border font-monospace px-2 py-1 rounded-pill small"
                             title="عنوان IP الذي تم منه الإجراء">
-                            <i class="bi bi-hdd-network me-1"></i>{{ log.ip_address|default:"127.0.0.1"
-                            }}
+                            <i class="bi bi-hdd-network me-1"></i>{{ log.ip_address|default:"127.0.0.1" }}
                         </span>
                     </td>
                 </tr>
@@ -6688,8 +6642,7 @@
         // =====================================================================
         // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
         // =====================================================================
-        const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe
-    }};
+        const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe }};
     const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json| safe }};
     const matrixUserSelect = document.getElementById('matrixUserSelect');
     const matrixSaveBtn = document.getElementById('btnMatrixSave');
@@ -6825,8 +6778,7 @@
         });
         // تحميل البيانات الأولية للمستخدم المختار
         updateSelectedUserMeta();
-        const initialMatrix = {{ selected_matrix_json| safe
-    }};
+        const initialMatrix = {{ selected_matrix_json| safe }};
     if (initialMatrix && Object.keys(initialMatrix).length > 0) {
         applyMatrixData(initialMatrix);
     } else if (matrixUserSelect.value) {

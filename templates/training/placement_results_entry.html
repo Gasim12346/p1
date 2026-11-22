@@ -385,8 +385,7 @@
                             <div class="small fw-semibold text-dark">
                                 {% if t.prev_has_breakdown %}
                                 الدرجة: <strong>{{ t.prev_total|unlocalize }}/100</strong>
-                                <span class="text-muted d-block small">(نظري: {{ t.prev_theory|unlocalize }} • عملي: {{
-                                    t.prev_practical|unlocalize }})</span>
+                                <span class="text-muted d-block small">(نظري: {{ t.prev_theory|unlocalize }} • عملي: {{ t.prev_practical|unlocalize }})</span>
                                 {% else %}
                                 الدرجة: <strong>{{ t.prev_total|unlocalize }}/100</strong>
                                 <span class="text-muted d-block small">(مجموع نهائي فقط)</span>
@@ -468,8 +467,7 @@
                                     {% endif %}>
                                     <span class="adopted-grade-box" title="تم اعتماد درجة النظري من النتيجة السابقة">
                                         <i class="bi bi-check-lg"></i>
-                                        <span class="val-theory">{% if t.prev_theory %}{{ t.prev_theory|unlocalize }}{%
-                                            else %}{{ t.prev_total|unlocalize }}{% endif %}</span>
+                                        <span class="val-theory">{% if t.prev_theory %}{{ t.prev_theory|unlocalize }}{% else %}{{ t.prev_total|unlocalize }}{% endif %}</span>
                                     </span>
                                 </div>
                             </div>
@@ -487,8 +485,7 @@
                                 <div class="adopted-display-practical" {% if t.action != 'retain' %}style="display: none;" {% endif %}>
                                     <span class="adopted-grade-box" title="تم اعتماد درجة العملي من النتيجة السابقة">
                                         <i class="bi bi-check-lg"></i>
-                                        <span class="val-practical">{% if t.prev_practical %}{{
-                                            t.prev_practical|unlocalize }}{% else %}0{% endif %}</span>
+                                        <span class="val-practical">{% if t.prev_practical %}{{ t.prev_practical|unlocalize }}{% else %}0{% endif %}</span>
                                     </span>
                                 </div>
                             </div>
@@ -514,8 +511,7 @@
                         <td class="text-center fw-bold grade-cell bg-light">
                             <span class="val-grade">
                                 {% if t.is_graded %}
-                                <span class="badge {{ t.current_grade_badge }} px-2 py-1">{{ t.current_grade_label
-                                    }}</span>
+                                <span class="badge {{ t.current_grade_badge }} px-2 py-1">{{ t.current_grade_label }}</span>
                                 {% else %}
                                 <span class="badge bg-light text-secondary border px-2 py-1">
                                     <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
