@@ -102,6 +102,18 @@ class Trainee(models.Model):
         default='',
         verbose_name='القوة'
     )
+    staff_status = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        verbose_name='صفة أركان الحرب'
+    )
+    profession = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='المهنة / التخصص'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='تاريخ الإضافة'
@@ -126,6 +138,18 @@ class Trainee(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.military_number})"
+
+    @property
+    def full_rank(self):
+        """إرجاع الرتبة متضمنة المهنة وصفة أركان الحرب للدارس"""
+        parts = []
+        if self.rank:
+            parts.append(self.rank)
+        if self.profession:
+            parts.append(self.profession)
+        if self.staff_status and self.staff_status == 'ركن':
+            parts.append('ركن')
+        return ' '.join(parts) if parts else (self.rank or '')
 
     def save(self, *args, **kwargs):
         if not self.institute_id:

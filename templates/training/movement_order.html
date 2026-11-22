@@ -643,19 +643,19 @@
                         </div>
                         <div class="name-part fw-bold fs-6"
                             style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
-                            {{ enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
+                            {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
                         </div>
                     </div>
                     <div class="name-part fw-bold fs-6"
                         style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %}">
-                        {{ enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
+                        {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
                     </div>
                 </div>
             </div>
             {% else %}
             <div class="trainee-line nco-line">
                 <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
-                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.current_rank }}
+                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }}
                     &nbsp;&nbsp; {{ enrollment.trainee.name }}
                 </div>
             </div>

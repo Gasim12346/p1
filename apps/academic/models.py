@@ -534,6 +534,18 @@ class CourseEnrollment(models.Model):
         default='',
         verbose_name='الرتبة أثناء الدورة'
     )
+    staff_status = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        verbose_name='صفة أركان الحرب'
+    )
+    profession = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='المهنة / التخصص'
+    )
     current_force = models.CharField(
         max_length=150,
         blank=True,
@@ -624,6 +636,21 @@ class CourseEnrollment(models.Model):
 
     def __str__(self):
         return f"{self.trainee.name} في {self.session}"
+
+    @property
+    def full_rank(self):
+        """إرجاع الرتبة متضمنة المهنة وصفة أركان الحرب (مثال: مقدم مهندس ركن)"""
+        parts = []
+        rank = self.current_rank or getattr(self.trainee, 'rank', '')
+        prof = self.profession or getattr(self.trainee, 'profession', '')
+        staff = self.staff_status or getattr(self.trainee, 'staff_status', '')
+        if rank:
+            parts.append(rank)
+        if prof:
+            parts.append(prof)
+        if staff == 'ركن':
+            parts.append('ركن')
+        return ' '.join(parts) if parts else (self.current_rank or '')
 
     @property
     def has_complete_data_and_grades(self):

@@ -219,6 +219,8 @@
                         <th style="min-width: 180px;">اسم الدارس</th>
                         <th style="min-width: 90px;">التصنيف</th>
                         <th style="min-width: 160px;">الرتبة في الدورة</th>
+                        <th style="min-width: 130px;">أركان الحرب</th>
+                        <th style="min-width: 145px;">المهنة</th>
                         <th style="min-width: 160px;">القوة في الدورة</th>
                         <th style="min-width: 190px;">الوحدة في الدورة</th>
                         <th style="min-width: 160px;">تاريخ أمر التحرك</th>
@@ -228,7 +230,7 @@
                 </thead>
                 <tbody>
                     {% for en in enrollments %}
-                        <tr class="manage-row {% if en.is_dropped %}table-danger bg-opacity-10{% endif %}" data-category="{{ en.trainee.category }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.current_force }} {{ en.current_unit }}">
+                        <tr class="manage-row {% if en.is_dropped %}table-danger bg-opacity-10{% endif %}" data-category="{{ en.trainee.category }}" data-military="{{ en.trainee.military_number }}" data-search="{{ en.trainee.name }} {{ en.trainee.military_number }} {{ en.current_rank }} {{ en.staff_status }} {{ en.profession }} {{ en.current_force }} {{ en.current_unit }}">
                             <td>{{ forloop.counter }}</td>
                             <td>
                                 <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border">
@@ -293,6 +295,58 @@
                                     <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
                                 </select>
                                 <input type="text" id="custom_rank_{{ en.trainee.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncManageRank('{{ en.trainee.military_number }}')">
+                            </td>
+                            <!-- أركان الحرب (يظهر لضباط رائد فما فوق فقط) -->
+                            <td>
+                                <div id="staff_wrapper_{{ en.trainee.military_number }}" style="display: none;">
+                                    <select name="staff_status_{{ en.trainee.military_number }}" id="staff_select_{{ en.trainee.military_number }}" class="form-select form-select-sm">
+                                        <option value="">-- اختر --</option>
+                                        <option value="ركن" {% if en.staff_status == 'ركن' or not en.staff_status and en.trainee.staff_status == 'ركن' %}selected{% endif %}>ركن</option>
+                                        <option value="غير ركن" {% if en.staff_status == 'غير ركن' or not en.staff_status and en.trainee.staff_status == 'غير ركن' %}selected{% endif %}>غير ركن</option>
+                                    </select>
+                                </div>
+                                <span id="staff_placeholder_{{ en.trainee.military_number }}" class="text-muted small">--</span>
+                            </td>
+                            <!-- المهنة / التخصص (للضباط: تقني، مهندس، دكتور، طبيب... ولضباط الصف: فني، تقني...) -->
+                            <td>
+                                <input type="hidden" name="profession_{{ en.trainee.military_number }}" id="final_profession_{{ en.trainee.military_number }}" value="{{ en.profession|default:en.trainee.profession|default:'' }}">
+                                <select id="profession_select_{{ en.trainee.military_number }}" class="form-select form-select-sm" onchange="handleManageProfessionSelect('{{ en.trainee.military_number }}')">
+                                    <option value="">-- بدون مهنة --</option>
+                                    {% if en.trainee.category == 'officer' %}
+                                        <option value="مهندس" {% if en.profession == 'مهندس' or not en.profession and en.trainee.profession == 'مهندس' %}selected{% endif %}>مهندس</option>
+                                        <option value="دكتور" {% if en.profession == 'دكتور' or not en.profession and en.trainee.profession == 'دكتور' %}selected{% endif %}>دكتور</option>
+                                        <option value="طبيب" {% if en.profession == 'طبيب' or not en.profession and en.trainee.profession == 'طبيب' %}selected{% endif %}>طبيب</option>
+                                        <option value="تقني" {% if en.profession == 'تقني' or not en.profession and en.trainee.profession == 'تقني' %}selected{% endif %}>تقني</option>
+                                        <option value="حقوقي" {% if en.profession == 'حقوقي' or not en.profession and en.trainee.profession == 'حقوقي' %}selected{% endif %}>حقوقي</option>
+                                        <option value="طيار" {% if en.profession == 'طيار' or not en.profession and en.trainee.profession == 'طيار' %}selected{% endif %}>طيار</option>
+                                        <option value="بحري" {% if en.profession == 'بحري' or not en.profession and en.trainee.profession == 'بحري' %}selected{% endif %}>بحري</option>
+                                        <option value="إداري" {% if en.profession == 'إداري' or not en.profession and en.trainee.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                    {% elif en.trainee.category == 'nco' %}
+                                        <option value="فني" {% if en.profession == 'فني' or not en.profession and en.trainee.profession == 'فني' %}selected{% endif %}>فني</option>
+                                        <option value="تقني" {% if en.profession == 'تقني' or not en.profession and en.trainee.profession == 'تقني' %}selected{% endif %}>تقني</option>
+                                        <option value="حاسوب" {% if en.profession == 'حاسوب' or not en.profession and en.trainee.profession == 'حاسوب' %}selected{% endif %}>حاسوب</option>
+                                        <option value="إشارة" {% if en.profession == 'إشارة' or not en.profession and en.trainee.profession == 'إشارة' %}selected{% endif %}>إشارة</option>
+                                        <option value="إداري" {% if en.profession == 'إداري' or not en.profession and en.trainee.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                        <option value="مهني" {% if en.profession == 'مهني' or not en.profession and en.trainee.profession == 'مهني' %}selected{% endif %}>مهني</option>
+                                    {% else %}
+                                        <option value="موظف" {% if en.profession == 'موظف' or not en.profession and en.trainee.profession == 'موظف' %}selected{% endif %}>موظف</option>
+                                        <option value="مهندس" {% if en.profession == 'مهندس' or not en.profession and en.trainee.profession == 'مهندس' %}selected{% endif %}>مهندس</option>
+                                        <option value="إداري" {% if en.profession == 'إداري' or not en.profession and en.trainee.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                        <option value="فني" {% if en.profession == 'فني' or not en.profession and en.trainee.profession == 'فني' %}selected{% endif %}>فني</option>
+                                        <option value="محاسب" {% if en.profession == 'محاسب' or not en.profession and en.trainee.profession == 'محاسب' %}selected{% endif %}>محاسب</option>
+                                        <option value="أخصائي" {% if en.profession == 'أخصائي' or not en.profession and en.trainee.profession == 'أخصائي' %}selected{% endif %}>أخصائي</option>
+                                        <option value="باحث" {% if en.profession == 'باحث' or not en.profession and en.trainee.profession == 'باحث' %}selected{% endif %}>باحث</option>
+                                        <option value="مستشار" {% if en.profession == 'مستشار' or not en.profession and en.trainee.profession == 'مستشار' %}selected{% endif %}>مستشار</option>
+                                        <option value="كاتب" {% if en.profession == 'كاتب' or not en.profession and en.trainee.profession == 'كاتب' %}selected{% endif %}>كاتب</option>
+                                    {% endif %}
+                                    {% with p=en.profession|default:en.trainee.profession %}
+                                        {% if p and p not in 'مهندس دكتور طبيب تقني حقوقي طيار بحري إداري فني حاسوب إشارة مهني موظف محاسب أخصائي باحث مستشار كاتب' %}
+                                            <option value="{{ p }}" selected>{{ p }}</option>
+                                        {% endif %}
+                                    {% endwith %}
+                                    <option value="__custom__">✍️ مهنة أخرى (كتابة يدوية)</option>
+                                </select>
+                                <input type="text" id="custom_profession_{{ en.trainee.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب المهنة يدوياً" oninput="syncManageProfession('{{ en.trainee.military_number }}')">
                             </td>
                             <!-- تعديل القوة في الدورة (قائمة منسدلة) -->
                             <td>
@@ -472,6 +526,8 @@
                                                 <th style="min-width: 150px;">الاسم</th>
                                                 <th style="min-width: 80px;">التصنيف</th>
                                                 <th style="min-width: 140px;">الرتبة</th>
+                                                <th style="min-width: 120px;">أركان الحرب</th>
+                                                <th style="min-width: 130px;">المهنة</th>
                                                 <th style="min-width: 140px;">القوة</th>
                                                 <th style="min-width: 170px;">الوحدة</th>
                                                 <th style="min-width: 140px;">تاريخ أمر التحرك</th>
@@ -546,6 +602,56 @@
                                                             <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
                                                         </select>
                                                         <input type="text" id="extra_custom_rank_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncExtraRank('{{ t.military_number }}')">
+                                                    </td>
+                                                    <!-- أركان الحرب -->
+                                                    <td>
+                                                        <div id="extra_staff_wrapper_{{ t.military_number }}" style="display: none;">
+                                                            <select name="extra_staff_status_{{ t.military_number }}" id="extra_staff_select_{{ t.military_number }}" class="form-select form-select-sm">
+                                                                <option value="">-- اختر --</option>
+                                                                <option value="ركن" {% if t.staff_status == 'ركن' %}selected{% endif %}>ركن</option>
+                                                                <option value="غير ركن" {% if t.staff_status == 'غير ركن' %}selected{% endif %}>غير ركن</option>
+                                                            </select>
+                                                        </div>
+                                                        <span id="extra_staff_placeholder_{{ t.military_number }}" class="text-muted small">--</span>
+                                                    </td>
+                                                    <!-- المهنة -->
+                                                    <td>
+                                                        <input type="hidden" name="extra_profession_{{ t.military_number }}" id="extra_final_profession_{{ t.military_number }}" value="{{ t.profession|default:'' }}">
+                                                        <select id="extra_profession_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleExtraProfessionSelect('{{ t.military_number }}')">
+                                                            <option value="">-- بدون مهنة --</option>
+                                                            {% if t.category == 'officer' %}
+                                                                <option value="مهندس" {% if t.profession == 'مهندس' %}selected{% endif %}>مهندس</option>
+                                                                <option value="دكتور" {% if t.profession == 'دكتور' %}selected{% endif %}>دكتور</option>
+                                                                <option value="طبيب" {% if t.profession == 'طبيب' %}selected{% endif %}>طبيب</option>
+                                                                <option value="تقني" {% if t.profession == 'تقني' %}selected{% endif %}>تقني</option>
+                                                                <option value="حقوقي" {% if t.profession == 'حقوقي' %}selected{% endif %}>حقوقي</option>
+                                                                <option value="طيار" {% if t.profession == 'طيار' %}selected{% endif %}>طيار</option>
+                                                                <option value="بحري" {% if t.profession == 'بحري' %}selected{% endif %}>بحري</option>
+                                                                <option value="إداري" {% if t.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                                            {% elif t.category == 'nco' %}
+                                                                <option value="فني" {% if t.profession == 'فني' %}selected{% endif %}>فني</option>
+                                                                <option value="تقني" {% if t.profession == 'تقني' %}selected{% endif %}>تقني</option>
+                                                                <option value="حاسوب" {% if t.profession == 'حاسوب' %}selected{% endif %}>حاسوب</option>
+                                                                <option value="إشارة" {% if t.profession == 'إشارة' %}selected{% endif %}>إشارة</option>
+                                                                <option value="إداري" {% if t.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                                                <option value="مهني" {% if t.profession == 'مهني' %}selected{% endif %}>مهني</option>
+                                                            {% else %}
+                                                                <option value="موظف" {% if t.profession == 'موظف' %}selected{% endif %}>موظف</option>
+                                                                <option value="مهندس" {% if t.profession == 'مهندس' %}selected{% endif %}>مهندس</option>
+                                                                <option value="إداري" {% if t.profession == 'إداري' %}selected{% endif %}>إداري</option>
+                                                                <option value="فني" {% if t.profession == 'فني' %}selected{% endif %}>فني</option>
+                                                                <option value="محاسب" {% if t.profession == 'محاسب' %}selected{% endif %}>محاسب</option>
+                                                                <option value="أخصائي" {% if t.profession == 'أخصائي' %}selected{% endif %}>أخصائي</option>
+                                                                <option value="باحث" {% if t.profession == 'باحث' %}selected{% endif %}>باحث</option>
+                                                                <option value="مستشار" {% if t.profession == 'مستشار' %}selected{% endif %}>مستشار</option>
+                                                                <option value="كاتب" {% if t.profession == 'كاتب' %}selected{% endif %}>كاتب</option>
+                                                            {% endif %}
+                                                            {% if t.profession and t.profession not in 'مهندس دكتور طبيب تقني حقوقي طيار بحري إداري فني حاسوب إشارة مهني موظف محاسب أخصائي باحث مستشار كاتب' %}
+                                                                <option value="{{ t.profession }}" selected>{{ t.profession }}</option>
+                                                            {% endif %}
+                                                            <option value="__custom__">✍️ مهنة أخرى (كتابة يدوية)</option>
+                                                        </select>
+                                                        <input type="text" id="extra_custom_profession_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب المهنة يدوياً" oninput="syncExtraProfession('{{ t.military_number }}')">
                                                     </td>
                                                     <!-- القوة -->
                                                     <td>
@@ -656,13 +762,33 @@
                                 </div>
                                 <div class="row g-3">
                                     <!-- الرتبة -->
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label class="form-label fw-bold text-dark">الرتبة في الدورة</label>
                                         <input type="hidden" name="new_rank" id="new_final_rank" value="">
                                         <select id="new_rank_select" class="form-select form-select-lg" onchange="handleNewRankSelect()">
                                             <option value="">-- اختر الرتبة --</option>
                                         </select>
                                         <input type="text" id="new_custom_rank" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncNewRank()">
+                                    </div>
+
+                                    <!-- أركان الحرب (يظهر فقط لضباط رائد فما فوق) -->
+                                    <div class="col-md-3" id="new_staff_col" style="display: none;">
+                                        <label class="form-label fw-bold text-dark"><i class="bi bi-star-fill text-warning me-1"></i>أركان الحرب</label>
+                                        <select name="new_staff_status" id="new_staff_status" class="form-select form-select-lg">
+                                            <option value="">-- بدون أركان حرب --</option>
+                                            <option value="ركن">ركن</option>
+                                            <option value="غير ركن">غير ركن</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- المهنة / التخصص -->
+                                    <div class="col-md-3" id="new_profession_col">
+                                        <label class="form-label fw-bold text-dark"><i class="bi bi-briefcase-fill text-primary me-1"></i>المهنة / التخصص</label>
+                                        <input type="hidden" name="new_profession" id="new_final_profession" value="">
+                                        <select id="new_profession_select" class="form-select form-select-lg" onchange="handleNewProfessionSelect()">
+                                            <option value="">-- بدون مهنة --</option>
+                                        </select>
+                                        <input type="text" id="new_custom_profession" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب المهنة يدوياً" oninput="syncNewProfession()">
                                     </div>
 
                                     <!-- القوة -->
@@ -1377,6 +1503,61 @@
         ]
     };
 
+    const STAFF_QUALIFYING_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول'];
+
+    const PROFESSIONS_BY_CATEGORY = {
+        'officer': ['مهندس', 'دكتور', 'طبيب', 'تقني', 'حقوقي', 'طيار', 'بحري', 'إداري'],
+        'nco': ['فني', 'تقني', 'حاسوب', 'إشارة', 'إداري', 'مهني'],
+        'civilian': ['موظف', 'مهندس', 'إداري', 'فني', 'محاسب', 'أخصائي', 'باحث', 'مستشار', 'كاتب']
+    };
+
+    function updateStaffFieldVisibility(num) {
+        const row = document.querySelector(`.manage-row[data-military="${num}"]`);
+        const cat = row ? (row.getAttribute('data-category') || '').trim() : '';
+        const rankSelect = document.getElementById('rank_select_' + num);
+        const finalRankInput = document.getElementById('final_rank_' + num);
+        const rank = (finalRankInput ? finalRankInput.value : (rankSelect ? rankSelect.value : '')).trim();
+
+        const staffWrapper = document.getElementById('staff_wrapper_' + num);
+        const staffPlaceholder = document.getElementById('staff_placeholder_' + num);
+        const staffSelect = document.getElementById('staff_select_' + num);
+
+        if (cat === 'officer' && STAFF_QUALIFYING_RANKS.includes(rank)) {
+            if (staffWrapper) staffWrapper.style.display = 'block';
+            if (staffPlaceholder) staffPlaceholder.style.display = 'none';
+        } else {
+            if (staffWrapper) staffWrapper.style.display = 'none';
+            if (staffPlaceholder) staffPlaceholder.style.display = '';
+            if (staffSelect) staffSelect.value = '';
+        }
+    }
+
+    function handleManageProfessionSelect(num) {
+        const select = document.getElementById('profession_select_' + num);
+        const customInput = document.getElementById('custom_profession_' + num);
+        const finalInput = document.getElementById('final_profession_' + num);
+        if (!select || !finalInput) return;
+
+        if (select.value === '__custom__') {
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.focus();
+                finalInput.value = customInput.value.trim();
+            }
+        } else {
+            if (customInput) customInput.style.display = 'none';
+            finalInput.value = select.value;
+        }
+    }
+
+    function syncManageProfession(num) {
+        const customInput = document.getElementById('custom_profession_' + num);
+        const finalInput = document.getElementById('final_profession_' + num);
+        if (customInput && finalInput) {
+            finalInput.value = customInput.value.trim();
+        }
+    }
+
     function handleManageRankSelect(num) {
         const select = document.getElementById('rank_select_' + num);
         const customInput = document.getElementById('custom_rank_' + num);
@@ -1393,6 +1574,7 @@
             if (customInput) customInput.style.display = 'none';
             finalInput.value = select.value;
         }
+        updateStaffFieldVisibility(num);
     }
 
     function syncManageRank(num) {
@@ -1401,6 +1583,7 @@
         if (customInput && finalInput) {
             finalInput.value = customInput.value.trim();
         }
+        updateStaffFieldVisibility(num);
     }
 
     function handleManageForceChange(num, initialUnit = null) {
@@ -1490,6 +1673,53 @@
     }
 
     // Modal extra trainees handlers
+    function updateExtraStaffFieldVisibility(num) {
+        const row = document.querySelector(`.modal-trainee-row[data-military="${num}"]`);
+        const cat = row ? (row.getAttribute('data-category') || '').trim() : '';
+        const rankSelect = document.getElementById('extra_rank_select_' + num);
+        const finalRankInput = document.getElementById('extra_final_rank_' + num);
+        const rank = (finalRankInput ? finalRankInput.value : (rankSelect ? rankSelect.value : '')).trim();
+
+        const staffWrapper = document.getElementById('extra_staff_wrapper_' + num);
+        const staffPlaceholder = document.getElementById('extra_staff_placeholder_' + num);
+        const staffSelect = document.getElementById('extra_staff_select_' + num);
+
+        if (cat === 'officer' && STAFF_QUALIFYING_RANKS.includes(rank)) {
+            if (staffWrapper) staffWrapper.style.display = 'block';
+            if (staffPlaceholder) staffPlaceholder.style.display = 'none';
+        } else {
+            if (staffWrapper) staffWrapper.style.display = 'none';
+            if (staffPlaceholder) staffPlaceholder.style.display = '';
+            if (staffSelect) staffSelect.value = '';
+        }
+    }
+
+    function handleExtraProfessionSelect(num) {
+        const select = document.getElementById('extra_profession_select_' + num);
+        const customInput = document.getElementById('extra_custom_profession_' + num);
+        const finalInput = document.getElementById('extra_final_profession_' + num);
+        if (!select || !finalInput) return;
+
+        if (select.value === '__custom__') {
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.focus();
+                finalInput.value = customInput.value.trim();
+            }
+        } else {
+            if (customInput) customInput.style.display = 'none';
+            finalInput.value = select.value;
+        }
+    }
+
+    function syncExtraProfession(num) {
+        const customInput = document.getElementById('extra_custom_profession_' + num);
+        const finalInput = document.getElementById('extra_final_profession_' + num);
+        if (customInput && finalInput) {
+            finalInput.value = customInput.value.trim();
+        }
+    }
+
     function handleExtraRankSelect(num) {
         const select = document.getElementById('extra_rank_select_' + num);
         const customInput = document.getElementById('extra_custom_rank_' + num);
@@ -1506,6 +1736,7 @@
             if (customInput) customInput.style.display = 'none';
             finalInput.value = select.value;
         }
+        updateExtraStaffFieldVisibility(num);
     }
 
     function syncExtraRank(num) {
@@ -1514,6 +1745,7 @@
         if (customInput && finalInput) {
             finalInput.value = customInput.value.trim();
         }
+        updateExtraStaffFieldVisibility(num);
     }
 
     function handleExtraForceChange(num) {
@@ -1645,31 +1877,102 @@
         }
     }
 
+    function updateNewStaffVisibility() {
+        const catSelect = document.getElementById('new_trainee_category');
+        const rankSelect = document.getElementById('new_rank_select');
+        const finalRankInput = document.getElementById('new_final_rank');
+        const col = document.getElementById('new_staff_col');
+        const staffSelect = document.getElementById('new_staff_status');
+
+        const cat = catSelect ? catSelect.value : '';
+        const rank = (finalRankInput ? finalRankInput.value : (rankSelect ? rankSelect.value : '')).trim();
+
+        if (col) {
+            if (cat === 'officer' && STAFF_QUALIFYING_RANKS.includes(rank)) {
+                col.style.display = 'block';
+            } else {
+                col.style.display = 'none';
+                if (staffSelect) staffSelect.value = '';
+            }
+        }
+    }
+
+    function handleNewProfessionSelect() {
+        const select = document.getElementById('new_profession_select');
+        const customInput = document.getElementById('new_custom_profession');
+        const finalInput = document.getElementById('new_final_profession');
+        if (!select || !finalInput) return;
+
+        if (select.value === '__custom__') {
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.focus();
+                finalInput.value = customInput.value.trim();
+            }
+        } else {
+            if (customInput) customInput.style.display = 'none';
+            finalInput.value = select.value;
+        }
+    }
+
+    function syncNewProfession() {
+        const customInput = document.getElementById('new_custom_profession');
+        const finalInput = document.getElementById('new_final_profession');
+        if (customInput && finalInput) {
+            finalInput.value = customInput.value.trim();
+        }
+    }
+
     function handleNewTraineeCategoryChange() {
         const catSelect = document.getElementById('new_trainee_category');
         const rankSelect = document.getElementById('new_rank_select');
         const customRankInput = document.getElementById('new_custom_rank');
         const finalRankInput = document.getElementById('new_final_rank');
-        if (!catSelect || !rankSelect) return;
+        const profSelect = document.getElementById('new_profession_select');
+        const customProfInput = document.getElementById('new_custom_profession');
+        const finalProfInput = document.getElementById('new_final_profession');
+        if (!catSelect) return;
 
         const cat = catSelect.value;
         const ranks = RANKS_BY_CATEGORY[cat] || [];
 
-        rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
-        ranks.forEach(r => {
-            const opt = document.createElement('option');
-            opt.value = r;
-            opt.textContent = r;
-            rankSelect.appendChild(opt);
-        });
+        if (rankSelect) {
+            rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
+            ranks.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                rankSelect.appendChild(opt);
+            });
 
-        const customOpt = document.createElement('option');
-        customOpt.value = '__custom__';
-        customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
-        rankSelect.appendChild(customOpt);
+            const customOpt = document.createElement('option');
+            customOpt.value = '__custom__';
+            customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
+            rankSelect.appendChild(customOpt);
 
-        if (customRankInput) customRankInput.style.display = 'none';
-        if (finalRankInput) finalRankInput.value = '';
+            if (customRankInput) customRankInput.style.display = 'none';
+            if (finalRankInput) finalRankInput.value = '';
+        }
+
+        if (profSelect) {
+            profSelect.innerHTML = '<option value="">-- بدون مهنة --</option>';
+            const profs = PROFESSIONS_BY_CATEGORY[cat] || [];
+            profs.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                profSelect.appendChild(opt);
+            });
+            const customProfOpt = document.createElement('option');
+            customProfOpt.value = '__custom__';
+            customProfOpt.textContent = '✍️ مهنة أخرى (كتابة يدوية)';
+            profSelect.appendChild(customProfOpt);
+
+            if (customProfInput) customProfInput.style.display = 'none';
+            if (finalProfInput) finalProfInput.value = '';
+        }
+
+        updateNewStaffVisibility();
     }
 
     function handleNewRankSelect() {
@@ -1688,6 +1991,7 @@
             if (customRankInput) customRankInput.style.display = 'none';
             finalRankInput.value = rankSelect.value;
         }
+        updateNewStaffVisibility();
     }
 
     function syncNewRank() {
@@ -1696,6 +2000,7 @@
         if (customRankInput && finalRankInput) {
             finalRankInput.value = customRankInput.value.trim();
         }
+        updateNewStaffVisibility();
     }
 
     function handleNewForceChange() {
@@ -1930,6 +2235,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         handleNewTraineeCategoryChange();
         handleNewForceChange();
+        updateNewStaffVisibility();
+
         const forceSelects = document.querySelectorAll('[id^="force_select_"]');
         forceSelects.forEach(fs => {
             const num = fs.id.replace('force_select_', '');
@@ -1944,6 +2251,18 @@
             if (fs.value) {
                 handleExtraForceChange(num);
             }
+        });
+
+        // تهيئة حقول أركان الحرب للدارسين الحاليين في الجدول
+        document.querySelectorAll('.manage-row').forEach(row => {
+            const num = row.getAttribute('data-military');
+            if (num) updateStaffFieldVisibility(num);
+        });
+
+        // تهيئة حقول أركان الحرب لدارسي النافذة المنبثقة
+        document.querySelectorAll('.modal-trainee-row').forEach(row => {
+            const num = row.getAttribute('data-military');
+            if (num) updateExtraStaffFieldVisibility(num);
         });
     });
 </script>

@@ -5079,6 +5079,50 @@ class CourseEnrollmentCompositeRankTests(TestCase):
         )
         self.assertEqual(enrollment.current_rank, 'مقدم ركن')
 
+    def test_full_rank_property_and_discrete_fields(self):
+        """التحقق من حقول صفة أركان الحرب والمهنة وخاصية full_rank"""
+        from apps.trainees.models import Trainee
+        from apps.academic.models import CourseEnrollment
+        en = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='مقدم',
+            profession='مهندس',
+            staff_status='ركن'
+        )
+        self.assertEqual(en.staff_status, 'ركن')
+        self.assertEqual(en.profession, 'مهندس')
+        self.assertEqual(en.full_rank, 'مقدم مهندس ركن')
+
+        t2 = Trainee.objects.create(
+            military_number='12345679',
+            name='ضابط ثان',
+            category='officer'
+        )
+        # ضابط غير ركن لا تضاف له صفة غير ركن في اللقب
+        en2 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=t2,
+            current_rank='نقيب',
+            profession='طبيب',
+            staff_status='غير ركن'
+        )
+        self.assertEqual(en2.full_rank, 'نقيب طبيب')
+
+        t3 = Trainee.objects.create(
+            military_number='12345680',
+            name='ضابط صف اختبار',
+            category='nco'
+        )
+        # ضابط صف مع مهنة فني
+        en3 = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=t3,
+            current_rank='مساعد',
+            profession='فني'
+        )
+        self.assertEqual(en3.full_rank, 'مساعد فني')
+
 
 class CertificateAndMovementOrderLayoutTests(TestCase):
     """اختبارات تخصيص أبعاد ومسافات ومواقع نصوص الشهادات وأمر التحرك"""

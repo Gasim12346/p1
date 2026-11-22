@@ -710,17 +710,25 @@ def course_session_create_view(request):
                         for num in selected_trainee_nums:
                             try:
                                 t = Trainee.objects.get(military_number=num)
-                                # قراءة الرتبة والقوة والوحدة وأمر التحرك المعدلة من النموذج
+                                # قراءة الرتبة والقوة والوحدة وأركان الحرب والمهنة وأمر التحرك المعدلة من النموذج
                                 current_rank = request.POST.get(f'rank_{num}', '').strip()
+                                current_staff = request.POST.get(f'staff_status_{num}', t.staff_status).strip() or t.staff_status
+                                current_prof = request.POST.get(f'profession_{num}', t.profession).strip() or t.profession
                                 current_force = request.POST.get(f'force_{num}', t.force).strip() or t.force
                                 current_unit = request.POST.get(f'unit_{num}', t.unit).strip() or t.unit
                                 m_date = request.POST.get(f'movement_order_date_{num}', '').strip()
                                 m_file = request.FILES.get(f'movement_order_file_{num}')
 
+                                STAFF_QUALIFIED_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول']
+                                if t.category != 'officer' or current_rank not in STAFF_QUALIFIED_RANKS:
+                                    current_staff = ''
+
                                 CourseEnrollment.objects.create(
                                     session=session,
                                     trainee=t,
                                     current_rank=current_rank,
+                                    staff_status=current_staff,
+                                    profession=current_prof,
                                     current_force=current_force,
                                     current_unit=current_unit,
                                     movement_order_date=m_date if m_date else None,
@@ -734,8 +742,14 @@ def course_session_create_view(request):
                                 if current_unit and current_unit != t.unit:
                                     t.unit = current_unit
                                     has_changes = True
+                                if current_staff != t.staff_status:
+                                    t.staff_status = current_staff
+                                    has_changes = True
+                                if current_prof != t.profession:
+                                    t.profession = current_prof
+                                    has_changes = True
                                 if has_changes:
-                                    t.save(update_fields=['force', 'unit'])
+                                    t.save(update_fields=['force', 'unit', 'staff_status', 'profession'])
                                 enrolled_count += 1
                             except Trainee.DoesNotExist:
                                 pass
@@ -895,9 +909,12 @@ def course_session_manage_view(request, session_id):
     # تحديث الرتب والقوة والوحدات للدارسين المسجلين
     if request.method == 'POST' and 'update_enrollments' in request.POST:
         updated_count = 0
+        STAFF_QUALIFIED_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول']
         for enrollment in enrollments:
             num = enrollment.trainee.military_number
             new_rank = request.POST.get(f'rank_{num}', '').strip()
+            new_staff = request.POST.get(f'staff_status_{num}', '').strip()
+            new_profession = request.POST.get(f'profession_{num}', '').strip()
             new_force = request.POST.get(f'force_{num}', '').strip()
             new_unit = request.POST.get(f'unit_{num}', '').strip()
             new_mov_date = request.POST.get(f'movement_order_date_{num}', '').strip()
@@ -906,8 +923,22 @@ def course_session_manage_view(request, session_id):
             t = enrollment.trainee
             t_changed = False
 
+            effective_rank = new_rank or enrollment.current_rank
+            if t.category != 'officer' or effective_rank not in STAFF_QUALIFIED_RANKS:
+                new_staff = ''
+
             if new_rank:
                 enrollment.current_rank = new_rank
+            enrollment.staff_status = new_staff
+            enrollment.profession = new_profession
+
+            if t.staff_status != new_staff:
+                t.staff_status = new_staff
+                t_changed = True
+            if t.profession != new_profession:
+                t.profession = new_profession
+                t_changed = True
+
             if new_force:
                 enrollment.current_force = new_force
                 if t.force != new_force:
@@ -923,19 +954,19 @@ def course_session_manage_view(request, session_id):
             if new_mov_file:
                 enrollment.movement_order_file = new_mov_file
 
-            if new_rank or new_force or new_unit or new_mov_date or new_mov_file:
-                enrollment.save()
-                if t_changed:
-                    t.save(update_fields=['force', 'unit'])
-                updated_count += 1
+            enrollment.save()
+            if t_changed:
+                t.save(update_fields=['force', 'unit', 'staff_status', 'profession'])
+            updated_count += 1
 
-        messages.success(request, f'تم حفظ وتحديث بيانات الرتب والقوة والوحدات وأوامر التحرك لـ {updated_count} دارس بالدورة بنجاح.')
+        messages.success(request, f'تم حفظ وتحديث بيانات الرتب وأركان الحرب والمهنة والقوة والوحدات لـ {updated_count} دارس بالدورة بنجاح.')
         return redirect('training:course_session_manage', session_id=session.id)
 
     # إضافة دارسين إضافيين للدورة
     if request.method == 'POST' and 'add_extra_trainees' in request.POST:
         extra_nums = request.POST.getlist('extra_trainees')
         added = 0
+        STAFF_QUALIFIED_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول']
         for num in extra_nums:
             t = Trainee.objects.filter(military_number=num).first()
             if t:
@@ -950,14 +981,22 @@ def course_session_manage_view(request, session_id):
 
                 if not session.enrollments.filter(trainee=t).exists():
                     r = request.POST.get(f'extra_rank_{num}', '').strip()
+                    st = request.POST.get(f'extra_staff_status_{num}', t.staff_status).strip() or t.staff_status
+                    pr = request.POST.get(f'extra_profession_{num}', t.profession).strip() or t.profession
                     f = request.POST.get(f'extra_force_{num}', t.force).strip() or t.force
                     u = request.POST.get(f'extra_unit_{num}', t.unit).strip() or t.unit
                     m_date = request.POST.get(f'extra_movement_order_date_{num}', '').strip()
                     m_file = request.FILES.get(f'extra_movement_order_file_{num}')
+
+                    if t.category != 'officer' or r not in STAFF_QUALIFIED_RANKS:
+                        st = ''
+
                     CourseEnrollment.objects.create(
                         session=session,
                         trainee=t,
                         current_rank=r,
+                        staff_status=st,
+                        profession=pr,
                         current_force=f,
                         current_unit=u,
                         movement_order_date=m_date if m_date else None,
@@ -970,8 +1009,14 @@ def course_session_manage_view(request, session_id):
                     if u and u != t.unit:
                         t.unit = u
                         has_changes = True
+                    if st != t.staff_status:
+                        t.staff_status = st
+                        has_changes = True
+                    if pr != t.profession:
+                        t.profession = pr
+                        has_changes = True
                     if has_changes:
-                        t.save(update_fields=['force', 'unit'])
+                        t.save(update_fields=['force', 'unit', 'staff_status', 'profession'])
                     added += 1
         if added > 0:
             messages.success(request, f'تم إلحاق {added} دارس إضافي بالدورة بنجاح.')
@@ -993,16 +1038,24 @@ def course_session_manage_view(request, session_id):
             else:
                 new_trainee = trainee_form.save(commit=False)
                 new_rank = request.POST.get('new_rank', '').strip()
+                new_staff = request.POST.get('new_staff_status', '').strip()
+                new_prof = request.POST.get('new_profession', '').strip()
                 new_force = request.POST.get('new_force', '').strip()
                 new_unit = request.POST.get('new_unit', '').strip()
                 mov_date = request.POST.get('new_movement_order_date', '').strip()
                 mov_file = request.FILES.get('new_movement_order_file')
                 enroll_now = request.POST.get('enroll_in_session') == '1'
 
+                STAFF_QUALIFIED_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول']
+                if new_trainee.category != 'officer' or new_rank not in STAFF_QUALIFIED_RANKS:
+                    new_staff = ''
+
                 if new_force:
                     new_trainee.force = new_force
                 if new_unit:
                     new_trainee.unit = new_unit
+                new_trainee.staff_status = new_staff
+                new_trainee.profession = new_prof
                 new_trainee.save()
                 trainee_form.save_relatives(new_trainee)
 
@@ -1020,6 +1073,8 @@ def course_session_manage_view(request, session_id):
                         session=session,
                         trainee=new_trainee,
                         current_rank=new_rank,
+                        staff_status=new_staff,
+                        profession=new_prof,
                         current_force=new_force or new_trainee.force,
                         current_unit=new_unit or new_trainee.unit,
                         movement_order_date=mov_date if mov_date else None,

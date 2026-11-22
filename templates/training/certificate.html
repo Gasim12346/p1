@@ -301,7 +301,7 @@
             {% if enrollment.trainee.category == 'civilian' and not enrollment.current_rank %}
             الاسم &nbsp;&nbsp; {{ enrollment.trainee.name }}
             {% else %}
-            الرُّتْبَة &nbsp;&nbsp; {{ enrollment.current_rank|default:"مدني" }} / {{ enrollment.trainee.name }}
+            الرُّتْبَة &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank|default:"مدني" }} / {{ enrollment.trainee.name }}
             {% endif %}
         </div>
 
