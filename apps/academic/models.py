@@ -415,6 +415,8 @@ class CourseSession(models.Model):
         super().clean()
         if self.attendance_max_grade is not None and self.attendance_max_grade < 0:
             raise ValidationError({'attendance_max_grade': 'الدرجة العظمى للمواظبة لا يمكن أن تكون سالبة.'})
+        if self.start_date and self.end_date and self.end_date <= self.start_date:
+            raise ValidationError({'end_date': 'تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن اختياره في نفس اليوم أو قبله).'})
 
     def save(self, *args, **kwargs):
         if not self.institute_id:

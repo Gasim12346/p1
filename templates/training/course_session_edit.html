@@ -100,3 +100,59 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startInput = document.querySelector('input[name="start_date"]');
+    const endInput = document.querySelector('input[name="end_date"]');
+    
+    function updateEndMin() {
+        if (!startInput || !endInput) return;
+        const sVal = startInput.value;
+        if (sVal) {
+            const d = new Date(sVal + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            endInput.min = `${y}-${m}-${day}`;
+        }
+    }
+    
+    if (startInput) {
+        updateEndMin();
+        startInput.addEventListener('change', function() {
+            updateEndMin();
+            if (endInput && endInput.value && endInput.value <= startInput.value) {
+                alert('تنبيه: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل. يرجى تعديل تاريخ النهاية.');
+                endInput.value = '';
+                endInput.focus();
+            }
+        });
+    }
+
+    if (endInput) {
+        endInput.addEventListener('change', function() {
+            if (startInput && startInput.value && endInput.value <= startInput.value) {
+                alert('قيد إلزامي: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن اختياره في نفس اليوم أو قبله)!');
+                endInput.value = '';
+                endInput.focus();
+            }
+        });
+    }
+
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (startInput && endInput && startInput.value && endInput.value && endInput.value <= startInput.value) {
+                e.preventDefault();
+                alert('قيد إلزامي: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن اختياره في نفس اليوم أو قبله)!');
+                endInput.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

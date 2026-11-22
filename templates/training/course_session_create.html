@@ -110,20 +110,22 @@
                     <div class="col-md-4">
                         <label class="form-label fw-bold text-dark">تاريخ بداية الدورة <span
                                 class="text-danger">*</span></label>
-                        <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required onchange="onStartDateChange()">
+                        <input type="date" name="start_date" id="startDate" class="form-control form-control-lg" required onchange="onStartDateChange()" min="{{ today }}" value="{{ today }}">
+                        <div class="form-text small text-muted" id="startDateHelp">تاريخ اليوم وما بعده (لا يمكن اختيار يوم سابق للدورات الجارية أو المخطط لها).</div>
                     </div>
 
                     <!-- تاريخ النهاية -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold text-dark">تاريخ نهاية الدورة <span
                                 class="text-danger">*</span></label>
-                        <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required>
+                        <input type="date" name="end_date" id="endDate" class="form-control form-control-lg" required onchange="onEndDateChange()">
+                        <div class="form-text small text-muted">يجب أن يكون بعد تاريخ البداية بيوم على الأقل.</div>
                     </div>
 
                     <!-- حالة الدورة -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold text-dark">حالة الدورة</label>
-                        <select name="status" class="form-select form-select-lg">
+                        <select name="status" id="statusSelect" class="form-select form-select-lg" onchange="onStatusChange()">
                             <option value="active" selected>جارية حالياً</option>
                             <option value="planned">مخطط لها</option>
                             <option value="completed">مكتملة</option>
@@ -684,11 +686,87 @@
             .catch(err => console.error('Error fetching next batch number:', err));
     }
 
-    // عند تغيير تاريخ بداية الدورة، إذا كانت الدورة خاصة يتم إعادة احتساب رقم الدفعة لسنة التاريخ الجديد
+    // دوال احتساب التواريخ والتحقق من قيود بداية ونهاية الدورة
+    function getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function updateEndDateMin() {
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        if (!startDateInput || !endDateInput) return;
+
+        const startVal = startDateInput.value;
+        if (startVal) {
+            const startDateObj = new Date(startVal + 'T00:00:00');
+            startDateObj.setDate(startDateObj.getDate() + 1);
+            const nextYear = startDateObj.getFullYear();
+            const nextMonth = String(startDateObj.getMonth() + 1).padStart(2, '0');
+            const nextDay = String(startDateObj.getDate()).padStart(2, '0');
+            const nextDayStr = `${nextYear}-${nextMonth}-${nextDay}`;
+
+            endDateInput.min = nextDayStr;
+
+            if (endDateInput.value && endDateInput.value <= startVal) {
+                alert('تنبيه: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل. يرجى إعادة تحديد تاريخ النهاية.');
+                endDateInput.value = '';
+                endDateInput.focus();
+            }
+        }
+    }
+
+    // عند تغيير حالة الدورة (ربط قيود التواريخ بحالة الدورة: جارية / مخطط لها / مكتملة)
+    function onStatusChange() {
+        const statusSelect = document.getElementById('statusSelect');
+        const startDateInput = document.getElementById('startDate');
+        const startDateHelp = document.getElementById('startDateHelp');
+        if (!statusSelect || !startDateInput) return;
+
+        const isCompleted = (statusSelect.value === 'completed');
+        const todayStr = getTodayDateString();
+
+        if (isCompleted) {
+            startDateInput.removeAttribute('min');
+            if (startDateHelp) {
+                startDateHelp.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>دورة مكتملة: يمكن اختيار تاريخ بداية الدورة من أي يوم وشهر وسنة سابقة (للتوثيق والأرشفة).</span>';
+            }
+        } else {
+            startDateInput.min = todayStr;
+            if (startDateHelp) {
+                startDateHelp.innerHTML = 'تاريخ اليوم وما بعده (لا يمكن اختيار يوم سابق للدورات الجارية أو المخطط لها).';
+            }
+            if (startDateInput.value && startDateInput.value < todayStr) {
+                alert('تنبيه: تم تغيير حالة الدورة إلى (جارية حالياً أو مخطط لها)، لذا لا يمكن أن يكون تاريخ البداية في الماضي. تم ضبطه لتاريخ اليوم.');
+                startDateInput.value = todayStr;
+            }
+        }
+        updateEndDateMin();
+    }
+
+    // عند تغيير تاريخ بداية الدورة
     function onStartDateChange() {
         const courseSelector = document.getElementById('courseSelector');
         const startDateInput = document.getElementById('startDate');
         const targetCatSelect = document.getElementById('targetCategorySelector');
+        const statusSelect = document.getElementById('statusSelect');
+        if (!startDateInput) return;
+
+        const isCompleted = statusSelect && statusSelect.value === 'completed';
+        const todayStr = getTodayDateString();
+
+        // التحقق من أن تاريخ البداية ليس في الماضي للدورات الجارية والمخططة فقط
+        if (!isCompleted && startDateInput.value && startDateInput.value < todayStr) {
+            alert('قيد إلزامي: تاريخ بداية الدورة لا يمكن أن يكون قبل تاريخ اليوم الحالي للدورات الجارية حالياً أو المخطط لها!');
+            startDateInput.value = todayStr;
+        }
+
+        // تحديث الحد الأدنى لنهاية الدورة تلقائياً
+        updateEndDateMin();
+
         if (!courseSelector || !courseSelector.value) return;
 
         const cid = String(courseSelector.value);
@@ -696,6 +774,18 @@
         const targetCat = targetCatSelect ? targetCatSelect.value : 'officer';
         if (data && data.is_special) {
             fetchNextNumberFromApi(cid, startDateInput.value, targetCat);
+        }
+    }
+
+    function onEndDateChange() {
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        if (!startDateInput || !endDateInput || !endDateInput.value) return;
+
+        if (startDateInput.value && endDateInput.value <= startDateInput.value) {
+            alert('قيد إلزامي: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل، ولا يمكن أن يكون في نفس يوم البداية أو قبله!');
+            endDateInput.value = '';
+            endDateInput.focus();
         }
     }
 
@@ -1485,6 +1575,24 @@
 
     // تهيئة جميع صفوف الدارسين ومراقبة الأحداث عند التحميل
     document.addEventListener('DOMContentLoaded', function() {
+        // ضبط القيود التلقائية لتاريخي بداية ونهاية الدورة
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const todayStr = getTodayDateString();
+
+        // تهيئة قيود التواريخ وحالة الدورة عند تحميل الصفحة
+        const statusSelect = document.getElementById('statusSelect');
+        if (statusSelect) {
+            statusSelect.addEventListener('change', onStatusChange);
+            onStatusChange();
+        } else if (startDateInput) {
+            startDateInput.min = todayStr;
+            if (!startDateInput.value) {
+                startDateInput.value = todayStr;
+            }
+            updateEndDateMin();
+        }
+
         // مراقبة اختيار الدورة لتحديث المواد الدراسية وتطبيق قيود النجاح المسبق
         const courseSelect = document.getElementById('courseSelector');
         if (courseSelect) {
@@ -1498,10 +1606,31 @@
             }
         }
 
-        // التحقق الصارم قبل حفظ الدورة من تاريخ أمر التحرك وصورة Scan وتحديد دارس واحد على الأقل
+        // التحقق الصارم قبل حفظ الدورة
         const form = document.getElementById('sessionCreateForm');
         if (form) {
             form.addEventListener('submit', function(e) {
+                // التحقق من قيود تاريخي بداية ونهاية الدورة
+                const sDateEl = document.getElementById('startDate');
+                const eDateEl = document.getElementById('endDate');
+                const statusSelectEl = document.getElementById('statusSelect');
+                const isCompletedStatus = statusSelectEl && statusSelectEl.value === 'completed';
+                const tStr = getTodayDateString();
+
+                if (!isCompletedStatus && sDateEl && sDateEl.value && sDateEl.value < tStr) {
+                    e.preventDefault();
+                    alert('قيد إلزامي: تاريخ بداية الدورة لا يمكن أن يكون قبل تاريخ اليوم الحالي للدورات الجارية أو المخططة!');
+                    sDateEl.focus();
+                    return false;
+                }
+
+                if (sDateEl && eDateEl && sDateEl.value && eDateEl.value && eDateEl.value <= sDateEl.value) {
+                    e.preventDefault();
+                    alert('قيد إلزامي: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن أن يكون في نفس اليوم أو قبله)!');
+                    eDateEl.focus();
+                    return false;
+                }
+
                 const checked = document.querySelectorAll('.trainee-checkbox:checked');
                 if (checked.length === 0) {
                     e.preventDefault();

@@ -610,8 +610,26 @@ def course_session_create_view(request):
                 t_obj = Trainee.objects.filter(military_number=num).first()
                 missing_movement.append(f'"{t_obj.name}" ({num})' if t_obj else num)
 
+        today = timezone.localdate()
+        s_date = None
+        e_date = None
+        if start_date:
+            try:
+                s_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
+        if end_date:
+            try:
+                e_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
+
         if not course_id or not session_code or not start_date or not end_date:
             messages.error(request, 'يرجى استكمال جميع بيانات الدورة الأساسية (الدورة، فئة الدارسين، رقم الدفعة، وتاريخ البداية والنهاية).')
+        elif status in ['active', 'planned'] and s_date and s_date < today:
+            messages.error(request, 'قيد تاريخ الدورة: لا يمكن اختيار تاريخ بداية قبل تاريخ اليوم الحالي للدورات الجارية حالياً أو المخطط لها.')
+        elif s_date and e_date and e_date <= s_date:
+            messages.error(request, 'قيد تاريخ الدورة: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن أن يكون في نفس اليوم أو قبله).')
         elif not selected_trainee_nums:
             messages.error(request, 'يرجى اختيار دارس واحد على الأقل للالتحاق بهذه الدورة.')
         elif missing_movement:
@@ -788,6 +806,7 @@ def course_session_create_view(request):
         'categories': categories,
         'trainees': trainees,
         'instructors': instructors,
+        'today': timezone.localdate().strftime('%Y-%m-%d'),
         'courses_subjects_json': json.dumps(courses_subjects_map, ensure_ascii=False),
         'trainees_passed_json': json.dumps(trainees_passed_map, ensure_ascii=False),
         'courses_next_numbers_json': json.dumps(courses_next_numbers_map, ensure_ascii=False),

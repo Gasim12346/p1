@@ -302,6 +302,24 @@ class CourseSessionForm(forms.ModelForm):
             validate_movement_order_file(f)
         return f
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        status = cleaned_data.get('status')
+
+        if start_date and end_date:
+            if end_date <= start_date:
+                self.add_error('end_date', 'قيد تاريخ الدورة: تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل (لا يمكن اختياره في نفس اليوم أو قبله).')
+
+        if not self.instance.pk and start_date and status in ['active', 'planned']:
+            from django.utils import timezone
+            if start_date < timezone.localdate():
+                self.add_error('start_date', 'قيد تاريخ الدورة: لا يمكن اختيار تاريخ بداية قبل تاريخ اليوم الحالي للدورات الجارية أو المخطط لها.')
+
+        return cleaned_data
+
 
 
 class CourseCategoryForm(forms.ModelForm):

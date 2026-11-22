@@ -1,6 +1,7 @@
 import io
 import json
 from decimal import Decimal
+import datetime
 from datetime import date, timedelta
 import openpyxl
 from django.utils import timezone
@@ -693,12 +694,13 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         fake_scan = SimpleUploadedFile("movement_order.png", b"file_content", content_type="image/png")
 
+        today = timezone.localdate()
         post_data = {
             'category': str(self.cat.id),
             'course': str(self.course.id),
             'session_code': 'الدفعة التجريبية 2026',
-            'start_date': '2026-05-01',
-            'end_date': '2026-07-01',
+            'start_date': (today + datetime.timedelta(days=1)).strftime('%Y-%m-%d'),
+            'end_date': (today + datetime.timedelta(days=30)).strftime('%Y-%m-%d'),
             'status': 'active',
             'attendance_max_grade': '20.0',
             'supervisor': self.instructor1.military_number,
@@ -743,13 +745,14 @@ class InstructorManagementAndCourseSessionTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         from training.models import CourseSession
 
+        today = timezone.localdate()
         t_num = self.trainee.military_number
         base_data = {
             'category': str(self.cat.id),
             'course': str(self.course.id),
             'session_code': 'دفعة فحص القيود',
-            'start_date': '2026-06-01',
-            'end_date': '2026-08-01',
+            'start_date': (today + datetime.timedelta(days=2)).strftime('%Y-%m-%d'),
+            'end_date': (today + datetime.timedelta(days=32)).strftime('%Y-%m-%d'),
             'status': 'active',
             'selected_trainees': [t_num],
         }
@@ -1133,6 +1136,113 @@ class BusinessConstraintsTests(TestCase):
         created_c = Course.objects.filter(name='دورة عبر الطلب المباشر').first()
         self.assertIsNotNone(created_c)
         self.assertTrue(bool(created_c.course_number))
+
+    def test_course_session_date_constraints_model_clean(self):
+        """التحقق من قيد تاريخ الدورة على مستوى النموذج: تاريخ النهاية لا يمكن أن يكون قبل أو في نفس يوم البداية"""
+        from django.core.exceptions import ValidationError
+        from training.models import CourseSession
+        import datetime
+
+        # 1. محاولة ضبط تاريخ النهاية في نفس يوم تاريخ البداية
+        session_same_day = CourseSession(
+            course=self.course,
+            session_code='دفعة-اختبار-تاريخ-1',
+            start_date=datetime.date(2026, 6, 1),
+            end_date=datetime.date(2026, 6, 1)
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            session_same_day.clean()
+        self.assertIn('end_date', ctx.exception.message_dict)
+
+        # 2. محاولة ضبط تاريخ النهاية قبل تاريخ البداية
+        session_before = CourseSession(
+            course=self.course,
+            session_code='دفعة-اختبار-تاريخ-2',
+            start_date=datetime.date(2026, 6, 10),
+            end_date=datetime.date(2026, 6, 5)
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            session_before.clean()
+        self.assertIn('end_date', ctx.exception.message_dict)
+
+        # 3. تاريخ النهاية بعد تاريخ البداية (صحيح)
+        session_valid = CourseSession(
+            course=self.course,
+            session_code='دفعة-اختبار-تاريخ-3',
+            start_date=datetime.date(2026, 6, 1),
+            end_date=datetime.date(2026, 6, 2)
+        )
+        session_valid.clean()  # لا يرمي أي استثناء
+
+    def test_course_session_form_date_constraints(self):
+        """التحقق من قيود تواريخ الدورة في نموذج إدخال وتعديل الانعقاد"""
+        from apps.academic.forms import CourseSessionForm
+        from django.utils import timezone
+        import datetime
+
+        today = timezone.localdate()
+        past_date = today - datetime.timedelta(days=2)
+        tomorrow = today + datetime.timedelta(days=1)
+
+        # 1. بداية الدورة في الماضي عند إنشاء دورة جديدة
+        form_past_start = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': '99',
+            'start_date': past_date,
+            'end_date': tomorrow,
+            'status': 'active'
+        })
+        self.assertFalse(form_past_start.is_valid())
+        self.assertIn('start_date', form_past_start.errors)
+
+        # 2. تاريخ النهاية في نفس يوم البداية
+        form_same_day = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': '99',
+            'start_date': today,
+            'end_date': today,
+            'status': 'active'
+        })
+        self.assertFalse(form_same_day.is_valid())
+        self.assertIn('end_date', form_same_day.errors)
+
+    def test_course_session_create_view_date_constraints(self):
+        """التحقق من منع إنشاء دورة بتاريخ بداية في الماضي أو تاريخ نهاية يسبق أو يماثل تاريخ البداية في شاشة الإنشاء"""
+        from django.utils import timezone
+        import datetime
+
+        self.client.login(username='admin_constraints', password='Password123!')
+        today = timezone.localdate()
+        past_date = today - datetime.timedelta(days=3)
+        future_start = today + datetime.timedelta(days=5)
+
+        # محاولة إرسال تاريخ بداية في الماضي
+        res_past = self.client.post(reverse('training:course_session_create'), {
+            'course': str(self.course.id),
+            'target_category': 'officer',
+            'session_code': '101',
+            'start_date': past_date.strftime('%Y-%m-%d'),
+            'end_date': (past_date + datetime.timedelta(days=10)).strftime('%Y-%m-%d'),
+            'selected_trainees': [self.trainee.military_number],
+        })
+        self.assertEqual(res_past.status_code, 200)
+        messages_past = list(res_past.context['messages'])
+        self.assertTrue(any('لا يمكن اختيار تاريخ بداية قبل تاريخ اليوم الحالي' in str(m) for m in messages_past))
+
+        # محاولة إرسال تاريخ نهاية في نفس يوم تاريخ البداية
+        res_same = self.client.post(reverse('training:course_session_create'), {
+            'course': str(self.course.id),
+            'target_category': 'officer',
+            'session_code': '102',
+            'start_date': future_start.strftime('%Y-%m-%d'),
+            'end_date': future_start.strftime('%Y-%m-%d'),
+            'selected_trainees': [self.trainee.military_number],
+        })
+        self.assertEqual(res_same.status_code, 200)
+        messages_same = list(res_same.context['messages'])
+        self.assertTrue(any('تاريخ نهاية الدورة يجب أن يكون بعد تاريخ بداية الدورة بيوم على الأقل' in str(m) for m in messages_same))
 
 
 class UserRolePermissionsTest(TestCase):
@@ -4577,6 +4687,110 @@ class ProductionHardeningAndSecurityTests(TestCase):
         self.assertEqual(settings.SESSION_COOKIE_AGE, 28800)
         self.assertTrue(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
         self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+
+
+class CourseSessionDateAndStatusConstraintTests(TestCase):
+    """فحص قيود تواريخ بداية ونهاية الدورات وربطها بحالة الدورة (جارية / مخطط لها / مكتملة)"""
+
+    def setUp(self):
+        self.inst = Institute.objects.create(name="معهد اختبار القيود", code="INST-DATE-TEST")
+        self.cat = CourseCategory.objects.create(name="تصنيف اختبار القيود", institute=self.inst)
+        self.course = Course.objects.create(name="دورة اختبار القيود", course_number="DTEST-01", category=self.cat, institute=self.inst)
+        self.today = timezone.localdate()
+        self.past_date = self.today - timedelta(days=30)
+        self.past_end_date = self.today - timedelta(days=10)
+        self.future_start_date = self.today + timedelta(days=1)
+        self.future_end_date = self.today + timedelta(days=30)
+
+    def test_active_and_planned_sessions_block_past_start_date(self):
+        """التحقق من منع اختيار تاريخ بداية في الماضي للدورات الجارية حالياً أو المخطط لها"""
+        from apps.academic.forms import CourseSessionForm
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        pdf_dummy = SimpleUploadedFile("order.pdf", b"%PDF-1.4 dummy", content_type="application/pdf")
+
+        # 1. دورة جارية بتاريخ في الماضي -> يجب أن تفشل
+        form_active = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': 'BATCH-ACT-PAST',
+            'start_date': self.past_date,
+            'end_date': self.past_end_date,
+            'movement_order_date': self.past_date,
+            'status': 'active',
+            'attendance_max_grade': 10,
+        }, files={'movement_order_file': pdf_dummy})
+        self.assertFalse(form_active.is_valid())
+        self.assertIn('start_date', form_active.errors)
+
+        # 2. دورة مخطط لها بتاريخ في الماضي -> يجب أن تفشل
+        form_planned = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': 'BATCH-PLN-PAST',
+            'start_date': self.past_date,
+            'end_date': self.past_end_date,
+            'movement_order_date': self.past_date,
+            'status': 'planned',
+            'attendance_max_grade': 10,
+        }, files={'movement_order_file': pdf_dummy})
+        self.assertFalse(form_planned.is_valid())
+        self.assertIn('start_date', form_planned.errors)
+
+    def test_completed_session_allows_past_start_date(self):
+        """التحقق من السماح باختيار تاريخ بداية في الماضي للدورات المكتملة للأرشفة والتوثيق"""
+        from apps.academic.forms import CourseSessionForm
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        pdf_dummy = SimpleUploadedFile("order.pdf", b"%PDF-1.4 dummy", content_type="application/pdf")
+
+        form_completed = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': 'BATCH-CMP-PAST',
+            'start_date': self.past_date,
+            'end_date': self.past_end_date,
+            'movement_order_date': self.past_date,
+            'status': 'completed',
+            'attendance_max_grade': 10,
+        }, files={'movement_order_file': pdf_dummy})
+        self.assertTrue(form_completed.is_valid(), form_completed.errors)
+
+    def test_end_date_must_be_strictly_after_start_date_for_all_statuses(self):
+        """التحقق من أن تاريخ نهاية الدورة يجب أن يكون بعد تاريخ البداية بيوم على الأقل لكافة الحالات"""
+        from apps.academic.forms import CourseSessionForm
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        pdf_dummy = SimpleUploadedFile("order.pdf", b"%PDF-1.4 dummy", content_type="application/pdf")
+
+        # نفس اليوم للدورة المكتملة
+        form_same_day = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': 'BATCH-CMP-SAME',
+            'start_date': self.past_date,
+            'end_date': self.past_date,
+            'movement_order_date': self.past_date,
+            'status': 'completed',
+            'attendance_max_grade': 10,
+        }, files={'movement_order_file': pdf_dummy})
+        self.assertFalse(form_same_day.is_valid())
+        self.assertIn('end_date', form_same_day.errors)
+
+        # نهاية قبل البداية
+        form_before = CourseSessionForm(data={
+            'course': self.course.id,
+            'target_category': 'officer',
+            'session_code': 'BATCH-CMP-BEFORE',
+            'start_date': self.past_date,
+            'end_date': self.past_date - timedelta(days=1),
+            'movement_order_date': self.past_date,
+            'status': 'completed',
+            'attendance_max_grade': 10,
+        }, files={'movement_order_file': pdf_dummy})
+        self.assertFalse(form_before.is_valid())
+        self.assertIn('end_date', form_before.errors)
+
 
 
 
