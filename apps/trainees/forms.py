@@ -196,7 +196,14 @@ class TraineeForm(forms.ModelForm):
         return number
 
     def clean_phone(self):
-        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف الدارس')
+        phone = validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف الدارس')
+        if phone:
+            qs = Trainee.objects.filter(phone=phone)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('رقم الهاتف هذا مسجل مسبقاً لدارس آخر في المنظومة ولا يجوز تكراره.')
+        return phone
 
     def clean_relative_1_phone(self):
         return validate_and_clean_phone(self.cleaned_data.get('relative_1_phone'), 'هاتف القريب الأول')

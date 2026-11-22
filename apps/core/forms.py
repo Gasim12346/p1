@@ -399,10 +399,18 @@ class UserCreateForm(forms.ModelForm):
         return password
 
     def clean_phone(self):
-        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+        phone = validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+        if phone:
+            if UserProfile.objects.filter(phone=phone).exists():
+                raise forms.ValidationError('رقم الهاتف هذا مسجل مسبقاً لمستخدم آخر في المنظومة، يرجى إدخال رقم هاتف مختلف.')
+        return phone
 
     def clean_email(self):
-        return validate_and_clean_email(self.cleaned_data.get('email'))
+        email = validate_and_clean_email(self.cleaned_data.get('email'))
+        if email:
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError('عنوان البريد الإلكتروني هذا مسجل مسبقاً لمستخدم آخر في المنظومة، يرجى اختيار بريد إلكتروني مختلف.')
+        return email
 
     def clean_username(self):
         username = self.cleaned_data['username'].strip()
@@ -589,10 +597,24 @@ class UserEditForm(forms.ModelForm):
         return new_password
 
     def clean_phone(self):
-        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+        phone = validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم الهاتف')
+        if phone:
+            qs = UserProfile.objects.filter(phone=phone)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(user_id=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('رقم الهاتف هذا مسجل مسبقاً لمستخدم آخر في المنظومة، يرجى إدخال رقم هاتف مختلف.')
+        return phone
 
     def clean_email(self):
-        return validate_and_clean_email(self.cleaned_data.get('email'))
+        email = validate_and_clean_email(self.cleaned_data.get('email'))
+        if email:
+            qs = User.objects.filter(email__iexact=email)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('عنوان البريد الإلكتروني هذا مسجل مسبقاً لمستخدم آخر في المنظومة، يرجى اختيار بريد إلكتروني مختلف.')
+        return email
 
     class Meta:
         model = User

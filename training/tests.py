@@ -4837,6 +4837,128 @@ class UserInstructorLinkAutoFillTests(TestCase):
         self.assertEqual(created_user.profile.phone, '0911223344')
 
 
+class UniqueEmailAndPhoneValidationTests(TestCase):
+    """فحص قيود فرادة البريد الإلكتروني ورقم الهاتف عبر نماذج المنظومة"""
+
+    def setUp(self):
+        self.inst = Institute.objects.create(name="معهد فحص الفرادة", code="INST-UNIQ-01")
+        self.user1 = User.objects.create_user(
+            username='user_unique_1',
+            password='Password123!',
+            email='unique1@example.com'
+        )
+        self.user1.profile.phone = '0123456781'
+        self.user1.profile.save()
+
+        self.instructor1 = Instructor.objects.create(
+            military_number="112233",
+            name="معلم تجريبي",
+            rank="نقيب",
+            phone="0123456782",
+            institute=self.inst
+        )
+
+        self.trainee1 = Trainee.objects.create(
+            military_number="445566",
+            name="دارس تجريبي",
+            phone="0123456783",
+            institute=self.inst
+        )
+
+    def test_user_create_duplicate_email_fails(self):
+        """التحقق من منع تكرار البريد الإلكتروني عند إنشاء مستخدم جديد"""
+        from apps.core.forms import UserCreateForm
+        form = UserCreateForm(data={
+            'username': 'new_user_dup_email',
+            'password': 'Password123!',
+            'first_name': 'تجربة',
+            'email': 'unique1@example.com',  # مكرر
+            'phone': '0123456789',
+            'role': 'regular',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+
+    def test_user_create_duplicate_phone_fails(self):
+        """التحقق من منع تكرار رقم الهاتف عند إنشاء مستخدم جديد"""
+        from apps.core.forms import UserCreateForm
+        form = UserCreateForm(data={
+            'username': 'new_user_dup_phone',
+            'password': 'Password123!',
+            'first_name': 'تجربة',
+            'email': 'unique_new@example.com',
+            'phone': '0123456781',  # مكرر لمستخدم 1
+            'role': 'regular',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_user_edit_unique_email_and_phone(self):
+        """التحقق من فحص فرادة البريد والهاتف عند تعديل بيانات المستخدم"""
+        from apps.core.forms import UserEditForm
+        user2 = User.objects.create_user(
+            username='user_unique_2',
+            password='Password123!',
+            email='unique2@example.com'
+        )
+        user2.profile.phone = '0123456789'
+        user2.profile.save()
+
+        # احتفاظ المستخدم ببريده وهاتفه الشخصي ينجح
+        form_self = UserEditForm(data={
+            'first_name': 'تجربة 2',
+            'email': 'unique2@example.com',
+            'phone': '0123456789',
+            'role': 'regular',
+        }, instance=user2)
+        self.assertTrue(form_self.is_valid(), form_self.errors)
+
+        # تغيير البريد لبريد مستخدم آخر يفشل
+        form_dup_email = UserEditForm(data={
+            'first_name': 'تجربة 2',
+            'email': 'unique1@example.com',
+            'phone': '0123456789',
+            'role': 'regular',
+        }, instance=user2)
+        self.assertFalse(form_dup_email.is_valid())
+        self.assertIn('email', form_dup_email.errors)
+
+        # تغيير الهاتف لهاتف مستخدم آخر يفشل
+        form_dup_phone = UserEditForm(data={
+            'first_name': 'تجربة 2',
+            'email': 'unique2@example.com',
+            'phone': '0123456781',
+            'role': 'regular',
+        }, instance=user2)
+        self.assertFalse(form_dup_phone.is_valid())
+        self.assertIn('phone', form_dup_phone.errors)
+
+    def test_instructor_and_trainee_duplicate_phone_fails(self):
+        """التحقق من منع تكرار رقم الهاتف في نماذج المعلمين والدارسين"""
+        from apps.academic.forms import InstructorForm
+        from apps.trainees.forms import TraineeForm
+
+        inst_form = InstructorForm(data={
+            'military_number': '998877',
+            'name': 'معلم جديد',
+            'rank': 'مقدم',
+            'phone': '0123456782',  # مكرر لمعلم 1
+        })
+        self.assertFalse(inst_form.is_valid())
+        self.assertIn('phone', inst_form.errors)
+
+        trainee_form = TraineeForm(data={
+            'military_number': '998866',
+            'name': 'دارس جديد',
+            'rank': 'ملازم',
+            'category': 'officer',
+            'phone': '0123456783',  # مكرر لدارس 1
+        })
+        self.assertFalse(trainee_form.is_valid())
+        self.assertIn('phone', trainee_form.errors)
+
+
+
 
 
 

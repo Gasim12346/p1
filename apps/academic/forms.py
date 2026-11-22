@@ -81,7 +81,14 @@ class InstructorForm(forms.ModelForm):
         return number
 
     def clean_phone(self):
-        return validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف المعلم')
+        phone = validate_and_clean_phone(self.cleaned_data.get('phone'), 'رقم هاتف المعلم')
+        if phone:
+            qs = Instructor.objects.filter(phone=phone)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('رقم الهاتف هذا مسجل مسبقاً لمعلم آخر في المنظومة ولا يجوز تكراره.')
+        return phone
 
 
 
