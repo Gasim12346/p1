@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.academic',
     'apps.documents',
     'apps.reports',
+    'apps.placement_exams',
     'training',
 ]
 
