@@ -4792,6 +4792,52 @@ class CourseSessionDateAndStatusConstraintTests(TestCase):
         self.assertIn('end_date', form_before.errors)
 
 
+class UserInstructorLinkAutoFillTests(TestCase):
+    """فحص مزامنة وتعبئة بيانات المعلم تلقائياً عند ربط الحساب به"""
+
+    def setUp(self):
+        self.inst = Institute.objects.create(name="معهد فحص المعلمين", code="INST-INST-01")
+        self.admin = User.objects.create_superuser(username="admin_super", password="SuperPassword123!")
+        self.client = Client()
+        self.client.login(username="admin_super", password="SuperPassword123!")
+
+        self.instructor = Instructor.objects.create(
+            military_number="778899",
+            name="طارق زياد عبد الرحمن",
+            rank="مقدم",
+            unit="سلاح المهندسين",
+            phone="0911223344",
+            institute=self.inst,
+        )
+
+    def test_user_creation_with_instructor_populates_missing_fields(self):
+        """التحقق من أن ربط الحساب بالمعلم يقوم بمزامنة وتعبئة النمرة والرتبة والوحدة والهاتف والاسم"""
+        url = reverse('training:user_create')
+        res = self.client.post(url, {
+            'username': 'tariq_user',
+            'password': 'TariqPassword123!',
+            'first_name': '',  # فارغ ليتم استيراده من المعلم
+            'last_name': '',   # فارغ
+            'role': UserRole.INSTRUCTOR,
+            'instructor': self.instructor.military_number,
+            'military_number': '',
+            'rank': '',
+            'unit': '',
+            'phone': '',
+            'is_active': 'on',
+        })
+        self.assertEqual(res.status_code, 302)
+        created_user = User.objects.filter(username='tariq_user').first()
+        self.assertIsNotNone(created_user)
+        self.assertEqual(created_user.first_name, 'طارق')
+        self.assertEqual(created_user.last_name, 'زياد عبد الرحمن')
+        self.assertEqual(created_user.profile.military_number, '778899')
+        self.assertEqual(created_user.profile.rank, 'مقدم')
+        self.assertEqual(created_user.profile.unit, 'سلاح المهندسين')
+        self.assertEqual(created_user.profile.phone, '0911223344')
+
+
+
 
 
 

@@ -47,6 +47,9 @@
                         <div class="col-md-6" id="editUserInstructorWrapper" {% if profile.role != 'instructor' and profile.role != 'supervisor' %}style="display: none;"{% endif %}>
                             <label class="form-label fw-bold small">ربط بملف المعلم (إذا كان الحساب لمعلم أو مشرف)</label>
                             {{ form.instructor }}
+                            <div id="editUserInstNotice" class="form-text small text-success fw-bold mt-1" style="display: none;">
+                                <i class="bi bi-check-circle-fill me-1"></i> تم استيراد وتعبئة كافة بيانات المعلم تلقائياً (الاسم، النمرة، الرتبة، الوحدة، الهاتف).
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">النمرة العسكرية</label>
@@ -280,15 +283,120 @@ function toggleUserCustomUnit(prefix) {
     }
 }
 
+// بيانات المعلمين لملء الرتبة والوحدة والنمرة والاسم ورقم الهاتف تلقائياً عند ربط الحساب بمعلم
 const INSTRUCTORS_DATA_MAP = {
     {% for inst in instructors %}
-    "{{ inst.id }}": {
+    "{{ inst.pk|escapejs }}": {
         "military_number": "{{ inst.military_number|escapejs }}",
+        "name": "{{ inst.name|escapejs }}",
         "rank": "{{ inst.rank|escapejs }}",
-        "unit": "{{ inst.unit|default:''|escapejs }}"
+        "unit": "{{ inst.unit|default:''|escapejs }}",
+        "phone": "{{ inst.phone|default:''|escapejs }}",
+        "email": "{% if inst.user_profiles.first and inst.user_profiles.first.user.email %}{{ inst.user_profiles.first.user.email|escapejs }}{% endif %}"
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
 };
+
+// دالة استيراد وتعبئة بيانات المعلم في حقول المستخدم تلقائياً
+function applyInstructorDataToUserForm(instId, prefix) {
+    const notice = document.getElementById(prefix + 'InstNotice');
+    if (!instId || !INSTRUCTORS_DATA_MAP[instId]) {
+        if (notice) notice.style.display = 'none';
+        return;
+    }
+
+    const data = INSTRUCTORS_DATA_MAP[instId];
+    const modalOrForm = (prefix === 'createUser') ? document.getElementById('addUserModal') : document.querySelector('form');
+    if (!modalOrForm) return;
+
+    // 1. النمرة العسكرية
+    const milInput = modalOrForm.querySelector('input[name="military_number"]');
+    if (milInput && data.military_number) {
+        milInput.value = data.military_number;
+    }
+
+    // 2. الاسم الأول واسم العائلة / اللقب
+    const firstNameInput = modalOrForm.querySelector('input[name="first_name"]');
+    const lastNameInput = modalOrForm.querySelector('input[name="last_name"]');
+    if (data.name) {
+        const parts = data.name.trim().split(/\s+/);
+        if (parts.length > 0 && firstNameInput) {
+            firstNameInput.value = parts[0];
+        }
+        if (lastNameInput) {
+            lastNameInput.value = parts.length > 1 ? parts.slice(1).join(' ') : '';
+        }
+    }
+
+    // 3. الرتبة
+    const rankSelect = document.getElementById(prefix + 'RankSelect');
+    const customRank = document.getElementById(prefix + 'CustomRank');
+    if (rankSelect && data.rank) {
+        let foundRank = false;
+        for (let i = 0; i < rankSelect.options.length; i++) {
+            const optVal = rankSelect.options[i].value.trim();
+            const optTxt = rankSelect.options[i].text.trim();
+            if (optVal === data.rank.trim() || optTxt === data.rank.trim()) {
+                rankSelect.selectedIndex = i;
+                foundRank = true;
+                break;
+            }
+        }
+        if (!foundRank) {
+            rankSelect.value = '__custom__';
+            if (customRank) {
+                customRank.style.display = 'block';
+                customRank.value = data.rank;
+            }
+        } else if (customRank) {
+            customRank.style.display = 'none';
+            customRank.value = '';
+        }
+    }
+
+    // 4. الوحدة
+    const unitSelect = document.getElementById(prefix + 'UnitSelect');
+    const customUnit = document.getElementById(prefix + 'CustomUnit');
+    if (unitSelect && data.unit) {
+        let foundUnit = false;
+        for (let i = 0; i < unitSelect.options.length; i++) {
+            const optVal = unitSelect.options[i].value.trim();
+            const optTxt = unitSelect.options[i].text.trim();
+            if (optVal === data.unit.trim() || optTxt === data.unit.trim()) {
+                unitSelect.selectedIndex = i;
+                foundUnit = true;
+                break;
+            }
+        }
+        if (!foundUnit) {
+            unitSelect.value = '__custom__';
+            if (customUnit) {
+                customUnit.style.display = 'block';
+                customUnit.value = data.unit;
+            }
+        } else if (customUnit) {
+            customUnit.style.display = 'none';
+            customUnit.value = '';
+        }
+    }
+
+    // 5. رقم الهاتف
+    const phoneInput = modalOrForm.querySelector('input[name="phone"]');
+    if (phoneInput && data.phone) {
+        phoneInput.value = data.phone;
+    }
+
+    // 6. البريد الإلكتروني (إن وجد)
+    const emailInput = modalOrForm.querySelector('input[name="email"]');
+    if (emailInput && data.email && !emailInput.value) {
+        emailInput.value = data.email;
+    }
+
+    // 7. إظهار الإشعار التوضيحي للنجاح
+    if (notice) {
+        notice.style.display = 'block';
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.querySelector('select[name="role"]');
@@ -296,61 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (instSelect) {
         instSelect.addEventListener('change', function() {
-            const instId = this.value;
-            if (instId && INSTRUCTORS_DATA_MAP[instId]) {
-                const data = INSTRUCTORS_DATA_MAP[instId];
-                const milInput = document.querySelector('input[name="military_number"]');
-                const rankSelect = document.getElementById('editUserRankSelect');
-                const unitSelect = document.getElementById('editUserUnitSelect');
-                const customRank = document.getElementById('editUserCustomRank');
-                const customUnit = document.getElementById('editUserCustomUnit');
-
-                if (milInput && data.military_number) {
-                    milInput.value = data.military_number;
-                }
-
-                if (rankSelect && data.rank) {
-                    let foundRank = false;
-                    for (let i = 0; i < rankSelect.options.length; i++) {
-                        if (rankSelect.options[i].value === data.rank) {
-                            rankSelect.selectedIndex = i;
-                            foundRank = true;
-                            break;
-                        }
-                    }
-                    if (!foundRank) {
-                        rankSelect.value = '__custom__';
-                        if (customRank) {
-                            customRank.style.display = 'block';
-                            customRank.value = data.rank;
-                        }
-                    } else if (customRank) {
-                        customRank.style.display = 'none';
-                        customRank.value = '';
-                    }
-                }
-
-                if (unitSelect && data.unit) {
-                    let foundUnit = false;
-                    for (let i = 0; i < unitSelect.options.length; i++) {
-                        if (unitSelect.options[i].value === data.unit) {
-                            unitSelect.selectedIndex = i;
-                            foundUnit = true;
-                            break;
-                        }
-                    }
-                    if (!foundUnit) {
-                        unitSelect.value = '__custom__';
-                        if (customUnit) {
-                            customUnit.style.display = 'block';
-                            customUnit.value = data.unit;
-                        }
-                    } else if (customUnit) {
-                        customUnit.style.display = 'none';
-                        customUnit.value = '';
-                    }
-                }
-            }
+            applyInstructorDataToUserForm(this.value, 'editUser');
         });
     }
     const manageEl = document.getElementById('edit_perm_manage_users');
@@ -366,10 +420,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (instWrap) {
             if (r === 'instructor' || r === 'supervisor') {
                 instWrap.style.display = '';
+                const instSelect = instWrap.querySelector('select');
+                if (instSelect && instSelect.value) {
+                    applyInstructorDataToUserForm(instSelect.value, 'editUser');
+                }
             } else {
                 instWrap.style.display = 'none';
                 const instSelect = instWrap.querySelector('select');
                 if (instSelect) instSelect.value = '';
+                const notice = document.getElementById('editUserInstNotice');
+                if (notice) notice.style.display = 'none';
             }
         }
     }

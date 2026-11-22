@@ -546,6 +546,7 @@ def user_create_view(request):
             profile.rank = form.cleaned_data.get('rank', '')
             profile.unit = form.cleaned_data.get('unit', '')
             profile.phone = form.cleaned_data.get('phone', '')
+            u = user
 
             # في حال كان الحساب لمعلم ولم يحدد معلم بالاسم، نحاول ربطه عبر النمرة العسكرية
             if role == UserRole.INSTRUCTOR and not profile.instructor and profile.military_number:
@@ -557,6 +558,14 @@ def user_create_view(request):
                     profile.rank = profile.instructor.rank
                 if not profile.unit:
                     profile.unit = profile.instructor.unit
+                if not profile.phone and profile.instructor.phone:
+                    profile.phone = profile.instructor.phone
+                if not u.first_name:
+                    name_parts = profile.instructor.name.strip().split()
+                    u.first_name = name_parts[0] if name_parts else profile.instructor.name
+                    if len(name_parts) > 1 and not u.last_name:
+                        u.last_name = " ".join(name_parts[1:])
+                    u.save(update_fields=['first_name', 'last_name'])
 
             # حفظ أذونات وصلاحيات مربعات الاختيار (Windows Permissions Checkboxes)
             profile.can_manage_users = form.cleaned_data.get('can_manage_users', False)
@@ -657,6 +666,14 @@ def user_edit_view(request, user_id):
                     profile.rank = profile.instructor.rank
                 if not profile.unit:
                     profile.unit = profile.instructor.unit
+                if not profile.phone and profile.instructor.phone:
+                    profile.phone = profile.instructor.phone
+                if not u.first_name:
+                    name_parts = profile.instructor.name.strip().split()
+                    u.first_name = name_parts[0] if name_parts else profile.instructor.name
+                    if len(name_parts) > 1 and not u.last_name:
+                        u.last_name = " ".join(name_parts[1:])
+                    u.save(update_fields=['first_name', 'last_name'])
 
             # حفظ أذونات وصلاحيات مربعات الاختيار (Windows Permissions Checkboxes)
             profile.can_manage_users = form.cleaned_data.get('can_manage_users', False)

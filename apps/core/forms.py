@@ -281,6 +281,7 @@ class UserCreateForm(forms.ModelForm):
     )
     first_name = forms.CharField(
         label='الاسم الأول *',
+        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'الاسم الأول'})
     )
     last_name = forms.CharField(
@@ -423,6 +424,20 @@ class UserCreateForm(forms.ModelForm):
             return custom_val
         return val
 
+    def clean(self):
+        cleaned_data = super().clean()
+        first_name = (cleaned_data.get('first_name') or '').strip()
+        instructor = cleaned_data.get('instructor')
+        if not first_name:
+            if instructor and instructor.name:
+                parts = instructor.name.strip().split()
+                cleaned_data['first_name'] = parts[0] if parts else instructor.name
+                if not cleaned_data.get('last_name') and len(parts) > 1:
+                    cleaned_data['last_name'] = " ".join(parts[1:])
+            else:
+                self.add_error('first_name', 'الاسم الأول مطلوب.')
+        return cleaned_data
+
 
 
 class UserEditForm(forms.ModelForm):
@@ -552,6 +567,20 @@ class UserEditForm(forms.ModelForm):
         if val == '__custom__':
             return custom_val
         return val
+
+    def clean(self):
+        cleaned_data = super().clean()
+        first_name = (cleaned_data.get('first_name') or '').strip()
+        instructor = cleaned_data.get('instructor')
+        if not first_name:
+            if instructor and instructor.name:
+                parts = instructor.name.strip().split()
+                cleaned_data['first_name'] = parts[0] if parts else instructor.name
+                if not cleaned_data.get('last_name') and len(parts) > 1:
+                    cleaned_data['last_name'] = " ".join(parts[1:])
+            else:
+                self.add_error('first_name', 'الاسم الأول مطلوب.')
+        return cleaned_data
 
     def clean_new_password(self):
         new_password = self.cleaned_data.get('new_password')
