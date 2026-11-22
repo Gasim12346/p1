@@ -2906,52 +2906,165 @@
                                                             </div>
                                                         </div>
 
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">المسافة أعلى التوقيعات (px)</label>
-                                                            <input type="number" id="mov_cfg_signatures_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">حجم خط توقيع القائد (px)</label>
-                                                            <input type="number" id="mov_cfg_signer_box_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">محاذاة كتلة القائد الموقع</label>
-                                                            <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()" checked>
-                                                                <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
-                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_center" value="center" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_sign_center">وسط</label>
-                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_left" value="left" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_sign_left">يسار</label>
+                                                        <!-- 4. جدول التحرك -->
+                                                        <div class="tab-pane fade" id="movtab-table" role="tabpanel">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">حجم خط نصوص الجدول (px)</label>
+                                                                    <input type="number" id="mov_cfg_table_font_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">تباعد وارتفاع أسطر الجدول (px)</label>
+                                                                    <input type="number" id="mov_cfg_table_row_padding" class="form-control form-control-sm" min="0.5" max="10" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">عرض عمود المسميات (العناوين px)</label>
+                                                                    <input type="number" id="mov_cfg_table_label_width" class="form-control form-control-sm" min="80" max="200" step="5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label small fw-bold text-dark">المسافة أسفل جدول التحرك (px)</label>
+                                                                    <input type="number" id="mov_cfg_table_margin_bottom" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">ترتيب النسخ والتواقيع في الأسفل</label>
-                                                            <select id="mov_cfg_footer_layout" class="form-select form-select-sm" onchange="updateMovementLayout()">
-                                                                <option value="copies_first">النسخ أولاً (يمين) ثم التواقيع (يسار) - المعتمد</option>
-                                                                <option value="signer_first">التواقيع أولاً (يمين) ثم النسخ (يسار)</option>
-                                                            </select>
-                                                        </div>
+                                                        <!-- 5. التعليمات والتوقيعات -->
+                                                        <div class="tab-pane fade" id="movtab-footer" role="tabpanel">
+                                                            <div class="row g-3">
+                                                                <!-- التعليمات الإدارية -->
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى التعليمات (px)</label>
+                                                                    <input type="number" id="mov_cfg_admin_inst_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">حجم خط التعليمات (px)</label>
+                                                                    <input type="number" id="mov_cfg_admin_inst_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">محاذاة نص التعليمات الإدارية</label>
+                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_right" value="right" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_inst_right">يمين</label>
+                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_center" value="center" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_inst_center">وسط</label>
+                                                                        <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_inst_left" value="left" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_inst_left">يسار</label>
+                                                                    </div>
+                                                                </div>
 
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">حجم خط توزيع النسخ (px)</label>
-                                                            <input type="number" id="mov_cfg_copies_box_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-bold text-dark">محاذاة توزيع النسخ</label>
-                                                            <div class="btn-group w-100 btn-group-sm" role="group">
-                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_right" value="right" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_copy_right">يمين</label>
-                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_center" value="center" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_copy_center">وسط</label>
-                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_left" value="left" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_copy_left">يسار</label>
+                                                                <!-- إقرار الشهادة -->
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى إقرار الشهادة (px)</label>
+                                                                    <input type="number" id="mov_cfg_declaration_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">حجم خط إقرار الشهادة (px)</label>
+                                                                    <input type="number" id="mov_cfg_declaration_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">محاذاة نص إقرار الشهادة</label>
+                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_right" value="right" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_decl_right">يمين</label>
+                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_center" value="center" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_decl_center">وسط</label>
+                                                                        <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_left" value="left" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_decl_left">يسار</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- سطر توقيع المسافر (التحكم في الموضع والشكل) -->
+                                                                <div class="col-12">
+                                                                    <div class="p-3 rounded-3 border border-primary border-opacity-25 bg-white shadow-sm">
+                                                                        <div class="row g-3 align-items-center">
+                                                                            <div class="col-md-5">
+                                                                                <label class="form-label small fw-bold text-primary mb-1">
+                                                                                    <i class="bi bi-pen me-1"></i>موضع سطر توقيع المسافر
+                                                                                </label>
+                                                                                <select id="mov_cfg_traveler_sig_position" class="form-select form-select-sm fw-bold border-primary shadow-sm" onchange="updateMovementLayout()">
+                                                                                    <option value="top">في بداية الصفحة (أسفل بيانات الدارس وقبل الجدول)</option>
+                                                                                    <option value="after_table">وسط الصفحة (أسفل جدول التحرك وقبل التعليمات)</option>
+                                                                                    <option value="declaration">أسفل إقرار الشهادة (الموضع النظامي الافتراضي)</option>
+                                                                                </select>
+                                                                                <div class="form-text text-muted small mt-1">
+                                                                                    <i class="bi bi-info-circle me-1"></i>يمكنك نقله إلى بداية الصفحة مباشرة بجانب أو أسفل بيانات الدارس.
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="col-md-3">
+                                                                                <label class="form-label small fw-bold text-dark mb-1">محاذاة سطر توقيع المسافر</label>
+                                                                                <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_right" value="right" onchange="updateMovementLayout()">
+                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_right">يمين</label>
+                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_center" value="center" onchange="updateMovementLayout()">
+                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_center">وسط</label>
+                                                                                    <input type="radio" class="btn-check" name="mov_traveler_sig_align" id="mov_trav_left" value="left" onchange="updateMovementLayout()">
+                                                                                    <label class="btn btn-outline-secondary" for="mov_trav_left">يسار</label>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="col-md-2">
+                                                                                <label class="form-label small fw-bold text-dark mb-1">حجم الخط (px)</label>
+                                                                                <input type="number" id="mov_cfg_traveler_sig_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                            </div>
+                                                                            <div class="col-md-2">
+                                                                                <label class="form-label small fw-bold text-dark mb-1">المسافة أعلاه (px)</label>
+                                                                                <input type="number" id="mov_cfg_traveler_sig_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- التواقيع السفلية وتوزيع النسخ -->
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى التوقيعات (px)</label>
+                                                                    <input type="number" id="mov_cfg_signatures_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">حجم خط توقيع القائد (px)</label>
+                                                                    <input type="number" id="mov_cfg_signer_box_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">محاذاة كتلة القائد الموقع</label>
+                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()" checked>
+                                                                        <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
+                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_center" value="center" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_sign_center">وسط</label>
+                                                                        <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_left" value="left" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_sign_left">يسار</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">ترتيب النسخ والتواقيع في الأسفل</label>
+                                                                    <select id="mov_cfg_footer_layout" class="form-select form-select-sm" onchange="updateMovementLayout()">
+                                                                        <option value="copies_first">النسخ أولاً (يمين) ثم التواقيع (يسار) - المعتمد</option>
+                                                                        <option value="signer_first">التواقيع أولاً (يمين) ثم النسخ (يسار)</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">حجم خط توزيع النسخ (px)</label>
+                                                                    <input type="number" id="mov_cfg_copies_box_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">محاذاة توزيع النسخ</label>
+                                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_right" value="right" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_copy_right">يمين</label>
+                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_center" value="center" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_copy_center">وسط</label>
+                                                                        <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_left" value="left" onchange="updateMovementLayout()">
+                                                                        <label class="btn btn-outline-secondary" for="mov_copy_left">يسار</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى السرية السفلية (px)</label>
+                                                                    <input type="number" id="mov_cfg_security_bottom_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </div>
 
                                             <!-- زر الحفظ -->
                                             <div
@@ -5063,7 +5176,10 @@
         declaration_line_height: 1.65,
         declaration_margin_top: 10,
         declaration_align: 'center',
+        traveler_sig_position: 'declaration',
         traveler_sig_align: 'left',
+        traveler_sig_size: 14,
+        traveler_sig_margin_top: 4,
         signatures_margin_top: 16,
         footer_layout: 'copies_first',
         signer_box_size: 15,
@@ -5114,6 +5230,7 @@
                 'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
                 'admin_inst_size', 'admin_inst_margin_top',
                 'declaration_size', 'declaration_margin_top',
+                'traveler_sig_size', 'traveler_sig_margin_top',
                 'signatures_margin_top', 'signer_box_size',
                 'copies_box_size', 'security_bottom_margin_top'
             ];
@@ -5127,6 +5244,9 @@
 
         const footerSelect = document.getElementById('mov_cfg_footer_layout');
         if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+
+        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+        if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
 
             const gapRange = document.getElementById('mov_cfg_trainee_line_gap_range');
             if (gapRange && cfg.trainee_line_gap !== undefined) {
@@ -5158,6 +5278,7 @@
                 'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
                 'admin_inst_size', 'admin_inst_margin_top',
                 'declaration_size', 'declaration_margin_top',
+                'traveler_sig_size', 'traveler_sig_margin_top',
                 'signatures_margin_top', 'signer_box_size',
                 'copies_box_size', 'security_bottom_margin_top'
             ];
@@ -5172,6 +5293,9 @@
 
         const footerSelect = document.getElementById('mov_cfg_footer_layout');
         if (footerSelect) cfg.footer_layout = footerSelect.value;
+
+        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+        if (travSigPosSelect) cfg.traveler_sig_position = travSigPosSelect.value;
 
             const gapRange = document.getElementById('mov_cfg_trainee_line_gap_range');
             const gapInput = document.getElementById('mov_cfg_trainee_line_gap');
@@ -5322,6 +5446,25 @@
             const travSig = document.getElementById('previewMovTravelerSign');
             if (travSig) {
                 travSig.style.textAlign = cfg.traveler_sig_align || 'left';
+                travSig.style.fontSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
+                travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
+
+                const pos = cfg.traveler_sig_position || 'declaration';
+                const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+                const table = document.getElementById('previewMovTable');
+                const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
+
+                if (pos === 'top' && table && table.parentNode) {
+                    table.parentNode.insertBefore(travSig, table);
+                } else if (pos === 'after_table' && table && table.parentNode) {
+                    if (adminInstWrapper) {
+                        adminInstWrapper.parentNode.insertBefore(travSig, adminInstWrapper);
+                    } else {
+                        table.parentNode.insertBefore(travSig, table.nextSibling);
+                    }
+                } else if (declWrapper) {
+                    declWrapper.appendChild(travSig);
+                }
             }
 
             const signersWrapper = document.getElementById('previewMovSignersWrapper');

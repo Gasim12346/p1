@@ -5211,6 +5211,33 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         self.assertEqual(layout['declaration_header_align'], 'right')
         self.assertEqual(layout['traveler_sig_align'], 'right')
 
+    def test_traveler_sig_position_settings_and_rendering(self):
+        """التحقق من خيارات موضع سطر توقيع المسافر في أمر التحرك الرسمي"""
+        layout = self.movement_settings.get_layout()
+        self.assertEqual(layout['traveler_sig_position'], 'declaration')
+        self.assertEqual(layout['traveler_sig_size'], 14)
+        self.assertEqual(layout['traveler_sig_margin_top'], 4)
+
+        # تغيير الموضع إلى بداية الصفحة
+        self.movement_settings.layout_config = {
+            'traveler_sig_position': 'top',
+            'traveler_sig_align': 'right',
+            'traveler_sig_size': 16,
+            'traveler_sig_margin_top': 10,
+        }
+        self.movement_settings.save()
+        updated_top = self.movement_settings.get_layout()
+        self.assertEqual(updated_top['traveler_sig_position'], 'top')
+        self.assertEqual(updated_top['traveler_sig_align'], 'right')
+        self.assertEqual(updated_top['traveler_sig_size'], 16)
+        self.assertEqual(updated_top['traveler_sig_margin_top'], 10)
+
+        # تغيير الموضع إلى وسط الصفحة بعد الجدول
+        self.movement_settings.layout_config = {'traveler_sig_position': 'after_table'}
+        self.movement_settings.save()
+        updated_middle = self.movement_settings.get_layout()
+        self.assertEqual(updated_middle['traveler_sig_position'], 'after_table')
+
 
 
 

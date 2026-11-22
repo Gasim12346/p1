@@ -191,8 +191,12 @@
         .traveler-sig-container {
             display: flex;
             justify-content: {% if layout.traveler_sig_align == 'right' %}flex-start{% elif layout.traveler_sig_align == 'center' %}center{% else %}flex-end{% endif %};
-            margin-top: 8px;
+            margin-top: {{ layout.traveler_sig_margin_top|default:4 }}px;
+            margin-bottom: 4px;
             padding: 0 16px;
+        }
+        .traveler-sig-text {
+            font-size: {{ layout.traveler_sig_size|default:14 }}px;
         }
 
         /* Signatures and Copies Footer */
@@ -341,6 +345,15 @@
                     </div>
                 {% endif %}
 
+                <!-- Traveler Signature (موضع بداية الصفحة) -->
+                {% if layout.traveler_sig_position == 'top' %}
+                    <div class="traveler-sig-container">
+                        <div class="traveler-sig-text fw-bold">
+                            توقيع المسافر &nbsp;:&nbsp; ....................................................
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Movement Details Table -->
                 <table class="details-table">
                     <tbody>
@@ -389,6 +402,15 @@
                     </tbody>
                 </table>
 
+                <!-- Traveler Signature (موضع وسط الصفحة بعد الجدول) -->
+                {% if layout.traveler_sig_position == 'after_table' %}
+                    <div class="traveler-sig-container">
+                        <div class="traveler-sig-text fw-bold">
+                            توقيع المسافر &nbsp;:&nbsp; ....................................................
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Administrative Instructions -->
                 <div>
                     <div class="admin-instructions-header">التعليمات الادارية</div>
@@ -403,11 +425,13 @@
                     <div class="declaration-body mt-1">
                         {{ order_settings.certificate_declaration }}
                     </div>
+                    {% if layout.traveler_sig_position != 'top' and layout.traveler_sig_position != 'after_table' %}
                     <div class="traveler-sig-container">
-                        <div class="fw-bold fs-6">
+                        <div class="traveler-sig-text fw-bold">
                             توقيع المسافر &nbsp;:&nbsp; ....................................................
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
