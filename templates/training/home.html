@@ -93,11 +93,32 @@
     </div>
     {% endif %}
 
-    <!-- Module 4: النتيجة والشهادات -->
-    <div class="col-md-6 col-xl-6">
+    <!-- Module 4: امتحانات خاصة (امتحانات تحديد المستوى) -->
+    <div class="col-md-6 col-xl-4">
         <div class="module-card">
             <div>
-                <span class="badge-step">القسم 4</span>
+                <span class="badge-step" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">قسم خاص</span>
+                <div class="module-card-icon-box" style="background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff;">
+                    <i class="bi bi-clipboard2-check-fill"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">امتحانات خاصة</h4>
+                <p class="text-muted small mb-0">إدارة ورصد درجات امتحانات تحديد المستوى ونقل النتائج وكشوفات الرصد الرسمية</p>
+            </div>
+            <div>
+                <hr class="border-slate-200 my-3">
+                <a href="{% url 'training:placement_exams_list' %}" class="btn btn-modern-primary w-100" style="background: linear-gradient(135deg, #b45309, #d97706);">
+                    <span>فتح منظومة الامتحانات الخاصة</span>
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module 5: النتيجة والشهادات -->
+    <div class="col-md-6 col-xl-4">
+        <div class="module-card">
+            <div>
+                <span class="badge-step">القسم 5</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #6b21a8, #9333ea); color: #fff;">
                     <i class="bi bi-award-fill"></i>
                 </div>
@@ -114,11 +135,11 @@
     </div>
 
     {% if is_registrar or is_supervisor or is_admin %}
-    <!-- Module 5: التقارير الشاملة واستخراج إكسل -->
-    <div class="col-md-6 col-xl-6">
+    <!-- Module 6: التقارير الشاملة واستخراج إكسل -->
+    <div class="col-md-6 col-xl-4">
         <div class="module-card" style="border: 2px solid #0284c7; box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.15);">
             <div>
-                <span class="badge-step" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">القسم 5</span>
+                <span class="badge-step" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">القسم 6</span>
                 <div class="module-card-icon-box" style="background: linear-gradient(135deg, #0369a1, #0284c7); color: #fff;">
                     <i class="bi bi-file-earmark-spreadsheet-fill"></i>
                 </div>

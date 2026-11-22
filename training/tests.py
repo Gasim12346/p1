@@ -3581,7 +3581,7 @@ class DisciplineInfractionTests(TestCase):
         self.assertEqual(len(del_data['infractions']), 0)
 
     def test_session_discipline_attendance_view(self):
-        """فحص واجهة رصد كشف الحضور والضبط والربط للدورة"""
+        """فحص شاشة رصد كشف الحضور والضبط والربط للدورة"""
         url = reverse('training:session_discipline_attendance', kwargs={'session_id': self.session.id})
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)

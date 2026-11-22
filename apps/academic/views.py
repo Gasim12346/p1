@@ -1852,7 +1852,7 @@ def results_entry_view(request, session_id):
 
 def session_discipline_attendance_view(request, session_id):
     """
-    واجهة رصد الحضور والضبط والربط للدورة:
+    شاشة رصد الحضور والضبط والربط للدورة:
     - لستة بجميع الدارسين بالدورة
     - أيام الحضور من السبت للخميس معلمة بعلامة صح تلقائياً (حاضر)
     - عند إلغاء الصح يظهر خيار سبب الغياب (راحة طبية 0.5 - بدون سبب 2.0)
@@ -1878,7 +1878,7 @@ def session_discipline_attendance_view(request, session_id):
 
     can_edit = (is_adm or is_sup or is_reg) and (session.status != 'completed' or is_adm)
     if not (is_adm or is_sup or is_reg or is_session_sup):
-        messages.error(request, 'غير مصرح لك بالوصول لواجهة رصد الحضور والضبط لهذه الدورة.')
+        messages.error(request, 'غير مصرح لك بالوصول لشاشة رصد الحضور والضبط لهذه الدورة.')
         return redirect('training:results_center')
 
     DAYS_LIST = [

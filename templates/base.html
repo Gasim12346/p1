@@ -1065,6 +1065,20 @@
                                                 لوحة تحكم الأدمن (منفصلة)
                                             </a>
                                         </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'training:placement_exams_list' %}">
+                                                <i class="bi bi-clipboard2-check-fill text-warning"></i>
+                                                الامتحانات الخاصة (تحديد المستوى)
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% else %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'training:placement_exams_list' %}">
+                                                <i class="bi bi-clipboard2-check-fill text-warning"></i>
+                                                الامتحانات الخاصة (تحديد المستوى)
+                                            </a>
+                                        </li>
                                         <li><hr class="dropdown-divider my-1"></li>
                                     {% endif %}
                                     <li>
@@ -1285,6 +1299,20 @@
                                             <a class="dropdown-item d-flex align-items-center gap-2 fw-bold text-primary py-2" href="{% url 'training:admin_dashboard' %}">
                                                 <i class="bi bi-shield-lock-fill text-warning"></i>
                                                 لوحة تحكم الأدمن (منفصلة)
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'training:placement_exams_list' %}">
+                                                <i class="bi bi-clipboard2-check-fill text-warning"></i>
+                                                الامتحانات الخاصة (تحديد المستوى)
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                    {% else %}
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'training:placement_exams_list' %}">
+                                                <i class="bi bi-clipboard2-check-fill text-warning"></i>
+                                                الامتحانات الخاصة (تحديد المستوى)
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider my-1"></li>
