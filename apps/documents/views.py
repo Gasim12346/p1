@@ -292,7 +292,13 @@ def certificate_settings_update_view(request):
             cert_settings.left_logo = None
             cert_settings.save()
             messages.success(request, 'تمت إعادة تعيين الشعار الأيسر للشهادة إلى الشعار المعتمد (شعار نظم المعلومات).')
-            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#pane-certificate")
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-cert")
+        # إعادة تعيين أبعاد ومسافات الشهادة إذا طلب
+        if 'reset_cert_layout' in request.POST:
+            cert_settings.layout_config = {}
+            cert_settings.save()
+            messages.success(request, 'تمت إعادة ضبط مسافات ومواقع نصوص الشهادة إلى القيم الافتراضية بنجاح.')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-cert")
 
         form = CertificateSettingsForm(request.POST, request.FILES, instance=cert_settings)
         if form.is_valid():
@@ -325,6 +331,12 @@ def movement_order_settings_update_view(request):
             movement_settings.watermark_image = None
             movement_settings.save()
             messages.success(request, 'تمت إعادة تعيين العلامة المائية لأمر التحرك إلى الشعار المعتمد بنجاح.')
+            return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-movement-order")
+        # إعادة تعيين أبعاد ومسافات أمر التحرك إذا طلب
+        if 'reset_movement_layout' in request.POST:
+            movement_settings.layout_config = {}
+            movement_settings.save()
+            messages.success(request, 'تمت إعادة ضبط مسافات ومواقع أمر التحرك إلى القيم الافتراضية بنجاح.')
             return redirect(f"{reverse('training:admin_dashboard')}?tab=certificate#subpane-movement-order")
 
         form = MovementOrderSettingsForm(request.POST, request.FILES, instance=movement_settings)

@@ -1,4 +1,5 @@
 {% load static %}
+{% with layout=order_settings.get_layout %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -36,7 +37,7 @@
             min-height: 297mm;
             height: 297mm;
             background: #ffffff;
-            padding: 16mm 20mm 14mm 20mm;
+            padding: {{ layout.page_padding_top|default:16 }}mm {{ layout.page_padding_horizontal|default:20 }}mm {{ layout.page_padding_bottom|default:14 }}mm {{ layout.page_padding_horizontal|default:20 }}mm !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
@@ -91,54 +92,59 @@
 
         /* Header typography */
         .bismillah {
-            font-size: 17px;
+            font-size: {{ layout.bismillah_size|default:17 }}px !important;
+            margin-bottom: {{ layout.bismillah_margin_bottom|default:2 }}px !important;
             font-weight: normal;
         }
 
         .security-label {
-            font-size: 18px;
+            font-size: {{ layout.security_size|default:18 }}px !important;
+            margin-bottom: {{ layout.security_margin_bottom|default:2 }}px !important;
             font-weight: bold;
             text-decoration: underline;
         }
 
         .order-title {
-            font-size: 24px;
+            font-size: {{ layout.title_size|default:24 }}px !important;
+            margin-bottom: {{ layout.title_margin_bottom|default:6 }}px !important;
             font-weight: bold;
             text-decoration: underline;
             letter-spacing: 2px;
         }
 
         .issuing-text {
-            font-size: 15px;
-            line-height: 1.6;
-            margin-top: 10px;
-            text-align: center;
+            font-size: {{ layout.issuing_size|default:15 }}px !important;
+            line-height: {{ layout.issuing_line_height|default:1.5 }} !important;
+            margin-top: 6px;
+            margin-bottom: {{ layout.issuing_margin_bottom|default:8 }}px !important;
+            text-align: {{ layout.issuing_align|default:'center' }} !important;
             padding: 0 10px;
             font-weight: normal;
         }
 
         /* Trainee & Movement Details */
         .trainee-line {
-            font-size: 16px;
-            margin-top: 8px;
-            margin-bottom: 6px;
+            font-size: {{ layout.trainee_line_size|default:16 }}px !important;
+            margin-top: 6px;
+            margin-bottom: {{ layout.trainee_line_margin_bottom|default:6 }}px !important;
             border-bottom: 1px dashed transparent;
         }
 
         .details-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 15.5px;
+            font-size: {{ layout.table_font_size|default:15.5 }}px !important;
             margin-top: 2px;
+            margin-bottom: {{ layout.table_margin_bottom|default:8 }}px !important;
         }
 
         .details-table td {
-            padding: 2.2px 0;
+            padding: {{ layout.table_row_padding|default:2.2 }}px 0 !important;
             vertical-align: middle;
         }
 
         .details-table .label-col {
-            width: 130px;
+            width: {{ layout.table_label_width|default:130 }}px !important;
             font-weight: bold;
             white-space: nowrap;
         }
@@ -148,31 +154,57 @@
         }
 
         /* Section headings */
-        .section-header-underline {
+        .admin-instructions-header {
             font-size: 16.5px;
             font-weight: bold;
             text-decoration: underline;
             text-align: center;
-            margin-top: 10px;
+            margin-top: {{ layout.admin_inst_margin_top|default:8 }}px !important;
             margin-bottom: 4px;
         }
 
-        .section-body-text {
-            font-size: 14.5px;
-            line-height: 1.65;
+        .admin-instructions-body {
+            font-size: {{ layout.admin_inst_size|default:14.5 }}px !important;
+            line-height: {{ layout.admin_inst_line_height|default:1.6 }} !important;
+            text-align: {{ layout.admin_inst_align|default:'center' }} !important;
+            padding: 0 12px;
+        }
+
+        .declaration-header {
+            font-size: 16.5px;
+            font-weight: bold;
+            text-decoration: underline;
             text-align: center;
+            margin-top: {{ layout.declaration_margin_top|default:8 }}px !important;
+            margin-bottom: 4px;
+        }
+
+        .declaration-body {
+            font-size: {{ layout.declaration_size|default:14.5 }}px !important;
+            line-height: {{ layout.declaration_line_height|default:1.6 }} !important;
+            text-align: {{ layout.declaration_align|default:'center' }} !important;
             padding: 0 12px;
         }
 
         /* Signatures and Copies Footer */
+        .signatures-wrapper {
+            margin-top: {{ layout.signatures_margin_top|default:12 }}px !important;
+        }
+
         .signer-box {
-            font-size: 15px;
+            font-size: {{ layout.signer_box_size|default:15 }}px !important;
             line-height: 1.35;
+            text-align: {{ layout.signer_box_align|default:'center' }} !important;
         }
 
         .copies-box {
-            font-size: 14px;
+            font-size: {{ layout.copies_box_size|default:14 }}px !important;
             line-height: 1.45;
+            text-align: {{ layout.copies_box_align|default:'right' }} !important;
+        }
+
+        .security-bottom {
+            margin-top: {{ layout.security_bottom_margin_top|default:8 }}px !important;
         }
 
         /* Print styles */
@@ -190,7 +222,7 @@
             .movement-page {
                 box-shadow: none;
                 margin: 0;
-                padding: 14mm 18mm 12mm 18mm;
+                padding: {{ layout.page_padding_top|default:16 }}mm {{ layout.page_padding_horizontal|default:20 }}mm {{ layout.page_padding_bottom|default:14 }}mm {{ layout.page_padding_horizontal|default:20 }}mm !important;
                 width: 100%;
                 height: 100vh;
                 page-break-after: avoid;
@@ -273,7 +305,7 @@
                 <!-- Trainee Info Line (Officer vs NCO) -->
                 {% if is_officer %}
                     <div class="trainee-line officer-line">
-                        <div class="d-flex justify-content-between align-items-center w-100 px-1">
+                        <div class="d-flex {% if layout.trainee_line_layout == 'reverse' %}justify-content-between flex-row-reverse{% elif layout.trainee_line_layout == 'center' %}justify-content-center gap-4{% else %}justify-content-between{% endif %} align-items-center w-100 px-1">
                             <div class="fw-bold fs-6">
                                 رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
                             </div>
@@ -284,7 +316,7 @@
                     </div>
                 {% else %}
                     <div class="trainee-line nco-line">
-                        <div class="fw-bold fs-6 px-1">
+                        <div class="fw-bold fs-6 px-1 {% if layout.trainee_line_layout == 'center' %}text-center{% elif layout.trainee_line_layout == 'reverse' %}text-start{% endif %}">
                             الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.current_rank }} &nbsp;&nbsp; {{ enrollment.trainee.name }}
                         </div>
                     </div>
@@ -339,17 +371,17 @@
                 </table>
 
                 <!-- Administrative Instructions -->
-                <div class="mt-3">
-                    <div class="section-header-underline">التعليمات الادارية</div>
-                    <div class="section-body-text mt-1">
+                <div>
+                    <div class="admin-instructions-header">التعليمات الادارية</div>
+                    <div class="admin-instructions-body mt-1">
                         {{ admin_instructions|default:order_settings.admin_instructions }}
                     </div>
                 </div>
 
                 <!-- Traveler's Declaration / Certificate -->
-                <div class="mt-3">
-                    <div class="section-header-underline">الشهـــــــــــادة</div>
-                    <div class="section-body-text mt-1">
+                <div>
+                    <div class="declaration-header">الشهـــــــــــادة</div>
+                    <div class="declaration-body mt-1">
                         {{ order_settings.certificate_declaration }}
                     </div>
                     <div class="d-flex justify-content-end mt-2 px-3">
@@ -361,10 +393,10 @@
             </div>
 
             <!-- Bottom Signatures and Copies -->
-            <div class="mt-3 pt-1">
+            <div class="signatures-wrapper pt-1">
                 <div class="d-flex justify-content-between align-items-start px-2">
                     <!-- Right/Signer Box (قائد المعهد) -->
-                    <div class="signer-box text-center" style="min-width: 250px;">
+                    <div class="signer-box" style="min-width: 250px;">
                         <div class="fw-bold">{{ order_settings.signer_rank }}</div>
                         <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
                         <div class="fw-bold">{{ order_settings.signer_title }}</div>
@@ -372,7 +404,7 @@
                     </div>
 
                     <!-- Left/Copies Box (نسخة إلى) -->
-                    <div class="copies-box text-start">
+                    <div class="copies-box">
                         <div class="fw-bold mb-1">نسخة الي :</div>
                         <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
                         <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
@@ -380,7 +412,7 @@
                 </div>
 
                 <!-- Bottom Security Label -->
-                <div class="text-center security-label mt-3 mb-1">
+                <div class="text-center security-label security-bottom mb-1">
                     <u>{{ order_settings.security_label }}</u>
                 </div>
             </div>
@@ -389,3 +421,4 @@
 
 </body>
 </html>
+{% endwith %}

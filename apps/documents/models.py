@@ -2,6 +2,67 @@ from django.db import models
 from apps.core.models import Institute
 
 
+DEFAULT_CERTIFICATE_LAYOUT = {
+    'page_padding_top': 12,
+    'page_padding_bottom': 12,
+    'page_padding_horizontal': 18,
+    'header_margin_bottom': 6,
+    'bismillah_size': 15,
+    'bismillah_margin_bottom': 2,
+    'header_line1_size': 16,
+    'header_line2_size': 16,
+    'title_size': 32,
+    'title_margin_top': 3,
+    'title_margin_bottom': 4,
+    'title_align': 'center',
+    'body_text_size': 15,
+    'body_line_height': 1.8,
+    'body_margin_bottom': 6,
+    'body_align': 'center',
+    'signers_margin_top': 8,
+    'signers_font_size': 14,
+    'footer_margin_top': 5,
+    'footer_font_size': 11,
+}
+
+DEFAULT_MOVEMENT_LAYOUT = {
+    'page_padding_top': 16,
+    'page_padding_bottom': 14,
+    'page_padding_horizontal': 20,
+    'bismillah_size': 17,
+    'bismillah_margin_bottom': 2,
+    'security_size': 18,
+    'security_margin_bottom': 2,
+    'title_size': 24,
+    'title_margin_bottom': 6,
+    'issuing_size': 15,
+    'issuing_line_height': 1.5,
+    'issuing_margin_bottom': 8,
+    'issuing_align': 'center',
+    'trainee_line_size': 16,
+    'trainee_line_margin_bottom': 6,
+    'trainee_line_layout': 'split',
+    'table_font_size': 15.5,
+    'table_row_padding': 2.2,
+    'table_label_width': 130,
+    'table_margin_bottom': 8,
+    'admin_inst_size': 14.5,
+    'admin_inst_line_height': 1.6,
+    'admin_inst_margin_top': 8,
+    'admin_inst_align': 'center',
+    'declaration_size': 14.5,
+    'declaration_line_height': 1.6,
+    'declaration_margin_top': 8,
+    'declaration_align': 'center',
+    'signatures_margin_top': 12,
+    'signer_box_size': 15,
+    'signer_box_align': 'center',
+    'copies_box_size': 14,
+    'copies_box_align': 'right',
+    'security_bottom_margin_top': 8,
+}
+
+
 class CertificateSettings(models.Model):
     """إعدادات وتخصيص قالب وتوقيعات الشهادة الرسمية"""
     institute = models.OneToOneField(
@@ -135,6 +196,11 @@ class CertificateSettings(models.Model):
         auto_now=True,
         verbose_name='تاريخ آخر تعديل'
     )
+    layout_config = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='إعدادات التنسيق والمسافات والمواقع'
+    )
 
     class Meta:
         app_label = 'training'
@@ -143,6 +209,13 @@ class CertificateSettings(models.Model):
 
     def __str__(self):
         return 'إعدادات الشهادة الرسمية'
+
+    def get_layout(self):
+        """الحصول على قيم المسافات والتنسيق مدمجة مع القيم الافتراضية"""
+        layout = dict(DEFAULT_CERTIFICATE_LAYOUT)
+        if self.layout_config and isinstance(self.layout_config, dict):
+            layout.update(self.layout_config)
+        return layout
 
     @classmethod
     def get_settings(cls, institute=None):
@@ -289,6 +362,11 @@ class MovementOrderSettings(models.Model):
         auto_now=True,
         verbose_name='تاريخ آخر تعديل'
     )
+    layout_config = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='إعدادات التنسيق والمسافات والمواقع'
+    )
 
     class Meta:
         app_label = 'training'
@@ -297,6 +375,13 @@ class MovementOrderSettings(models.Model):
 
     def __str__(self):
         return 'إعدادات أمر التحرك الرسمي'
+
+    def get_layout(self):
+        """الحصول على قيم المسافات والتنسيق مدمجة مع القيم الافتراضية"""
+        layout = dict(DEFAULT_MOVEMENT_LAYOUT)
+        if self.layout_config and isinstance(self.layout_config, dict):
+            layout.update(self.layout_config)
+        return layout
 
     @classmethod
     def get_settings(cls, institute=None):

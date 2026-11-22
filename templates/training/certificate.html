@@ -1,4 +1,5 @@
 {% load static %}
+{% with layout=cert_settings.get_layout %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -33,7 +34,7 @@
             width: 297mm;
             min-height: 210mm;
             background: #ffffff;
-            padding: 12mm 18mm 12mm 18mm;
+            padding: {{ layout.page_padding_top|default:12 }}mm {{ layout.page_padding_horizontal|default:18 }}mm {{ layout.page_padding_bottom|default:12 }}mm {{ layout.page_padding_horizontal|default:18 }}mm !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
@@ -56,6 +57,7 @@
             justify-content: space-between;
             align-items: flex-start;
             width: 100%;
+            margin-bottom: {{ layout.header_margin_bottom|default:6 }}mm !important;
         }
 
         .logo-right-box {
@@ -93,14 +95,14 @@
         }
 
         .bismillah {
-            font-size: 15pt;
+            font-size: {{ layout.bismillah_size|default:15 }}pt !important;
             font-family: 'Amiri', 'Traditional Arabic', serif;
             color: #000000;
-            margin-bottom: 2mm;
+            margin-bottom: {{ layout.bismillah_margin_bottom|default:2 }}mm !important;
         }
 
         .main-heading-1 {
-            font-size: 32pt;
+            font-size: {{ layout.header_line1_size|default:32 }}pt !important;
             font-weight: bold;
             color: #000000;
             text-decoration: underline;
@@ -110,7 +112,7 @@
         }
 
         .main-heading-2 {
-            font-size: 32pt;
+            font-size: {{ layout.header_line2_size|default:32 }}pt !important;
             font-weight: bold;
             color: #000000;
             text-decoration: underline;
@@ -121,13 +123,13 @@
 
         /* 2. Word "شهــــــادة" */
         .cert-word-wrapper {
-            text-align: center;
-            margin: 5mm 0 3mm 0;
+            text-align: {{ layout.title_align|default:'center' }} !important;
+            margin: {{ layout.title_margin_top|default:3 }}mm 0 {{ layout.title_margin_bottom|default:4 }}mm 0 !important;
         }
 
         .cert-word {
             color: #FF0000;
-            font-size: 40pt;
+            font-size: {{ layout.title_size|default:40 }}pt !important;
             font-weight: bold;
             text-decoration: underline;
             text-underline-offset: 8px;
@@ -138,22 +140,22 @@
 
         /* 3. Certificate Statement */
         .cert-p1 {
-            font-size: 15.5pt;
+            font-size: {{ layout.body_text_size|default:15.5 }}pt !important;
             font-weight: bold;
-            line-height: 2.2;
-            text-align: justify;
+            line-height: {{ layout.body_line_height|default:2.2 }} !important;
+            text-align: {{ layout.body_align|default:'justify' }} !important;
             text-justify: inter-word;
-            margin: 0 0 3mm 0;
+            margin: 0 0 {{ layout.body_margin_bottom|default:3 }}mm 0 !important;
             color: #000000;
         }
 
         .cert-p2 {
-            font-size: 15.5pt;
+            font-size: {{ layout.body_text_size|default:15.5 }}pt !important;
             font-weight: bold;
-            line-height: 2.2;
-            text-align: justify;
+            line-height: {{ layout.body_line_height|default:2.2 }} !important;
+            text-align: {{ layout.body_align|default:'justify' }} !important;
             text-justify: inter-word;
-            margin: 0 0 5mm 0;
+            margin: 0 0 {{ layout.body_margin_bottom|default:5 }}mm 0 !important;
             color: #000000;
         }
 
@@ -165,13 +167,13 @@
         .sig-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 2mm;
+            margin-top: {{ layout.signers_margin_top|default:2 }}mm !important;
         }
 
         .sig-table td {
             vertical-align: top;
             padding: 2px 4px;
-            font-size: 15pt;
+            font-size: {{ layout.signers_font_size|default:15 }}pt !important;
             font-weight: bold;
             color: #000000;
             line-height: 1.35;
@@ -197,13 +199,13 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 3mm;
+            margin-top: {{ layout.footer_margin_top|default:3 }}mm !important;
             padding: 0 5mm;
         }
 
         .station-date-box {
             text-align: right;
-            font-size: 15pt;
+            font-size: {{ layout.footer_font_size|default:15 }}pt !important;
             font-weight: bold;
             color: #000000;
             line-height: 1.5;
@@ -211,7 +213,7 @@
 
         .green-seal-warning {
             color: #00B050;
-            font-size: 15pt;
+            font-size: {{ layout.footer_font_size|default:15 }}pt !important;
             font-weight: bold;
             text-align: center;
             margin-top: 3mm;
@@ -233,7 +235,7 @@
                 border: none !important;
                 width: 100% !important;
                 min-height: 100% !important;
-                padding: 10mm 15mm !important;
+                padding: {{ layout.page_padding_top|default:10 }}mm {{ layout.page_padding_horizontal|default:15 }}mm {{ layout.page_padding_bottom|default:10 }}mm {{ layout.page_padding_horizontal|default:15 }}mm !important;
                 page-break-inside: avoid;
             }
             @page {
@@ -363,3 +365,4 @@
 
 </body>
 </html>
+{% endwith %}

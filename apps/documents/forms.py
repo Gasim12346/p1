@@ -4,6 +4,8 @@ from apps.core.validators import validate_image_file
 
 class CertificateSettingsForm(forms.ModelForm):
     """نموذج تخصيص شكل وتوقيعات ونصوص الشهادة الرسمية"""
+    layout_config = forms.CharField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = CertificateSettings
         fields = [
@@ -29,6 +31,7 @@ class CertificateSettingsForm(forms.ModelForm):
             'logo_height_mm',
             'right_logo',
             'left_logo',
+            'layout_config',
         ]
         widgets = {
             'bismillah_text': forms.TextInput(attrs={
@@ -122,6 +125,7 @@ class CertificateSettingsForm(forms.ModelForm):
                 'class': 'form-control',
                 'accept': 'image/*'
             }),
+            'layout_config': forms.HiddenInput(),
         }
         labels = {
             'bismillah_text': 'نص البسملة العلوي',
@@ -158,10 +162,27 @@ class CertificateSettingsForm(forms.ModelForm):
             validate_image_file(f)
         return f
 
+    def clean_layout_config(self):
+        import json
+        val = self.cleaned_data.get('layout_config')
+        if not val:
+            return {}
+        if isinstance(val, dict):
+            return val
+        if isinstance(val, str) and val.strip():
+            try:
+                parsed = json.loads(val)
+                return parsed if isinstance(parsed, dict) else {}
+            except Exception:
+                return {}
+        return {}
+
 
 
 class MovementOrderSettingsForm(forms.ModelForm):
     """نموذج تخصيص شكل ونصوص وتوقيعات أمر التحرك الرسمي"""
+    layout_config = forms.CharField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = MovementOrderSettings
         fields = [
@@ -187,6 +208,7 @@ class MovementOrderSettingsForm(forms.ModelForm):
             'copy_to_2',
             'watermark_image',
             'watermark_opacity',
+            'layout_config',
         ]
         widgets = {
             'bismillah_text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'بسم الله الرحمن الرحيم'}),
@@ -211,6 +233,7 @@ class MovementOrderSettingsForm(forms.ModelForm):
             'copy_to_2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نسخة بيد المذكور...'}),
             'watermark_image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'watermark_opacity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.05', 'max': '1.0', 'step': '0.05'}),
+            'layout_config': forms.HiddenInput(),
         }
         labels = {
             'bismillah_text': 'البسملة العلوية',
@@ -242,5 +265,21 @@ class MovementOrderSettingsForm(forms.ModelForm):
         if f:
             validate_image_file(f)
         return f
+
+    def clean_layout_config(self):
+        import json
+        val = self.cleaned_data.get('layout_config')
+        if not val:
+            return {}
+        if isinstance(val, dict):
+            return val
+        if isinstance(val, str) and val.strip():
+            try:
+                parsed = json.loads(val)
+                return parsed if isinstance(parsed, dict) else {}
+            except Exception:
+                return {}
+        return {}
+
 
 

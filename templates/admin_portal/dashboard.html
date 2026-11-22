@@ -1326,6 +1326,184 @@
                                 </div>
                             </div>
 
+                            <!-- 5. ضبط المسافات ومواقع الكلمات والتنسيق للشهادة -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4 border border-warning border-opacity-25 bg-white overflow-hidden">
+                                <div class="card-header bg-warning bg-opacity-10 border-0 p-3 px-4 d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-arrows-move text-warning fs-5"></i>
+                                        <h6 class="fw-bold text-dark mb-0">5. ضبط المسافات ومواقع الكلمات والتنسيق للشهادة</h6>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="submit" name="reset_cert_layout" value="1" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="return confirm('هل تريد بالتأكيد إعادة ضبط مسافات ومواقع نصوص الشهادة إلى القيم الافتراضية؟')">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> إعادة الضبط للافتراضي
+                                        </button>
+                                        <span class="badge bg-warning text-dark">تحكم لحظي مباشر</span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4">
+                                    <input type="hidden" name="layout_config" id="id_cert_layout_config" value="{{ cert_layout_json }}">
+
+                                    <ul class="nav nav-tabs nav-fill mb-3" id="certLayoutTabs" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active fw-bold small" id="certtab-margins-tab" data-bs-toggle="tab" data-bs-target="#certtab-margins" type="button" role="tab">
+                                                <i class="bi bi-aspect-ratio me-1"></i> هوامش الشهادة
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link fw-bold small" id="certtab-header-tab" data-bs-toggle="tab" data-bs-target="#certtab-header" type="button" role="tab">
+                                                <i class="bi bi-card-heading me-1"></i> الترويسة والشعارات
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link fw-bold small" id="certtab-title-tab" data-bs-toggle="tab" data-bs-target="#certtab-title" type="button" role="tab">
+                                                <i class="bi bi-type-h1 me-1"></i> عنوان الشهادة
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link fw-bold small" id="certtab-body-tab" data-bs-toggle="tab" data-bs-target="#certtab-body" type="button" role="tab">
+                                                <i class="bi bi-card-text me-1"></i> نص الشهادة
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link fw-bold small" id="certtab-signers-tab" data-bs-toggle="tab" data-bs-target="#certtab-signers" type="button" role="tab">
+                                                <i class="bi bi-pen me-1"></i> التوقيعات والتذييل
+                                            </button>
+                                        </li>
+                                    </ul>
+
+                                    <div class="tab-content border p-3 rounded-3 bg-light" id="certLayoutTabsContent">
+                                        <!-- 1. هوامش الشهادة -->
+                                        <div class="tab-pane fade show active" id="certtab-margins" role="tabpanel">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">الهامش العلوي للشهادة (ملم)</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" id="cert_cfg_page_padding_top" class="form-control" min="5" max="35" step="1" oninput="updateCertLayout()">
+                                                        <span class="input-group-text">ملم</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">الهامش السفلي للشهادة (ملم)</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" id="cert_cfg_page_padding_bottom" class="form-control" min="5" max="35" step="1" oninput="updateCertLayout()">
+                                                        <span class="input-group-text">ملم</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">الهامش الجانبي للشهادة (ملم)</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" id="cert_cfg_page_padding_horizontal" class="form-control" min="5" max="40" step="1" oninput="updateCertLayout()">
+                                                        <span class="input-group-text">ملم</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 2. الترويسة والشعارات -->
+                                        <div class="tab-pane fade" id="certtab-header" role="tabpanel">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أسفل الترويسة والشعارات (ملم)</label>
+                                                    <input type="number" id="cert_cfg_header_margin_bottom" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط البسملة (pt)</label>
+                                                    <input type="number" id="cert_cfg_bismillah_size" class="form-control form-control-sm" min="10" max="26" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط سطر الإدارة الأول (pt)</label>
+                                                    <input type="number" id="cert_cfg_header_line1_size" class="form-control form-control-sm" min="10" max="24" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط سطر المعهد الثاني (pt)</label>
+                                                    <input type="number" id="cert_cfg_header_line2_size" class="form-control form-control-sm" min="10" max="24" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 3. عنوان الشهادة -->
+                                        <div class="tab-pane fade" id="certtab-title" role="tabpanel">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">حجم كلمة الشهادة (pt)</label>
+                                                    <input type="number" id="cert_cfg_title_size" class="form-control form-control-sm" min="18" max="50" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى العنوان (ملم)</label>
+                                                    <input type="number" id="cert_cfg_title_margin_top" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أسفل العنوان (ملم)</label>
+                                                    <input type="number" id="cert_cfg_title_margin_bottom" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-bold text-dark">محاذاة عنوان الشهادة</label>
+                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                        <input type="radio" class="btn-check" name="cert_title_align" id="cert_title_right" value="right" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_title_right">يمين</label>
+                                                        <input type="radio" class="btn-check" name="cert_title_align" id="cert_title_center" value="center" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_title_center">وسط</label>
+                                                        <input type="radio" class="btn-check" name="cert_title_align" id="cert_title_left" value="left" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_title_left">يسار</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 4. نص الشهادة -->
+                                        <div class="tab-pane fade" id="certtab-body" role="tabpanel">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط نص الشهادة (pt)</label>
+                                                    <input type="number" id="cert_cfg_body_text_size" class="form-control form-control-sm" min="11" max="24" step="0.5" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">تباعد أسطر النص (Line Height)</label>
+                                                    <input type="number" id="cert_cfg_body_line_height" class="form-control form-control-sm" min="1.2" max="2.6" step="0.1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أسفل النص (ملم)</label>
+                                                    <input type="number" id="cert_cfg_body_margin_bottom" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-bold text-dark">محاذاة نص الإشادة</label>
+                                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                                        <input type="radio" class="btn-check" name="cert_body_align" id="cert_body_right" value="right" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_body_right">يمين</label>
+                                                        <input type="radio" class="btn-check" name="cert_body_align" id="cert_body_center" value="center" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_body_center">وسط</label>
+                                                        <input type="radio" class="btn-check" name="cert_body_align" id="cert_body_justify" value="justify" onchange="updateCertLayout()">
+                                                        <label class="btn btn-outline-secondary" for="cert_body_justify">مبرر</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 5. التوقيعات والتذييل -->
+                                        <div class="tab-pane fade" id="certtab-signers" role="tabpanel">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى كتلة التوقيعات (ملم)</label>
+                                                    <input type="number" id="cert_cfg_signers_margin_top" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط أسماء ورتب الموقعين (pt)</label>
+                                                    <input type="number" id="cert_cfg_signers_font_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">المسافة أعلى التذييل (ملم)</label>
+                                                    <input type="number" id="cert_cfg_footer_margin_top" class="form-control form-control-sm" min="0" max="20" step="1" oninput="updateCertLayout()">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold text-dark">حجم خط المحطة والختم (pt)</label>
+                                                    <input type="number" id="cert_cfg_footer_font_size" class="form-control form-control-sm" min="8" max="18" step="0.5" oninput="updateCertLayout()">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="d-flex justify-content-end gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm" style="background: linear-gradient(135deg, #1e3a8a, #2563eb); border: none;">
                                     <i class="bi bi-save-fill me-2"></i> حفظ وتطبيق إعدادات الشهادات فوراً
@@ -1733,6 +1911,257 @@
                                         </div>
                                     </div>
 
+                                    <!-- 6. ضبط المسافات ومواقع الكلمات والتنسيق (أمر التحرك) -->
+                                    <div class="card border-0 shadow-sm rounded-4 mb-4 border border-info border-opacity-25 bg-white overflow-hidden">
+                                        <div class="card-header bg-info bg-opacity-10 border-0 p-3 px-4 d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-arrows-move text-info fs-5"></i>
+                                                <h6 class="fw-bold text-dark mb-0">6. ضبط المسافات وتغيير مواقع الكلمات والتنسيق</h6>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <button type="submit" name="reset_movement_layout" value="1" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="return confirm('هل تريد بالتأكيد إعادة ضبط مسافات ومواقع أمر التحرك إلى القيم الافتراضية؟')">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> إعادة الضبط للافتراضي
+                                                </button>
+                                                <span class="badge bg-info text-white">تحكم لحظي مباشر</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-4">
+                                            <input type="hidden" name="layout_config" id="id_movement_layout_config" value="{{ movement_layout_json }}">
+
+                                            <ul class="nav nav-tabs nav-fill mb-3" id="movementLayoutTabs" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active fw-bold small" id="movtab-margins-tab" data-bs-toggle="tab" data-bs-target="#movtab-margins" type="button" role="tab">
+                                                        <i class="bi bi-aspect-ratio me-1"></i> هوامش الصفحة
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fw-bold small" id="movtab-header-tab" data-bs-toggle="tab" data-bs-target="#movtab-header" type="button" role="tab">
+                                                        <i class="bi bi-type-h1 me-1"></i> الترويسة والديباجة
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fw-bold small" id="movtab-trainee-tab" data-bs-toggle="tab" data-bs-target="#movtab-trainee" type="button" role="tab">
+                                                        <i class="bi bi-person-lines-fill me-1"></i> بيانات الدارس
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fw-bold small" id="movtab-table-tab" data-bs-toggle="tab" data-bs-target="#movtab-table" type="button" role="tab">
+                                                        <i class="bi bi-table me-1"></i> جدول التحرك
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fw-bold small" id="movtab-footer-tab" data-bs-toggle="tab" data-bs-target="#movtab-footer" type="button" role="tab">
+                                                        <i class="bi bi-card-checklist me-1"></i> التعليمات والتوقيعات
+                                                    </button>
+                                                </li>
+                                            </ul>
+
+                                            <div class="tab-content border p-3 rounded-3 bg-light" id="movementLayoutTabsContent">
+                                                <!-- 1. هوامش الصفحة -->
+                                                <div class="tab-pane fade show active" id="movtab-margins" role="tabpanel">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">الهامش العلوي للورقة (ملم)</label>
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="number" id="mov_cfg_page_padding_top" class="form-control" min="5" max="40" step="1" oninput="updateMovementLayout()">
+                                                                <span class="input-group-text">ملم</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">الهامش السفلي للورقة (ملم)</label>
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="number" id="mov_cfg_page_padding_bottom" class="form-control" min="5" max="40" step="1" oninput="updateMovementLayout()">
+                                                                <span class="input-group-text">ملم</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">الهامش الجانبي للورقة (ملم)</label>
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="number" id="mov_cfg_page_padding_horizontal" class="form-control" min="5" max="40" step="1" oninput="updateMovementLayout()">
+                                                                <span class="input-group-text">ملم</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 2. الترويسة والديباجة -->
+                                                <div class="tab-pane fade" id="movtab-header" role="tabpanel">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط البسملة (px)</label>
+                                                            <input type="number" id="mov_cfg_bismillah_size" class="form-control form-control-sm" min="10" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل البسملة (px)</label>
+                                                            <input type="number" id="mov_cfg_bismillah_margin_bottom" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط السرية (px)</label>
+                                                            <input type="number" id="mov_cfg_security_size" class="form-control form-control-sm" min="10" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل السرية (px)</label>
+                                                            <input type="number" id="mov_cfg_security_margin_bottom" class="form-control form-control-sm" min="0" max="25" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط عنوان الأمر (px)</label>
+                                                            <input type="number" id="mov_cfg_title_size" class="form-control form-control-sm" min="16" max="40" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل عنوان الأمر (px)</label>
+                                                            <input type="number" id="mov_cfg_title_margin_bottom" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">محاذاة ديباجة الصدور</label>
+                                                            <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_issuing_align" id="mov_align_right" value="right" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_align_right">يمين</label>
+                                                                <input type="radio" class="btn-check" name="mov_issuing_align" id="mov_align_center" value="center" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_align_center">وسط</label>
+                                                                <input type="radio" class="btn-check" name="mov_issuing_align" id="mov_align_justify" value="justify" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_align_justify">مبرر</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط ديباجة الصدور (px)</label>
+                                                            <input type="number" id="mov_cfg_issuing_size" class="form-control form-control-sm" min="10" max="24" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل ديباجة الصدور (px)</label>
+                                                            <input type="number" id="mov_cfg_issuing_margin_bottom" class="form-control form-control-sm" min="0" max="35" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 3. بيانات الدارس -->
+                                                <div class="tab-pane fade" id="movtab-trainee" role="tabpanel">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط سطر بيانات الدارس (px)</label>
+                                                            <input type="number" id="mov_cfg_trainee_line_size" class="form-control form-control-sm" min="11" max="24" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل سطر الدارس (px)</label>
+                                                            <input type="number" id="mov_cfg_trainee_line_margin_bottom" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label small fw-bold text-dark">توزيع وموقع بيانات الدارس (البطاقة والاسم)</label>
+                                                            <select id="mov_cfg_trainee_line_layout" class="form-select form-select-sm" onchange="updateMovementLayout()">
+                                                                <option value="split">متباعد (رقم البطاقة على اليمين - الرتبة والاسم على اليسار)</option>
+                                                                <option value="reverse">معكوس (الرتبة والاسم على اليمين - رقم البطاقة على اليسار)</option>
+                                                                <option value="center">متمركز في الوسط</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 4. جدول التحرك -->
+                                                <div class="tab-pane fade" id="movtab-table" role="tabpanel">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط نصوص الجدول (px)</label>
+                                                            <input type="number" id="mov_cfg_table_font_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">تباعد وارتفاع أسطر الجدول (px)</label>
+                                                            <input type="number" id="mov_cfg_table_row_padding" class="form-control form-control-sm" min="0.5" max="10" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">عرض عمود المسميات (العناوين px)</label>
+                                                            <input type="number" id="mov_cfg_table_label_width" class="form-control form-control-sm" min="80" max="200" step="5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أسفل جدول التحرك (px)</label>
+                                                            <input type="number" id="mov_cfg_table_margin_bottom" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 5. التعليمات والتوقيعات -->
+                                                <div class="tab-pane fade" id="movtab-footer" role="tabpanel">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أعلى التعليمات (px)</label>
+                                                            <input type="number" id="mov_cfg_admin_inst_margin_top" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط التعليمات (px)</label>
+                                                            <input type="number" id="mov_cfg_admin_inst_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">محاذاة التعليمات الإدارية</label>
+                                                            <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_admin_right" value="right" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_admin_right">يمين</label>
+                                                                <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_admin_center" value="center" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_admin_center">وسط</label>
+                                                                <input type="radio" class="btn-check" name="mov_admin_inst_align" id="mov_admin_justify" value="justify" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_admin_justify">مبرر</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أعلى إقرار الشهادة (px)</label>
+                                                            <input type="number" id="mov_cfg_declaration_margin_top" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط إقرار الشهادة (px)</label>
+                                                            <input type="number" id="mov_cfg_declaration_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">محاذاة إقرار الشهادة</label>
+                                                            <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_right" value="right" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_decl_right">يمين</label>
+                                                                <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_center" value="center" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_decl_center">وسط</label>
+                                                                <input type="radio" class="btn-check" name="mov_declaration_align" id="mov_decl_justify" value="justify" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_decl_justify">مبرر</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أعلى التوقيعات (px)</label>
+                                                            <input type="number" id="mov_cfg_signatures_margin_top" class="form-control form-control-sm" min="0" max="40" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط توقيع القائد (px)</label>
+                                                            <input type="number" id="mov_cfg_signer_box_size" class="form-control form-control-sm" min="10" max="22" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">محاذاة كتلة القائد الموقع</label>
+                                                            <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_center" value="center" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_sign_center">وسط</label>
+                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
+                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_left" value="left" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_sign_left">يسار</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">حجم خط توزيع النسخ (px)</label>
+                                                            <input type="number" id="mov_cfg_copies_box_size" class="form-control form-control-sm" min="10" max="20" step="0.5" oninput="updateMovementLayout()">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">محاذاة توزيع النسخ</label>
+                                                            <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_right" value="right" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_copy_right">يمين</label>
+                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_center" value="center" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_copy_center">وسط</label>
+                                                                <input type="radio" class="btn-check" name="mov_copies_align" id="mov_copy_left" value="left" onchange="updateMovementLayout()">
+                                                                <label class="btn btn-outline-secondary" for="mov_copy_left">يسار</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">المسافة أعلى السرية السفلية (px)</label>
+                                                            <input type="number" id="mov_cfg_security_bottom_margin_top" class="form-control form-control-sm" min="0" max="30" step="1" oninput="updateMovementLayout()">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- زر الحفظ -->
                                     <div class="d-flex align-items-center justify-content-between pt-3 border-top">
                                         <button type="submit" class="btn btn-success fw-bold px-4 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
@@ -1797,7 +2226,7 @@
 
                                         <!-- سطر بيانات الدارس الضابط -->
                                         <div id="previewMovOfficerLine" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                            <div class="d-flex justify-content-between">
+                                            <div id="previewMovOfficerLineInner" class="d-flex justify-content-between">
                                                 <span>رقم البطاقة : 235402384</span>
                                                 <span>ملازم تقني / علي أحمد النيل</span>
                                             </div>
@@ -1805,79 +2234,81 @@
 
                                         <!-- سطر بيانات الدارس ضابط الصف -->
                                         <div id="previewMovNcoLine" style="display: none; margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                            <span>الأشخاص : نمرة 23431531 رقيب أول إدارة أحمد صديق كرار</span>
+                                            <div id="previewMovNcoLineInner">
+                                                <span>الأشخاص : نمرة 23431531 رقيب أول إدارة أحمد صديق كرار</span>
+                                            </div>
                                         </div>
 
                                         <!-- جدول بيانات ومسار التحرك -->
-                                        <table style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
+                                        <table id="previewMovTable" style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
                                             <tr>
-                                                <td style="width: 95px; font-weight: bold; padding: 1.5px 0;">مـــــــــــــــــن :</td>
+                                                <td class="mov-label-col" style="width: 95px; font-weight: bold; padding: 1.5px 0;">مـــــــــــــــــن :</td>
                                                 <td id="previewMovFrom">{{ movement_settings.from_location }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">الـــــــــــــــــي :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">الـــــــــــــــــي :</td>
                                                 <td id="previewMovTo">{{ movement_settings.to_location_default }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">الســـــــــلاح :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">الســـــــــلاح :</td>
                                                 <td id="previewMovArms">{{ movement_settings.arms_default }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">الذخيـــــــرة :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">الذخيـــــــرة :</td>
                                                 <td id="previewMovAmmo">{{ movement_settings.ammunition_default }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">الغــــــــرض :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">الغــــــــرض :</td>
                                                 <td><span id="previewMovPurposePrefix">{{ movement_settings.purpose_prefix }}</span>دورة أمن سيبراني</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">تاريخ القيام :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">تاريخ القيام :</td>
                                                 <td>15 / 11 / 2026م</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">اللبـــــــــــس :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">اللبـــــــــــس :</td>
                                                 <td id="previewMovClothing">{{ movement_settings.clothing_instructions }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">وسيلة السفر :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">وسيلة السفر :</td>
                                                 <td id="previewMovTravel">{{ movement_settings.travel_means }}</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-weight: bold; padding: 1.5px 0;">التصديق :</td>
+                                                <td class="mov-label-col" style="font-weight: bold; padding: 1.5px 0;">التصديق :</td>
                                                 <td id="previewMovRatification">{{ movement_settings.ratification_text }}</td>
                                             </tr>
                                         </table>
 
                                         <!-- التعليمات الإدارية -->
-                                        <div style="margin-top: 8px;">
-                                            <div style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">التعليمات الادارية</div>
+                                        <div id="previewMovAdminInstWrapper" style="margin-top: 8px;">
+                                            <div id="previewMovAdminInstHeader" style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">التعليمات الادارية</div>
                                             <div id="previewMovAdminInst" style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
                                                 {{ movement_settings.admin_instructions }}
                                             </div>
                                         </div>
 
                                         <!-- الشهادة -->
-                                        <div style="margin-top: 8px;">
-                                            <div style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">الشهـــــــــــادة</div>
+                                        <div id="previewMovDeclarationWrapper" style="margin-top: 8px;">
+                                            <div id="previewMovDeclarationHeader" style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">الشهـــــــــــادة</div>
                                             <div id="previewMovDeclaration" style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
                                                 {{ movement_settings.certificate_declaration }}
                                             </div>
-                                            <div style="text-align: left; font-size: 0.67rem; font-weight: bold; margin-top: 4px;">
+                                            <div id="previewMovTravelerSign" style="text-align: left; font-size: 0.67rem; font-weight: bold; margin-top: 4px;">
                                                 توقيع المسافر : ............................
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- التوقيعات والتذييل -->
-                                    <div style="position: relative; z-index: 2; margin-top: 10px; padding-top: 4px;">
+                                    <div id="previewMovSignersWrapper" style="position: relative; z-index: 2; margin-top: 10px; padding-top: 4px;">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <div class="text-center" style="font-size: 0.68rem; line-height: 1.3;">
+                                            <div id="previewMovSignerBlock" class="text-center" style="font-size: 0.68rem; line-height: 1.3;">
                                                 <div id="previewMovSignerRank" style="font-weight: bold;">{{ movement_settings.signer_rank }}</div>
                                                 <div id="previewMovSignerName" style="font-weight: bold; margin: 1px 0;">{{ movement_settings.signer_name }}</div>
                                                 <div id="previewMovSignerTitle">{{ movement_settings.signer_title }}</div>
                                                 <div id="previewMovSignerDept" style="font-weight: bold;">{{ movement_settings.signer_dept }}</div>
                                             </div>
-                                            <div style="font-size: 0.65rem; line-height: 1.35; text-align: right;">
+                                            <div id="previewMovCopiesBlock" style="font-size: 0.65rem; line-height: 1.35; text-align: right;">
                                                 <div style="font-weight: bold;">نسخة الي :</div>
                                                 <div id="previewMovCopy1">{{ movement_settings.copy_to_1 }}</div>
                                                 <div id="previewMovCopy2">{{ movement_settings.copy_to_2 }}</div>
@@ -3589,7 +4020,434 @@
         }
     }
 
+    // ========================================================
+    // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
+    // ========================================================
+    const DEFAULT_MOV_LAYOUT = {
+        page_padding_top: 16,
+        page_padding_bottom: 14,
+        page_padding_horizontal: 20,
+        bismillah_size: 17,
+        bismillah_margin_bottom: 2,
+        security_size: 18,
+        security_margin_bottom: 2,
+        title_size: 24,
+        title_margin_bottom: 6,
+        issuing_size: 15,
+        issuing_line_height: 1.5,
+        issuing_margin_bottom: 8,
+        issuing_align: 'center',
+        trainee_line_size: 16,
+        trainee_line_margin_bottom: 6,
+        trainee_line_layout: 'split',
+        table_font_size: 15.5,
+        table_row_padding: 2.2,
+        table_label_width: 130,
+        table_margin_bottom: 8,
+        admin_inst_size: 14.5,
+        admin_inst_line_height: 1.6,
+        admin_inst_margin_top: 8,
+        admin_inst_align: 'center',
+        declaration_size: 14.5,
+        declaration_line_height: 1.6,
+        declaration_margin_top: 8,
+        declaration_align: 'center',
+        signatures_margin_top: 12,
+        signer_box_size: 15,
+        signer_box_align: 'center',
+        copies_box_size: 14,
+        copies_box_align: 'right',
+        security_bottom_margin_top: 8
+    };
+
+    window.getMovementLayoutData = function() {
+        const hiddenInput = document.getElementById('id_movement_layout_config');
+        let current = {};
+        if (hiddenInput && hiddenInput.value) {
+            try {
+                current = JSON.parse(hiddenInput.value);
+            } catch(e) {
+                current = {};
+            }
+        }
+        return Object.assign({}, DEFAULT_MOV_LAYOUT, current);
+    };
+
+    window.initMovementLayout = function() {
+        const cfg = window.getMovementLayoutData();
+
+        const numFields = [
+            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+            'bismillah_size', 'bismillah_margin_bottom',
+            'security_size', 'security_margin_bottom',
+            'title_size', 'title_margin_bottom',
+            'issuing_size', 'issuing_margin_bottom',
+            'trainee_line_size', 'trainee_line_margin_bottom',
+            'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+            'admin_inst_size', 'admin_inst_margin_top',
+            'declaration_size', 'declaration_margin_top',
+            'signatures_margin_top', 'signer_box_size',
+            'copies_box_size', 'security_bottom_margin_top'
+        ];
+
+        numFields.forEach(f => {
+            const el = document.getElementById('mov_cfg_' + f);
+            if (el && cfg[f] !== undefined) {
+                el.value = cfg[f];
+            }
+        });
+
+        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+        if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
+
+        ['issuing_align', 'admin_inst_align', 'declaration_align', 'signer_align', 'copies_align'].forEach(radioGroup => {
+            let key = radioGroup;
+            if (radioGroup === 'signer_align') key = 'signer_box_align';
+            if (radioGroup === 'copies_align') key = 'copies_box_align';
+            const val = cfg[key];
+            if (val) {
+                const radio = document.querySelector(`input[name="mov_${radioGroup}"][value="${val}"]`);
+                if (radio) radio.checked = true;
+            }
+        });
+
+        window.applyMovementLayoutToPreview(cfg);
+    };
+
+    window.updateMovementLayout = function() {
+        const numFields = [
+            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+            'bismillah_size', 'bismillah_margin_bottom',
+            'security_size', 'security_margin_bottom',
+            'title_size', 'title_margin_bottom',
+            'issuing_size', 'issuing_margin_bottom',
+            'trainee_line_size', 'trainee_line_margin_bottom',
+            'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+            'admin_inst_size', 'admin_inst_margin_top',
+            'declaration_size', 'declaration_margin_top',
+            'signatures_margin_top', 'signer_box_size',
+            'copies_box_size', 'security_bottom_margin_top'
+        ];
+
+        const cfg = {};
+        numFields.forEach(f => {
+            const el = document.getElementById('mov_cfg_' + f);
+            if (el && el.value !== '') {
+                cfg[f] = parseFloat(el.value);
+            }
+        });
+
+        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+        if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
+
+        const issuingRadio = document.querySelector('input[name="mov_issuing_align"]:checked');
+        if (issuingRadio) cfg.issuing_align = issuingRadio.value;
+
+        const adminRadio = document.querySelector('input[name="mov_admin_inst_align"]:checked');
+        if (adminRadio) cfg.admin_inst_align = adminRadio.value;
+
+        const declRadio = document.querySelector('input[name="mov_declaration_align"]:checked');
+        if (declRadio) cfg.declaration_align = declRadio.value;
+
+        const signRadio = document.querySelector('input[name="mov_signer_align"]:checked');
+        if (signRadio) cfg.signer_box_align = signRadio.value;
+
+        const copyRadio = document.querySelector('input[name="mov_copies_align"]:checked');
+        if (copyRadio) cfg.copies_box_align = copyRadio.value;
+
+        const merged = Object.assign({}, DEFAULT_MOV_LAYOUT, cfg);
+
+        const hiddenInput = document.getElementById('id_movement_layout_config');
+        if (hiddenInput) {
+            hiddenInput.value = JSON.stringify(merged);
+        }
+
+        window.applyMovementLayoutToPreview(merged);
+    };
+
+    window.applyMovementLayoutToPreview = function(cfg) {
+        const paper = document.getElementById('previewMovementPaper');
+        if (!paper) return;
+
+        const scale = 0.52;
+
+        const padTop = (cfg.page_padding_top || 16) * 0.9;
+        const padBottom = (cfg.page_padding_bottom || 14) * 0.9;
+        const padHoriz = (cfg.page_padding_horizontal || 20) * 0.7;
+        paper.style.padding = `${padTop}px ${padHoriz}px ${padBottom}px ${padHoriz}px`;
+
+        const bismillah = document.getElementById('previewMovBismillah');
+        if (bismillah) {
+            bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
+            bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
+        }
+
+        const security = document.getElementById('previewMovSecurity');
+        if (security) {
+            security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
+            security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
+        }
+
+        const title = document.getElementById('previewMovTitle');
+        if (title) {
+            title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
+            title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
+        }
+
+        const issuing = document.getElementById('previewMovIssuing');
+        if (issuing) {
+            issuing.style.fontSize = `${(cfg.issuing_size || 15) * scale}px`;
+            issuing.style.marginBottom = `${(cfg.issuing_margin_bottom || 8) * scale}px`;
+            issuing.style.textAlign = cfg.issuing_align || 'center';
+        }
+
+        const officerLine = document.getElementById('previewMovOfficerLine');
+        if (officerLine) {
+            officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
+            officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
+        }
+        const officerInner = document.getElementById('previewMovOfficerLineInner');
+        if (officerInner) {
+            if (cfg.trainee_line_layout === 'reverse') {
+                officerInner.className = 'd-flex justify-content-between flex-row-reverse';
+            } else if (cfg.trainee_line_layout === 'center') {
+                officerInner.className = 'd-flex justify-content-center gap-3';
+            } else {
+                officerInner.className = 'd-flex justify-content-between';
+            }
+        }
+
+        const table = document.getElementById('previewMovTable');
+        if (table) {
+            table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
+            table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
+            const labels = table.querySelectorAll('.mov-label-col');
+            labels.forEach(lbl => {
+                lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
+                lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+            });
+            const allTds = table.querySelectorAll('td');
+            allTds.forEach(td => {
+                td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+            });
+        }
+
+        const adminWrapper = document.getElementById('previewMovAdminInstWrapper');
+        if (adminWrapper) {
+            adminWrapper.style.marginTop = `${(cfg.admin_inst_margin_top || 8) * scale}px`;
+        }
+        const adminInst = document.getElementById('previewMovAdminInst');
+        if (adminInst) {
+            adminInst.style.fontSize = `${(cfg.admin_inst_size || 14.5) * scale}px`;
+            adminInst.style.textAlign = cfg.admin_inst_align || 'center';
+        }
+
+        const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+        if (declWrapper) {
+            declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
+        }
+        const declaration = document.getElementById('previewMovDeclaration');
+        if (declaration) {
+            declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
+            declaration.style.textAlign = cfg.declaration_align || 'center';
+        }
+
+        const signersWrapper = document.getElementById('previewMovSignersWrapper');
+        if (signersWrapper) {
+            signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
+        }
+        const signerBlock = document.getElementById('previewMovSignerBlock');
+        if (signerBlock) {
+            signerBlock.style.fontSize = `${(cfg.signer_box_size || 15) * scale}px`;
+            signerBlock.style.textAlign = cfg.signer_box_align || 'center';
+        }
+        const copiesBlock = document.getElementById('previewMovCopiesBlock');
+        if (copiesBlock) {
+            copiesBlock.style.fontSize = `${(cfg.copies_box_size || 14) * scale}px`;
+            copiesBlock.style.textAlign = cfg.copies_box_align || 'right';
+        }
+        const secBottom = document.getElementById('previewMovSecurityBottom');
+        if (secBottom) {
+            secBottom.style.marginTop = `${(cfg.security_bottom_margin_top || 8) * scale}px`;
+        }
+    };
+
+    // ========================================================
+    // تخصيص المسافات ومواقع الكلمات للشهادة (Certificate Layout)
+    // ========================================================
+    const DEFAULT_CERT_LAYOUT = {
+        page_padding_top: 12,
+        page_padding_bottom: 12,
+        page_padding_horizontal: 18,
+        header_margin_bottom: 6,
+        bismillah_size: 15,
+        bismillah_margin_bottom: 2,
+        header_line1_size: 16,
+        header_line2_size: 16,
+        title_size: 32,
+        title_margin_top: 3,
+        title_margin_bottom: 4,
+        title_align: 'center',
+        body_text_size: 15,
+        body_line_height: 1.8,
+        body_margin_bottom: 6,
+        body_align: 'center',
+        signers_margin_top: 8,
+        signers_font_size: 14,
+        footer_margin_top: 5,
+        footer_font_size: 11
+    };
+
+    window.getCertLayoutData = function() {
+        const hiddenInput = document.getElementById('id_cert_layout_config');
+        let current = {};
+        if (hiddenInput && hiddenInput.value) {
+            try {
+                current = JSON.parse(hiddenInput.value);
+            } catch(e) {
+                current = {};
+            }
+        }
+        return Object.assign({}, DEFAULT_CERT_LAYOUT, current);
+    };
+
+    window.initCertLayout = function() {
+        const cfg = window.getCertLayoutData();
+
+        const numFields = [
+            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+            'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
+            'header_line1_size', 'header_line2_size',
+            'title_size', 'title_margin_top', 'title_margin_bottom',
+            'body_text_size', 'body_line_height', 'body_margin_bottom',
+            'signers_margin_top', 'signers_font_size',
+            'footer_margin_top', 'footer_font_size'
+        ];
+
+        numFields.forEach(f => {
+            const el = document.getElementById('cert_cfg_' + f);
+            if (el && cfg[f] !== undefined) {
+                el.value = cfg[f];
+            }
+        });
+
+        ['title_align', 'body_align'].forEach(radioGroup => {
+            const val = cfg[radioGroup];
+            if (val) {
+                const radio = document.querySelector(`input[name="cert_${radioGroup}"][value="${val}"]`);
+                if (radio) radio.checked = true;
+            }
+        });
+
+        window.applyCertLayoutToPreview(cfg);
+    };
+
+    window.updateCertLayout = function() {
+        const numFields = [
+            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+            'header_margin_bottom', 'bismillah_size', 'bismillah_margin_bottom',
+            'header_line1_size', 'header_line2_size',
+            'title_size', 'title_margin_top', 'title_margin_bottom',
+            'body_text_size', 'body_line_height', 'body_margin_bottom',
+            'signers_margin_top', 'signers_font_size',
+            'footer_margin_top', 'footer_font_size'
+        ];
+
+        const cfg = {};
+        numFields.forEach(f => {
+            const el = document.getElementById('cert_cfg_' + f);
+            if (el && el.value !== '') {
+                cfg[f] = parseFloat(el.value);
+            }
+        });
+
+        const titleRadio = document.querySelector('input[name="cert_title_align"]:checked');
+        if (titleRadio) cfg.title_align = titleRadio.value;
+
+        const bodyRadio = document.querySelector('input[name="cert_body_align"]:checked');
+        if (bodyRadio) cfg.body_align = bodyRadio.value;
+
+        const merged = Object.assign({}, DEFAULT_CERT_LAYOUT, cfg);
+
+        const hiddenInput = document.getElementById('id_cert_layout_config');
+        if (hiddenInput) {
+            hiddenInput.value = JSON.stringify(merged);
+        }
+
+        window.applyCertLayoutToPreview(merged);
+    };
+
+    window.applyCertLayoutToPreview = function(cfg) {
+        const scale = 0.55;
+
+        // تطبيق على الشهادة التقديرية العرضية
+        const landscape = document.getElementById('previewLandscapeCert');
+        if (landscape) {
+            landscape.style.padding = `${(cfg.page_padding_top || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px ${(cfg.page_padding_bottom || 12) * 0.8}px ${(cfg.page_padding_horizontal || 18) * 0.8}px`;
+
+            const titleSpan = landscape.querySelector('.my-2 span');
+            if (titleSpan) {
+                titleSpan.style.fontSize = `${(cfg.title_size || 32) * scale * 0.9}px`;
+            }
+            const titleBox = landscape.querySelector('.my-2');
+            if (titleBox) {
+                titleBox.style.marginTop = `${(cfg.title_margin_top || 3) * scale * 2}px`;
+                titleBox.style.marginBottom = `${(cfg.title_margin_bottom || 4) * scale * 2}px`;
+                titleBox.style.textAlign = cfg.title_align || 'center';
+            }
+
+            const bodyBox = landscape.querySelector('.text-muted.small.px-2');
+            if (bodyBox) {
+                bodyBox.style.fontSize = `${(cfg.body_text_size || 15) * scale}px`;
+                bodyBox.style.lineHeight = cfg.body_line_height || 1.8;
+                bodyBox.style.marginBottom = `${(cfg.body_margin_bottom || 6) * scale * 2}px`;
+                bodyBox.style.textAlign = cfg.body_align || 'center';
+            }
+
+            const signersRow = landscape.querySelector('.row.g-1.text-center');
+            if (signersRow) {
+                signersRow.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 2}px`;
+                signersRow.style.fontSize = `${(cfg.signers_font_size || 14) * scale}px`;
+            }
+
+            const footerDiv = landscape.querySelector('.border-top.d-flex');
+            if (footerDiv) {
+                footerDiv.style.marginTop = `${(cfg.footer_margin_top || 5) * scale * 2}px`;
+                footerDiv.style.fontSize = `${(cfg.footer_font_size || 11) * scale}px`;
+            }
+        }
+
+        // تطبيق على الشهادة التفصيلية الطولية
+        const detailed = document.getElementById('previewDetailedCert');
+        if (detailed) {
+            detailed.style.padding = `${(cfg.page_padding_top || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px ${(cfg.page_padding_bottom || 12) * 0.9}px ${(cfg.page_padding_horizontal || 18) * 0.6}px`;
+
+            const basicTitle = document.getElementById('previewDetailedBasicTitle');
+            if (basicTitle) {
+                basicTitle.style.fontSize = `${(cfg.title_size || 32) * scale * 0.75}px`;
+                basicTitle.style.textAlign = cfg.title_align || 'center';
+            }
+
+            const h1 = document.getElementById('previewDetailedHeader1');
+            if (h1) h1.style.fontSize = `${(cfg.header_line1_size || 16) * scale}px`;
+            const h2 = document.getElementById('previewDetailedHeader2');
+            if (h2) h2.style.fontSize = `${(cfg.header_line2_size || 16) * scale}px`;
+
+            const signersDet = detailed.querySelector('.row.g-1.text-center');
+            if (signersDet) {
+                signersDet.style.marginTop = `${(cfg.signers_margin_top || 8) * scale * 1.5}px`;
+                signersDet.style.fontSize = `${(cfg.signers_font_size || 14) * scale * 0.85}px`;
+            }
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.initMovementLayout === 'function') {
+            window.initMovementLayout();
+        }
+        if (typeof window.initCertLayout === 'function') {
+            window.initCertLayout();
+        }
         // تعبئة كافة بيانات المعلم تلقائياً عند اختياره في نافذة إضافة مستخدم
         const createInstSelect = document.querySelector('#addUserModal select[name="instructor"]');
         if (createInstSelect) {

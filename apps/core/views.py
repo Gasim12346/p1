@@ -475,9 +475,11 @@ def admin_dashboard_view(request):
         # Certificate Settings
         'cert_settings': cert_settings,
         'cert_form': cert_form,
+        'cert_layout_json': json.dumps(cert_settings.get_layout(), ensure_ascii=False),
         # Movement Order Settings
         'movement_settings': movement_settings,
         'movement_form': movement_form,
+        'movement_layout_json': json.dumps(movement_settings.get_layout(), ensure_ascii=False),
         # System Branding & Themes
         'system_settings': system_settings,
         'system_form': system_form,

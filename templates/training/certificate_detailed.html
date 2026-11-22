@@ -1,4 +1,5 @@
 {% load static %}
+{% with layout=cert_settings.get_layout %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -35,7 +36,7 @@
             width: 210mm;
             min-height: 297mm;
             background: #ffffff;
-            padding: 12mm 14mm 10mm 14mm;
+            padding: {{ layout.page_padding_top|default:12 }}mm {{ layout.page_padding_horizontal|default:14 }}mm {{ layout.page_padding_bottom|default:10 }}mm {{ layout.page_padding_horizontal|default:14 }}mm !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
@@ -66,11 +67,11 @@
         /* Header typography */
         .cert-header {
             text-align: center;
-            margin-bottom: 4mm;
+            margin-bottom: {{ layout.header_margin_bottom|default:4 }}mm !important;
         }
 
         .header-line-1 {
-            font-size: 16pt;
+            font-size: {{ layout.header_line1_size|default:16 }}pt !important;
             font-weight: bold;
             text-decoration: underline;
             margin-bottom: 2px;
@@ -78,7 +79,7 @@
         }
 
         .header-line-2 {
-            font-size: 15pt;
+            font-size: {{ layout.header_line2_size|default:15 }}pt !important;
             font-weight: bold;
             text-decoration: underline;
             margin-bottom: 4px;
@@ -86,10 +87,13 @@
         }
 
         .header-title {
-            font-size: 18pt;
+            font-size: {{ layout.title_size|default:18 }}pt !important;
             font-weight: 800;
             text-decoration: underline;
             line-height: 1.4;
+            text-align: {{ layout.title_align|default:'center' }} !important;
+            margin-top: {{ layout.title_margin_top|default:2 }}mm !important;
+            margin-bottom: {{ layout.title_margin_bottom|default:2 }}mm !important;
         }
 
         /* Student info table */
@@ -218,10 +222,10 @@
             grid-template-columns: 1fr 1fr;
             row-gap: 5mm;
             column-gap: 15mm;
-            margin-top: 2mm;
+            margin-top: {{ layout.signers_margin_top|default:2 }}mm !important;
             margin-bottom: 3mm;
             text-align: center;
-            font-size: 12pt;
+            font-size: {{ layout.signers_font_size|default:12 }}pt !important;
             line-height: 1.4;
             font-weight: bold;
         }
@@ -235,14 +239,14 @@
         /* Footer block */
         .cert-footer {
             margin-top: auto;
-            padding-top: 2mm;
+            padding-top: {{ layout.footer_margin_top|default:2 }}mm !important;
         }
 
         .footer-meta-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 11pt;
+            font-size: {{ layout.footer_font_size|default:11 }}pt !important;
             font-weight: bold;
             margin-bottom: 3mm;
             padding: 0 5mm;
@@ -288,7 +292,7 @@
                 width: 100% !important;
                 height: 100% !important;
                 min-height: 100vh !important;
-                padding: 6mm 8mm 6mm 8mm !important;
+                padding: {{ layout.page_padding_top|default:6 }}mm {{ layout.page_padding_horizontal|default:8 }}mm {{ layout.page_padding_bottom|default:6 }}mm {{ layout.page_padding_horizontal|default:8 }}mm !important;
                 page-break-after: avoid !important;
                 page-break-inside: avoid !important;
             }
@@ -497,3 +501,4 @@
 </body>
 
 </html>
+{% endwith %}

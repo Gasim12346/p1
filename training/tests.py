@@ -5058,6 +5058,105 @@ class CourseEnrollmentCompositeRankTests(TestCase):
         self.assertEqual(enrollment.current_rank, 'مقدم ركن')
 
 
+class CertificateAndMovementOrderLayoutTests(TestCase):
+    """اختبارات تخصيص أبعاد ومسافات ومواقع نصوص الشهادات وأمر التحرك"""
+
+    def setUp(self):
+        from apps.documents.models import CertificateSettings, MovementOrderSettings
+        self.cert_settings = CertificateSettings.objects.create(
+            header_line_1='إدارة نظم المعلومات',
+            header_line_2='معهد نظم المعلومات'
+        )
+        self.movement_settings = MovementOrderSettings.objects.create(
+            order_title='أمر تحرك رسمي'
+        )
+
+    def test_cert_default_layout(self):
+        """التحقق من الحصول على المسافات الافتراضية للشهادة عند عدم وجود تخصيص"""
+        layout = self.cert_settings.get_layout()
+        self.assertEqual(layout['page_padding_top'], 12)
+        self.assertEqual(layout['page_padding_horizontal'], 18)
+        self.assertEqual(layout['title_size'], 32)
+        self.assertEqual(layout['title_align'], 'center')
+
+    def test_cert_custom_layout_override(self):
+        """التحقق من دمج التخصيصات المحفوظة مع القيم الافتراضية للشهادة"""
+        self.cert_settings.layout_config = {
+            'page_padding_top': 20,
+            'title_size': 44,
+            'title_align': 'right',
+        }
+        self.cert_settings.save()
+        layout = self.cert_settings.get_layout()
+        self.assertEqual(layout['page_padding_top'], 20)
+        self.assertEqual(layout['title_size'], 44)
+        self.assertEqual(layout['title_align'], 'right')
+        # تحقق من بقاء الحقول الأخرى على قيمها الافتراضية
+        self.assertEqual(layout['page_padding_horizontal'], 18)
+
+    def test_movement_order_default_layout(self):
+        """التحقق من الحصول على المسافات الافتراضية لأمر التحرك عند عدم وجود تخصيص"""
+        layout = self.movement_settings.get_layout()
+        self.assertEqual(layout['page_padding_top'], 16)
+        self.assertEqual(layout['page_padding_horizontal'], 20)
+        self.assertEqual(layout['table_label_width'], 130)
+        self.assertEqual(layout['trainee_line_layout'], 'split')
+
+    def test_movement_order_custom_layout_override(self):
+        """التحقق من دمج التخصيصات المحفوظة مع القيم الافتراضية لأمر التحرك"""
+        self.movement_settings.layout_config = {
+            'page_padding_top': 25,
+            'table_label_width': 160,
+            'trainee_line_layout': 'reverse',
+            'issuing_align': 'right',
+        }
+        self.movement_settings.save()
+        layout = self.movement_settings.get_layout()
+        self.assertEqual(layout['page_padding_top'], 25)
+        self.assertEqual(layout['table_label_width'], 160)
+        self.assertEqual(layout['trainee_line_layout'], 'reverse')
+        self.assertEqual(layout['issuing_align'], 'right')
+        self.assertEqual(layout['page_padding_horizontal'], 20)
+
+    def test_cert_form_layout_json_parsing(self):
+        """التحقق من معالجة حقل التنسيقات عند الإرسال عبر نموذج الاستمارة للشهادة"""
+        from apps.documents.forms import CertificateSettingsForm
+        from django.forms.models import model_to_dict
+        import json
+        form_data = model_to_dict(self.cert_settings)
+        form_data['layout_config'] = json.dumps({'title_size': 38, 'body_align': 'center'})
+        form = CertificateSettingsForm(data=form_data, instance=self.cert_settings)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.layout_config.get('title_size'), 38)
+        self.assertEqual(saved.layout_config.get('body_align'), 'center')
+
+    def test_movement_form_layout_json_parsing(self):
+        """التحقق من معالجة حقل التنسيقات عند الإرسال عبر نموذج استمارة أمر التحرك"""
+        from apps.documents.forms import MovementOrderSettingsForm
+        from django.forms.models import model_to_dict
+        import json
+        form_data = model_to_dict(self.movement_settings)
+        form_data['layout_config'] = json.dumps({'page_padding_top': 18, 'trainee_line_layout': 'center'})
+        form = MovementOrderSettingsForm(data=form_data, instance=self.movement_settings)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.layout_config.get('page_padding_top'), 18)
+        self.assertEqual(saved.layout_config.get('trainee_line_layout'), 'center')
+
+    def test_form_invalid_json_fallback(self):
+        """التحقق من المعالجة الآمنة للقيم غير الصالحة كـ JSON"""
+        from apps.documents.forms import MovementOrderSettingsForm
+        from django.forms.models import model_to_dict
+        form_data = model_to_dict(self.movement_settings)
+        form_data['layout_config'] = 'invalid-not-json'
+        form = MovementOrderSettingsForm(data=form_data, instance=self.movement_settings)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.layout_config, {})
+
+
+
 
 
 
