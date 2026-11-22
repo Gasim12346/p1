@@ -5438,11 +5438,7 @@
         declaration_line_height: 1.65,
         declaration_margin_top: 10,
         declaration_align: 'center',
-        traveler_sig_position: 'declaration',
         traveler_sig_align: 'left',
-        traveler_sig_size: 14,
-        traveler_sig_margin_top: 4,
-        
         signatures_margin_top: 16,
         footer_layout: 'copies_first',
         signer_box_size: 15,
@@ -5481,12 +5477,114 @@
     ];
 
     // ========================================================
-    // ========================================================
     // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
     // ========================================================
-    window.initMovementLayout = function () {
-        const cfg = window.getMovementLayoutData();
+    const DEFAULT_MOV_LAYOUT = {
+        page_padding_top: 20,
+        page_padding_bottom: 18,
+        page_padding_horizontal: 22,
+        bismillah_size: 17,
+        bismillah_margin_bottom: 6,
+        bismillah_align: 'center',
+        security_size: 18,
+        security_margin_bottom: 6,
+        security_align: 'center',
+        title_size: 24,
+        title_margin_bottom: 10,
+        title_align: 'center',
+        issuing_size: 15,
+        issuing_line_height: 1.6,
+        issuing_margin_bottom: 6,
+        issuing_align: 'center',
+        trainee_line_size: 16,
+        trainee_line_margin_bottom: 8,
+        trainee_line_layout: 'side_by_side_right',
+        trainee_line_gap: 20,
+        trainee_nco_align: 'right',
+        table_font_size: 15.5,
+        table_row_padding: 2.8,
+        table_label_width: 135,
+        table_margin_bottom: 12,
+        admin_inst_header_align: 'center',
+        admin_inst_size: 14.5,
+        admin_inst_line_height: 1.65,
+        admin_inst_margin_top: 10,
+        admin_inst_align: 'center',
+        declaration_header_align: 'center',
+        declaration_size: 14.5,
+        declaration_line_height: 1.65,
+        declaration_margin_top: 10,
+        declaration_align: 'center',
+        traveler_sig_position: 'declaration',
+        traveler_sig_align: 'left',
+        traveler_sig_size: 14,
+        traveler_sig_margin_top: 4,
+        signatures_margin_top: 16,
+        footer_layout: 'copies_first',
+        signer_box_size: 15,
+        signer_box_align: 'right',
+        copies_box_size: 14,
+        copies_box_align: 'right',
+        security_bottom_margin_top: 14
+    };
 
+    const numFields = [
+        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+        'bismillah_size', 'bismillah_margin_bottom',
+        'security_size', 'security_margin_bottom',
+        'title_size', 'title_margin_bottom',
+        'issuing_size', 'issuing_margin_bottom',
+        'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+        'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+        'admin_inst_size', 'admin_inst_margin_top',
+        'declaration_size', 'declaration_margin_top',
+        'signatures_margin_top', 'signer_box_size',
+        'copies_box_size', 'security_bottom_margin_top'
+    ];
+
+    numFields.forEach(f => {
+        const el = document.getElementById('mov_cfg_' + f);
+        if (el && cfg[f] !== undefined) {
+            el.value = cfg[f];
+        }
+    });
+
+    const footerSelect = document.getElementById('mov_cfg_footer_layout');
+    if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+
+    const numFields = [
+        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+        'bismillah_size', 'bismillah_margin_bottom',
+        'security_size', 'security_margin_bottom',
+        'title_size', 'title_margin_bottom',
+        'issuing_size', 'issuing_margin_bottom',
+        'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+        'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+        'admin_inst_size', 'admin_inst_margin_top',
+        'declaration_size', 'declaration_margin_top',
+        'traveler_sig_size', 'traveler_sig_margin_top',
+        'signatures_margin_top', 'signer_box_size',
+        'copies_box_size', 'security_bottom_margin_top'
+    ];
+
+    const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+    if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
+
+    movRadioGroupDefinitions.forEach(rg => {
+        const val = cfg[rg.key];
+        if (val) {
+            const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
+            if (radio) radio.checked = true;
+        }
+    });
+
+    const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+    if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
+
+    window.applyMovementLayoutToPreview(cfg);
+                };
+
+    window.updateMovementLayout = function () {
         const numFields = [
             'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
             'bismillah_size', 'bismillah_margin_bottom',
@@ -5497,39 +5595,22 @@
             'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
             'admin_inst_size', 'admin_inst_margin_top',
             'declaration_size', 'declaration_margin_top',
-            'traveler_sig_size', 'traveler_sig_margin_top',
             'signatures_margin_top', 'signer_box_size',
             'copies_box_size', 'security_bottom_margin_top'
         ];
 
+        const cfg = {};
         numFields.forEach(f => {
             const el = document.getElementById('mov_cfg_' + f);
-            if (el && cfg[f] !== undefined) {
-                el.value = cfg[f];
+            if (el && el.value !== '') {
+                cfg[f] = parseFloat(el.value);
             }
         });
 
         const footerSelect = document.getElementById('mov_cfg_footer_layout');
-        if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+        if (footerSelect) cfg.footer_layout = footerSelect.value;
 
-        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
-        if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
-
-        movRadioGroupDefinitions.forEach(rg => {
-            const val = cfg[rg.key];
-            if (val) {
-                const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
-                if (radio) radio.checked = true;
-            }
-        });
-
-        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
-        if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
-
-        window.applyMovementLayoutToPreview(cfg);
-    };
-
-window.updateMovementLayout = function () {
+        window.updateMovementLayout = function () {
             const numFields = [
                 'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
                 'bismillah_size', 'bismillah_margin_bottom',
@@ -5675,6 +5756,24 @@ window.updateMovementLayout = function () {
                 adminInst.style.textAlign = cfg.admin_inst_align || 'center';
             }
 
+            const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+            if (declWrapper) {
+                declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
+            }
+            const declHeader = document.getElementById('previewMovDeclarationHeader');
+            if (declHeader) {
+                declHeader.style.textAlign = cfg.declaration_header_align || 'center';
+            }
+            const declaration = document.getElementById('previewMovDeclaration');
+            if (declaration) {
+                declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
+                declaration.style.textAlign = cfg.declaration_align || 'center';
+            }
+            const travSig = document.getElementById('previewMovTravelerSign');
+            if (travSig) {
+                travSig.style.textAlign = cfg.traveler_sig_align || 'left';
+            }
+
             const signersWrapper = document.getElementById('previewMovSignersWrapper');
             if (signersWrapper) {
                 signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
@@ -5713,6 +5812,7 @@ window.updateMovementLayout = function () {
                 travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
 
                 const pos = cfg.traveler_sig_position || 'declaration';
+                const declWrapper = document.getElementById('previewMovDeclarationWrapper');
                 const table = document.getElementById('previewMovTable');
                 const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
 
@@ -5728,8 +5828,6 @@ window.updateMovementLayout = function () {
                     declWrapper.appendChild(travSig);
                 }
             }
-        };
-
 
             // ========================================================
             // تخصيص المسافات ومواقع الكلمات للشهادة (Certificate Layout)
@@ -6243,8 +6341,6 @@ window.updateMovementLayout = function () {
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        initAnalyticsCharts();
-
         if (typeof window.initMovementLayout === 'function') {
             window.initMovementLayout();
         }

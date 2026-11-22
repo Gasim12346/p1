@@ -1935,12 +1935,12 @@ def session_discipline_attendance_view(request, session_id):
             # 1. إزالة مخالفات الضبط والربط السابقة لإعادة رصدها بدقة بناءً على الكشف الجديد
             en.discipline_infractions.all().delete()
 
-            # 2. رصد أيام الغياب والراحة الطبية من تاريخ بداية الدورة لنهايتها (ما عدا أيام الجمعة)
+            # 2. رصد أيام الغياب والراحة الطبية والحضور من تاريخ بداية الدورة لنهايتها (ما عدا أيام الجمعة)
             for day_item in days_list:
                 day_key = day_item[0]
                 day_name = day_item[1]
                 day_dt = day_item[3] if (len(day_item) > 3 and day_item[3]) else timezone.now().date()
-                status = request.POST.get(f'att_{en.id}_{day_key}', 'present').strip()
+                status = request.POST.get(f'att_{en.id}_{day_key}', 'empty').strip()
                 if status == 'medical_rest':
                     DisciplineInfraction.objects.create(
                         enrollment=en,
@@ -1957,6 +1957,14 @@ def session_discipline_attendance_view(request, session_id):
                         notes=f'[{day_key}] [{day_name}] غياب ليوم كامل بدون سبب',
                         points=Decimal('2.0')
                     )
+                elif status == 'present':
+                    DisciplineInfraction.objects.create(
+                        enrollment=en,
+                        infraction_type='present',
+                        date=day_dt,
+                        notes=f'[{day_key}] [{day_name}] حضور مسجل',
+                        points=Decimal('0.0')
+                    )
 
             # 3. رصد المخالفات الأخرى إن وجدت
             other_infs = request.POST.getlist(f'other_inf_{en.id}[]')
@@ -1964,7 +1972,7 @@ def session_discipline_attendance_view(request, session_id):
                 other_infs = request.POST.getlist(f'other_inf_{en.id}')
 
             for inf_code in other_infs:
-                if inf_code in DisciplineInfraction.POINTS_MAP:
+                if inf_code in DisciplineInfraction.POINTS_MAP and inf_code != 'present':
                     DisciplineInfraction.objects.create(
                         enrollment=en,
                         infraction_type=inf_code,
@@ -2015,10 +2023,10 @@ def session_discipline_attendance_view(request, session_id):
                 if f'[{day_key}]' in (inf.notes or '') or f'[{day_name}]' in (inf.notes or ''):
                     matched = inf
                     break
-                if day_dt and inf.date == day_dt and inf.infraction_type in ('medical_rest', 'absent_full_day'):
+                if day_dt and inf.date == day_dt and inf.infraction_type in ('medical_rest', 'absent_full_day', 'present'):
                     matched = inf
                     break
-            status = matched.infraction_type if matched else 'present'
+            status = matched.infraction_type if matched else 'empty'
             days_status[day_key] = status
             days_info.append({
                 'key': day_key,
@@ -2031,10 +2039,10 @@ def session_discipline_attendance_view(request, session_id):
             is_day_inf = any(
                 f'[{d_item[0]}]' in (inf.notes or '') or
                 f'[{d_item[1]}]' in (inf.notes or '') or
-                (len(d_item) > 3 and d_item[3] and inf.date == d_item[3] and inf.infraction_type in ('medical_rest', 'absent_full_day'))
+                (len(d_item) > 3 and d_item[3] and inf.date == d_item[3] and inf.infraction_type in ('medical_rest', 'absent_full_day', 'present'))
                 for d_item in days_list
             )
-            if not is_day_inf:
+            if not is_day_inf and inf.infraction_type != 'present':
                 other_infs_active.append({
                     'code': inf.infraction_type,
                     'display': inf.get_infraction_type_display(),

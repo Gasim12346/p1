@@ -931,6 +931,7 @@ class DisciplineInfraction(models.Model):
     """سجل مخالفات الضبط والربط للدارس في الدورة"""
 
     INFRACTION_CHOICES = [
+        ('present', 'حضور مسجل (بدون خصم)'),
         ('delay_lecture', 'أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة)'),
         ('medical_rest', 'ب. الراحة الطبية لليوم الواحد (خصم نصف درجة)'),
         ('absent_full_day', 'ج. الغياب ليوم كامل (خصم درجتان)'),
@@ -942,6 +943,7 @@ class DisciplineInfraction(models.Model):
     ]
 
     POINTS_MAP = {
+        'present': Decimal('0.0'),
         'delay_lecture': Decimal('0.5'),
         'medical_rest': Decimal('0.5'),
         'absent_full_day': Decimal('2.0'),
