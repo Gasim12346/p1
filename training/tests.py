@@ -5085,6 +5085,11 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
 
     def setUp(self):
         from apps.documents.models import CertificateSettings, MovementOrderSettings
+        from django.contrib.auth.models import User
+        self.admin_user = User.objects.create_superuser(username='test_admin_layout', password='password123', email='admin@test.com')
+        if hasattr(self.admin_user, 'profile'):
+            self.admin_user.profile.role = 'admin'
+            self.admin_user.profile.save()
         self.cert_settings = CertificateSettings.objects.create(
             header_line_1='إدارة نظم المعلومات',
             header_line_2='معهد نظم المعلومات'
@@ -5210,6 +5215,27 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         self.assertEqual(layout['title_align'], 'right')
         self.assertEqual(layout['declaration_header_align'], 'right')
         self.assertEqual(layout['traveler_sig_align'], 'right')
+
+    def test_save_movement_order_settings_post_and_redirect_dashboard(self):
+        """التحقق من حفظ إعدادات وتنسيقات أمر التحرك وإعادة التوجيه إلى شاشة لوحة القيادة بنجاح"""
+        import json
+        from django.forms.models import model_to_dict
+        self.client.force_login(self.admin_user)
+        form_data = {k: v for k, v in model_to_dict(self.movement_settings).items() if v is not None}
+        form_data.pop('watermark_image', None)
+        form_data['layout_config'] = json.dumps({
+            'trainee_line_layout': 'side_by_side_right',
+            'trainee_line_gap': 20,
+            'footer_layout': 'copies_first',
+            'signer_box_align': 'right',
+            'page_padding_top': 25,
+        })
+        res = self.client.post(reverse('training:movement_order_settings_update'), form_data, follow=True)
+        self.assertEqual(res.status_code, 200)
+        self.movement_settings.refresh_from_db()
+        self.assertEqual(self.movement_settings.layout_config.get('trainee_line_layout'), 'side_by_side_right')
+        self.assertEqual(self.movement_settings.layout_config.get('footer_layout'), 'copies_first')
+        self.assertEqual(self.movement_settings.layout_config.get('page_padding_top'), 25)
 
 
 
