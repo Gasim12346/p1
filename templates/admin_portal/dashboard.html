@@ -3278,6 +3278,9 @@
                                     </div>
                                 </div>
 
+                                    </div> <!-- Close card of form -->
+                                </div> <!-- Close col-12 col-xl-7 -->
+
                                 <!-- عمود المعاينة الحية لأمر التحرك -->
                                 <div class="col-12 col-xl-5">
                                     <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 85px;">
@@ -3349,25 +3352,15 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- سطر بيانات الدارس الضابط -->
-                                                <div id="previewMovOfficerLine"
-                                                    style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                                    <div id="previewMovOfficerLineInner">
-                                                        <span>الأشخاص : رقم البطاقة 235402384 ملازم تقني / علي أحمد
-                                                            النيل</span>
+                                                <!-- سطر بيانات الدارس ضابط الصف -->
+                                                <div id="previewMovNcoLine"
+                                                    style="display: none; margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
+                                                    <div id="previewMovNcoLineInner">
+                                                        <span>الأشخاص : نمرة 23431531 رقيب أول إدارة أحمد صديق كرار</span>
                                                     </div>
                                                 </div>
 
-                                                <!-- التعليمات الإدارية -->
-                                                <div id="previewMovAdminInstWrapper" style="margin-top: 8px;">
-                                                    <div id="previewMovAdminInstHeader"
-                                                        style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">
-                                                        التعليمات الادارية</div>
-                                                    <div id="previewMovAdminInst"
-                                                        style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
-                                                        {{ movement_settings.admin_instructions }}
-                                                    </div>
-                                                </div>
+
 
                                                 <!-- جدول بيانات ومسار التحرك -->
                                                 <table id="previewMovTable"
@@ -3466,13 +3459,7 @@
                                                         توقيع المسافر : ............................
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div id="previewMovTravelerSign"
-                                                style="text-align: left; font-size: 0.67rem; font-weight: bold; margin-top: 4px;">
-                                                توقيع المسافر : ............................
-                                            </div>
-                                        </div>
-                                    </div>
+
 
                                     <!-- التوقيعات والتذييل -->
                                     <div id="previewMovSignersWrapper"
@@ -3844,6 +3831,23 @@
                 </div>
             </div>
         </div>
+
+            <!-- بطاقة الفلاتر والبحث المتقدم -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-funnel-fill text-primary"></i>
+                        <h6 class="fw-bold mb-0 text-dark">فلاتر البحث وتتبع مسار المستخدمين</h6>
+                    </div>
+                    {% if activity_user or activity_action or activity_category or activity_date != 'all' or activity_q %}
+                        <a href="{% url 'training:admin_dashboard' %}?tab=activity-log#pane-activity-log" class="badge bg-danger bg-opacity-10 text-danger text-decoration-none px-3 py-1 rounded-pill">
+                            <i class="bi bi-x-circle me-1"></i> إعادة ضبط الفلاتر
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-3 p-md-4">
+                    <form method="get" action="{% url 'training:admin_dashboard' %}#pane-activity-log" class="row g-3">
+                        <input type="hidden" name="tab" value="activity-log">
 
         <!-- تتبع مستخدم محدد -->
         <div class="col-md-6 col-lg-3">
@@ -4781,13 +4785,18 @@
                     </div>
                     <h5 class="fw-bold text-dark mb-2">هل أنت متأكد من تفريغ سجل النشاط والعمليات؟</h5>
                     <p class="text-muted small mb-0">
-                        سيتم مسح وتصفير كافة السجلات التاريخية السابقة ({{ activity_logs_total }} عملية)،
-                        وسيتم
-                        تسجيل وتوثيق عملية التفريغ نفسها كأول إجراء جديد في السجل.
+                        سيتم مسح وتصفير كافة السجلات التاريخية السابقة ({{ activity_logs_total }} عملية)، وسيتم تسجيل وتوثيق عملية التفريغ نفسها كأول إجراء جديد في السجل.
                     </p>
                 </div>
+                <div class="modal-footer bg-light p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">نعم، تفريغ السجل الآن</button>
+                </div>
+            </form>
         </div>
-    </div> <!-- Close row g-4 -->
+    </div>
+</div>
+
 </div> <!-- Close container-fluid p-0 -->
 {% endblock %}
 
@@ -6945,347 +6954,6 @@
     // =====================================================================
     initAnalyticsCharts();
     });
-
-    // متغيرات المخططات البيانية وبيانات التحليلات
-    const GRADE_DIST_DATA = {{ grade_distribution_json| safe }};
-    const FORCES_DIST_DATA = {{ forces_list_json| safe }};
-    const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
-    const FORCES_COLOR_PALETTE = [
-        '#0284c7', // أزرق سماوي / جوية
-        '#15803d', // أخضر عسكري / برية
-        '#1e3a8a', // كحلي ملكي / بحرية
-        '#7c3aed', // بنفسجي / دفاع جوي
-        '#d97706', // ذهبي / حرس
-        '#059669', // تركواز / شرطة عسكرية
-        '#e11d48', // أحمر داكن / أمن
-        '#475569'  // رمادي / أخرى
-    ];
-
-    let currentGradeChartType = 'doughnut';
-    let currentForceChartType = 'bar';
-
-    // إضافة ألوان النقاط التعريفية لبطاقات القوات
-    function applyForcePillColors() {
-        const dots = document.querySelectorAll('.force-color-dot');
-        dots.forEach((dot, idx) => {
-            const color = FORCES_COLOR_PALETTE[idx % FORCES_COLOR_PALETTE.length];
-            dot.style.backgroundColor = color;
-        });
-    }
-
-    // إضافة نص إحصائي بمركز المخطط الدائري المجوف
-    const centerDonutGradePlugin = {
-        id: 'centerDonutGradePlugin',
-        afterDraw(chart) {
-            if (chart.config.type !== 'doughnut') return;
-            const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const centerX = left + width / 2;
-            const centerY = top + height / 2;
-
-            ctx.font = '900 26px Cairo, sans-serif';
-            ctx.fillStyle = '#0f172a';
-            ctx.fillText(TOTAL_GRADED_TRAINEES, centerX, centerY - 10);
-
-            ctx.font = '700 12px Cairo, sans-serif';
-            ctx.fillStyle = '#64748b';
-            ctx.fillText('دارس معتمد', centerX, centerY + 14);
-            ctx.restore();
-        }
-    };
-
-    function renderGradesChart(chartType) {
-        const canvas = document.getElementById('gradesAnalyticsChart');
-        if (!canvas || typeof Chart === 'undefined') return;
-
-        if (window.gradesChartInstance) {
-            window.gradesChartInstance.destroy();
-        }
-
-        const labels = GRADE_DIST_DATA.map(d => d.label);
-        const dataValues = GRADE_DIST_DATA.map(d => d.count);
-        const backgroundColors = GRADE_DIST_DATA.map(d => d.color);
-
-        Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
-
-        if (chartType === 'doughnut') {
-            window.gradesChartInstance = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataValues,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
-                        hoverOffset: 12,
-                        borderRadius: 6,
-                        spacing: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '72%',
-                    animation: {
-                        duration: 1200,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            boxPadding: 6,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const item = GRADE_DIST_DATA[idx];
-                                    return ` ${item.count} دارس بنسبة (${item.pct}%)`;
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [centerDonutGradePlugin]
-            });
-        } else {
-            // نمط الأعمدة
-            window.gradesChartInstance = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'عدد الدارسين',
-                        data: dataValues,
-                        backgroundColor: backgroundColors,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        maxBarThickness: 46
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            boxPadding: 6,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const item = GRADE_DIST_DATA[idx];
-                                    return ` ${item.count} دارس بنسبة (${item.pct}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: { precision: 0, color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    function renderForcesChart(chartType) {
-        const canvas = document.getElementById('forcesAnalyticsChart');
-        if (!canvas || typeof Chart === 'undefined') return;
-
-        if (window.forcesChartInstance) {
-            window.forcesChartInstance.destroy();
-        }
-
-        const labels = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.name) : ['لا توجد بيانات'];
-        const dataValues = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.count) : [0];
-        const colors = FORCES_DIST_DATA.length
-            ? FORCES_DIST_DATA.map((_, i) => FORCES_COLOR_PALETTE[i % FORCES_COLOR_PALETTE.length])
-            : ['#cbd5e1'];
-
-        if (chartType === 'bar') {
-            // نمط الأعمدة الأفقية
-            window.forcesChartInstance = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'عدد المنتسبين',
-                        data: dataValues,
-                        backgroundColor: colors,
-                        borderRadius: 8,
-                        maxBarThickness: 34
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1200,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
-                                    return ` ${context.raw} دارس بنسبة (${pct}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: { precision: 0, color: '#94a3b8' }
-                        },
-                        y: {
-                            grid: { display: false },
-                            ticks: { font: { size: 12, weight: '700' }, color: '#334155' }
-                        }
-                    }
-                }
-            });
-        } else {
-            // نمط المخطط القطبي / الدائري
-            window.forcesChartInstance = new Chart(canvas, {
-                type: 'polarArea',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataValues,
-                        backgroundColor: colors.map(c => c + 'cc'),
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1100,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { font: { size: 11, weight: 'bold' }, boxWidth: 12, padding: 12 }
-                        },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
-                                    return ` ${context.raw} دارس (${pct}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        r: {
-                            ticks: { display: false },
-                            grid: { color: '#f1f5f9' }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    // تبديل نمط مخطط التقديرات
-    function switchGradeChartType(type) {
-        currentGradeChartType = type;
-        const btnDoughnut = document.getElementById('btnGradeChartDoughnut');
-        const btnBar = document.getElementById('btnGradeChartBar');
-
-        if (btnDoughnut && btnBar) {
-            if (type === 'doughnut') {
-                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-            } else {
-                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-            }
-        }
-        renderGradesChart(type);
-    }
-
-    // تبديل نمط مخطط القوات
-    function switchForceChartType(type) {
-        currentForceChartType = type;
-        const btnBar = document.getElementById('btnForceChartBar');
-        const btnPolar = document.getElementById('btnForceChartPolar');
-
-        if (btnBar && btnPolar) {
-            if (type === 'bar') {
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-            } else {
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-            }
-        }
-        renderForcesChart(type);
-    }
-
-    // تهيئة المخططات عند تحميل الصفحة
-    function initAnalyticsCharts() {
-        applyForcePillColors();
-        renderGradesChart(currentGradeChartType);
-        renderForcesChart(currentForceChartType);
-
-        // إعادة تشغيل الأنيميشن تلقائياً عند النقر على تبويب التحليلات
-        const tabAnalyticsBtn = document.getElementById('tab-analytics');
-        if (tabAnalyticsBtn) {
-            tabAnalyticsBtn.addEventListener('shown.bs.tab', function () {
-                if (window.gradesChartInstance) window.gradesChartInstance.update();
-                if (window.forcesChartInstance) window.forcesChartInstance.update();
-            });
-        }
-    }
 
     // دوال التنقل المباشر
     function openUserPermissionsMatrix(userId) {
