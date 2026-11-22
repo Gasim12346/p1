@@ -487,10 +487,10 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
-                        <!-- الجهة القادمة (الجهة الطالبة) -->
+                        <!-- الجهة القادمة (الوحدة) -->
                         <div class="col-md-6 col-lg-4">
                             <div class="p-3 bg-light rounded-3 h-100 border">
-                                <span class="small text-muted d-block mb-1">الجهة القادمة (الجهة الطالبة):</span>
+                                <span class="small text-muted d-block mb-1">الجهة القادمة (الوحدة):</span>
                                 <strong class="text-dark fs-6 d-block" id="screenRequestSourceEntity">-</strong>
                             </div>
                         </div>
@@ -759,7 +759,7 @@
                             <tr>
                                 <th style="width: 14%;">الطلب والإشارة</th>
                                 <th style="width: 24%;">الغرض من الطلب</th>
-                                <th style="width: 18%;">الجهة الطالبة والإيفاد</th>
+                                <th style="width: 18%;">الوحدة (الجهة القادمة) والإيفاد</th>
                                 <th style="width: 16%;">موعد انعقاد الامتحان</th>
                                 <th style="width: 8%;" class="text-center">الدارسون</th>
                                 <th style="width: 12%;">الحالة الرسمية</th>
@@ -1025,29 +1025,53 @@
                             <input type="text" class="form-control font-monospace" id="requestSignalNumberInput" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="أدخل رقم الإشارة (أرقام فقط، مثل 00452)..." required>
                         </div>
 
-                        <!-- 3. الجهة القادمة منها (تدعم البحث وإضافة وحدة جديدة مع التأكيد) -->
+                        <!-- 3. الجهة القادمة منها (الوحدة العسكرية - قائمة منسدلة مع حقل بحث ذكي) -->
                         <div class="col-md-6">
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label fw-bold small text-dark mb-0 required" for="requestSourceEntityInput">
-                                    <i class="bi bi-building text-primary me-1"></i>الجهة القادمة منها (الجهة الطالبة)
+                                <label class="form-label fw-bold small text-dark mb-0 required" id="requestSourceEntityLabel" for="sourceUnitDropdownBtn">
+                                    <i class="bi bi-shield-fill text-primary me-1"></i>الجهة القادمة منها (الوحدة)
                                 </label>
-                                <button type="button" class="btn btn-link p-0 text-decoration-none small text-primary fw-bold" style="font-size: 0.78rem;" onclick="promptAddNewSourceEntity()" title="إضافة جهة أو تشكيل جديد">
-                                    <i class="bi bi-plus-circle me-1"></i>+ إضافة جهة جديدة
+                                <button type="button" class="btn btn-link p-0 text-decoration-none small text-primary fw-bold" style="font-size: 0.78rem;" onclick="promptAddNewSourceEntity()" title="إضافة وحدة عسكرية جديدة">
+                                    <i class="bi bi-plus-circle me-1"></i>+ إضافة وحدة جديدة
                                 </button>
                             </div>
-                            <input list="sourceEntitySuggestionsList" class="form-control" id="requestSourceEntityInput" placeholder="ابحث بالاسم أو اكتب اسماً جديداً..." required>
-                            <datalist id="sourceEntitySuggestionsList">
-                                <option value="قيادة سلاح المدرعات (الشجرة)">
-                                <option value="قيادة سلاح المهندسين (أم درمان)">
-                                <option value="إدارة الملحقيات العسكرية (الخرطوم)">
-                                <option value="هيئة التدريب - القيادة العامة">
-                                <option value="قيادة الفرقة السابعة مشاة">
-                                <option value="كلية القادة والأركان المشتركة">
-                                <option value="قيادة القوات الجوية السودانية">
-                                <option value="قاعدة وادي سيدنا العسكرية">
-                                <option value="قيادة القوات البحرية (بورتسودان)">
-                                <option value="قيادة قوات الدفاع الجوي السوداني">
-                            </datalist>
+
+                            <!-- القائمة المنسدلة الذكية للوحدات العسكرية مع البحث الفوري -->
+                            <div class="dropdown position-relative" id="smartUnitsDropdownWrapper">
+                                <button class="form-select text-start d-flex align-items-center justify-content-between w-100 bg-white shadow-none" type="button" id="sourceUnitDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="cursor: pointer; min-height: 38px;">
+                                    <span id="selectedSourceUnitDisplay" class="text-truncate text-muted">
+                                        <i class="bi bi-shield-shaded me-1 text-secondary"></i>-- اختر الوحدة من القائمة --
+                                    </span>
+                                    <i class="bi bi-chevron-down text-muted small ms-2"></i>
+                                </button>
+
+                                <div class="dropdown-menu dropdown-menu-end w-100 p-2 shadow-lg border rounded-3 mt-1" id="smartUnitsDropdownMenu" style="max-height: 380px; overflow-y: hidden; z-index: 1060; min-width: 100%;">
+                                    <!-- حقل البحث الذكي المثبت بأعلى القائمة -->
+                                    <div class="p-1 pb-2 border-bottom mb-2 bg-white">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-primary"></i></span>
+                                            <input type="text" class="form-control bg-light border-start-0" id="smartUnitSearchInput" placeholder="بحث ذكي عن اسم الوحدة أو التشكيل..." oninput="handleSmartUnitSearch(this.value)" autocomplete="off">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="clearSmartUnitSearch()" title="مسح حقل البحث">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between mt-1 px-1">
+                                            <small class="text-muted" style="font-size: 0.72rem;" id="smartUnitSearchResultsCount">الوحدات والتشكيلات العسكرية المعتمدة</small>
+                                            <a href="javascript:void(0)" onclick="promptAddNewSourceEntity()" class="text-primary text-decoration-none fw-bold" style="font-size: 0.72rem;">
+                                                <i class="bi bi-plus-circle me-1"></i>إضافة وحدة أخرى
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- قائمة الوحدات مقسمة حسب القوى والتصنيفات العسكرية -->
+                                    <div id="smartUnitsListItems" style="max-height: 270px; overflow-y: auto;">
+                                        <!-- تولد وتحدث ديناميكياً بواسطة JavaScript -->
+                                    </div>
+                                </div>
+
+                                <!-- الحقل المخفي المعتمد بالنظام لضمان توافق التحقق والإرسال والتعديل -->
+                                <input type="hidden" id="requestSourceEntityInput" name="source_entity" value="" required>
+                            </div>
                         </div>
 
                         <!-- 4. تصنيف الطلب (ضباط / ضباط صف / مدنيين - يحدد فئة البحث الافتراضية وقابل للتعديل قبل التأكيد) -->
@@ -1913,13 +1937,13 @@
                     </select>
                 </div>
 
-                <!-- فلتر 3: الجهة القادمة منها -->
+                <!-- فلتر 3: الجهة القادمة منها (الوحدة) -->
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-dark" for="filterSelectSource">
-                        <i class="bi bi-building text-primary me-1"></i>الجهة القادمة منها
+                        <i class="bi bi-shield-fill text-primary me-1"></i>الجهة القادمة منها (الوحدة)
                     </label>
                     <select class="form-select" id="filterSelectSource" onchange="selectFilterValue('source_entity', this.value)">
-                        <option value="all">كافة الجهات</option>
+                        <option value="all">كافة الوحدات والجهات</option>
                     </select>
                 </div>
 
@@ -2291,19 +2315,307 @@
         ]
     };
 
-    // قوائم اقتراحات الجهات الطالبة ودول الإيفاد (السياق السوداني، تحفظ الإضافات في التخزين المحلي)
-    let SOURCE_ENTITY_SUGGESTIONS = [
-        'قيادة سلاح المدرعات (الشجرة)',
-        'قيادة سلاح المهندسين (أم درمان)',
-        'إدارة الملحقيات العسكرية (الخرطوم)',
-        'هيئة التدريب - القيادة العامة',
-        'قيادة الفرقة السابعة مشاة',
-        'كلية القادة والأركان المشتركة',
-        'قيادة القوات الجوية السودانية',
-        'قاعدة وادي سيدنا العسكرية',
-        'قيادة القوات البحرية (بورتسودان)',
-        'قيادة قوات الدفاع الجوي السوداني'
+    // =========================================================================
+    // دليل الوحدات والتشكيلات العسكرية السودانية القياسية (مفهرسة للقائمة الذكية)
+    // =========================================================================
+    const MILITARY_UNITS_CATALOG = [
+        {
+            category: 'الأسلحة والقيادات العامة (القوات البرية)',
+            badgeClass: 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
+            units: [
+                'سلاح المشاة',
+                'سلاح المدرعات (الشجرة)',
+                'سلاح المدفعية',
+                'سلاح الإشارة',
+                'سلاح المهندسين (أم درمان)',
+                'سلاح الصيانة',
+                'سلاح النقل',
+                'الشرطة العسكرية',
+                'شعبة الاستخبارات العسكرية',
+                'لواء القوات الخاصة',
+                'إدارة العمليات الحربية',
+                'إدارة التدريب',
+                'إدارة نظم المعلومات والحاسب الآلي',
+                'الإدارة المالية والمحاسبة',
+                'هيئة التدريب - القيادة العامة',
+                'إدارة الملحقيات العسكرية (الخرطوم)',
+                'هيئة الإمداد والتموين',
+                'قيادة الفرقة السابعة مشاة',
+                'قيادة القوات البرية'
+            ]
+        },
+        {
+            category: 'القوات الجوية',
+            badgeClass: 'bg-info bg-opacity-10 text-dark border border-info border-opacity-25',
+            units: [
+                'قيادة القوات الجوية السودانية',
+                'قاعدة وادي سيدنا الجوية',
+                'قاعدة الشهيد مختار الجوية',
+                'قاعدة الأبيض الجوية',
+                'قاعدة مروي الجوية',
+                'جناح المقاتلات',
+                'جناح النقل الجوي',
+                'جناح المروحيات',
+                'مجمع صيانة الطيران',
+                'الملاحة والمراقبة الجوية',
+                'إدارة نظم المعلومات الجوية',
+                'الإدارة المالية الجوية',
+                'كلية القوات الجوية'
+            ]
+        },
+        {
+            category: 'القوات البحرية',
+            badgeClass: 'bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25',
+            units: [
+                'قيادة القوات البحرية (بورتسودان)',
+                'قاعدة بورتسودان البحرية',
+                'قاعدة فلامنجو البحرية',
+                'أسطول الزوارق والسفن',
+                'لواء المشاة البحرية',
+                'جناح الضفادع البشرية',
+                'ورش الصيانة البحرية',
+                'إدارة نظم المعلومات البحرية',
+                'الإدارة المالية البحرية',
+                'جناح الاتصالات الساحلية',
+                'مركز تدريب القوات البحرية'
+            ]
+        },
+        {
+            category: 'قوات الدفاع الجوي',
+            badgeClass: 'bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25',
+            units: [
+                'قيادة قوات الدفاع الجوي السوداني',
+                'لواء الصواريخ م/ط',
+                'كتائب المدفعية م/ط',
+                'مراكز الرادارات والإنذار المبكر',
+                'قيادة السيطرة والتوجيه',
+                'الحرب الإلكترونية',
+                'سلاح الإشارة للدفاع الجوي',
+                'ورش الصيانة الفنية للدفاع الجوي',
+                'مركز تدريب الدفاع الجوي'
+            ]
+        },
+        {
+            category: 'المعاهد والكليات والمستشفيات العسكرية',
+            badgeClass: 'bg-success bg-opacity-10 text-success border border-success border-opacity-25',
+            units: [
+                'معهد نظم المعلومات',
+                'كلية القادة والأركان المشتركة',
+                'الكلية الحربية السودانية',
+                'جامعة كرري',
+                'أكاديمية نميري العسكرية العليا',
+                'معهد اللغات العسكري',
+                'السلاح الطبي / المستشفى العسكري',
+                'مستشفى علياء التخصصي'
+            ]
+        }
     ];
+
+    // استخراج قائمة مسطحة بكافة الوحدات القياسية المعتمدة
+    let ALL_STANDARD_MILITARY_UNITS = [];
+    MILITARY_UNITS_CATALOG.forEach(grp => {
+        grp.units.forEach(u => {
+            if (!ALL_STANDARD_MILITARY_UNITS.includes(u)) {
+                ALL_STANDARD_MILITARY_UNITS.push(u);
+            }
+        });
+    });
+
+    // قائمة الوحدات والجهات المتاحة للاختيار (تتضمن الوحدات القياسية + ما يضيفه المستخدم)
+    let SOURCE_ENTITY_SUGGESTIONS = [...ALL_STANDARD_MILITARY_UNITS];
+
+    // وظائف المساعدة والبحث الذكي في قائمة الوحدات
+    function normalizeArabicText(text) {
+        if (!text) return '';
+        return text.toString().toLowerCase()
+            .replace(/[إأآا]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/ى/g, 'ي')
+            .replace(/[\u064B-\u065F]/g, '')
+            .trim();
+    }
+
+    function escapeHtmlText(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderSmartUnitsList(searchTerm = '') {
+        const container = document.getElementById('smartUnitsListItems');
+        if (!container) return;
+
+        const currentSelected = document.getElementById('requestSourceEntityInput')?.value || '';
+        const normQuery = normalizeArabicText(searchTerm);
+        const queryWords = normQuery.split(/\s+/).filter(Boolean);
+
+        let totalRendered = 0;
+        let html = '';
+
+        // 1. فحص الوحدات المخصصة المضافة من المستخدم أو المحفوظة
+        const customUnits = SOURCE_ENTITY_SUGGESTIONS.filter(u => !ALL_STANDARD_MILITARY_UNITS.includes(u));
+        if (customUnits.length > 0) {
+            const matchingCustom = customUnits.filter(u => {
+                if (queryWords.length === 0) return true;
+                const normU = normalizeArabicText(u);
+                return queryWords.every(w => normU.includes(w));
+            });
+
+            if (matchingCustom.length > 0) {
+                totalRendered += matchingCustom.length;
+                html += `
+                    <div class="px-2 py-1 bg-light rounded text-muted fw-bold small mb-1 d-flex align-items-center justify-content-between" style="font-size: 0.75rem;">
+                        <span><i class="bi bi-star-fill text-warning me-1"></i>وحدات مضافة ومخصصة</span>
+                        <span class="badge bg-secondary bg-opacity-25 text-dark">${matchingCustom.length}</span>
+                    </div>
+                `;
+                matchingCustom.forEach(u => {
+                    const isSelected = (u === currentSelected);
+                    html += `
+                        <button type="button" class="dropdown-item d-flex align-items-center justify-content-between py-2 px-2 rounded-2 mb-1 text-wrap ${isSelected ? 'active bg-primary text-white fw-bold' : ''}" data-unit-name="${escapeHtmlText(u)}" style="white-space: normal;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-${isSelected ? 'fill-check text-white' : 'check text-primary'}"></i>
+                                <span>${escapeHtmlText(u)}</span>
+                            </div>
+                            <span class="badge bg-warning bg-opacity-25 text-dark font-monospace" style="font-size: 0.65rem;">مخصص</span>
+                        </button>
+                    `;
+                });
+            }
+        }
+
+        // 2. المجموعات القياسية
+        MILITARY_UNITS_CATALOG.forEach(grp => {
+            const matchingUnits = grp.units.filter(u => {
+                if (queryWords.length === 0) return true;
+                const normU = normalizeArabicText(u);
+                return queryWords.every(w => normU.includes(w));
+            });
+
+            if (matchingUnits.length > 0) {
+                totalRendered += matchingUnits.length;
+                html += `
+                    <div class="px-2 py-1 bg-light rounded text-dark fw-bold small mt-2 mb-1 d-flex align-items-center justify-content-between" style="font-size: 0.75rem;">
+                        <span><i class="bi bi-diagram-3-fill text-primary me-1"></i>${grp.category}</span>
+                        <span class="badge ${grp.badgeClass}" style="font-size: 0.68rem;">${matchingUnits.length}</span>
+                    </div>
+                `;
+                matchingUnits.forEach(u => {
+                    const isSelected = (u === currentSelected);
+                    html += `
+                        <button type="button" class="dropdown-item d-flex align-items-center justify-content-between py-2 px-2 rounded-2 mb-1 text-wrap ${isSelected ? 'active bg-primary text-white fw-bold' : ''}" data-unit-name="${escapeHtmlText(u)}" style="white-space: normal;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-${isSelected ? 'fill-check text-white' : 'check text-primary'}"></i>
+                                <span>${escapeHtmlText(u)}</span>
+                            </div>
+                        </button>
+                    `;
+                });
+            }
+        });
+
+        // 3. حالة عدم العثور على نتائج أو إمكانية إضافة وحدة جديدة
+        const countBadge = document.getElementById('smartUnitSearchResultsCount');
+        if (countBadge) {
+            countBadge.textContent = normQuery ? `نتائج البحث: (${totalRendered}) وحدة` : 'الوحدات والتشكيلات العسكرية المعتمدة';
+        }
+
+        if (totalRendered === 0) {
+            const trimmedTerm = searchTerm.trim();
+            html = `
+                <div class="text-center py-4 px-2">
+                    <div class="mb-2"><i class="bi bi-search text-muted fs-3"></i></div>
+                    <div class="text-muted small mb-3">لم يتم العثور على وحدة تطابق "<strong>${escapeHtmlText(trimmedTerm)}</strong>"</div>
+                    ${trimmedTerm ? `
+                        <button type="button" class="btn btn-sm btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" onclick="promptAddNewSourceEntity('${escapeHtmlText(trimmedTerm)}')">
+                            <i class="bi bi-plus-circle-fill"></i>
+                            <span>اعتماد وإضافة "${escapeHtmlText(trimmedTerm)}" كوحدة جديدة</span>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function handleSmartUnitSearch(val) {
+        renderSmartUnitsList(val);
+    }
+
+    function clearSmartUnitSearch() {
+        const input = document.getElementById('smartUnitSearchInput');
+        if (input) input.value = '';
+        renderSmartUnitsList('');
+        if (input) input.focus();
+    }
+
+    function selectSourceUnit(unitName) {
+        const input = document.getElementById('requestSourceEntityInput');
+        const display = document.getElementById('selectedSourceUnitDisplay');
+        const btn = document.getElementById('sourceUnitDropdownBtn');
+
+        const trimmed = (unitName || '').trim();
+        if (!trimmed) {
+            if (input) input.value = '';
+            if (display) {
+                display.innerHTML = '<i class="bi bi-shield-shaded me-1 text-secondary"></i>-- اختر الوحدة من القائمة --';
+                display.classList.add('text-muted');
+                display.classList.remove('text-dark', 'fw-bold');
+            }
+            if (btn) btn.classList.remove('is-invalid', 'border-danger');
+            return;
+        }
+
+        if (input) input.value = trimmed;
+        if (display) {
+            display.innerHTML = `<i class="bi bi-shield-check text-primary me-1"></i><span class="fw-bold text-dark">${escapeHtmlText(trimmed)}</span>`;
+            display.classList.remove('text-muted');
+        }
+        if (btn) btn.classList.remove('is-invalid', 'border-danger');
+
+        // إغلاق القائمة المنسدلة
+        if (btn) {
+            const dropdownInstance = bootstrap.Dropdown.getInstance(btn);
+            if (dropdownInstance) dropdownInstance.hide();
+        }
+
+        // مسح محتوى حقل البحث وإعادة تجهيز القائمة
+        const searchInput = document.getElementById('smartUnitSearchInput');
+        if (searchInput) searchInput.value = '';
+        renderSmartUnitsList('');
+    }
+
+    function initSmartUnitsDropdown() {
+        renderSmartUnitsList('');
+        const container = document.getElementById('smartUnitsListItems');
+        if (container && !container._hasClickListener) {
+            container._hasClickListener = true;
+            container.addEventListener('click', function(e) {
+                const itemBtn = e.target.closest('[data-unit-name]');
+                if (itemBtn) {
+                    const unitName = itemBtn.getAttribute('data-unit-name');
+                    selectSourceUnit(unitName);
+                }
+            });
+        }
+
+        const dropdownBtn = document.getElementById('sourceUnitDropdownBtn');
+        if (dropdownBtn && !dropdownBtn._hasShownListener) {
+            dropdownBtn._hasShownListener = true;
+            dropdownBtn.addEventListener('shown.bs.dropdown', function () {
+                const searchInput = document.getElementById('smartUnitSearchInput');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            });
+        }
+    }
 
     let DESTINATION_COUNTRY_SUGGESTIONS = [
         'جمهورية مصر العربية',
@@ -2479,7 +2791,7 @@
                 if (s && s.trim()) sources.add(s.trim());
             });
             const sortedSources = Array.from(sources).sort();
-            let optionsHTML = '<option value="all">كافة الجهات</option>';
+            let optionsHTML = '<option value="all">كافة الوحدات والجهات</option>';
             sortedSources.forEach(s => {
                 optionsHTML += `<option value="${s}" ${ACTIVE_FILTERS.source_entity === s ? 'selected' : ''}>${s}</option>`;
             });
@@ -2544,11 +2856,19 @@
     function markFieldInvalid(field) {
         if (!field) return;
         field.classList.add('is-invalid');
+        if (field.id === 'requestSourceEntityInput') {
+            const btn = document.getElementById('sourceUnitDropdownBtn');
+            if (btn) btn.classList.add('is-invalid', 'border-danger');
+        }
     }
 
     function markFieldValid(field) {
         if (!field) return;
         field.classList.remove('is-invalid');
+        if (field.id === 'requestSourceEntityInput') {
+            const btn = document.getElementById('sourceUnitDropdownBtn');
+            if (btn) btn.classList.remove('is-invalid', 'border-danger');
+        }
     }
 
     function getClassificationLabel(val) {
@@ -2637,6 +2957,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         purgeLocalPlacementTestData();
         loadCustomReferenceData();
+        initSmartUnitsDropdown();
                 // فحص ما إذا كان الرابط يطلب فتح تفاصيل امتحان محدد عبر query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const initialExamId = urlParams.get('exam_id') || urlParams.get('id');
@@ -3560,8 +3881,8 @@
         const signalInput = document.getElementById('requestSignalNumberInput');
         if (signalInput) signalInput.value = '';
 
-        const sourceInput = document.getElementById('requestSourceEntityInput');
-        if (sourceInput) sourceInput.value = '';
+        selectSourceUnit('');
+        clearSmartUnitSearch();
 
         const classificationSelect = document.getElementById('requestClassificationSelect');
         if (classificationSelect) classificationSelect.value = 'officers';
@@ -3758,9 +4079,8 @@
         alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // التحقق من صحة بيانات الطلب مع دعم الحقول الاختيارية والتحقق الرقمي والتأكيد على الجهة الجديدة
-    function proceedToExamSetup() {
-        hideRequestValidationAlert();
+    // التحقق من صحة بيانات نموذج الطلب
+    function validateRequestFormData() {
         const errors = [];
         let firstInvalid = null;
 
@@ -3769,12 +4089,6 @@
         const purposeSelect = document.getElementById('requestPurposeSelect');
         const subPurposeSelect = document.getElementById('requestSubPurposeSelect');
         const destInput = document.getElementById('requestDestinationCountryInput');
-        const receiptInput = document.getElementById('requestReceiptDateInput');
-        const internalIdInput = document.getElementById('requestInternalIdInput');
-        const classificationSelect = document.getElementById('requestClassificationSelect');
-        const dateInput = document.getElementById('requestExamDateInput');
-        const timeInput = document.getElementById('requestExamTimeInput');
-        const dayBadge = document.getElementById('requestExamDayNameBadge');
 
         const signalVal = signalInput ? signalInput.value.trim() : '';
         if (!signalVal) {
@@ -3791,9 +4105,9 @@
 
         const sourceVal = sourceInput ? sourceInput.value.trim() : '';
         if (!sourceVal) {
-            errors.push('الجهة القادمة منها (الجهة الطالبة): حقل إلزامي، يرجى كتابة أو اختيار الجهة.');
+            errors.push('الجهة القادمة منها (الوحدة): حقل إلزامي، يرجى اختيار الوحدة من القائمة.');
             markFieldInvalid(sourceInput);
-            if (!firstInvalid) firstInvalid = sourceInput;
+            if (!firstInvalid) firstInvalid = document.getElementById('sourceUnitDropdownBtn') || sourceInput;
         } else {
             markFieldValid(sourceInput);
         }
@@ -3810,6 +4124,14 @@
         if (destInput) markFieldValid(destInput);
         if (subPurposeSelect) markFieldValid(subPurposeSelect);
 
+        return { errors, firstInvalid };
+    }
+
+    // التحقق من صحة بيانات الطلب مع دعم الحقول الاختيارية والتحقق الرقمي والتأكيد على الجهة الجديدة
+    function proceedToExamSetup() {
+        hideRequestValidationAlert();
+        const { errors, firstInvalid } = validateRequestFormData();
+
         if (errors.length > 0) {
             showRequestValidationAlert(errors);
             if (firstInvalid) {
@@ -3818,6 +4140,9 @@
             }
             return;
         }
+
+        const sourceInput = document.getElementById('requestSourceEntityInput');
+        const sourceVal = sourceInput ? sourceInput.value.trim() : '';
 
         // خطوة تأكيد اعتماد الجهة الجديدة إذا لم تكن موجودة بالقائمة لتفادي أخطاء الكتابة
         const isKnownSource = SOURCE_ENTITY_SUGGESTIONS.some(s => s.trim().toLowerCase() === sourceVal.toLowerCase());
@@ -3877,12 +4202,12 @@
     }
 
     // --------------------------------------------------------------------------
-    // إدارة الجهات القادمة (الجهات الطالبة) مع التأكيد ومنع الانتقال التلقائي
+    // إدارة الجهات القادمة (الوحدات العسكرية) مع التأكيد ومنع الانتقال التلقائي
     // --------------------------------------------------------------------------
-    function promptAddNewSourceEntity() {
+    function promptAddNewSourceEntity(initialVal = '') {
         const input = document.getElementById('requestSourceEntityInput');
-        const currentVal = input ? input.value.trim() : '';
-        const name = prompt('أدخل اسم الجهة أو الوحدة الطالبة الجديدة:', currentVal);
+        const currentVal = initialVal || (input ? input.value.trim() : '');
+        const name = prompt('أدخل اسم الوحدة العسكرية أو التشكيل الجديد:', currentVal);
         if (name && name.trim()) {
             showConfirmNewSourceEntityModal(name.trim());
         }
@@ -3900,16 +4225,15 @@
     function cancelAddSourceEntity() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('confirmNewSourceEntityModal'));
         if (modal) modal.hide();
-        const input = document.getElementById('requestSourceEntityInput');
-        if (input) {
-            input.focus();
-            input.select();
+        const btn = document.getElementById('sourceUnitDropdownBtn');
+        if (btn) {
+            btn.focus();
         }
     }
 
     function commitAddSourceEntity() {
         if (!PENDING_NEW_SOURCE_ENTITY) return;
-        const name = PENDING_NEW_SOURCE_ENTITY;
+        const name = PENDING_NEW_SOURCE_ENTITY.trim();
 
         if (!SOURCE_ENTITY_SUGGESTIONS.includes(name)) {
             SOURCE_ENTITY_SUGGESTIONS.push(name);
@@ -3918,11 +4242,8 @@
 
         addSuggestionIfNew('sourceEntitySuggestionsList', name, SOURCE_ENTITY_SUGGESTIONS);
 
-        const input = document.getElementById('requestSourceEntityInput');
-        if (input) {
-            input.value = name;
-            markFieldValid(input);
-        }
+        selectSourceUnit(name);
+        renderSmartUnitsList('');
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('confirmNewSourceEntityModal'));
         if (modal) modal.hide();
@@ -5694,8 +6015,8 @@
         const signalInput = document.getElementById('requestSignalNumberInput');
         if (signalInput) signalInput.value = exam.signal_number || '';
 
-        const sourceInput = document.getElementById('requestSourceEntityInput');
-        if (sourceInput) sourceInput.value = exam.source_entity || exam.host_entity || '';
+        selectSourceUnit(exam.source_entity || exam.host_entity || '');
+        clearSmartUnitSearch();
 
         const classificationSelect = document.getElementById('requestClassificationSelect');
         const classVal = exam.classification || 'officers';
@@ -5756,10 +6077,9 @@
             return;
         }
 
-        const errors = validateRequestFormData();
+        const { errors, firstInvalid } = validateRequestFormData();
         if (errors.length > 0) {
             showRequestValidationAlert(errors);
-            const firstInvalid = document.querySelector('#createExamModal .is-invalid');
             if (firstInvalid) {
                 firstInvalid.focus();
                 firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
