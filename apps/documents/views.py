@@ -243,14 +243,16 @@ def movement_order_view(request, enrollment_id):
         else:
             copy_to_1 = f"السيد / رئيس {destination_unit}"
 
+    c_name = enrollment.session.course.name.strip()
+    if not c_name.startswith('دورة'):
+        c_name = f"دورة {c_name}"
+
     if enrollment.is_dropped:
-        c_name = enrollment.session.course.name.strip()
-        if not c_name.startswith('دورة'):
-            c_name = f"دورة {c_name}"
         purpose = f"قطع {c_name}"
         movement_date = enrollment.movement_order_date or (enrollment.dropped_at.date() if enrollment.dropped_at else timezone.now().date())
     else:
-        purpose = f"{order_settings.purpose_prefix}{enrollment.session.course.name}"
+        prefix = (order_settings.purpose_prefix or 'انتهاء').strip()
+        purpose = f"{prefix} {c_name}"
         movement_date = enrollment.movement_order_date or enrollment.session.end_date
 
     page_title = f"أمر تحرك - {enrollment.trainee.name}"
