@@ -974,7 +974,7 @@
                                             data-rank="{{ u.profile.rank|default:'' }}"
                                             data-mil="{{ u.profile.military_number|default:'' }}"
                                             data-unit="{{ u.profile.unit|default:'' }}"
-                                            data-active="{% if u.is_active %}1{% else %}0{% endif %}" {% if selected_matrix_user and selected_matrix_user.id==u.id %}selected{% endif %}>
+                                            data-active="{% if u.is_active %}1{% else %}0{% endif %}" {% if selected_matrix_user and selected_matrix_user.id == u.id %}selected{% endif %}>
                                             {{ u.get_full_name|default:u.username }} (@{{ u.username }}) - {{ u.profile.get_role_display }}
                                         </option>
                                         {% empty %}
@@ -3719,7 +3719,7 @@
                                             <select name="activity_user" class="form-select form-select-sm rounded-3">
                                                 <option value="">-- جميع المستخدمين (عرض عام) --</option>
                                                 {% for u in activity_users_list %}
-                                                <option value="{{ u.username }}" {% if activity_user==u.username %}selected{% endif %}>
+                                                <option value="{{ u.username }}" {% if activity_user == u.username %}selected{% endif %}>
                                                     {{ u.username }} ({{ u.get_full_name|default:u.username }} - {{ u.profile.get_role_display|default:"مستخدم" }})
                                                 </option>
                                                 {% endfor %}
@@ -3732,7 +3732,7 @@
                                             <select name="activity_action" class="form-select form-select-sm rounded-3">
                                                 <option value="ALL">الكل</option>
                                                 {% for act_code, act_label in activity_actions %}
-                                                <option value="{{ act_code }}" {% if activity_action==act_code %}selected{% endif %}>{{ act_label }}</option>
+                                                <option value="{{ act_code }}" {% if activity_action == act_code %}selected{% endif %}>{{ act_label }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -3744,7 +3744,7 @@
                                                 class="form-select form-select-sm rounded-3">
                                                 <option value="ALL">الكل (كافة الأقسام)</option>
                                                 {% for cat_code, cat_label in activity_categories %}
-                                                <option value="{{ cat_code }}" {% if activity_category==cat_code %}selected{% endif %}>{{ cat_label }}</option>
+                                                <option value="{{ cat_code }}" {% if activity_category == cat_code %}selected{% endif %}>{{ cat_label }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -3753,16 +3753,16 @@
                                         <div class="col-md-6 col-lg-2">
                                             <label class="form-label small fw-bold text-dark">الفترة:</label>
                                             <select name="activity_date" class="form-select form-select-sm rounded-3">
-                                                <option value="all" {% if activity_date=='all' %}selected{% endif %}>
+                                                <option value="all" {% if activity_date == 'all' %}selected{% endif %}>
                                                     كافة
                                                     الفترات</option>
-                                                <option value="today" {% if activity_date=='today' %}selected{% endif %}>
+                                                <option value="today" {% if activity_date == 'today' %}selected{% endif %}>
                                                     اليوم
                                                     فقط</option>
-                                                <option value="7days" {% if activity_date=='7days' %}selected{% endif %}>آخر
+                                                <option value="7days" {% if activity_date == '7days' %}selected{% endif %}>آخر
                                                     7
                                                     أيام</option>
-                                                <option value="30days" {% if activity_date=='30days' %}selected{% endif %}>
+                                                <option value="30days" {% if activity_date == '30days' %}selected{% endif %}>
                                                     آخر
                                                     30 يوماً</option>
                                             </select>
@@ -6589,7 +6589,7 @@
                 // متغيرات المخططات البيانية وبيانات التحليلات
                 const GRADE_DIST_DATA = {{ grade_distribution_json| safe }};
                 const FORCES_DIST_DATA = {{ forces_list_json| safe }};
-                const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default: 0 }};
+                const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
                 const FORCES_COLOR_PALETTE = [
                     '#0284c7', // أزرق سماوي / جوية
                     '#15803d', // أخضر عسكري / برية
