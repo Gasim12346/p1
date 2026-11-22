@@ -1795,6 +1795,183 @@ def results_entry_view(request, session_id):
     return render(request, 'training/results_entry.html', context)
 
 
+def session_discipline_attendance_view(request, session_id):
+    """
+    واجهة رصد الحضور والضبط والربط للدورة:
+    - لستة بجميع الدارسين بالدورة
+    - أيام الحضور من السبت للخميس معلمة بعلامة صح تلقائياً (حاضر)
+    - عند إلغاء الصح يظهر خيار سبب الغياب (راحة طبية 0.5 - بدون سبب 2.0)
+    - خانة تحديد للمخالفات الأخرى المعتمدة إن وجدت
+    - احتساب فوري للدرجات وتطبيق قيد قطع الدورة التلقائي عند تجاوز 5 درجات خصم
+    - تغذية الدرجة المحتسبة لنتائج الدورة
+    """
+    session = get_object_or_404(
+        CourseSession.objects.select_related('course', 'course__category', 'supervisor')
+        .prefetch_related('enrollments__trainee', 'enrollments__discipline_infractions'),
+        pk=session_id
+    )
+
+    if request.institute and session.institute_id and session.institute_id != request.institute.id:
+        messages.error(request, 'عفواً، لا تملك صلاحية الوصول لدورة تابعة لمعهد آخر.')
+        return redirect('training:results_center')
+
+    is_adm = is_admin_user(request.user)
+    is_reg = is_registrar_user(request.user)
+    user_inst = get_user_instructor(request.user)
+    is_session_sup = bool(user_inst and session.supervisor_id == user_inst.military_number)
+    is_sup = is_supervisor_user(request.user) or is_session_sup
+
+    can_edit = (is_adm or is_sup or is_reg) and (session.status != 'completed' or is_adm)
+    if not (is_adm or is_sup or is_reg or is_session_sup):
+        messages.error(request, 'غير مصرح لك بالوصول لواجهة رصد الحضور والضبط لهذه الدورة.')
+        return redirect('training:results_center')
+
+    DAYS_LIST = [
+        ('sat', 'السبت'),
+        ('sun', 'الأحد'),
+        ('mon', 'الإثنين'),
+        ('tue', 'الثلاثاء'),
+        ('wed', 'الأربعاء'),
+        ('thu', 'الخميس'),
+    ]
+
+    OTHER_INFRACTIONS_LIST = [
+        ('delay_lecture', 'أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة - 0.5)', 0.5),
+        ('absent_lecture', 'د. الغياب عن المحاضرة الواحدة (خصم درجة ونصف - 1.5)', 1.5),
+        ('enter_supervisor_office', 'هـ. دخول مكتب المشرف (خصم درجة ونصف - 1.5)', 1.5),
+        ('enter_education_commander_office', 'و. دخول مكتب قائد جناح التعليم (خصم درجتان - 2.0)', 2.0),
+        ('enter_chief_instructor_office', 'ز. دخول مكتب كبير المعلمين (خصم درجتان ونصف - 2.5)', 2.5),
+        ('enter_commander_office', 'ح. دخول مكتب قائد المعهد (خصم ثلاث درجات - 3.0)', 3.0),
+    ]
+
+    enrollments = session.enrollments.select_related('trainee').prefetch_related('discipline_infractions').all()
+
+    if request.method == 'POST':
+        if not can_edit:
+            messages.error(request, 'نتائج هذه الدورة معتمدة ومقفلة أو ليس لديك صلاحية التعديل.')
+            return redirect('training:session_discipline_attendance', session_id=session.id)
+
+        updated_count = 0
+        dropped_count = 0
+        for en in enrollments:
+            # 1. إزالة مخالفات الضبط والربط السابقة لإعادة رصدها بدقة بناءً على الكشف الجديد
+            en.discipline_infractions.all().delete()
+
+            # 2. رصد أيام الغياب والراحة الطبية من السبت للخميس
+            for day_key, day_name in DAYS_LIST:
+                status = request.POST.get(f'att_{en.id}_{day_key}', 'present').strip()
+                if status == 'medical_rest':
+                    DisciplineInfraction.objects.create(
+                        enrollment=en,
+                        infraction_type='medical_rest',
+                        date=timezone.now().date(),
+                        notes=f'[{day_name}] راحة طبية لليوم الواحد',
+                        points=Decimal('0.5')
+                    )
+                elif status == 'absent_full_day':
+                    DisciplineInfraction.objects.create(
+                        enrollment=en,
+                        infraction_type='absent_full_day',
+                        date=timezone.now().date(),
+                        notes=f'[{day_name}] غياب ليوم كامل بدون سبب',
+                        points=Decimal('2.0')
+                    )
+
+            # 3. رصد المخالفات الأخرى إن وجدت
+            other_infs = request.POST.getlist(f'other_inf_{en.id}[]')
+            if not other_infs:
+                other_infs = request.POST.getlist(f'other_inf_{en.id}')
+
+            for inf_code in other_infs:
+                if inf_code in DisciplineInfraction.POINTS_MAP:
+                    DisciplineInfraction.objects.create(
+                        enrollment=en,
+                        infraction_type=inf_code,
+                        date=timezone.now().date(),
+                        notes='مخالفة مسجلة من كشف الحضور والضبط',
+                        points=DisciplineInfraction.POINTS_MAP[inf_code]
+                    )
+
+            # 4. تحديث درجة الضبط والربط وقيد الفصل التلقائي والنتائج
+            res = en.update_discipline_score()
+            if res.get('dropped'):
+                dropped_count += 1
+            updated_count += 1
+
+        log_activity(
+            request=request,
+            action_type=ActivityAction.UPDATE,
+            action_category=ActivityCategory.GRADES,
+            description=f"حفظ واعتماد كشف الحضور والضبط والربط للدورة {session.course.name} - دفعة {session.session_code}",
+            target_model="CourseSession",
+            target_id=session.id
+        )
+
+        msg = f'تم حفظ واعتماد كشف الحضور والضبط والربط وتحديث درجات {updated_count} دارس بنجاح.'
+        if dropped_count > 0:
+            msg += f' (تنبيه: تم قطع الدورة عن {dropped_count} دارس لتجاوز حد الخصم 5 درجات).'
+        messages.success(request, msg)
+
+        if 'save_and_goto_grades' in request.POST:
+            return redirect('training:results_entry', session_id=session.id)
+        return redirect('training:session_discipline_attendance', session_id=session.id)
+
+    # تجهيز بيانات العرض (GET)
+    enrollments_data = []
+    for en in enrollments:
+        infs = list(en.discipline_infractions.all())
+        days_status = {}
+        days_info = []
+        other_infs_active = []
+
+        # فحص أيام الأسبوع الستة
+        for day_key, day_name in DAYS_LIST:
+            matched = None
+            for inf in infs:
+                if f'[{day_name}]' in (inf.notes or '') or f'[{day_key}]' in (inf.notes or ''):
+                    matched = inf
+                    break
+            status = matched.infraction_type if matched else 'present'
+            days_status[day_key] = status
+            days_info.append({
+                'key': day_key,
+                'name': day_name,
+                'status': status,
+            })
+
+        # فحص المخالفات الأخرى غير المرتبطة بيوم أسبوعي
+        for inf in infs:
+            is_day_inf = any(f'[{d_name}]' in (inf.notes or '') or f'[{d_k}]' in (inf.notes or '') for d_k, d_name in DAYS_LIST)
+            if not is_day_inf:
+                other_infs_active.append({
+                    'code': inf.infraction_type,
+                    'display': inf.get_infraction_type_display(),
+                    'points': float(inf.points)
+                })
+
+        enrollments_data.append({
+            'enrollment': en,
+            'days_status': days_status,
+            'days_info': days_info,
+            'other_infs_active': other_infs_active,
+            'total_points': float(en.total_discipline_points),
+            'attendance_score': float(en.attendance_score if en.attendance_score is not None else 10.0),
+            'is_dropped': en.is_dropped,
+            'drop_reason': en.drop_reason,
+        })
+
+    context = {
+        'session': session,
+        'enrollments_data': enrollments_data,
+        'days_list': DAYS_LIST,
+        'other_infractions_list': OTHER_INFRACTIONS_LIST,
+        'can_edit': can_edit,
+        'is_locked': session.status == 'completed' and not is_adm,
+    }
+    return render(request, 'training/session_discipline_attendance.html', context)
+
+
+@login_required
 
 
 @login_required

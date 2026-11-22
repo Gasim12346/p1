@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}رصد الحضور والضبط - {{ session.course.name }} (دفعة {{ session.session_code }}){% endblock %}
+
+{% block extra_css %}
+<style>
+    .trainee-row.table-danger {
+        background-color: #fee2e2 !important;
+    }
+    .trainee-row.table-danger td {
+        background-color: #fee2e2 !important;
+    }
+    .day-col-header {
+        min-width: 145px;
+    }
+    .day-cell {
+        min-width: 145px;
+        padding: 8px 6px !important;
+        vertical-align: middle;
+        background-color: #ffffff;
+        transition: background-color 0.2s ease;
+    }
+    .day-cell.is-absent {
+        background-color: #fff1f2 !important;
+    }
+    .day-status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+    .day-status-pill.status-present {
+        background-color: #dcfce7;
+        color: #15803d;
+        border: 1px solid #86efac;
+    }
+    .day-status-pill.status-present:hover {
+        background-color: #bbf7d0;
+    }
+    .day-status-pill.status-absent {
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fca5a5;
+    }
+    .day-status-pill.status-absent:hover {
+        background-color: #fecaca;
+    }
+    .day-checkbox {
+        width: 1.15rem;
+        height: 1.15rem;
+        cursor: pointer;
+        margin: 0 !important;
+        accent-color: #16a34a;
+    }
+    .day-checkbox:not(:checked) {
+        accent-color: #dc2626;
+    }
+    .absence-select-box {
+        animation: fadeIn 0.2s ease-in-out;
+        margin-top: 6px;
+        width: 100%;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .absence-select {
+        width: 100% !important;
+        height: 36px !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        color: #b91c1c !important;
+        background-color: #ffffff !important;
+        border: 1.5px solid #ef4444 !important;
+        border-radius: 8px !important;
+        /* مسافة كافية تضمن عدم تداخل السهم على اليسار مع النص العربي نهائياً */
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        padding-right: 10px !important;
+        padding-left: 28px !important;
+        background-position: left 8px center !important;
+        background-size: 14px 10px !important;
+        box-shadow: 0 1px 3px rgba(239, 68, 68, 0.12) !important;
+        cursor: pointer;
+        text-align: right;
+    }
+    .absence-select:focus {
+        border-color: #b91c1c !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+        outline: none;
+    }
+    .sticky-actions-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 1020;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border-top: 2px solid #e2e8f0;
+        box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.06);
+    }
+    .table th {
+        font-size: 0.88rem;
+        vertical-align: middle;
+    }
+    .table td {
+        font-size: 0.88rem;
+        vertical-align: middle;
+    }
+    .inf-badge {
+        font-size: 0.78rem;
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a></li>
+        <li class="breadcrumb-item active" aria-current="page">رصد الحضور والضبط: {{ session.course.name }} (دفعة {{ session.session_code }})</li>
+    </ol>
+</nav>
+
+<!-- رأس الصفحة وتفاصيل الدورة -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+    <div class="card-header bg-gradient bg-primary text-white p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <span class="badge bg-white text-primary fw-bold px-3 py-1 rounded-pill mb-2 shadow-sm">
+                    <i class="bi bi-shield-check me-1"></i>كشف الحضور والغياب والضبط والربط
+                </span>
+                <h3 class="fw-bold mb-1">{{ session.course.name }}</h3>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-white-50 small mt-2">
+                    <span class="text-white"><i class="bi bi-hash"></i> رقم الدفعة: <strong>{{ session.session_code }}</strong></span>
+                    {% if session.institute %}
+                    <span class="text-white"><i class="bi bi-building"></i> <strong>{{ session.institute.name }}</strong></span>
+                    {% endif %}
+                    <span class="text-white"><i class="bi bi-calendar-event"></i> الفترة: <strong>{{ session.start_date|date:"Y-m-d" }}</strong> إلى <strong>{{ session.end_date|date:"Y-m-d" }}</strong></span>
+                    <span class="text-white"><i class="bi bi-person-badge"></i> المشرف: <strong>{{ session.supervisor.name|default:'غير محدد' }}</strong></span>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'training:results_center' %}" class="btn btn-light rounded-3 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-arrow-right"></i>
+                    <span>مركز النتائج</span>
+                </a>
+                <a href="{% url 'training:results_entry' session.id %}" class="btn btn-warning text-dark rounded-3 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>رصد درجات المواد</span>
+                </a>
+                <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-outline-light rounded-3 px-3 d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-printer"></i>
+                    <span>كشف النتيجة العام</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_locked %}
+<div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3">
+    <i class="bi bi-lock-fill text-primary fs-3"></i>
+    <div>
+        <h6 class="fw-bold mb-0 text-dark">دورة مقفلة ومكتملة الاعتماد</h6>
+        <div class="small text-muted">الكشف الحالي للقراءة فقط. لإجراء تعديلات يجب فتح اعتماد الدورة من إدارة النظام.</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- شريط الإجراءات السريعة والإحصائيات -->
+<div class="card border-0 shadow-sm rounded-4 mb-3">
+    <div class="card-body p-3">
+        <div class="row g-3 align-items-center justify-content-between">
+            <div class="col-lg-5 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="traineeSearchInput" class="form-control border-start-0 ps-0" placeholder="بحث سريع باسم الدارس أو الرقم العسكري أو الوحدة...">
+                </div>
+            </div>
+            <div class="col-lg-7 col-md-6 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                {% if can_edit and not is_locked %}
+                <button type="button" id="btnMarkAllPresent" class="btn btn-outline-success btn-sm fw-bold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-check2-all fs-6"></i>
+                    <span>تحديد الجميع حاضر لكافة الأيام</span>
+                </button>
+                {% endif %}
+                <div class="vr mx-1 d-none d-lg-block"></div>
+                <div class="d-flex align-items-center gap-2 small">
+                    <span class="badge bg-secondary px-3 py-2 rounded-3">
+                        إجمالي الدارسين: <strong id="statTotalCount">{{ enrollments_data|length }}</strong>
+                    </span>
+                    <span class="badge bg-success px-3 py-2 rounded-3">
+                        منتظم: <strong id="statRegularCount">0</strong>
+                    </span>
+                    <span class="badge bg-danger px-3 py-2 rounded-3">
+                        مقطوع عنهم الدورة: <strong id="statDroppedCount">0</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج رصد الحضور والمخالفات -->
+<form method="post" id="attendanceDisciplineForm">
+    {% csrf_token %}
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle text-center mb-0" id="attendanceTable">
+                <thead class="table-light border-bottom">
+                    <tr>
+                        <th style="width: 45px;" class="text-center">#</th>
+                        <th style="min-width: 200px;" class="text-start">الدارس (الرتبة / الاسم / النمرة)</th>
+                        {% for day in days_list %}
+                        <th class="day-col-header" style="min-width: 145px;">
+                            <div class="fw-bold text-dark">{{ day.1 }}</div>
+                            <small class="text-muted font-monospace" style="font-size: 0.72rem;">يوم تدريبي</small>
+                        </th>
+                        {% endfor %}
+                        <th style="min-width: 250px;">
+                            <div class="fw-bold text-dark">المخالفات الأخرى المعتمدة</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">اختر لإضافة مخالفة</small>
+                        </th>
+                        <th style="width: 110px;">
+                            <div class="fw-bold text-dark">إجمالي الخصم</div>
+                            <small class="text-danger" style="font-size: 0.72rem;">الحد: 5.0 درجات</small>
+                        </th>
+                        <th style="width: 125px;">
+                            <div class="fw-bold text-primary">درجة الضبط والربط</div>
+                            <small class="text-primary font-monospace" style="font-size: 0.72rem;">من 10.00</small>
+                        </th>
+                        <th style="width: 120px;">
+                            <div class="fw-bold text-dark">الحالة</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in enrollments_data %}
+                    <tr class="trainee-row {% if item.is_dropped %}table-danger{% endif %}" id="row_{{ item.enrollment.id }}" data-en-id="{{ item.enrollment.id }}" data-search="{{ item.enrollment.trainee.name }} {{ item.enrollment.trainee.military_number }} {{ item.enrollment.current_rank }} {{ item.enrollment.trainee.unit|default:'' }}">
+                        <!-- التسلسل -->
+                        <td class="text-center text-muted fw-bold font-monospace">{{ forloop.counter }}</td>
+
+                        <!-- بيانات الدارس -->
+                        <td class="text-start">
+                            <div class="fw-bold text-dark">{{ item.enrollment.current_rank }} / {{ item.enrollment.trainee.name }}</div>
+                            <div class="small text-muted font-monospace d-flex align-items-center gap-2 mt-1">
+                                <span><i class="bi bi-hash"></i> {{ item.enrollment.trainee.military_number }}</span>
+                                {% if item.enrollment.trainee.unit %}
+                                <span>• {{ item.enrollment.trainee.unit }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- الأيام الستة (السبت إلى الخميس) -->
+                        {% for d in item.days_info %}
+                        <td class="day-cell {% if d.status != 'present' %}is-absent{% endif %}" id="cell_{{ item.enrollment.id }}_{{ d.key }}">
+                            <!-- الحقل المخفي الفعلي الذي يتم إرساله للخادم POST -->
+                            <input type="hidden" name="att_{{ item.enrollment.id }}_{{ d.key }}" id="input_{{ item.enrollment.id }}_{{ d.key }}" class="day-status-input" data-day="{{ d.key }}" data-en-id="{{ item.enrollment.id }}" value="{{ d.status }}">
+
+                            <!-- مفتاح الاختيار والحالة (حاضر / غائب) -->
+                            <div class="d-flex flex-column align-items-center justify-content-center">
+                                <label class="day-status-pill {% if d.status == 'present' %}status-present{% else %}status-absent{% endif %} mb-0" id="pill_{{ item.enrollment.id }}_{{ d.key }}" for="chk_{{ item.enrollment.id }}_{{ d.key }}" title="انقر لتغيير حالة الحضور">
+                                    <input type="checkbox" class="day-checkbox form-check-input" id="chk_{{ item.enrollment.id }}_{{ d.key }}" data-en-id="{{ item.enrollment.id }}" data-day="{{ d.key }}" {% if d.status == 'present' %}checked{% endif %} {% if is_locked or not can_edit %}disabled{% endif %} onchange="onDayCheckChange(this, {{ item.enrollment.id }}, '{{ d.key }}')">
+                                    <span id="txt_{{ item.enrollment.id }}_{{ d.key }}">
+                                        {% if d.status == 'present' %}
+                                        <i class="bi bi-check-circle-fill me-1"></i>حاضر
+                                        {% else %}
+                                        <i class="bi bi-x-circle-fill me-1"></i>غائب
+                                        {% endif %}
+                                    </span>
+                                </label>
+
+                                <!-- قائمة أسباب الغياب تظهر فقط عند إلغاء علامة الصح -->
+                                <div class="absence-select-box {% if d.status == 'present' %}d-none{% endif %}" id="reason_box_{{ item.enrollment.id }}_{{ d.key }}">
+                                    <select class="form-select absence-select" id="select_{{ item.enrollment.id }}_{{ d.key }}" data-en-id="{{ item.enrollment.id }}" data-day="{{ d.key }}" {% if is_locked or not can_edit %}disabled{% endif %} onchange="onAbsenceReasonChange(this, {{ item.enrollment.id }}, '{{ d.key }}')">
+                                        <option value="medical_rest" {% if d.status == 'medical_rest' %}selected{% endif %}>راحة طبية (-0.5)</option>
+                                        <option value="absent_full_day" {% if d.status == 'absent_full_day' %}selected{% endif %}>بدون سبب (-2.0)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </td>
+                        {% endfor %}
+
+                        <!-- المخالفات الأخرى المعتمدة -->
+                        <td class="p-2 text-start">
+                            <div class="d-flex flex-column gap-2">
+                                <!-- قائمة المخالفات المضافة للدارس -->
+                                <div id="other_infs_container_{{ item.enrollment.id }}" class="other-infs-box d-flex flex-wrap gap-1">
+                                    {% for inf in item.other_infs_active %}
+                                    <span class="badge bg-warning bg-opacity-25 text-dark border border-warning inf-badge p-1 px-2 d-inline-flex align-items-center gap-1 active-inf-badge" data-pts="{{ inf.points }}">
+                                        <input type="hidden" name="other_inf_{{ item.enrollment.id }}[]" value="{{ inf.code }}" data-pts="{{ inf.points }}" class="other-inf-input">
+                                        <span>{{ inf.display }} (-{{ inf.points }})</span>
+                                        {% if can_edit and not is_locked %}
+                                        <button type="button" class="btn-close btn-close-xs ms-1" style="font-size: 0.55rem; width: 0.5rem; height: 0.5rem;" onclick="removeOtherInfraction(this, {{ item.enrollment.id }})" title="حذف المخالفة"></button>
+                                        {% endif %}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- قائمة الإضافة السريعة لمخالفة جديدة -->
+                                {% if can_edit and not is_locked %}
+                                <div class="mt-1">
+                                    <select class="form-select form-select-sm text-secondary add-inf-select" style="font-size: 0.78rem;" onchange="addOtherInfraction(this, {{ item.enrollment.id }})">
+                                        <option value="" selected disabled>+ إضافة مخالفة أخرى من اللائحة...</option>
+                                        {% for code, label, pts in other_infractions_list %}
+                                        <option value="{{ code }}" data-label="{{ label }}" data-pts="{{ pts }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- إجمالي الخصم -->
+                        <td class="text-center p-2">
+                            <div class="fw-bold fs-6 total-deduction-val" id="total_deduction_{{ item.enrollment.id }}">
+                                {{ item.total_points|floatformat:2 }}
+                            </div>
+                            <small class="text-muted font-monospace" style="font-size: 0.72rem;">درجة خصم</small>
+                        </td>
+
+                        <!-- درجة الضبط والربط المحتسبة (من 10) -->
+                        <td class="text-center p-2">
+                            <div class="fw-bold fs-5 score-display-box" id="score_display_{{ item.enrollment.id }}">
+                                {% if item.is_dropped %}
+                                <span class="text-danger">0.00</span>
+                                {% else %}
+                                <span class="text-primary">{{ item.attendance_score|floatformat:2 }}</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted font-monospace" style="font-size: 0.72rem;">من 10.00</small>
+                        </td>
+
+                        <!-- حالة الدارس والقطع عن الدورة -->
+                        <td class="text-center p-2" id="status_cell_{{ item.enrollment.id }}">
+                            {% if item.is_dropped %}
+                            <span class="badge bg-danger px-2 py-1 rounded-pill fw-bold status-badge">
+                                <i class="bi bi-slash-circle-fill me-1"></i>تم قطع الدورة
+                            </span>
+                            <div class="text-danger fw-bold mt-1" style="font-size: 0.7rem;">تجاوز الخصم 5 درجات</div>
+                            {% else %}
+                            <span class="badge bg-success px-2 py-1 rounded-pill fw-bold status-badge">
+                                <i class="bi bi-check-circle-fill me-1"></i>منتظم
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
+                            لا يوجد دارسون مسجلون في هذه الدورة حالياً.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- شريط الحفظ السفلي المثبت -->
+    {% if can_edit and not is_locked %}
+    <div class="sticky-actions-bar p-3 rounded-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <span>عند الضغط على حفظ، سيتم تحديث درجات الضبط والربط فورياً وتطبيق قيد الفصل التلقائي وتغذية كشف رصد النتائج.</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" name="save_only" class="btn btn-primary px-4 py-2 fw-bold rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-floppy2-fill"></i>
+                    <span>حفظ كشف الحضور والضبط</span>
+                </button>
+                <button type="submit" name="save_and_goto_grades" value="1" class="btn btn-success px-4 py-2 fw-bold rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>حفظ والانتقال لرصد درجات المواد</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // خريطة نقاط الخصم
+    const POINTS_CONFIG = {
+        'present': 0.0,
+        'medical_rest': 0.5,
+        'absent_full_day': 2.0,
+        'delay_lecture': 0.5,
+        'absent_lecture': 1.5,
+        'enter_supervisor_office': 1.5,
+        'enter_education_commander_office': 2.0,
+        'enter_chief_instructor_office': 2.5,
+        'enter_commander_office': 3.0
+    };
+
+    // عند تغيير حالة تشيكبوكس اليوم
+    function onDayCheckChange(checkbox, enrollmentId, dayKey) {
+        const isChecked = checkbox.checked;
+        const cell = document.getElementById(`cell_${enrollmentId}_${dayKey}`);
+        const pill = document.getElementById(`pill_${enrollmentId}_${dayKey}`);
+        const txt = document.getElementById(`txt_${enrollmentId}_${dayKey}`);
+        const hiddenInput = document.getElementById(`input_${enrollmentId}_${dayKey}`);
+        const reasonBox = document.getElementById(`reason_box_${enrollmentId}_${dayKey}`);
+        const selectBox = document.getElementById(`select_${enrollmentId}_${dayKey}`);
+
+        if (isChecked) {
+            // حاضر
+            hiddenInput.value = 'present';
+            if (cell) cell.classList.remove('is-absent');
+            if (pill) {
+                pill.classList.remove('status-absent');
+                pill.classList.add('status-present');
+            }
+            if (txt) txt.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>حاضر';
+            if (reasonBox) reasonBox.classList.add('d-none');
+        } else {
+            // غائب: إظهار سبب الغياب وتحديد القيمة الافتراضية
+            if (cell) cell.classList.add('is-absent');
+            if (pill) {
+                pill.classList.remove('status-present');
+                pill.classList.add('status-absent');
+            }
+            if (txt) txt.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i>غائب';
+            if (reasonBox) reasonBox.classList.remove('d-none');
+            hiddenInput.value = selectBox ? selectBox.value : 'medical_rest';
+        }
+
+        recalculateTraineeRow(enrollmentId);
+        updateStatisticsChips();
+    }
+
+    // عند تغيير سبب الغياب من القائمة المنسدلة
+    function onAbsenceReasonChange(select, enrollmentId, dayKey) {
+        const hiddenInput = document.getElementById(`input_${enrollmentId}_${dayKey}`);
+        hiddenInput.value = select.value;
+        recalculateTraineeRow(enrollmentId);
+        updateStatisticsChips();
+    }
+
+    // إضافة مخالفة أخرى
+    function addOtherInfraction(selectElement, enrollmentId) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
+
+        const code = selectedOption.value;
+        const label = selectedOption.getAttribute('data-label') || selectedOption.text;
+        const pts = parseFloat(selectedOption.getAttribute('data-pts') || 0.0);
+
+        const container = document.getElementById(`other_infs_container_${enrollmentId}`);
+
+        // إنشاء شارة المخالفة مع حقل مخفي وزر الحذف
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-warning bg-opacity-25 text-dark border border-warning inf-badge p-1 px-2 d-inline-flex align-items-center gap-1 active-inf-badge';
+        badge.setAttribute('data-pts', pts);
+
+        badge.innerHTML = `
+            <input type="hidden" name="other_inf_${enrollmentId}[]" value="${code}" data-pts="${pts}" class="other-inf-input">
+            <span>${label}</span>
+            <button type="button" class="btn-close btn-close-xs ms-1" style="font-size: 0.55rem; width: 0.5rem; height: 0.5rem;" onclick="removeOtherInfraction(this, ${enrollmentId})" title="حذف المخالفة"></button>
+        `;
+
+        container.appendChild(badge);
+
+        // إعادة ضبط القائمة المنسدلة
+        selectElement.selectedIndex = 0;
+
+        recalculateTraineeRow(enrollmentId);
+        updateStatisticsChips();
+    }
+
+    // حذف مخالفة أخرى
+    function removeOtherInfraction(button, enrollmentId) {
+        const badge = button.closest('.active-inf-badge');
+        if (badge) {
+            badge.remove();
+        }
+        recalculateTraineeRow(enrollmentId);
+        updateStatisticsChips();
+    }
+
+    // إعادة احتساب درجات الضبط والربط وقيد الفصل التلقائي لسطر الدارس
+    function recalculateTraineeRow(enrollmentId) {
+        let totalDeduction = 0.0;
+
+        // 1. حساب خصومات الأيام الستة
+        const dayInputs = document.querySelectorAll(`input.day-status-input[data-en-id="${enrollmentId}"]`);
+        dayInputs.forEach(input => {
+            const status = input.value;
+            if (status === 'medical_rest') {
+                totalDeduction += 0.5;
+            } else if (status === 'absent_full_day') {
+                totalDeduction += 2.0;
+            }
+        });
+
+        // 2. حساب خصومات المخالفات الأخرى
+        const otherInputs = document.querySelectorAll(`input.other-inf-input[name="other_inf_${enrollmentId}[]"]`);
+        otherInputs.forEach(input => {
+            const pts = parseFloat(input.getAttribute('data-pts') || 0.0);
+            totalDeduction += pts;
+        });
+
+        // تقريب لرقمين عشريين
+        totalDeduction = Math.round(totalDeduction * 100) / 100;
+
+        // تحديث عرض إجمالي الخصم
+        const deductionEl = document.getElementById(`total_deduction_${enrollmentId}`);
+        if (deductionEl) {
+            deductionEl.textContent = totalDeduction.toFixed(2);
+            if (totalDeduction > 5.0) {
+                deductionEl.className = 'fw-bold fs-6 total-deduction-val text-danger';
+            } else if (totalDeduction > 0) {
+                deductionEl.className = 'fw-bold fs-6 total-deduction-val text-warning text-dark';
+            } else {
+                deductionEl.className = 'fw-bold fs-6 total-deduction-val text-success';
+            }
+        }
+
+        const row = document.getElementById(`row_${enrollmentId}`);
+        const scoreDisplayEl = document.getElementById(`score_display_${enrollmentId}`);
+        const statusCellEl = document.getElementById(`status_cell_${enrollmentId}`);
+
+        // فحص قيد الفصل التلقائي: الخصم > 5 درجات
+        if (totalDeduction > 5.0) {
+            // قطع الدورة تلقائياً
+            if (row) row.classList.add('table-danger');
+            if (scoreDisplayEl) {
+                scoreDisplayEl.innerHTML = `<span class="text-danger fw-bold fs-5">0.00</span>`;
+            }
+            if (statusCellEl) {
+                statusCellEl.innerHTML = `
+                    <span class="badge bg-danger px-2 py-1 rounded-pill fw-bold status-badge">
+                        <i class="bi bi-slash-circle-fill me-1"></i>تم قطع الدورة
+                    </span>
+                    <div class="text-danger fw-bold mt-1" style="font-size: 0.7rem;">تجاوز الخصم 5 درجات</div>
+                `;
+            }
+        } else {
+            // منتظم - احتساب الدرجة: 10 - إجمالي الخصم
+            const calculatedScore = Math.max(0.0, 10.0 - totalDeduction);
+            if (row) row.classList.remove('table-danger');
+            if (scoreDisplayEl) {
+                scoreDisplayEl.innerHTML = `<span class="text-primary fw-bold fs-5">${calculatedScore.toFixed(2)}</span>`;
+            }
+            if (statusCellEl) {
+                statusCellEl.innerHTML = `
+                    <span class="badge bg-success px-2 py-1 rounded-pill fw-bold status-badge">
+                        <i class="bi bi-check-circle-fill me-1"></i>منتظم
+                    </span>
+                `;
+            }
+        }
+    }
+
+    // تحديث بطاقات الإحصائيات (منتظم / مقطوع)
+    function updateStatisticsChips() {
+        const rows = document.querySelectorAll('tr.trainee-row');
+        let total = rows.length;
+        let dropped = 0;
+        let regular = 0;
+
+        rows.forEach(r => {
+            if (r.classList.contains('table-danger')) {
+                dropped++;
+            } else {
+                regular++;
+            }
+        });
+
+        const totalEl = document.getElementById('statTotalCount');
+        const regEl = document.getElementById('statRegularCount');
+        const dropEl = document.getElementById('statDroppedCount');
+
+        if (totalEl) totalEl.textContent = total;
+        if (regEl) regEl.textContent = regular;
+        if (dropEl) dropEl.textContent = dropped;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // زر تحديد الجميع حاضر لكافة الأيام
+        const btnMarkAll = document.getElementById('btnMarkAllPresent');
+        if (btnMarkAll) {
+            btnMarkAll.addEventListener('click', function () {
+                if (!confirm('هل أنت متأكد من تحديد جميع الدارسين كـ "حاضر" لكافة أيام الأسبوع من السبت للخميس؟')) {
+                    return;
+                }
+                const checkboxes = document.querySelectorAll('input.day-checkbox');
+                checkboxes.forEach(cb => {
+                    if (!cb.checked && !cb.disabled) {
+                        cb.checked = true;
+                        const enId = cb.getAttribute('data-en-id');
+                        const dayKey = cb.getAttribute('data-day');
+                        onDayCheckChange(cb, enId, dayKey);
+                    }
+                });
+                updateStatisticsChips();
+            });
+        }
+
+        // البحث الفوري
+        const searchInput = document.getElementById('traineeSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const query = this.value.trim().toLowerCase();
+                const rows = document.querySelectorAll('tr.trainee-row');
+                rows.forEach(r => {
+                    const text = (r.getAttribute('data-search') || '').toLowerCase();
+                    if (!query || text.includes(query)) {
+                        r.style.display = '';
+                    } else {
+                        r.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // احتساب أولي لجميع الأسطر وتحديث الإحصائيات
+        updateStatisticsChips();
+    });
+</script>
+{% endblock %}

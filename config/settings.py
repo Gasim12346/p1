@@ -94,17 +94,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database configuration: PostgreSQL as the primary database
-DB_TYPE = os.getenv('DB_TYPE', 'postgresql').lower()
+# Database configuration: supports PostgreSQL and SQLite
+DB_TYPE = os.getenv('DB_TYPE', 'sqlite3').lower()
 
-if DB_TYPE == 'sqlite3':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
+if DB_TYPE == 'postgresql' or DB_TYPE == 'postgres':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -113,6 +106,13 @@ else:
             'PASSWORD': os.getenv('DB_PASSWORD', 'Game3d'),
             'HOST': os.getenv('DB_HOST', 'localhost'),
             'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 

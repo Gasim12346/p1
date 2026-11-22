@@ -85,6 +85,11 @@
                 <span>العودة لقائمة الدورات</span>
             </a>
             {% endif %}
+            <a href="{% url 'training:session_discipline_attendance' session.id %}"
+                class="btn btn-success text-white fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-calendar-check"></i>
+                <span>رصد الحضور والضبط</span>
+            </a>
             <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank"
                 class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
                 <i class="bi bi-printer-fill"></i>
@@ -238,8 +243,10 @@
                             <span class="badge bg-primary bg-opacity-10 text-primary font-monospace mb-1">
                                 العظمى: {{ session.attendance_max_grade|natural_number }}
                             </span>
-                            <div class="small text-muted" style="font-size: 0.75rem;">
-                                <i class="bi bi-shield-check text-success me-1"></i>مشرف الدورة
+                            <div>
+                                <a href="{% url 'training:session_discipline_attendance' session.id %}" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" style="font-size: 0.72rem;" title="فتح كشف رصد الحضور والضبط">
+                                    <i class="bi bi-pencil-square me-1"></i>رصد الحضور والضبط
+                                </a>
                             </div>
                         </th>
 
@@ -312,54 +319,30 @@
                         </td>
                         {% endfor %}
 
-                        <!-- درجات الضبط والربط -->
+                        <!-- درجات الضبط والربط (محسوبة من كشف الحضور والضبط) -->
                         <td class="text-center p-2 align-middle">
-                            {% if can_edit_attendance and not is_locked %}
                             <div class="d-flex flex-column align-items-center justify-content-center gap-1">
-                                <button type="button"
-                                    class="btn btn-sm {% if en.is_dropped %}btn-danger text-white{% elif en.discipline_infractions.exists %}btn-outline-warning text-dark{% else %}btn-outline-primary{% endif %} rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 discipline-trigger-btn"
-                                    id="btn_disc_{{ en.id }}" data-bs-toggle="modal" data-bs-target="#disciplineModal"
-                                    data-enrollment-id="{{ en.id }}" data-trainee-name="{{ en.trainee.name }}"
-                                    data-military-number="{{ en.trainee.military_number }}"
-                                    data-rank="{{ en.current_rank|default:'' }}"
-                                    data-unit="{{ en.current_unit|default:'' }}"
-                                    data-score="{% if en.is_dropped %}0{% elif en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% else %}{{ session.attendance_max_grade|unlocalize|default:'10' }}{% endif %}"
-                                    data-max="{{ session.attendance_max_grade|unlocalize|default:'10' }}"
-                                    data-is-dropped="{{ en.is_dropped|yesno:'true,false' }}"
-                                    data-drop-reason="{{ en.drop_reason|default:'' }}"
-                                    onclick="openDisciplineModal({{ en.id }}, this)"
-                                    title="إدارة مخالفات ورصد درجات الضبط والربط">
-                                    <i
-                                        class="bi {% if en.is_dropped %}bi-slash-circle-fill{% else %}bi-shield-shaded{% endif %}"></i>
-                                    <span id="btn_text_{{ en.id }}">{% if en.is_dropped %}تم قطع الدورة{% else %}درجات
-                                        الضبط والربط{% endif %}</span>
-                                    <span
-                                        class="badge {% if en.is_dropped %}bg-white text-danger{% else %}bg-primary text-white{% endif %} rounded-pill ms-1 font-monospace"
-                                        id="badge_disc_{{ en.id }}">
-                                        {% if en.is_dropped %}مفصول{% elif en.attendance_score is not None %}{{ en.attendance_score|floatformat:"-2" }}{% else %}{{ session.attendance_max_grade|floatformat:"-2"|default:"10" }}{% endif %}
-                                    </span>
-                                </button>
+                                {% if en.is_dropped %}
+                                <span class="badge bg-danger rounded-pill px-2 py-1">
+                                    <i class="bi bi-slash-circle-fill me-1"></i>تم قطع الدورة
+                                </span>
+                                {% else %}
+                                <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1 fw-bold fs-6 font-monospace" title="درجة الضبط والربط المحتسبة من كشف الحضور والضبط">
+                                    {{ en.attendance_score|default:session.attendance_max_grade|floatformat:2 }} / {{ session.attendance_max_grade }}
+                                </div>
+                                {% endif %}
 
+                                {% if can_edit_attendance and not is_locked %}
+                                <a href="{% url 'training:session_discipline_attendance' session.id %}" class="small text-decoration-none text-muted" style="font-size: 0.72rem;" title="تعديل الحضور والضبط">
+                                    <i class="bi bi-pencil-square text-success"></i> تعديل الحضور
+                                </a>
                                 <!-- حقل الدرجة المخفي لربط الحسابات التلقائية وحفظ النموذج -->
                                 <input type="hidden" name="att_{{ en.trainee.military_number }}"
                                     id="att_input_{{ en.id }}" class="attendance-grade"
                                     data-max="{{ session.attendance_max_grade|unlocalize }}"
                                     value="{% if en.is_dropped %}0.00{% elif en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% else %}{{ session.attendance_max_grade|unlocalize|default:'10.00' }}{% endif %}">
-                            </div>
-                            {% else %}
-                            <div class="grade-display-box mx-auto py-1 px-2 rounded-2 bg-light border text-center font-monospace readonly-attendance-grade"
-                                data-score="{% if en.attendance_score is not None %}{{ en.attendance_score|unlocalize }}{% endif %}"
-                                data-max="{{ session.attendance_max_grade|unlocalize }}"
-                                title="رصد درجات الضبط والربط محصور بمشرف الدورة أو مدير النظام">
-                                {% if en.is_dropped %}
-                                <span class="badge bg-danger text-white">تم قطع الدورة</span>
-                                {% elif en.attendance_score is not None %}
-                                <strong class="text-primary">{{ en.attendance_score|unlocalize }}</strong>
-                                {% else %}
-                                <span class="text-muted small">-</span>
                                 {% endif %}
                             </div>
-                            {% endif %}
                         </td>
 
                         <!-- المجموع المكتسب التلقائي -->
@@ -645,144 +628,6 @@
     </div>
 </div>
 
-<!-- نافذة منبثقة: درجات الضبط والربط وإدارة المخالفات -->
-<div class="modal fade" id="disciplineModal" tabindex="-1" aria-labelledby="disciplineModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-dark text-white py-3 px-4">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-shield-shaded text-warning fs-5"></i>
-                    <h5 class="modal-title fw-bold" id="disciplineModalLabel">
-                        سجل درجات الضبط والربط للدارس: <span id="discTraineeName" class="text-warning"></span>
-                    </h5>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="إغلاق"></button>
-            </div>
-
-            <div class="modal-body p-4 bg-light">
-                <!-- بطاقة ملخص الدارس والدرجة الحالية -->
-                <div class="card border-0 shadow-sm rounded-3 mb-3 p-3 bg-white">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-md-7">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-secondary font-monospace" id="discMilitaryNumber"></span>
-                                <strong class="text-dark" id="discRankAndName"></strong>
-                                <small class="text-muted" id="discUnit"></small>
-                            </div>
-                        </div>
-                        <div class="col-md-5 text-md-end">
-                            <span class="text-muted small">درجة الضبط والربط المحتسبة:</span>
-                            <strong class="fs-5 text-primary ms-1" id="discScoreDisplay">--</strong>
-                            <span class="text-muted small">/ <span id="discMaxGradeDisplay">10</span></span>
-                        </div>
-                    </div>
-
-                    <!-- تنبيه نجاح تسجيل المخالفة -->
-                    <div id="discSuccessAlert"
-                        class="alert alert-success mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-                        <span id="discSuccessMsg">تم تسجيل المخالفة بنجاح واحتساب درجات الضبط والربط.</span>
-                    </div>
-
-                    <!-- تنبيه قطع الدورة التلقائي عند تجاوز 5 نقاط -->
-                    <div id="discDroppedAlert"
-                        class="alert alert-danger mt-3 mb-0 d-none py-2 px-3 fw-bold small d-flex align-items-center gap-2">
-                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                        <div>
-                            <span>تنبيه نظامي (المادة 6): بلغت خصومات الضبط والربط أكثر من (5) درجات، وتم قطع الدورة عن الدارس تلقائياً.</span>
-                            <div class="small fw-normal text-danger-emphasis mt-1" id="discDropReason"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- نموذج تسجيل مخالفة جديدة -->
-                <div id="discAddFormCard" class="card border-0 shadow-sm rounded-3 mb-3 p-3 bg-white">
-                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                        <i class="bi bi-plus-circle-fill text-danger"></i>
-                        <span>تسجيل مخالفة جديدة للدارس</span>
-                    </h6>
-                    <form id="disciplineAddForm" onsubmit="event.preventDefault(); submitAddDisciplineInfraction();">
-                        {% csrf_token %}
-                        <input type="hidden" id="discCurrentEnrollmentId" value="">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold text-muted mb-1">تاريخ المخالفة</label>
-                                <input type="date" id="discInfractionDate" class="form-control form-control-sm"
-                                    required>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label small fw-bold text-muted mb-1">نوع المخالفة</label>
-                                <select id="discInfractionType" class="form-select form-select-sm" required
-                                    onchange="onDisciplineTypeChange(this)">
-                                    <option value="">-- اختر المخالفة من القائمة المعتمدة --</option>
-                                    <option value="delay_lecture">أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة)</option>
-                                    <option value="medical_rest">ب. الراحة الطبية لليوم الواحد (خصم نصف درجة)</option>
-                                    <option value="absent_full_day">ج. الغياب ليوم كامل (خصم درجتان)</option>
-                                    <option value="absent_lecture">د. الغياب عن المحاضرة الواحدة (خصم درجة ونصف)</option>
-                                    <option value="enter_supervisor_office">هـ. دخول مكتب المشرف (خصم درجة ونصف)</option>
-                                    <option value="enter_education_commander_office">و. دخول مكتب قائد جناح التعليم (خصم درجتان)</option>
-                                    <option value="enter_chief_instructor_office">ز. دخول مكتب كبير المعلمين (خصم درجتان ونصف)</option>
-                                    <option value="enter_commander_office">ح. دخول مكتب قائد المعهد (خصم ثلاث درجات)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted mb-1">ملاحظات (اختياري)</label>
-                                <input type="text" id="discInfractionNotes" class="form-control form-control-sm"
-                                    placeholder="تفاصيل أو ملاحظة...">
-                            </div>
-                            <div class="col-12 text-end mt-2">
-                                <button type="button" id="btnSubmitDiscipline" onclick="submitAddDisciplineInfraction()"
-                                    class="btn btn-sm btn-danger px-3 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center gap-1">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                    <span id="btnSubmitDisciplineText">تسجيل المخالفة واحتساب الدرجة</span>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- جدول المخالفات المسجلة -->
-                <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-                    <div
-                        class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
-                        <span class="fw-bold small text-dark">
-                            <i class="bi bi-card-list me-1 text-primary"></i>
-                            سجل المخالفات المسجلة للدارس:
-                        </span>
-                        <span class="badge bg-light text-dark border small" id="discInfractionsCountBadge">0
-                            مخالفات</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 text-center small">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 50px;">#</th>
-                                    <th style="width: 120px;">تاريخ المخالفة</th>
-                                    <th class="text-start">المخالفة</th>
-                                    <th>ملاحظات</th>
-                                    <th style="width: 80px;">إجراء</th>
-                                </tr>
-                            </thead>
-                            <tbody id="discInfractionsTableBody">
-                                <!-- يتم ملؤها ديناميكياً عبر AJAX -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="discEmptyState" class="p-4 text-center text-muted small d-none">
-                        <i class="bi bi-shield-check text-success fs-3 d-block mb-1"></i>
-                        <span>سجل نظيف: لا توجد أي مخالفات مسجلة على الدارس في هذه الدورة.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer bg-white py-2 px-3">
-                <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill"
-                    data-bs-dismiss="modal">إغلاق</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}

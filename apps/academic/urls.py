@@ -21,6 +21,7 @@ urlpatterns = [
     # النتائج ورصد الدرجات
     path('results/', views.results_center_view, name='results_center'),
     path('results/session/<int:session_id>/', views.results_entry_view, name='results_entry'),
+    path('results/session/<int:session_id>/attendance/', views.session_discipline_attendance_view, name='session_discipline_attendance'),
     path('results/session/<int:session_id>/sheet/', views.session_results_sheet_view, name='session_results_sheet'),
 
     # إدارة المعلمين
