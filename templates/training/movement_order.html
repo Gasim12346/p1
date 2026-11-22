@@ -417,30 +417,27 @@
 
         .traveler-sig-container {
             display: flex;
+            justify-content: {% if layout.traveler_sig_align == 'right' %}flex-start{% elif layout.traveler_sig_align == 'center' %}center{% else %}flex-end{% endif %};
 
-            justify-content: {
-                % if layout.traveler_sig_align=='right' %
+            margin-top: {
+                    {
+                    layout.traveler_sig_margin_top|default: 4
+                }
             }
 
-            flex-start {
-                % elif layout.traveler_sig_align=='center' %
-            }
-
-            center {
-                % else %
-            }
-
-            flex-end {
-                % endif %
-            }
-
-            ;
-            margin-top: {{ layout.traveler_sig_margin_top|default:4 }}px;
+            px;
             margin-bottom: 4px;
             padding: 0 16px;
         }
+
         .traveler-sig-text {
-            font-size: {{ layout.traveler_sig_size|default:14 }}px;
+            font-size: {
+                    {
+                    layout.traveler_sig_size|default: 14
+                }
+            }
+
+            px;
         }
 
         /* Signatures and Copies Footer */
@@ -639,11 +636,13 @@
                                     {% else %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;{% endif %}">
                         <div class="card-part fw-bold fs-6"
                             style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
-                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
+                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number
+                                }}</span>
                         </div>
                         <div class="name-part fw-bold fs-6"
                             style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
-                            {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
+                            {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name
+                            }}
                         </div>
                     </div>
                     <div class="name-part fw-bold fs-6"
@@ -655,20 +654,21 @@
             {% else %}
             <div class="trainee-line nco-line">
                 <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
-                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }}
+                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number
+                        }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }}
                     &nbsp;&nbsp; {{ enrollment.trainee.name }}
                 </div>
             </div>
             {% endif %}
 
-                <!-- Traveler Signature (موضع بداية الصفحة) -->
-                {% if layout.traveler_sig_position == 'top' %}
-                    <div class="traveler-sig-container">
-                        <div class="traveler-sig-text fw-bold">
-                            توقيع المسافر &nbsp;:&nbsp; ....................................................
-                        </div>
-                    </div>
-                {% endif %}
+            <!-- Traveler Signature (موضع بداية الصفحة) -->
+            {% if layout.traveler_sig_position == 'top' %}
+            <div class="traveler-sig-container">
+                <div class="traveler-sig-text fw-bold">
+                    توقيع المسافر &nbsp;:&nbsp; ....................................................
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Movement Details Table -->
             <table class="details-table">
@@ -699,7 +699,8 @@
                             {% if movement_date %}
                             {{ movement_date|date:"d / m / Y" }}م
                             {% else %}
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{ current_year }}م
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{
+                            current_year }}م
                             {% endif %}
                         </td>
                     </tr>
@@ -718,14 +719,14 @@
                 </tbody>
             </table>
 
-                <!-- Traveler Signature (موضع وسط الصفحة بعد الجدول) -->
-                {% if layout.traveler_sig_position == 'after_table' %}
-                    <div class="traveler-sig-container">
-                        <div class="traveler-sig-text fw-bold">
-                            توقيع المسافر &nbsp;:&nbsp; ....................................................
-                        </div>
-                    </div>
-                {% endif %}
+            <!-- Traveler Signature (موضع وسط الصفحة بعد الجدول) -->
+            {% if layout.traveler_sig_position == 'after_table' %}
+            <div class="traveler-sig-container">
+                <div class="traveler-sig-text fw-bold">
+                    توقيع المسافر &nbsp;:&nbsp; ....................................................
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Administrative Instructions -->
             <div>
@@ -741,18 +742,13 @@
                 <div class="declaration-body mt-1">
                     {{ order_settings.certificate_declaration }}
                 </div>
+                {% if layout.traveler_sig_position != 'top' and layout.traveler_sig_position != 'after_table' %}
                 <div class="traveler-sig-container">
-                    <div class="fw-bold fs-6">
+                    <div class="traveler-sig-text fw-bold">
                         توقيع المسافر &nbsp;:&nbsp; ....................................................
                     </div>
-                    {% if layout.traveler_sig_position != 'top_left' and layout.traveler_sig_position != 'top_same_line' and layout.traveler_sig_position != 'top' and layout.traveler_sig_position != 'after_table' %}
-                    <div class="traveler-sig-container">
-                        <div class="traveler-sig-text fw-bold">
-                            توقيع المسافر &nbsp;:&nbsp; ....................................................
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
 
