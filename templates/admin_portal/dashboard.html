@@ -1,8 +1,7 @@
 {% extends 'admin_portal/base_admin.html' %}
 {% load static %}
 
-{% block title %}لوحة القيادة والأدمن المنفصلة - {{ system_settings.system_name|default:"نظام النتائج والشهادات" }}{%
-endblock %}
+{% block title %}لوحة القيادة والأدمن المنفصلة - {{ system_settings.system_name|default:"نظام النتائج والشهادات" }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -649,8 +648,7 @@ endblock %}
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if u.profile.role == 'admin' or u.is_superuser or
-                                            u.profile.can_manage_users %}
+                                            {% if u.profile.role == 'admin' or u.is_superuser or u.profile.can_manage_users %}
                                             <span
                                                 class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i
                                                     class="bi bi-shield-lock-fill me-1"></i>مدير نظام (أدمن)</span>
@@ -678,8 +676,7 @@ endblock %}
 
                                             <!-- شارات الأذونات الممنوحة بأسلوب ويندوز -->
                                             <div class="mt-1 d-flex flex-wrap gap-1" style="max-width: 220px;">
-                                                {% if u.profile.can_manage_users or u.is_superuser or u.profile.role ==
-                                                'admin' %}
+                                                {% if u.profile.can_manage_users or u.is_superuser or u.profile.role == 'admin' %}
                                                 <span class="badge bg-danger text-white rounded-pill px-2 py-0"
                                                     style="font-size: 0.65rem;" title="التحكم الكامل"><i
                                                         class="bi bi-gear-fill me-1"></i>تحكم كامل</span>
@@ -3364,15 +3361,8 @@ endblock %}
                                                 <!-- سطر بيانات الدارس الضابط -->
                                                 <div id="previewMovOfficerLine"
                                                     style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                                    <div id="previewMovOfficerLineInner"
-                                                        class="d-flex align-items-center"
-                                                        style="gap: 16px; justify-content: flex-start;">
-                                                        <span id="previewMovCardPart"
-                                                            style="white-space: nowrap;">رقم البطاقة :
-                                                            235402384</span>
-                                                        <span id="previewMovNamePart"
-                                                            style="white-space: nowrap;">ملازم تقني / علي أحمد
-                                                            النيل</span>
+                                                    <div id="previewMovOfficerLineInner">
+                                                        <span>الأشخاص : رقم البطاقة 235402384 ملازم تقني / علي أحمد النيل</span>
                                                     </div>
                                                 </div>
 
@@ -3385,102 +3375,104 @@ endblock %}
                                                     </div>
                                                 </div>
 
-                                                        <!-- جدول بيانات ومسار التحرك -->
-                                                        <table id="previewMovTable"
-                                                            style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="width: 95px; font-weight: bold; padding: 1.5px 0;">
-                                                                    مـــــــــــــــــن :</td>
-                                                                <td id="previewMovFrom">{{ movement_settings.from_location }}
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">
-                                                                    الـــــــــــــــــي :</td>
-                                                                <td id="previewMovTo">{{ movement_settings.to_location_default }}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">
-                                                                    الســـــــــلاح
-                                                                    :</td>
-                                                                <td id="previewMovArms">{{ movement_settings.arms_default }}
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">
-                                                                    الذخيـــــــرة
-                                                                    :</td>
-                                                                <td id="previewMovAmmo">{{ movement_settings.ammunition_default }}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">
-                                                                    الغــــــــرض :
-                                                                </td>
-                                                                <td><span id="previewMovPurposePrefix">{{ movement_settings.purpose_prefix }}</span>دورة
-                                                                    أمن
-                                                                    سيبراني</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">تاريخ
-                                                                    القيام :
-                                                                </td>
-                                                                <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;11&nbsp;&nbsp;/&nbsp;2026م</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">
-                                                                    اللبـــــــــــس :</td>
-                                                                <td id="previewMovClothing">{{ movement_settings.clothing_instructions }}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">وسيلة
-                                                                    السفر
-                                                                    :
-                                                                </td>
-                                                                <td id="previewMovTravel">{{ movement_settings.travel_means }}
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="mov-label-col"
-                                                                    style="font-weight: bold; padding: 1.5px 0;">التصديق
-                                                                    :
-                                                                </td>
-                                                                <td id="previewMovRatification">{{ movement_settings.ratification_text }}</td>
-                                                            </tr>
-                                                        </table>
+                                                <!-- جدول بيانات ومسار التحرك -->
+                                                <table id="previewMovTable"
+                                                    style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="width: 95px; font-weight: bold; padding: 1.5px 0;">
+                                                            مـــــــــــــــــن :</td>
+                                                        <td id="previewMovFrom">{{
+                                                            movement_settings.from_location }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">
+                                                            الـــــــــــــــــي :</td>
+                                                        <td id="previewMovTo">{{
+                                                            movement_settings.to_location_default }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">
+                                                            الســـــــــلاح
+                                                            :</td>
+                                                        <td id="previewMovArms">{{
+                                                            movement_settings.arms_default }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">
+                                                            الذخيـــــــرة
+                                                            :</td>
+                                                        <td id="previewMovAmmo">{{
+                                                            movement_settings.ammunition_default }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">
+                                                            الغــــــــرض :
+                                                        </td>
+                                                        <td><span id="previewMovPurposePrefix">{{
+                                                                movement_settings.purpose_prefix }}</span>دورة
+                                                            أمن
+                                                            سيبراني</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">تاريخ
+                                                            القيام :
+                                                        </td>
+                                                        <td>15 / 11 / 2026م</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">
+                                                            اللبـــــــــــس :</td>
+                                                        <td id="previewMovClothing">{{
+                                                            movement_settings.clothing_instructions }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">وسيلة
+                                                            السفر
+                                                            :
+                                                        </td>
+                                                        <td id="previewMovTravel">{{
+                                                            movement_settings.travel_means }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="mov-label-col"
+                                                            style="font-weight: bold; padding: 1.5px 0;">التصديق
+                                                            :
+                                                        </td>
+                                                        <td id="previewMovRatification">{{
+                                                            movement_settings.ratification_text }}</td>
+                                                    </tr>
+                                                </table>
 
-                                                        <!-- التعليمات الإدارية -->
-                                                        <div id="previewMovAdminInstWrapper" style="margin-top: 8px;">
-                                                            <div id="previewMovAdminInstHeader"
-                                                                style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">
-                                                                التعليمات الادارية</div>
-                                                            <div id="previewMovAdminInst"
-                                                                style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
-                                                                {{ movement_settings.admin_instructions }}
-                                                            </div>
-                                                        </div>
+                                                <!-- التعليمات الإدارية -->
+                                                <div id="previewMovAdminInstWrapper" style="margin-top: 8px;">
+                                                    <div id="previewMovAdminInstHeader"
+                                                        style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">
+                                                        التعليمات الادارية</div>
+                                                    <div id="previewMovAdminInst"
+                                                        style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
+                                                        {{ movement_settings.admin_instructions }}
+                                                    </div>
+                                                </div>
 
-                                                        <!-- الشهادة -->
-                                                        <div id="previewMovDeclarationWrapper" style="margin-top: 8px;">
-                                                            <div id="previewMovDeclarationHeader"
-                                                                style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">
-                                                                الشهـــــــــــادة</div>
-                                                            <div id="previewMovDeclaration"
-                                                                style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
-                                                                {{ movement_settings.certificate_declaration }}
-                                                            </div>
-                                                            <div id="previewMovTravelerSign"
-                                                                style="text-align: left; font-size: 0.67rem; font-weight: bold; margin-top: 4px;">
-                                                                توقيع المسافر : ............................
-                                                            </div>
-                                                        </div>
+                                                <!-- الشهادة -->
+                                                <div id="previewMovDeclarationWrapper" style="margin-top: 8px;">
+                                                    <div id="previewMovDeclarationHeader"
+                                                        style="font-weight: bold; text-decoration: underline; text-align: center; font-size: 0.72rem;">
+                                                        الشهـــــــــــادة</div>
+                                                    <div id="previewMovDeclaration"
+                                                        style="font-size: 0.65rem; text-align: center; margin-top: 3px; line-height: 1.4;">
+                                                        {{ movement_settings.certificate_declaration }}
                                                     </div>
                                                     <div id="previewMovTravelerSign"
                                                         style="text-align: left; font-size: 0.67rem; font-weight: bold; margin-top: 4px;">
@@ -3879,9 +3871,7 @@ endblock %}
                             <i class="bi bi-funnel-fill text-primary"></i>
                             <h6 class="fw-bold mb-0 text-dark">فلاتر البحث وتتبع مسار المستخدمين</h6>
                         </div>
-                        {% if activity_user or activity_action or activity_category or activity_date != 'all' or
-                        activity_q
-                        %}
+                        {% if activity_user or activity_action or activity_category or activity_date != 'all' or activity_q %}
                         <a href="{% url 'training:admin_dashboard' %}?tab=activity-log#pane-activity-log"
                             class="badge bg-danger bg-opacity-10 text-danger text-decoration-none px-3 py-1 rounded-pill">
                             <i class="bi bi-x-circle me-1"></i> إعادة ضبط الفلاتر
@@ -3902,10 +3892,8 @@ endblock %}
                                 <select name="activity_user" class="form-select form-select-sm rounded-3">
                                     <option value="">-- جميع المستخدمين (عرض عام) --</option>
                                     {% for u in activity_users_list %}
-                                    <option value="{{ u.username }}" {% if activity_user==u.username %}selected{% endif
-                                        %}>
-                                        {{ u.username }} ({{ u.get_full_name|default:u.username }} - {{
-                                        u.profile.get_role_display|default:"مستخدم" }})
+                                    <option value="{{ u.username }}" {% if activity_user == u.username %}selected{% endif %}>
+                                        {{ u.username }} ({{ u.get_full_name|default:u.username }} - {{ u.profile.get_role_display|default:"مستخدم" }})
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -3917,9 +3905,7 @@ endblock %}
                                 <select name="activity_action" class="form-select form-select-sm rounded-3">
                                     <option value="ALL">الكل</option>
                                     {% for act_code, act_label in activity_actions %}
-                                    <option value="{{ act_code }}" {% if activity_action==act_code %}selected{% endif
-                                        %}>{{
-                                        act_label }}</option>
+                                    <option value="{{ act_code }}" {% if activity_action == act_code %}selected{% endif %}>{{ act_label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -3930,9 +3916,7 @@ endblock %}
                                 <select name="activity_category" class="form-select form-select-sm rounded-3">
                                     <option value="ALL">الكل (كافة الأقسام)</option>
                                     {% for cat_code, cat_label in activity_categories %}
-                                    <option value="{{ cat_code }}" {% if activity_category==cat_code %}selected{% endif
-                                        %}>
-                                        {{ cat_label }}</option>
+                                    <option value="{{ cat_code }}" {% if activity_category == cat_code %}selected{% endif %}>{{ cat_label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -3941,18 +3925,10 @@ endblock %}
                             <div class="col-md-6 col-lg-2">
                                 <label class="form-label small fw-bold text-dark">الفترة:</label>
                                 <select name="activity_date" class="form-select form-select-sm rounded-3">
-                                    <option value="all" {% if activity_date=='all' %}selected{% endif %}>
-                                        كافة
-                                        الفترات</option>
-                                    <option value="today" {% if activity_date=='today' %}selected{% endif %}>
-                                        اليوم
-                                        فقط</option>
-                                    <option value="7days" {% if activity_date=='7days' %}selected{% endif %}>آخر
-                                        7
-                                        أيام</option>
-                                    <option value="30days" {% if activity_date=='30days' %}selected{% endif %}>
-                                        آخر
-                                        30 يوماً</option>
+                                    <option value="all" {% if activity_date == 'all' %}selected{% endif %}>كافة الفترات</option>
+                                    <option value="today" {% if activity_date == 'today' %}selected{% endif %}>اليوم فقط</option>
+                                    <option value="7days" {% if activity_date == '7days' %}selected{% endif %}>آخر 7 أيام</option>
+                                    <option value="30days" {% if activity_date == '30days' %}selected{% endif %}>آخر 30 يوماً</option>
                                 </select>
                             </div>
 
@@ -4115,9 +4091,7 @@ endblock %}
                                         </div>
                                         {% if log.target_model %}
                                         <div class="text-muted font-monospace mt-1" style="font-size: 0.72rem;">
-                                            <i class="bi bi-tag me-1"></i> الكائن: {{ log.target_model }}{% if
-                                            log.target_id
-                                            %} [{{ log.target_id }}]{% endif %}
+                                            <i class="bi bi-tag me-1"></i> الكائن: {{ log.target_model }}{% if log.target_id %} [{{ log.target_id }}]{% endif %}
                                         </div>
                                         {% endif %}
                                     </td>
@@ -6066,11 +6040,9 @@ endblock %}
             // =====================================================================
             // بيانات ومخططات التحليلات البيانية العامة (Analytics Charts.js)
             // =====================================================================
-            const GRADE_DIST_DATA = {{ grade_distribution_json|default: "[]" | safe
-        }
-    };
-    const FORCES_DIST_DATA = {{ forces_list_json|default: "[]" | safe }};
-    const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default: 0 }};
+            const GRADE_DIST_DATA = {{ grade_distribution_json|default:"[]"|safe }};
+            const FORCES_DIST_DATA = {{ forces_list_json|default:"[]"|safe }};
+            const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
     const FORCES_COLOR_PALETTE = [
         '#0284c7', // أزرق سماوي / جوية
         '#15803d', // أخضر عسكري / برية
@@ -6543,18 +6515,842 @@ endblock %}
 
         // مزامنة فورية حية لحقول نصوص أمر التحرك مع المعاينة
         const movSyncMap = [
-            { name: 'bismillah_text', targetId: 'previewMovBismillah' },
-            { name: 'security_label', targetId: 'previewMovSecurity' },
-            { name: 'security_label', targetId: 'previewMovSecurityBottom' },
-            { name: 'order_title', targetId: 'previewMovTitle' },
-            { name: 'issuing_authority_text', targetId: 'previewMovIssuing' },
-            { name: 'from_location', targetId: 'previewMovFrom' },
-            { name: 'to_location_default', targetId: 'previewMovTo' },
-            { name: 'arms_default', targetId: 'previewMovArms' },
-            { name: 'ammunition_default', targetId: 'previewMovAmmo' },
-            { name: 'purpose_prefix', targetId: 'previewMovPurposePrefix' },
-            { name: 'clothing_instructions', targetId: 'previewMovClothing' },
-            { name: 'travel_means', targetId: 'previewMovTravel' },
-            { name: 'ratification_text', targetId: 'previewMovRatification' },
-            { name: 'admin_instructions', targetId: 'previewMovAdminInst' },
-            ...[truncated for diff preview]
+                                { name: 'bismillah_text', targetId: 'previewMovBismillah' },
+                                { name: 'security_label', targetId: 'previewMovSecurity' },
+                                { name: 'security_label', targetId: 'previewMovSecurityBottom' },
+                                { name: 'order_title', targetId: 'previewMovTitle' },
+                                { name: 'issuing_authority_text', targetId: 'previewMovIssuing' },
+                                { name: 'from_location', targetId: 'previewMovFrom' },
+                                { name: 'to_location_default', targetId: 'previewMovTo' },
+                                { name: 'arms_default', targetId: 'previewMovArms' },
+                                { name: 'ammunition_default', targetId: 'previewMovAmmo' },
+                                { name: 'purpose_prefix', targetId: 'previewMovPurposePrefix' },
+                                { name: 'clothing_instructions', targetId: 'previewMovClothing' },
+                                { name: 'travel_means', targetId: 'previewMovTravel' },
+                                { name: 'ratification_text', targetId: 'previewMovRatification' },
+                                { name: 'admin_instructions', targetId: 'previewMovAdminInst' },
+                                { name: 'certificate_declaration', targetId: 'previewMovDeclaration' },
+                                { name: 'signer_rank', targetId: 'previewMovSignerRank' },
+                                { name: 'signer_name', targetId: 'previewMovSignerName' },
+                                { name: 'signer_title', targetId: 'previewMovSignerTitle' },
+                                { name: 'signer_dept', targetId: 'previewMovSignerDept' },
+                                { name: 'copy_to_1', targetId: 'previewMovCopy1' },
+                                { name: 'copy_to_2', targetId: 'previewMovCopy2' },
+                            ];
+                            movSyncMap.forEach(item => {
+                                const inputEl = document.querySelector(`#subpane-movement-order [name="${item.name}"]`);
+                                const targetEl = document.getElementById(item.targetId);
+                                if (inputEl && targetEl) {
+                                    inputEl.addEventListener('input', function () {
+                                        let val = this.value;
+                                        if (item.name === 'admin_instructions' || item.name === 'copy_to_1') {
+                                            val = val.replace(/\{unit\}/g, 'سلاح الإشارة');
+                                        }
+                                        targetEl.textContent = val;
+                                    });
+                                }
+                            });
+
+                            // مزامنة شفافية العلامة المائية لأمر التحرك لحظياً
+                            const opacityInput = document.querySelector('#subpane-movement-order input[name="watermark_opacity"]');
+                            const watermarkImg = document.getElementById('previewMovWatermarkImg');
+                            if (opacityInput && watermarkImg) {
+                                opacityInput.addEventListener('input', function () {
+                                    const val = parseFloat(this.value);
+                                    if (!isNaN(val)) {
+                                        watermarkImg.style.opacity = val;
+                                    }
+                                });
+                            }
+
+                            // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
+                            const hash = window.location.hash;
+                            if (hash) {
+                                const triggerEl = document.querySelector(`.admin-sidebar-nav [data-bs-target="${hash}"]`);
+                                if (triggerEl) {
+                                    const tab = new bootstrap.Tab(triggerEl);
+                                    tab.show();
+                                }
+                            }
+                            const tabButtons = document.querySelectorAll('.admin-sidebar-nav button[data-bs-toggle="pill"]');
+                            tabButtons.forEach(btn => {
+                                btn.addEventListener('shown.bs.tab', function (e) {
+                                    const target = e.target.getAttribute('data-bs-target');
+                                    if (target) {
+                                        history.replaceState(null, null, target);
+                                    }
+                                });
+                            });
+
+                            // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
+                            const filterCards = document.querySelectorAll('.role-filter-card');
+                            const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
+                            const countBadge = document.getElementById('usersFilterCountBadge');
+
+                            filterCards.forEach(card => {
+                                card.addEventListener('click', function () {
+                                    filterCards.forEach(c => {
+                                        c.classList.remove('active', 'border-primary', 'shadow');
+                                        c.style.backgroundColor = '';
+                                    });
+                                    this.classList.add('active', 'border-primary', 'shadow');
+                                    this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+
+                                    const filterRole = this.getAttribute('data-filter-role');
+                                    let visibleCount = 0;
+
+                                    userRows.forEach(row => {
+                                        const rowRole = row.getAttribute('data-role');
+                                        if (filterRole === 'all' || rowRole === filterRole) {
+                                            row.style.display = '';
+                                            visibleCount++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+
+                                    if (countBadge) {
+                                        countBadge.textContent = `${visibleCount} مستخدم`;
+                                    }
+                                });
+                            });
+
+                            // حقل البحث السريع في جدول المستخدمين
+                            const usersSearchInput = document.getElementById('usersSearchInput');
+                            if (usersSearchInput) {
+                                usersSearchInput.addEventListener('input', function () {
+                                    const query = this.value.toLowerCase().trim();
+                                    let visibleCount = 0;
+                                    userRows.forEach(row => {
+                                        const username = row.getAttribute('data-username') || '';
+                                        const fullname = row.getAttribute('data-fullname') || '';
+                                        const military = row.getAttribute('data-military') || '';
+                                        if (username.includes(query) || fullname.includes(query) || military.includes(query)) {
+                                            row.style.display = '';
+                                            visibleCount++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+                                    if (countBadge) {
+                                        countBadge.textContent = `${visibleCount} مستخدم`;
+                                    }
+                                });
+                            }
+
+                            // تصفية فورية حية في جدول سجل النشاط
+                            const liveActivitySearchInput = document.getElementById('liveActivitySearchInput');
+                            const activityRows = document.querySelectorAll('#activityLogsTable tbody tr.activity-row');
+                            const activityCountBadge = document.getElementById('activityVisibleCountBadge');
+
+                            if (liveActivitySearchInput) {
+                                liveActivitySearchInput.addEventListener('input', function () {
+                                    const q = this.value.toLowerCase().trim();
+                                    let count = 0;
+                                    activityRows.forEach(row => {
+                                        const text = row.getAttribute('data-search-text') || '';
+                                        if (!q || text.includes(q)) {
+                                            row.style.display = '';
+                                            count++;
+                                        } else {
+                                            row.style.display = 'none';
+                                        }
+                                    });
+                                    if (activityCountBadge) {
+                                        activityCountBadge.textContent = `${count} عملية معروضة`;
+                                    }
+                                });
+                            }
+
+                            const modal = document.getElementById('addInstructorModal');
+                            if (modal) {
+                                modal.addEventListener('show.bs.modal', function () {
+                                    modalUpdateRanks();
+                                    modalUpdateUnits();
+                                });
+                                // Initial call if modal is somehow active
+                                modalUpdateRanks();
+                            }
+
+                            // =====================================================================
+                            // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
+                            // =====================================================================
+                            const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe }};
+                    const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json| safe }};
+                const matrixUserSelect = document.getElementById('matrixUserSelect');
+                const matrixSaveBtn = document.getElementById('btnMatrixSave');
+                const matrixSaveBtnBottom = document.getElementById('btnMatrixSaveBottom');
+                const matrixSaveSpinner = document.getElementById('matrixSaveSpinner');
+                const matrixSaveIcon = document.getElementById('matrixSaveIcon');
+
+                function updatePermCardStyle(cb) {
+                    const modId = cb.getAttribute('data-module');
+                    const actId = cb.getAttribute('data-action');
+                    const card = document.getElementById(`permCard_${modId}_${actId}`);
+                    if (card) {
+                        if (cb.checked) {
+                            card.style.borderColor = '#10b981';
+                            card.style.backgroundColor = '#f0fdf4';
+                        } else {
+                            card.style.borderColor = '#e2e8f0';
+                            card.style.backgroundColor = '#ffffff';
+                        }
+                    }
+                }
+
+                function refreshMatrixCounters() {
+                    let totalAvailable = 0;
+                    let totalGranted = 0;
+
+                    for (const modId in MODULES_PERM_CATALOG) {
+                        let modTotal = 0;
+                        let modGranted = 0;
+                        for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                            totalAvailable++;
+                            modTotal++;
+                            const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                            if (cb && cb.checked) {
+                                totalGranted++;
+                                modGranted++;
+                            }
+                        }
+                        const modBadge = document.getElementById(`modCount_${modId}`);
+                        if (modBadge) {
+                            modBadge.textContent = `${modGranted} / ${modTotal}`;
+                            if (modGranted === modTotal) {
+                                modBadge.className = 'badge rounded-pill border px-3 py-1 bg-success text-white fw-bold mod-counter-badge';
+                            } else if (modGranted > 0) {
+                                modBadge.className = 'badge rounded-pill border px-3 py-1 bg-primary text-white fw-bold mod-counter-badge';
+                            } else {
+                                modBadge.className = 'badge rounded-pill border px-3 py-1 bg-light text-dark fw-bold mod-counter-badge';
+                            }
+                        }
+                    }
+
+                    const totalDenied = totalAvailable - totalGranted;
+                    const percent = totalAvailable > 0 ? Math.round((totalGranted / totalAvailable) * 100) : 0;
+
+                    const grantedElem = document.getElementById('matrixStatsGranted');
+                    const deniedElem = document.getElementById('matrixStatsDenied');
+                    const percentElem = document.getElementById('matrixStatsPercent');
+                    const progressElem = document.getElementById('matrixStatsProgressBar');
+
+                    if (grantedElem) grantedElem.textContent = totalGranted;
+                    if (deniedElem) deniedElem.textContent = totalDenied;
+                    if (percentElem) percentElem.textContent = `${percent}%`;
+                    if (progressElem) {
+                        progressElem.style.width = `${percent}%`;
+                        if (percent >= 80) {
+                            progressElem.className = 'progress-bar bg-success';
+                        } else if (percent >= 40) {
+                            progressElem.className = 'progress-bar bg-primary';
+                        } else {
+                            progressElem.className = 'progress-bar bg-warning';
+                        }
+                    }
+                }
+
+                function applyMatrixData(matrix) {
+                    for (const modId in MODULES_PERM_CATALOG) {
+                        for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                            const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                            if (cb) {
+                                const isAllowed = Boolean(matrix && matrix[modId] && matrix[modId][actId]);
+                                cb.checked = isAllowed;
+                                updatePermCardStyle(cb);
+                            }
+                        }
+                    }
+                    refreshMatrixCounters();
+                }
+
+                function updateSelectedUserMeta() {
+                    if (!matrixUserSelect || !matrixUserSelect.selectedOptions.length) return;
+                    const opt = matrixUserSelect.selectedOptions[0];
+                    const roleDisplay = opt.getAttribute('data-role-display') || '--';
+                    const rank = opt.getAttribute('data-rank') || '';
+                    const mil = opt.getAttribute('data-mil') || '';
+                    const unit = opt.getAttribute('data-unit') || '';
+                    const active = opt.getAttribute('data-active') === '1';
+
+                    const roleDisplayElem = document.getElementById('matrixRoleDisplay');
+                    const milRankElem = document.getElementById('matrixMilRankInfo');
+                    const unitElem = document.getElementById('matrixUnitInfo');
+                    const statusElem = document.getElementById('matrixStatusBadge');
+
+                    if (roleDisplayElem) roleDisplayElem.textContent = roleDisplay;
+                    if (milRankElem) milRankElem.textContent = rank || mil ? `الرتبة/النمرة: ${rank} ${mil}`.trim() : 'المعلومات العسكرية: غير محددة';
+                    if (unitElem) unitElem.textContent = unit ? `الوحدة: ${unit}` : '';
+                    if (statusElem) {
+                        statusElem.innerHTML = active
+                            ? '<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold">حساب نشط ومفعل</span>'
+                            : '<span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fw-bold">حساب معطل</span>';
+                    }
+                }
+
+                function loadUserMatrix(userId) {
+                    if (!userId) return;
+                    updateSelectedUserMeta();
+
+                    // جلب أذونات المستخدم عبر الـ API
+                    fetch(`{% url 'training:api_permissions_matrix' %}?user_id=${userId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success' && data.matrix) {
+                                applyMatrixData(data.matrix);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching user permissions matrix:', err);
+                        });
+                }
+
+                if (matrixUserSelect) {
+                    matrixUserSelect.addEventListener('change', function () {
+                        loadUserMatrix(this.value);
+                    });
+                    // تحميل البيانات الأولية للمستخدم المختار
+                    updateSelectedUserMeta();
+                    const initialMatrix = {{ selected_matrix_json| safe }};
+                if (initialMatrix && Object.keys(initialMatrix).length > 0) {
+                    applyMatrixData(initialMatrix);
+                } else if (matrixUserSelect.value) {
+                    loadUserMatrix(matrixUserSelect.value);
+                }
+        }
+
+                // تفاعل البطاقات عند النقر على أي مكان فيها
+                document.querySelectorAll('.matrix-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        updatePermCardStyle(this);
+                        refreshMatrixCounters();
+                    });
+                });
+
+                document.querySelectorAll('.perm-action-card').forEach(card => {
+                    card.addEventListener('click', function (e) {
+                        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') {
+                            return;
+                        }
+                        const cb = this.querySelector('.matrix-checkbox');
+                        if (cb) {
+                            cb.checked = !cb.checked;
+                            updatePermCardStyle(cb);
+                            refreshMatrixCounters();
+                        }
+                    });
+                });
+
+                // زر تبديل قسم محدد بالكامل
+                document.querySelectorAll('.btn-toggle-module').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const modId = this.getAttribute('data-module');
+                        const checkboxes = document.querySelectorAll(`.matrix-checkbox[data-module="${modId}"]`);
+                        if (!checkboxes.length) return;
+                        const allChecked = Array.from(checkboxes).every(c => c.checked);
+                        checkboxes.forEach(c => {
+                            c.checked = !allChecked;
+                            updatePermCardStyle(c);
+                        });
+                        refreshMatrixCounters();
+                    });
+                });
+
+                // زر تحديد الكل لكافة الأقسام
+                const btnSelectAll = document.getElementById('btnMatrixSelectAll');
+                if (btnSelectAll) {
+                    btnSelectAll.addEventListener('click', function () {
+                        document.querySelectorAll('.matrix-checkbox').forEach(c => {
+                            c.checked = true;
+                            updatePermCardStyle(c);
+                        });
+                        refreshMatrixCounters();
+                    });
+                }
+
+                // زر حجب الكل لكافة الأقسام
+                const btnDeselectAll = document.getElementById('btnMatrixDeselectAll');
+                if (btnDeselectAll) {
+                    btnDeselectAll.addEventListener('click', function () {
+                        document.querySelectorAll('.matrix-checkbox').forEach(c => {
+                            c.checked = false;
+                            updatePermCardStyle(c);
+                        });
+                        refreshMatrixCounters();
+                    });
+                }
+
+                // زر استعادة إعدادات الدور الافتراضية
+                const btnResetRole = document.getElementById('btnMatrixResetRole');
+                if (btnResetRole) {
+                    btnResetRole.addEventListener('click', function () {
+                        if (!matrixUserSelect || !matrixUserSelect.selectedOptions.length) return;
+                        const opt = matrixUserSelect.selectedOptions[0];
+                        const role = opt.getAttribute('data-role');
+                        if (!role || !ROLE_DEFAULT_PERMISSIONS[role]) {
+                            alert('لم يتم العثور على أذونات افتراضية لهذا الدور.');
+                            return;
+                        }
+                        if (confirm(`هل أنت متأكد من استعادة الأذونات الافتراضية المخصصة لدور (${opt.getAttribute('data-role-display')})؟`)) {
+                            applyMatrixData(ROLE_DEFAULT_PERMISSIONS[role]);
+                        }
+                    });
+                }
+
+                // حفظ المصفوفة عبر AJAX
+                function saveMatrixAction() {
+                    if (!matrixUserSelect || !matrixUserSelect.value) {
+                        alert('يرجى اختيار مستخدم أولاً.');
+                        return;
+                    }
+                    const userId = matrixUserSelect.value;
+                    const matrixPayload = {};
+                    for (const modId in MODULES_PERM_CATALOG) {
+                        matrixPayload[modId] = {};
+                        for (const actId in MODULES_PERM_CATALOG[modId].actions) {
+                            const cb = document.getElementById(`permCheck_${modId}_${actId}`);
+                            matrixPayload[modId][actId] = cb ? Boolean(cb.checked) : false;
+                        }
+                    }
+
+                    if (matrixSaveSpinner) matrixSaveSpinner.classList.remove('d-none');
+                    if (matrixSaveIcon) matrixSaveIcon.classList.add('d-none');
+                    if (matrixSaveBtn) matrixSaveBtn.disabled = true;
+                    if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = true;
+
+                    const saveUrl = `{% url 'training:user_update_permissions_matrix' 0 %}`.replace('/0/', `/${userId}/`);
+
+                    fetch(saveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ permissions_matrix: matrixPayload })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (matrixSaveSpinner) matrixSaveSpinner.classList.add('d-none');
+                            if (matrixSaveIcon) matrixSaveIcon.classList.remove('d-none');
+                            if (matrixSaveBtn) matrixSaveBtn.disabled = false;
+                            if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = false;
+
+                            if (data.status === 'success') {
+                                // إشعار نجاح عائم
+                                const toastDiv = document.createElement('div');
+                                toastDiv.className = 'alert alert-success shadow-lg border-0 rounded-4 position-fixed bottom-0 end-0 m-4 p-3 d-flex align-items-center gap-3';
+                                toastDiv.style.zIndex = '9999';
+                                toastDiv.innerHTML = `
+                        <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+                        <div>
+                            <div class="fw-bold">${data.message}</div>
+                            <div class="small text-muted">تم تحديث صلاحيات الحساب ومزامنة أذونات النظام بنجاح.</div>
+                        </div>
+                    `;
+                                document.body.appendChild(toastDiv);
+                                setTimeout(() => {
+                                    toastDiv.remove();
+                                }, 4000);
+                            } else {
+                                alert(data.message || 'حدث خطأ أثناء حفظ مصفوفة الصلاحيات.');
+                            }
+                        })
+                        .catch(err => {
+                            if (matrixSaveSpinner) matrixSaveSpinner.classList.add('d-none');
+                            if (matrixSaveIcon) matrixSaveIcon.classList.remove('d-none');
+                            if (matrixSaveBtn) matrixSaveBtn.disabled = false;
+                            if (matrixSaveBtnBottom) matrixSaveBtnBottom.disabled = false;
+                            console.error('Error saving permissions matrix:', err);
+                            alert('تعذر الاتصال بالخادم لحفظ مصفوفة الصلاحيات.');
+                        });
+                }
+
+                if (matrixSaveBtn) {
+                    matrixSaveBtn.addEventListener('click', saveMatrixAction);
+                }
+                if (matrixSaveBtnBottom) {
+                    matrixSaveBtnBottom.addEventListener('click', saveMatrixAction);
+                }
+
+                // =====================================================================
+                // المخططات البيانية التفاعلية المدعومة بأنيميشن سلس (Animated Charts.js)
+                // =====================================================================
+                initAnalyticsCharts();
+    });
+
+                // متغيرات المخططات البيانية وبيانات التحليلات
+                const GRADE_DIST_DATA = {{ grade_distribution_json| safe }};
+                const FORCES_DIST_DATA = {{ forces_list_json| safe }};
+                const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
+                const FORCES_COLOR_PALETTE = [
+                    '#0284c7', // أزرق سماوي / جوية
+                    '#15803d', // أخضر عسكري / برية
+                    '#1e3a8a', // كحلي ملكي / بحرية
+                    '#7c3aed', // بنفسجي / دفاع جوي
+                    '#d97706', // ذهبي / حرس
+                    '#059669', // تركواز / شرطة عسكرية
+                    '#e11d48', // أحمر داكن / أمن
+                    '#475569'  // رمادي / أخرى
+                ];
+
+                let currentGradeChartType = 'doughnut';
+                let currentForceChartType = 'bar';
+
+                // إضافة ألوان النقاط التعريفية لبطاقات القوات
+                function applyForcePillColors() {
+                    const dots = document.querySelectorAll('.force-color-dot');
+                    dots.forEach((dot, idx) => {
+                        const color = FORCES_COLOR_PALETTE[idx % FORCES_COLOR_PALETTE.length];
+                        dot.style.backgroundColor = color;
+                    });
+                }
+
+                // إضافة نص إحصائي بمركز المخطط الدائري المجوف
+                const centerDonutGradePlugin = {
+                    id: 'centerDonutGradePlugin',
+                    afterDraw(chart) {
+                        if (chart.config.type !== 'doughnut') return;
+                        const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        const centerX = left + width / 2;
+                        const centerY = top + height / 2;
+
+                        ctx.font = '900 26px Cairo, sans-serif';
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillText(TOTAL_GRADED_TRAINEES, centerX, centerY - 10);
+
+                        ctx.font = '700 12px Cairo, sans-serif';
+                        ctx.fillStyle = '#64748b';
+                        ctx.fillText('دارس معتمد', centerX, centerY + 14);
+                        ctx.restore();
+                    }
+                };
+
+                function renderGradesChart(chartType) {
+                    const canvas = document.getElementById('gradesAnalyticsChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+
+                    if (window.gradesChartInstance) {
+                        window.gradesChartInstance.destroy();
+                    }
+
+                    const labels = GRADE_DIST_DATA.map(d => d.label);
+                    const dataValues = GRADE_DIST_DATA.map(d => d.count);
+                    const backgroundColors = GRADE_DIST_DATA.map(d => d.color);
+
+                    Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
+
+                    if (chartType === 'doughnut') {
+                        window.gradesChartInstance = new Chart(canvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: dataValues,
+                                    backgroundColor: backgroundColors,
+                                    borderWidth: 3,
+                                    borderColor: '#ffffff',
+                                    hoverOffset: 12,
+                                    borderRadius: 6,
+                                    spacing: 3
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '72%',
+                                animation: {
+                                    duration: 1200,
+                                    easing: 'easeOutQuart'
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        rtl: true,
+                                        backgroundColor: '#0f172a',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 12,
+                                        cornerRadius: 8,
+                                        boxPadding: 6,
+                                        callbacks: {
+                                            label: function (context) {
+                                                const idx = context.dataIndex;
+                                                const item = GRADE_DIST_DATA[idx];
+                                                return ` ${item.count} دارس بنسبة (${item.pct}%)`;
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [centerDonutGradePlugin]
+                        });
+                    } else {
+                        // نمط الأعمدة
+                        window.gradesChartInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'عدد الدارسين',
+                                    data: dataValues,
+                                    backgroundColor: backgroundColors,
+                                    borderRadius: 8,
+                                    borderSkipped: false,
+                                    maxBarThickness: 46
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 1000,
+                                    easing: 'easeOutQuart'
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        rtl: true,
+                                        backgroundColor: '#0f172a',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 12,
+                                        cornerRadius: 8,
+                                        boxPadding: 6,
+                                        callbacks: {
+                                            label: function (context) {
+                                                const idx = context.dataIndex;
+                                                const item = GRADE_DIST_DATA[idx];
+                                                return ` ${item.count} دارس بنسبة (${item.pct}%)`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { color: '#f1f5f9' },
+                                        ticks: { precision: 0, color: '#94a3b8' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+
+                function renderForcesChart(chartType) {
+                    const canvas = document.getElementById('forcesAnalyticsChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+
+                    if (window.forcesChartInstance) {
+                        window.forcesChartInstance.destroy();
+                    }
+
+                    const labels = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.name) : ['لا توجد بيانات'];
+                    const dataValues = FORCES_DIST_DATA.length ? FORCES_DIST_DATA.map(f => f.count) : [0];
+                    const colors = FORCES_DIST_DATA.length
+                        ? FORCES_DIST_DATA.map((_, i) => FORCES_COLOR_PALETTE[i % FORCES_COLOR_PALETTE.length])
+                        : ['#cbd5e1'];
+
+                    if (chartType === 'bar') {
+                        // نمط الأعمدة الأفقية
+                        window.forcesChartInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'عدد المنتسبين',
+                                    data: dataValues,
+                                    backgroundColor: colors,
+                                    borderRadius: 8,
+                                    maxBarThickness: 34
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 1200,
+                                    easing: 'easeOutQuart'
+                                },
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        rtl: true,
+                                        backgroundColor: '#0f172a',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 12,
+                                        cornerRadius: 8,
+                                        callbacks: {
+                                            label: function (context) {
+                                                const idx = context.dataIndex;
+                                                const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
+                                                return ` ${context.raw} دارس بنسبة (${pct}%)`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        beginAtZero: true,
+                                        grid: { color: '#f1f5f9' },
+                                        ticks: { precision: 0, color: '#94a3b8' }
+                                    },
+                                    y: {
+                                        grid: { display: false },
+                                        ticks: { font: { size: 12, weight: '700' }, color: '#334155' }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        // نمط المخطط القطبي / الدائري
+                        window.forcesChartInstance = new Chart(canvas, {
+                            type: 'polarArea',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: dataValues,
+                                    backgroundColor: colors.map(c => c + 'cc'),
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 1100,
+                                    easing: 'easeOutQuart'
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { font: { size: 11, weight: 'bold' }, boxWidth: 12, padding: 12 }
+                                    },
+                                    tooltip: {
+                                        rtl: true,
+                                        backgroundColor: '#0f172a',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 12,
+                                        cornerRadius: 8,
+                                        callbacks: {
+                                            label: function (context) {
+                                                const idx = context.dataIndex;
+                                                const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
+                                                return ` ${context.raw} دارس (${pct}%)`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    r: {
+                                        ticks: { display: false },
+                                        grid: { color: '#f1f5f9' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // تبديل نمط مخطط التقديرات
+                function switchGradeChartType(type) {
+                    currentGradeChartType = type;
+                    const btnDoughnut = document.getElementById('btnGradeChartDoughnut');
+                    const btnBar = document.getElementById('btnGradeChartBar');
+
+                    if (btnDoughnut && btnBar) {
+                        if (type === 'doughnut') {
+                            btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                            btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                        } else {
+                            btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                            btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                        }
+                    }
+                    renderGradesChart(type);
+                }
+
+                // تبديل نمط مخطط القوات
+                function switchForceChartType(type) {
+                    currentForceChartType = type;
+                    const btnBar = document.getElementById('btnForceChartBar');
+                    const btnPolar = document.getElementById('btnForceChartPolar');
+
+                    if (btnBar && btnPolar) {
+                        if (type === 'bar') {
+                            btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                            btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                        } else {
+                            btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                            btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                        }
+                    }
+                    renderForcesChart(type);
+                }
+
+                // تهيئة المخططات عند تحميل الصفحة
+                function initAnalyticsCharts() {
+                    applyForcePillColors();
+                    renderGradesChart(currentGradeChartType);
+                    renderForcesChart(currentForceChartType);
+
+                    // إعادة تشغيل الأنيميشن تلقائياً عند النقر على تبويب التحليلات
+                    const tabAnalyticsBtn = document.getElementById('tab-analytics');
+                    if (tabAnalyticsBtn) {
+                        tabAnalyticsBtn.addEventListener('shown.bs.tab', function () {
+                            if (window.gradesChartInstance) window.gradesChartInstance.update();
+                            if (window.forcesChartInstance) window.forcesChartInstance.update();
+                        });
+                    }
+                }
+
+                // دوال التنقل المباشر
+                function openUserPermissionsMatrix(userId) {
+                    const matrixTabBtn = document.getElementById('tab-permissions-matrix');
+                    if (matrixTabBtn) {
+                        const tab = new bootstrap.Tab(matrixTabBtn);
+                        tab.show();
+                    }
+                    const sel = document.getElementById('matrixUserSelect');
+                    if (sel) {
+                        sel.value = userId;
+                        sel.dispatchEvent(new Event('change'));
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+
+                function switchToPermissionsMatrixTab() {
+                    const btn = document.getElementById('tab-permissions-matrix');
+                    if (btn) {
+                        const tab = new bootstrap.Tab(btn);
+                        tab.show();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }
+
+                function switchToUsersTab() {
+                    const btn = document.getElementById('tab-users');
+                    if (btn) {
+                        const tab = new bootstrap.Tab(btn);
+                        tab.show();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }
+            </script>
+            {% endblock %}

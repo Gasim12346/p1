@@ -645,86 +645,26 @@
                 <!-- Trainee Info Line (Officer vs NCO) -->
                 {% if is_officer %}
                 <div class="trainee-line officer-line">
-                    <div class="d-flex align-items-center w-100 px-1"
-                        style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
-                                    {% elif layout.trainee_line_layout == 'side_by_side_center' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'center' %}justify-content: center !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
-                                    {% elif layout.trainee_line_layout == 'side_by_side_left' or layout.trainee_line_layout == 'name_first_left' %}justify-content: flex-end !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
-                                    {% elif layout.trainee_line_layout == 'split' or layout.trainee_line_layout == 'reverse' %}justify-content: space-between !important;
-                                    {% else %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;{% endif %}">
-                        <div class="card-part fw-bold fs-6"
-                            style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
-                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number
-                                }}</span>
-                        </div>
-                        <div class="name-part fw-bold fs-6"
-                            style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
-                            {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name
-                            }}
-                        </div>
-                    </div>
-                    <div class="name-part fw-bold fs-6"
-                        style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %}">
-                        {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
+                    <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
+                        الأشخاص &nbsp;:&nbsp; رقم البطاقة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number|default:trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank|default:trainee.rank }} &nbsp;&nbsp; {{ enrollment.trainee.name|default:trainee.name }}
                     </div>
                 </div>
-            </div>
-            {% else %}
-            <div class="trainee-line nco-line">
-                <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
-                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number
-                        }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }}
-                    &nbsp;&nbsp; {{ enrollment.trainee.name }}
+                {% else %}
+                <div class="trainee-line nco-line">
+                    <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
+                        الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number|default:trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank|default:trainee.rank }} &nbsp;&nbsp; {{ enrollment.trainee.name|default:trainee.name }}
+                    </div>
+                </div>
+                {% endif %}
+
+            <!-- Traveler Signature (موضع بداية الصفحة) -->
+            {% if layout.traveler_sig_position == 'top' %}
+            <div class="traveler-sig-container">
+                <div class="traveler-sig-text fw-bold">
+                    توقيع المسافر &nbsp;:&nbsp; ....................................................
                 </div>
             </div>
             {% endif %}
-
-                <!-- Movement Details Table -->
-                <table class="details-table">
-                    <tbody>
-                        <tr>
-                            <td class="label-col">مـــــــــــــــــن &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.from_location }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">الـــــــــــــــــي &nbsp;:</td>
-                            <td class="val-col">{{ destination_unit }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">الســـــــــلاح &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.arms_default }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">الذخيـــــــرة &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.ammunition_default }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">الغــــــــرض &nbsp;:</td>
-                            <td class="val-col">{{ purpose }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">تاريخ القيام &nbsp;:</td>
-                            <td class="val-col">
-                                {% if movement_date %}
-                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;{{ movement_date|date:"m" }}&nbsp;&nbsp;/&nbsp;{{ movement_date|date:"Y" }}م
-                                {% else %}
-                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;{{ current_year }}م
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">اللبـــــــــــس &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.clothing_instructions }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">وسيلة السفر &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.travel_means }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">التصديق &nbsp;:</td>
-                            <td class="val-col">{{ order_settings.ratification_text }}</td>
-                        </tr>
-                    </tbody>
-                </table>
 
             <!-- Movement Details Table -->
             <table class="details-table">
