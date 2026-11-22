@@ -203,7 +203,7 @@
         .signer-box {
             font-size: {{ layout.signer_box_size|default:15 }}px !important;
             line-height: 1.35;
-            text-align: {{ layout.signer_box_align|default:'center' }} !important;
+            text-align: {{ layout.signer_box_align|default:'right' }} !important;
         }
 
         .copies-box {
@@ -320,14 +320,15 @@
                 {% if is_officer %}
                     <div class="trainee-line officer-line">
                         <div class="d-flex align-items-center w-100 px-1"
-                             style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start; gap: {{ layout.trainee_line_gap|default:35 }}px;
-                                    {% elif layout.trainee_line_layout == 'side_by_side_center' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'center' %}justify-content: center; gap: {{ layout.trainee_line_gap|default:35 }}px;
-                                    {% elif layout.trainee_line_layout == 'side_by_side_left' or layout.trainee_line_layout == 'name_first_left' %}justify-content: flex-end; gap: {{ layout.trainee_line_gap|default:35 }}px;
-                                    {% else %}justify-content: space-between;{% endif %}">
-                            <div class="card-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %}">
+                             style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
+                                    {% elif layout.trainee_line_layout == 'side_by_side_center' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'center' %}justify-content: center !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
+                                    {% elif layout.trainee_line_layout == 'side_by_side_left' or layout.trainee_line_layout == 'name_first_left' %}justify-content: flex-end !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
+                                    {% elif layout.trainee_line_layout == 'split' or layout.trainee_line_layout == 'reverse' %}justify-content: space-between !important;
+                                    {% else %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;{% endif %}">
+                            <div class="card-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
                                 رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
                             </div>
-                            <div class="name-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %}">
+                            <div class="name-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
                                 {{ enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
                             </div>
                         </div>
@@ -413,24 +414,41 @@
             <!-- Bottom Signatures and Copies -->
             <div class="signatures-wrapper pt-1">
                 <div class="d-flex justify-content-between align-items-start px-2">
-                    <!-- Right/Signer Box (قائد المعهد) -->
-                    <div class="signer-box" style="min-width: 250px;">
-                        <div class="fw-bold">{{ order_settings.signer_rank }}</div>
-                        <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
-                        <div class="fw-bold">{{ order_settings.signer_title }}</div>
-                        <div class="fw-bold">{{ order_settings.signer_dept }}</div>
-                    </div>
+                    {% if layout.footer_layout == 'signer_first' %}
+                        <!-- Right/Signer Box (التواقيع أولاً) -->
+                        <div class="signer-box" style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
+                            <div class="fw-bold">{{ order_settings.signer_rank }}</div>
+                            <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_title }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_dept }}</div>
+                        </div>
 
-                    <!-- Left/Copies Box (نسخة إلى) -->
-                    <div class="copies-box">
-                        <div class="fw-bold mb-1">نسخة الي :</div>
-                        <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
-                        <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
-                    </div>
+                        <!-- Left/Copies Box (النسخ ثانياً في الجهة الأخرى) -->
+                        <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
+                            <div class="fw-bold mb-1">نسخة الي :</div>
+                            <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
+                            <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
+                        </div>
+                    {% else %}
+                        <!-- Right/Copies Box (النسخ أولاً) -->
+                        <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
+                            <div class="fw-bold mb-1">نسخة الي :</div>
+                            <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
+                            <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
+                        </div>
+
+                        <!-- Left/Signer Box (التواقيع في الجهة الأخرى بمحاذاة اليمين) -->
+                        <div class="signer-box" style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
+                            <div class="fw-bold">{{ order_settings.signer_rank }}</div>
+                            <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_title }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_dept }}</div>
+                        </div>
+                    {% endif %}
                 </div>
 
                 <!-- Bottom Security Label -->
-                <div class="text-center security-label security-bottom mb-1">
+                <div class="text-center security-label security-bottom mb-1" style="text-decoration: underline;">
                     <u>{{ order_settings.security_label }}</u>
                 </div>
             </div>

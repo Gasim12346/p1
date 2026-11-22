@@ -5123,6 +5123,21 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         self.assertEqual(layout['page_padding_horizontal'], 22)
         self.assertEqual(layout['table_label_width'], 135)
         self.assertEqual(layout['trainee_line_layout'], 'side_by_side_right')
+        self.assertEqual(layout['trainee_line_gap'], 20)
+        self.assertEqual(layout['footer_layout'], 'copies_first')
+        self.assertEqual(layout['signer_box_align'], 'right')
+
+    def test_reverse_copies_and_signatures_layout(self):
+        """التحقق من عكس ترتيب النسخ والتواقيع ومحاذاة التوقيعات لليمين"""
+        layout = self.movement_settings.get_layout()
+        self.assertEqual(layout['footer_layout'], 'copies_first')
+        self.assertEqual(layout['signer_box_align'], 'right')
+        # تحقق من إمكانية التبديل إلى signer_first
+        self.movement_settings.layout_config = {'footer_layout': 'signer_first', 'signer_box_align': 'center'}
+        self.movement_settings.save()
+        updated = self.movement_settings.get_layout()
+        self.assertEqual(updated['footer_layout'], 'signer_first')
+        self.assertEqual(updated['signer_box_align'], 'center')
 
     def test_movement_order_custom_layout_override(self):
         """التحقق من دمج التخصيصات المحفوظة مع القيم الافتراضية لأمر التحرك"""

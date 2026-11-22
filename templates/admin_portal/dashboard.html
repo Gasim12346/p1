@@ -2239,13 +2239,21 @@
                                                         <div class="col-md-4">
                                                             <label class="form-label small fw-bold text-dark">محاذاة كتلة القائد الموقع</label>
                                                             <div class="btn-group w-100 btn-group-sm" role="group">
+                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()" checked>
+                                                                <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
                                                                 <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_center" value="center" onchange="updateMovementLayout()">
                                                                 <label class="btn btn-outline-secondary" for="mov_sign_center">وسط</label>
-                                                                <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_right" value="right" onchange="updateMovementLayout()">
-                                                                <label class="btn btn-outline-secondary" for="mov_sign_right">يمين</label>
                                                                 <input type="radio" class="btn-check" name="mov_signer_align" id="mov_sign_left" value="left" onchange="updateMovementLayout()">
                                                                 <label class="btn btn-outline-secondary" for="mov_sign_left">يسار</label>
                                                             </div>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-bold text-dark">ترتيب النسخ والتواقيع في الأسفل</label>
+                                                            <select id="mov_cfg_footer_layout" class="form-select form-select-sm" onchange="updateMovementLayout()">
+                                                                <option value="copies_first">النسخ أولاً (يمين) ثم التواقيع (يسار) - المعتمد</option>
+                                                                <option value="signer_first">التواقيع أولاً (يمين) ثم النسخ (يسار)</option>
+                                                            </select>
                                                         </div>
 
                                                         <div class="col-md-4">
@@ -2340,9 +2348,9 @@
 
                                         <!-- سطر بيانات الدارس الضابط -->
                                         <div id="previewMovOfficerLine" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
-                                            <div id="previewMovOfficerLineInner" class="d-flex justify-content-between">
-                                                <span id="previewMovCardPart">رقم البطاقة : 235402384</span>
-                                                <span id="previewMovNamePart">ملازم تقني / علي أحمد النيل</span>
+                                            <div id="previewMovOfficerLineInner" class="d-flex align-items-center" style="gap: 16px; justify-content: flex-start;">
+                                                <span id="previewMovCardPart" style="white-space: nowrap;">رقم البطاقة : 235402384</span>
+                                                <span id="previewMovNamePart" style="white-space: nowrap;">ملازم تقني / علي أحمد النيل</span>
                                             </div>
                                         </div>
 
@@ -2415,17 +2423,19 @@
 
                                     <!-- التوقيعات والتذييل -->
                                     <div id="previewMovSignersWrapper" style="position: relative; z-index: 2; margin-top: 10px; padding-top: 4px;">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div id="previewMovSignerBlock" class="text-center" style="font-size: 0.68rem; line-height: 1.3;">
+                                        <div id="previewMovSignersInner" class="d-flex justify-content-between align-items-start">
+                                            <!-- النسخ أولاً (على اليمين) -->
+                                            <div id="previewMovCopiesBlock" style="font-size: 0.65rem; line-height: 1.35; text-align: right; order: 1;">
+                                                <div style="font-weight: bold;">نسخة الي :</div>
+                                                <div id="previewMovCopy1">{{ movement_settings.copy_to_1 }}</div>
+                                                <div id="previewMovCopy2">{{ movement_settings.copy_to_2 }}</div>
+                                            </div>
+                                            <!-- التواقيع في الجهة الأخرى (على اليسار) بمحاذاة اليمين -->
+                                            <div id="previewMovSignerBlock" style="font-size: 0.68rem; line-height: 1.3; text-align: right; min-width: 120px; order: 2;">
                                                 <div id="previewMovSignerRank" style="font-weight: bold;">{{ movement_settings.signer_rank }}</div>
                                                 <div id="previewMovSignerName" style="font-weight: bold; margin: 1px 0;">{{ movement_settings.signer_name }}</div>
                                                 <div id="previewMovSignerTitle">{{ movement_settings.signer_title }}</div>
                                                 <div id="previewMovSignerDept" style="font-weight: bold;">{{ movement_settings.signer_dept }}</div>
-                                            </div>
-                                            <div id="previewMovCopiesBlock" style="font-size: 0.65rem; line-height: 1.35; text-align: right;">
-                                                <div style="font-weight: bold;">نسخة الي :</div>
-                                                <div id="previewMovCopy1">{{ movement_settings.copy_to_1 }}</div>
-                                                <div id="previewMovCopy2">{{ movement_settings.copy_to_2 }}</div>
                                             </div>
                                         </div>
 
@@ -4157,7 +4167,7 @@
         trainee_line_size: 16,
         trainee_line_margin_bottom: 8,
         trainee_line_layout: 'side_by_side_right',
-        trainee_line_gap: 35,
+        trainee_line_gap: 20,
         trainee_nco_align: 'right',
         table_font_size: 15.5,
         table_row_padding: 2.8,
@@ -4175,8 +4185,9 @@
         declaration_align: 'center',
         traveler_sig_align: 'left',
         signatures_margin_top: 16,
+        footer_layout: 'copies_first',
         signer_box_size: 15,
-        signer_box_align: 'center',
+        signer_box_align: 'right',
         copies_box_size: 14,
         copies_box_align: 'right',
         security_bottom_margin_top: 14
@@ -4242,6 +4253,9 @@
         const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
         if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
 
+        const footerSelect = document.getElementById('mov_cfg_footer_layout');
+        if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+
         movRadioGroupDefinitions.forEach(rg => {
             const val = cfg[rg.key];
             if (val) {
@@ -4284,6 +4298,9 @@
 
         const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
         if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
+
+        const footerSelect = document.getElementById('mov_cfg_footer_layout');
+        if (footerSelect) cfg.footer_layout = footerSelect.value;
 
         movRadioGroupDefinitions.forEach(rg => {
             const radio = document.querySelector(`input[name="${rg.name}"]:checked`);
@@ -4350,7 +4367,7 @@
         const cardPart = document.getElementById('previewMovCardPart');
         const namePart = document.getElementById('previewMovNamePart');
         const layout = cfg.trainee_line_layout || 'side_by_side_right';
-        const gap = (cfg.trainee_line_gap || 35) * scale;
+        const gap = (cfg.trainee_line_gap || 20) * scale;
 
         if (cardPart && namePart) {
             if (layout.startsWith('name_first') || layout === 'reverse') {
@@ -4368,20 +4385,20 @@
             officerInner.style.width = '100%';
 
             if (layout === 'split' || layout === 'reverse') {
-                officerInner.style.justifyContent = 'space-between';
+                officerInner.style.setProperty('justify-content', 'space-between', 'important');
                 officerInner.style.gap = '0px';
             } else if (layout === 'side_by_side_right' || layout === 'name_first_right') {
-                officerInner.style.justifyContent = 'flex-start';
+                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
                 officerInner.style.gap = `${gap}px`;
             } else if (layout === 'side_by_side_center' || layout === 'name_first_center' || layout === 'center') {
-                officerInner.style.justifyContent = 'center';
+                officerInner.style.setProperty('justify-content', 'center', 'important');
                 officerInner.style.gap = `${gap}px`;
             } else if (layout === 'side_by_side_left' || layout === 'name_first_left') {
-                officerInner.style.justifyContent = 'flex-end';
+                officerInner.style.setProperty('justify-content', 'flex-end', 'important');
                 officerInner.style.gap = `${gap}px`;
             } else {
-                officerInner.style.justifyContent = 'space-between';
-                officerInner.style.gap = '0px';
+                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
+                officerInner.style.gap = `${gap}px`;
             }
         }
 
@@ -4444,12 +4461,24 @@
         if (signersWrapper) {
             signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
         }
+        const copiesBlock = document.getElementById('previewMovCopiesBlock');
         const signerBlock = document.getElementById('previewMovSignerBlock');
+        const footerLayout = cfg.footer_layout || 'copies_first';
+
+        if (copiesBlock && signerBlock) {
+            if (footerLayout === 'signer_first') {
+                signerBlock.style.order = '1';
+                copiesBlock.style.order = '2';
+            } else {
+                copiesBlock.style.order = '1';
+                signerBlock.style.order = '2';
+            }
+        }
+
         if (signerBlock) {
             signerBlock.style.fontSize = `${(cfg.signer_box_size || 15) * scale}px`;
-            signerBlock.style.textAlign = cfg.signer_box_align || 'center';
+            signerBlock.style.textAlign = cfg.signer_box_align || 'right';
         }
-        const copiesBlock = document.getElementById('previewMovCopiesBlock');
         if (copiesBlock) {
             copiesBlock.style.fontSize = `${(cfg.copies_box_size || 14) * scale}px`;
             copiesBlock.style.textAlign = cfg.copies_box_align || 'right';
