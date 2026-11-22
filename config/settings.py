@@ -171,9 +171,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
-# سياسة انقضاء الجلسة عند عدم النشاط (8 ساعات عمل أو إغلاق المتصفح)
-SESSION_COOKIE_AGE = 28800
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# سياسة انقضاء الجلسة عند عدم النشاط (في بيئة التطوير تبقى الجلسة 30 يوماً ولا تنتهي بإغلاق المتصفح)
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30 if DEBUG else 28800
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False if DEBUG else True
 SESSION_SAVE_EVERY_REQUEST = True
 
 # =====================================================================
