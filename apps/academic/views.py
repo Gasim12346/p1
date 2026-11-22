@@ -1881,14 +1881,37 @@ def session_discipline_attendance_view(request, session_id):
         messages.error(request, 'غير مصرح لك بالوصول لشاشة رصد الحضور والضبط لهذه الدورة.')
         return redirect('training:results_center')
 
-    DAYS_LIST = [
-        ('sat', 'السبت'),
-        ('sun', 'الأحد'),
-        ('mon', 'الإثنين'),
-        ('tue', 'الثلاثاء'),
-        ('wed', 'الأربعاء'),
-        ('thu', 'الخميس'),
-    ]
+    ARABIC_WEEKDAYS = {
+        0: 'الإثنين',
+        1: 'الثلاثاء',
+        2: 'الأربعاء',
+        3: 'الخميس',
+        4: 'الجمعة',
+        5: 'السبت',
+        6: 'الأحد',
+    }
+
+    days_list = []
+    if session.start_date and session.end_date and session.start_date <= session.end_date:
+        cur_date = session.start_date
+        while cur_date <= session.end_date:
+            if cur_date.weekday() != 4:  # ما عدا أيام الجمعة
+                day_key = cur_date.strftime('%Y_%m_%d')
+                weekday_name = ARABIC_WEEKDAYS[cur_date.weekday()]
+                day_label = f"{weekday_name} ({cur_date.strftime('%d/%m')})"
+                date_str = cur_date.strftime('%Y-%m-%d')
+                days_list.append((day_key, day_label, date_str, cur_date))
+            cur_date += timedelta(days=1)
+
+    if not days_list:
+        days_list = [
+            ('sat', 'السبت', 'يوم تدريبي', None),
+            ('sun', 'الأحد', 'يوم تدريبي', None),
+            ('mon', 'الإثنين', 'يوم تدريبي', None),
+            ('tue', 'الثلاثاء', 'يوم تدريبي', None),
+            ('wed', 'الأربعاء', 'يوم تدريبي', None),
+            ('thu', 'الخميس', 'يوم تدريبي', None),
+        ]
 
     OTHER_INFRACTIONS_LIST = [
         ('delay_lecture', 'أ. التأخير عن تمام المحاضرة الواحدة (خصم نصف درجة - 0.5)', 0.5),
@@ -1912,23 +1935,26 @@ def session_discipline_attendance_view(request, session_id):
             # 1. إزالة مخالفات الضبط والربط السابقة لإعادة رصدها بدقة بناءً على الكشف الجديد
             en.discipline_infractions.all().delete()
 
-            # 2. رصد أيام الغياب والراحة الطبية من السبت للخميس
-            for day_key, day_name in DAYS_LIST:
+            # 2. رصد أيام الغياب والراحة الطبية من تاريخ بداية الدورة لنهايتها (ما عدا أيام الجمعة)
+            for day_item in days_list:
+                day_key = day_item[0]
+                day_name = day_item[1]
+                day_dt = day_item[3] if (len(day_item) > 3 and day_item[3]) else timezone.now().date()
                 status = request.POST.get(f'att_{en.id}_{day_key}', 'present').strip()
                 if status == 'medical_rest':
                     DisciplineInfraction.objects.create(
                         enrollment=en,
                         infraction_type='medical_rest',
-                        date=timezone.now().date(),
-                        notes=f'[{day_name}] راحة طبية لليوم الواحد',
+                        date=day_dt,
+                        notes=f'[{day_key}] [{day_name}] راحة طبية لليوم الواحد',
                         points=Decimal('0.5')
                     )
                 elif status == 'absent_full_day':
                     DisciplineInfraction.objects.create(
                         enrollment=en,
                         infraction_type='absent_full_day',
-                        date=timezone.now().date(),
-                        notes=f'[{day_name}] غياب ليوم كامل بدون سبب',
+                        date=day_dt,
+                        notes=f'[{day_key}] [{day_name}] غياب ليوم كامل بدون سبب',
                         points=Decimal('2.0')
                     )
 
@@ -1979,11 +2005,17 @@ def session_discipline_attendance_view(request, session_id):
         days_info = []
         other_infs_active = []
 
-        # فحص أيام الأسبوع الستة
-        for day_key, day_name in DAYS_LIST:
+        # فحص أيام الدورة التدريبية
+        for day_item in days_list:
+            day_key = day_item[0]
+            day_name = day_item[1]
+            day_dt = day_item[3] if len(day_item) > 3 else None
             matched = None
             for inf in infs:
-                if f'[{day_name}]' in (inf.notes or '') or f'[{day_key}]' in (inf.notes or ''):
+                if f'[{day_key}]' in (inf.notes or '') or f'[{day_name}]' in (inf.notes or ''):
+                    matched = inf
+                    break
+                if day_dt and inf.date == day_dt and inf.infraction_type in ('medical_rest', 'absent_full_day'):
                     matched = inf
                     break
             status = matched.infraction_type if matched else 'present'
@@ -1994,9 +2026,14 @@ def session_discipline_attendance_view(request, session_id):
                 'status': status,
             })
 
-        # فحص المخالفات الأخرى غير المرتبطة بيوم أسبوعي
+        # فحص المخالفات الأخرى غير المرتبطة بيوم تدريبي
         for inf in infs:
-            is_day_inf = any(f'[{d_name}]' in (inf.notes or '') or f'[{d_k}]' in (inf.notes or '') for d_k, d_name in DAYS_LIST)
+            is_day_inf = any(
+                f'[{d_item[0]}]' in (inf.notes or '') or
+                f'[{d_item[1]}]' in (inf.notes or '') or
+                (len(d_item) > 3 and d_item[3] and inf.date == d_item[3] and inf.infraction_type in ('medical_rest', 'absent_full_day'))
+                for d_item in days_list
+            )
             if not is_day_inf:
                 other_infs_active.append({
                     'code': inf.infraction_type,
@@ -2018,7 +2055,7 @@ def session_discipline_attendance_view(request, session_id):
     context = {
         'session': session,
         'enrollments_data': enrollments_data,
-        'days_list': DAYS_LIST,
+        'days_list': days_list,
         'other_infractions_list': OTHER_INFRACTIONS_LIST,
         'can_edit': can_edit,
         'is_locked': session.status == 'completed' and not is_adm,
