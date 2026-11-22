@@ -8,6 +8,7 @@ from apps.trainees.urls import urlpatterns as trainees_urls
 from apps.academic.urls import urlpatterns as academic_urls
 from apps.documents.urls import urlpatterns as documents_urls
 from apps.reports.urls import urlpatterns as reports_urls
+from apps.placement_exams.urls import urlpatterns as placement_exams_urls
 
 app_name = 'training'
 
@@ -17,4 +18,6 @@ urlpatterns = [
     *academic_urls,
     *documents_urls,
     *reports_urls,
+    *placement_exams_urls,
 ]
+

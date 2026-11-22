@@ -1,0 +1,1787 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}رصد درجات امتحان تحديد المستوى | {{ exam.subject }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grade-input {
+        width: 85px;
+        text-align: center;
+        font-weight: 700;
+        font-family: monospace;
+        font-size: 1rem;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .grade-input:focus {
+        border-color: #0284c7;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+    }
+
+    .badge-grade-a {
+        background-color: #15803d !important;
+        color: #ffffff !important;
+    }
+
+    .badge-grade-b {
+        background-color: #0369a1 !important;
+        color: #ffffff !important;
+    }
+
+    .badge-grade-c {
+        background-color: #0d9488 !important;
+        color: #ffffff !important;
+    }
+
+    .badge-grade-d {
+        background-color: #b45309 !important;
+        color: #ffffff !important;
+    }
+
+    .adopted-grade-box {
+        background: #f0fdf4;
+        border: 1px dashed #86efac;
+        color: #166534;
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-family: monospace;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .table th {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    /* تحسين محاذاة وأعمدة جدول رصد الدرجات */
+    .military-card-val {
+        direction: ltr;
+        display: inline-block;
+        font-family: monospace;
+        letter-spacing: 0.5px;
+    }
+
+    .val-pct, .val-total {
+        direction: ltr;
+        display: inline-block;
+        font-family: monospace;
+    }
+
+    .col-prev-result {
+        min-width: 145px;
+        max-width: 175px;
+        font-size: 0.85rem;
+    }
+
+    .col-action-choice {
+        min-width: 165px;
+        max-width: 200px;
+    }
+
+    #placementGradesTable thead th {
+        vertical-align: middle;
+    }
+
+    #placementGradesTable tbody td {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
+        {% if from_source == 'placement_list' %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'training:placement_exams_list' %}" class="text-decoration-none">بوابة امتحانات تحديد
+                المستوى</a>
+        </li>
+        {% else %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'training:results_center' %}?tab=sessions&source=placement&exam_id={{ exam.id }}&auto_open=0"
+                class="text-decoration-none">سجل امتحانات تحديد المستوى</a>
+        </li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page" id="breadcrumbExamLabel">
+            رصد درجات امتحان: {{ exam.subject }} ({{ exam.exam_number }})
+        </li>
+    </ol>
+</nav>
+
+<!-- تحذير منع رصد الدرجات قبل تأكيد انعقاد الامتحان -->
+<div id="unconfirmedExamWarning" class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden d-none border-start border-warning border-4" style="background-color: #fffbeb;">
+    <div class="card-body p-4 text-center">
+        <div class="mb-3">
+            <span class="badge rounded-circle p-3 shadow-sm" style="background-color: #fef3c7; color: #b45309; font-size: 2.2rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </span>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">يتعذر رصد الدرجات: الامتحان لم ينعقد بعد</h4>
+        <p class="text-muted fs-6 mb-4 mx-auto" style="max-width: 650px;">
+            وفق الضوابط التنظيمية المعتمدة، لا يمكن البدء في رصد درجات الممتحنين إلا بعد انعقاد الامتحان وتأكيده رسمياً من واقع شاشة تفاصيل الامتحان ورصد كشف الحضور.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="{% url 'training:placement_exams_list' %}?exam_id={{ exam.id }}&open_details=1" id="warningGoToDetailsBtn" class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                <i class="bi bi-box-arrow-up-right"></i>
+                <span>الانتقال لشاشة التفاصيل وتأكيد الانعقاد</span>
+            </a>
+            <a href="{% url 'training:placement_exams_list' %}" class="btn btn-outline-secondary px-3 py-2 rounded-3 d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة لبوابة الامتحانات</span>
+            </a>
+            <a href="{% url 'training:results_center' %}" class="btn btn-outline-dark px-3 py-2 rounded-3 d-inline-flex align-items-center gap-1">
+                <i class="bi bi-journal-text"></i>
+                <span>سجل بوابة النتائج</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Exam Info Banner (مطابق لهوية شاشة رصد درجات الدورات) -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" id="examInfoBanner">
+    <div class="card-header bg-primary text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-white bg-opacity-20 p-2 rounded-3 fs-3 text-warning">
+                <i class="bi bi-award-fill"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark font-monospace px-3 py-1 rounded-pill fs-6" id="bannerExamNumber">
+                        {{ exam.request_internal_id|default:exam.exam_number|default:exam.code }}
+                    </span>
+                    <h4 class="fw-bold mb-0 text-white" id="bannerExamSubject">{{ exam.purpose|default:exam.target_course|default:"امتحان تحديد مستوى" }}</h4>
+                    <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-1 rounded-pill small font-monospace">
+                        <i class="bi bi-laptop me-1"></i>{{ exam.subject|default:"حاسوب" }}
+                    </span>
+                </div>
+                <div class="small opacity-90 mt-1 d-flex flex-wrap align-items-center">
+                    <span>الغرض من الامتحان: <strong id="bannerTargetCourse">{{ exam.purpose|default:exam.target_course }}{% if exam.sub_purpose %} &mdash; {{ exam.sub_purpose }}{% endif %}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>الجهة الطالبة: <strong id="bannerHostEntity">{{ exam.source_entity|default:exam.host_entity }}</strong></span>
+                    <span class="mx-2">•</span>
+                    <span>المعلم المشرف: <strong id="bannerSupervisor">{{ exam.supervising_teacher }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if from_source == 'placement_list' %}
+            <a href="{% url 'training:placement_exams_list' %}"
+                class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة لبوابة الامتحانات</span>
+            </a>
+            {% else %}
+            <a href="{% url 'training:results_center' %}?tab=sessions&source=placement&exam_id={{ exam.id }}&auto_open=0"
+                class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة لسجل الامتحانات</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" id="extractResultBtn"
+                class="btn btn-warning text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                title="استخراج نتيجة الامتحان المعتمدة وفق النموذج الرسمي">
+                <i class="bi bi-printer-fill"></i>
+                <span id="extractBtnLabel">استخراج النتيجة</span>
+            </a>
+            <a href="{% url 'training:placement_exams_list' %}" class="btn btn-outline-light rounded-3 px-3 d-inline-flex align-items-center gap-1">
+                <i class="bi bi-clipboard2-check"></i>
+                <span>بوابة الامتحانات</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Exam Scores Rules Sub-Banner (تاريخ الانعقاد وتوزيع الدرجات العظمى) -->
+    <div class="card-body bg-light p-3 border-bottom">
+        <div class="row g-3 text-center align-items-center">
+            <div class="col-md-6">
+                <small class="text-muted d-block">تاريخ انعقاد الامتحان</small>
+                <strong class="text-dark fs-5" id="bannerExamDate">{{ exam.exam_date|default:"2026-11-28" }}</strong>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted d-block">توزيع الدرجات العظمى</small>
+                <div class="d-inline-flex align-items-center gap-1 font-monospace mt-1" id="gradeDistributionWrap">
+                    <span class="badge bg-primary px-2 py-1" id="badgeTheoryMax">نظري: {{ exam.theory_max_grade|default:"60" }}</span>
+                    {% if exam.assessment_type != 'theory_only' %}
+                    <span class="badge bg-info text-dark px-2 py-1" id="badgePracticalMax">عملي: {{ exam.practical_max_grade|default:"40" }}</span>
+                    {% endif %}
+                    <span class="badge bg-dark px-2 py-1" id="badgeTotalMax">الإجمالي: {{ exam.total_max_grade|default:"100" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Grade Entry Table Form (مطابق لشكل سجل رصد درجات دورة تدريبية محددة) -->
+<form id="placementGradesForm" onsubmit="handleFormSubmit(event)">
+    {% csrf_token %}
+    <input type="hidden" name="exam_id" value="{{ exam.id }}">
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <!-- Table Card Header -->
+        <div
+            class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-table text-primary"></i>
+                    <span>جدول رصد درجات الممتحنين واحتساب النسب والتقديرات</span>
+                </h5>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-3 py-2 rounded-pill fs-6" id="tableHeaderBadge">
+                    {{ all_trainees|length }} ممتحن بالامتحان
+                </span>
+            </div>
+        </div>
+
+        <!-- Quick Search & Category Filter Bar (بنفس موضع وطريقة عرض الفلتر المستخدم في شاشة رصد درجات الدورات) -->
+        <div class="bg-light p-3 border-bottom">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                class="bi bi-search"></i></span>
+                        <input type="text" id="gradeSearchInput" class="form-control border-start-0"
+                            placeholder="بحث سريع في كشف الامتحان بالاسم أو رقم البطاقة..." onkeyup="filterGradesTable()">
+                    </div>
+                </div>
+                <div class="col-md-7 text-md-end d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-success btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm" onclick="markAllTraineesPresent()" id="btnMarkAllPresent" title="تحديد حالة الحضور لكافة الممتحنين كحاضر">
+                        <i class="bi bi-check-all fs-6"></i>
+                        <span>تحديد الكل حاضر</span>
+                    </button>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-dark active"
+                            onclick="filterGradesCategory('all', this)" id="btnCatAll">
+                            الكل ({{ all_trainees|length }})
+                        </button>
+                        <button type="button" class="btn btn-outline-primary"
+                            onclick="filterGradesCategory('officer', this)" id="btnCatOfficers">
+                            ضباط ({{ officers|length }})
+                        </button>
+                        <button type="button" class="btn btn-outline-warning text-dark"
+                            onclick="filterGradesCategory('nco', this)" id="btnCatNCOs">
+                            ضباط صف ({{ ncos|length }})
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The Responsive Table (متطابق مع جدول رصد الدورة مع اقتصاره على مادة واحدة) -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0 text-nowrap" id="placementGradesTable">
+                <thead class="bg-light text-center small align-middle">
+                    <tr>
+                        <th rowspan="2" style="width: 45px;" class="text-center">#</th>
+                        <th rowspan="2" style="min-width: 110px;" class="text-center">رقم البطاقة</th>
+                        <th rowspan="2" style="min-width: 95px;" class="text-center">الرتبة</th>
+                        <th rowspan="2" style="min-width: 190px; text-align: right;">الاسم والجهة</th>
+                        <th rowspan="2" style="min-width: 105px;" class="text-center">حالة الحضور</th>
+                        <th rowspan="2" style="min-width: 145px;" class="text-center">النتيجة السابقة</th>
+                        <th rowspan="2" style="min-width: 165px;" class="text-center">الإجراء المطلوب</th>
+
+                        <!-- رؤوس أعمدة مادة الامتحان (نظري فقط أو نظري وعملي) -->
+                        <th colspan="{% if exam.assessment_type == 'theory_only' %}1{% else %}2{% endif %}" style="min-width: 210px;" id="thSubjectMainCol">
+                            <div class="text-dark fw-bold" id="thSubjectName">{{ exam.subject }}</div>
+                            <span class="badge bg-secondary bg-opacity-10 text-dark font-monospace mb-1" id="thSubjectMaxBadge">العظمى: {{ exam.total_max_grade|default:"100" }}</span>
+                            <div class="small text-muted" style="font-size: 0.75rem;" title="المعلم المكلف بإشراف ورصد الامتحان">
+                                <i class="bi bi-person-workspace text-primary me-1"></i>المعلم المشرف: <span id="thSupervisorName">{{ exam.supervising_teacher }}</span>
+                            </div>
+                        </th>
+
+                        <!-- النتائج التلقائية المحسوبة -->
+                        <th rowspan="2" style="min-width: 95px;" class="bg-info bg-opacity-10 text-dark">
+                            المجموع
+                        </th>
+                        <th rowspan="2" style="min-width: 90px;" class="bg-warning bg-opacity-10 text-dark">
+                            النسبة (%)
+                        </th>
+                        <th rowspan="2" style="min-width: 105px;" class="bg-success bg-opacity-10 text-dark">
+                            التقدير
+                        </th>
+                        <th rowspan="2" style="min-width: 160px;">
+                            الملاحظات
+                        </th>
+                    </tr>
+                    <tr>
+                        <th style="min-width: 105px;" class="col-theory">
+                            <div class="small fw-bold">الدرجة النظرية</div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace" id="thTheoryMax">
+                                العظمى: {{ exam.theory_max_grade|default:"60" }}
+                            </span>
+                        </th>
+                        <th style="min-width: 105px;" class="col-practical" id="thPracticalSub">
+                            <div class="small fw-bold">الدرجة العملية</div>
+                            <span class="badge bg-info bg-opacity-10 text-info font-monospace" id="thPracticalMax">
+                                العظمى: {{ exam.practical_max_grade|default:"40" }}
+                            </span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="placementGradesTableBody">
+                    {% for t in all_trainees %}
+                    <tr class="student-row" id="row_{{ t.military_number }}" data-category="{{ t.category }}"
+                        data-num="{{ t.military_number }}" data-rank="{{ t.rank }}" data-name="{{ t.name }}"
+                        data-search="{{ t.name }} {{ t.military_number }} {{ t.rank }} {{ t.unit }}"
+                        data-prev-status="{{ t.prev_status }}" data-action="{{ t.action }}"
+                        data-prev-total="{{ t.prev_total|default:'' }}"
+                        data-prev-theory="{{ t.prev_theory|default:'' }}"
+                        data-prev-practical="{{ t.prev_practical|default:'' }}">
+
+                        <!-- 1. # (الرقم التسلسلي) -->
+                        <td class="text-center text-muted fw-bold row-index">{{ forloop.counter }}</td>
+
+                        <!-- 2. رقم البطاقة -->
+                        <td class="text-center">
+                            <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border military-card-val">
+                                {{ t.military_number }}
+                            </span>
+                        </td>
+
+                        <!-- 3. الرتبة -->
+                        <td class="text-center fw-bold text-dark">
+                            <span class="col-rank student-rank">{{ t.rank }}</span>
+                        </td>
+
+                        <!-- 4. الاسم والجهة -->
+                        <td>
+                            <strong class="text-dark d-block">
+                                <span class="col-name student-name">{{ t.name }}</span>
+                            </strong>
+                            <small class="text-muted">
+                                {{ t.unit }}
+                            </small>
+                        </td>
+
+                        <!-- 4.1 حالة الحضور -->
+                        <td class="text-center">
+                            <select class="form-select form-select-sm fw-bold attendance-select mx-auto" style="width: 95px;"
+                                id="attendance_{{ t.military_number }}" name="attendance_{{ t.military_number }}"
+                                data-num="{{ t.military_number }}"
+                                onchange="onAttendanceChange('{{ t.military_number }}', this.value)">
+                                <option value="present" {% if t.attendance_status != 'absent' %}selected{% endif %}>حاضر</option>
+                                <option value="absent" {% if t.attendance_status == 'absent' %}selected{% endif %}>غائب</option>
+                            </select>
+                        </td>
+
+                        <!-- 4.2 النتيجة السابقة وحالتها -->
+                        <td class="text-center">
+                            {% if t.prev_status == 'valid' %}
+                            <span class="badge {{ t.prev_status_badge }} px-2 py-1 rounded-pill mb-1">
+                                <i class="bi bi-check-circle-fill me-1"></i>{{ t.prev_status_label }}
+                            </span>
+                            <div class="small fw-semibold text-dark">
+                                {% if t.prev_has_breakdown %}
+                                الدرجة: <strong>{{ t.prev_total|unlocalize }}/100</strong>
+                                <span class="text-muted d-block small">(نظري: {{ t.prev_theory|unlocalize }} • عملي: {{
+                                    t.prev_practical|unlocalize }})</span>
+                                {% else %}
+                                الدرجة: <strong>{{ t.prev_total|unlocalize }}/100</strong>
+                                <span class="text-muted d-block small">(مجموع نهائي فقط)</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                {{ t.prev_source }} • {{ t.prev_date }}
+                            </div>
+                            {% elif t.prev_status == 'expired' %}
+                            <span class="badge {{ t.prev_status_badge }} px-2 py-1 rounded-pill mb-1">
+                                <i class="bi bi-clock-history me-1"></i>{{ t.prev_status_label }}
+                            </span>
+                            <div class="small text-muted">
+                                الدرجة: <strong>{{ t.prev_total|unlocalize }}/100</strong> (بتاريخ {{ t.prev_date }})
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                تجاوزت ستة أشهر • السجل التاريخي محفوظ
+                            </div>
+                            {% else %}
+                            <span class="badge {{ t.prev_status_badge }} px-2 py-1 rounded-pill mb-1">
+                                <i class="bi bi-dash-circle me-1"></i>{{ t.prev_status_label }}
+                            </span>
+                            <div class="text-muted small" style="font-size: 0.75rem;">
+                                لا يوجد سجل نتائج سابق بالمادة
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- 5. الإجراء المطلوب من الطالب -->
+                        <td>
+                            {% if t.prev_status == 'valid' %}
+                            <div class="d-flex flex-column gap-1">
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input action-radio" type="radio"
+                                        name="action_{{ t.military_number }}" id="act_retain_{{ t.military_number }}"
+                                        value="retain" {% if t.action == 'retain' %}checked{% endif %}
+                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retain')">
+                                    <label class="form-check-label small fw-semibold text-success"
+                                        for="act_retain_{{ t.military_number }}">
+                                        الاحتفاظ بالدرجة السابقة
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input action-radio" type="radio"
+                                        name="action_{{ t.military_number }}" id="act_retake_{{ t.military_number }}"
+                                        value="retake" {% if t.action == 'retake' %}checked{% endif %}
+                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retake')">
+                                    <label class="form-check-label small fw-semibold text-primary"
+                                        for="act_retake_{{ t.military_number }}">
+                                        إعادة الامتحان لتحسين الدرجة
+                                    </label>
+                                </div>
+                            </div>
+                            {% elif t.prev_status == 'expired' %}
+                            <span
+                                class="badge bg-warning bg-opacity-25 text-dark border border-warning px-2 py-1 small d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                <span>دخول إلزامي (لانتهاء الصلاحية)</span>
+                            </span>
+                            {% else %}
+                            <span
+                                class="badge bg-secondary bg-opacity-15 text-dark border px-2 py-1 small d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-pencil-fill text-primary"></i>
+                                <span>دخول إلزامي للامتحان</span>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 6. درجة النظري -->
+                        <td class="text-center p-2 col-theory">
+                            <div class="input-wrap-theory">
+                                <input type="number" name="theory_{{ t.military_number }}"
+                                    class="form-control grade-input theory-input mx-auto" min="0"
+                                    max="{{ exam.theory_max_grade|default:60 }}" step="0.5"
+                                    data-max="{{ exam.theory_max_grade|default:60 }}" placeholder="-"
+                                    value="{% if t.action != 'retain' and t.current_theory is not None %}{{ t.current_theory|unlocalize }}{% endif %}"
+                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}>
+                                <div class="adopted-display-theory" {% if t.action != 'retain' %}style="display: none;"
+                                    {% endif %}>
+                                    <span class="adopted-grade-box" title="تم اعتماد درجة النظري من النتيجة السابقة">
+                                        <i class="bi bi-check-lg"></i>
+                                        <span class="val-theory">{% if t.prev_theory %}{{ t.prev_theory|unlocalize }}{%
+                                            else %}{{ t.prev_total|unlocalize }}{% endif %}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- 7. درجة العملي -->
+                        <td class="text-center p-2 col-practical">
+                            <div class="input-wrap-practical">
+                                <input type="number" name="practical_{{ t.military_number }}"
+                                    class="form-control grade-input practical-input mx-auto" min="0"
+                                    max="{{ exam.practical_max_grade|default:40 }}" step="0.5"
+                                    data-max="{{ exam.practical_max_grade|default:40 }}" placeholder="-"
+                                    value="{% if t.action != 'retain' and t.current_practical is not None %}{{ t.current_practical|unlocalize }}{% endif %}"
+                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}>
+                                <div class="adopted-display-practical" {% if t.action != 'retain' %}style="display: none;" {% endif %}>
+                                    <span class="adopted-grade-box" title="تم اعتماد درجة العملي من النتيجة السابقة">
+                                        <i class="bi bi-check-lg"></i>
+                                        <span class="val-practical">{% if t.prev_practical %}{{
+                                            t.prev_practical|unlocalize }}{% else %}0{% endif %}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- 8. المجموع -->
+                        <td class="text-center fw-bold fs-6 total-cell bg-light">
+                            <span class="val-total">
+                                {% if t.is_graded %}{{ t.current_total|unlocalize }}{% else %}<span
+                                    class="text-muted small">قيد الرصد</span>{% endif %}
+                            </span>
+                        </td>
+
+                        <!-- 9. النسبة (%) = الدرجة المحصلة نفسها مباشرة وفق التوجيه -->
+                        <td class="text-center fw-bold percentage-cell bg-light font-monospace">
+                            <span class="val-pct">
+                                {% if t.is_graded %}{{ t.current_percentage|unlocalize }}%{% else %}<span
+                                    class="text-muted small">-</span>{% endif %}
+                            </span>
+                        </td>
+
+                        <!-- 10. التقدير -->
+                        <td class="text-center fw-bold grade-cell bg-light">
+                            <span class="val-grade">
+                                {% if t.is_graded %}
+                                <span class="badge {{ t.current_grade_badge }} px-2 py-1">{{ t.current_grade_label
+                                    }}</span>
+                                {% else %}
+                                <span class="badge bg-light text-secondary border px-2 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i>غير مكتمل
+                                </span>
+                                {% endif %}
+                            </span>
+                        </td>
+
+                        <!-- 11. الملاحظات -->
+                        <td class="p-2">
+                            <input type="text" name="notes_{{ t.military_number }}"
+                                class="form-control form-control-sm notes-input" value="{{ t.notes|default:'' }}"
+                                placeholder="ملاحظات الرصد...">
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="emptyTraineesRow">
+                        <td colspan="13" class="text-center py-5 text-muted">
+                            <div class="py-3">
+                                <i class="bi bi-people text-secondary fs-1 d-block mb-2"></i>
+                                <h6 class="fw-bold text-dark">لا يوجد ممتحنون مسجلون في هذا الامتحان حالياً</h6>
+                                <p class="small text-muted mb-0">يمكنك إضافة ممتحنين من صفحة تفاصيل الامتحان في بوابة امتحانات تحديد المستوى.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- تنبيه عدم اكتمال رصد درجات الممتحنين (يمنع الاعتماد قبل اكتمال الرصد) -->
+        <div id="incompleteGradesAlert" class="alert alert-warning border-0 shadow-sm mx-4 mt-3 mb-0 d-none d-flex flex-wrap align-items-center justify-content-between p-3 rounded-3 gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-25 text-warning p-2 d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 text-dark"></i>
+                </div>
+                <div>
+                    <strong class="text-dark d-block">تنبيه: لا يمكن اعتماد الدرجات قبل اكتمال الرصد لكافة الممتحنين</strong>
+                    <span class="text-muted small" id="incompleteGradesAlertText">يوجد ممتحنون لم تُرصد درجاتهم بعد.</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-dark fw-bold px-3 py-1 rounded-2" onclick="scrollToFirstIncompleteStudent()">
+                <i class="bi bi-arrow-down-circle me-1"></i>الانتقال لأول ممتحن غير مكتمل
+            </button>
+        </div>
+
+        <!-- Action Submit Bar (مطابق لأسلوب النظام الحالي) -->
+        <div class="card-footer bg-light py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
+            <div>
+                <span class="text-muted small">
+                    <i class="bi bi-info-circle-fill text-primary me-1"></i> يتم احتساب النسبة والتقديرات تلقائياً:
+                    <strong>ممتاز (85-100)</strong> •
+                    <strong>جيد جداً (75-84)</strong> •
+                    <strong>جيد (65-74)</strong> •
+                    <strong>مقبول (50-64)</strong> •
+                    <strong>دون المستوى (أقل من 50)</strong>
+                </span>
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto align-items-center">
+                {% if from_source == 'placement_list' %}
+                <a href="{% url 'training:placement_exams_list' %}"
+                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-x-circle"></i>
+                    <span>إلغاء والعودة</span>
+                </a>
+                {% else %}
+                <a href="{% url 'training:results_center' %}?tab=sessions&source=placement&exam_id={{ exam.id }}&auto_open=0"
+                    class="btn btn-outline-secondary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-x-circle"></i>
+                    <span>إلغاء والعودة</span>
+                </a>
+                {% endif %}
+                <button type="button"
+                    class="btn btn-outline-primary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center gap-2"
+                    onclick="simulateSaveDraft()">
+                    <i class="bi bi-file-earmark-arrow-down"></i>
+                    <span>حفظ كمسودة</span>
+                </button>
+                <button type="submit" id="btnSubmitPlacementGrades"
+                    class="btn btn-primary btn-lg fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-patch-check-fill"></i>
+                    <span>اعتماد ورصد الدرجات</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Modal: إشعار حفظ أو اعتماد الدرجات التجريبي -->
+<div class="modal fade" id="saveSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-success text-white py-3 px-4">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                    <span id="saveModalTitle">تم حفظ درجات الامتحان بنجاح</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="fs-1 text-success mb-3">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-2" id="saveModalMessage">
+                    تم رصد وتحديث درجات امتحان تحديد المستوى بنجاح.
+                </h6>
+                <p class="text-muted small mb-0">
+                    هذه شاشة تجريبية (UI Mockup) توضح اكتمال تدفق الرصد واحتساب النسب والتقديرات وفق ضوابط المشروع.
+                </p>
+            </div>
+            <div class="modal-footer bg-light py-2 px-4 justify-content-center">
+                <button type="button" class="btn btn-success fw-bold px-4 rounded-3" data-bs-dismiss="modal">
+                    تم، متابعة المعاينة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // دالة التحقق من تأكيد انعقاد الامتحان ومنع رصد الدرجات قبل التأكيد
+    function checkExamHoldingConfirmed() {
+        let isHoldingConfirmed = false;
+        if (CURRENT_LOADED_EXAM) {
+            isHoldingConfirmed = Boolean(
+                CURRENT_LOADED_EXAM.is_confirmed || 
+                CURRENT_LOADED_EXAM.status === 'confirmed' || 
+                CURRENT_LOADED_EXAM.status === 'approved' || 
+                CURRENT_LOADED_EXAM.status === 'completed'
+            );
+        } else {
+            const serverStatus = "{{ exam.status|default:'' }}";
+            const serverConfirmed = {{ exam.is_confirmed|yesno:"true,false" }};
+            isHoldingConfirmed = Boolean(serverConfirmed || serverStatus === 'confirmed' || serverStatus === 'approved' || serverStatus === 'completed');
+        }
+
+        const warningEl = document.getElementById('unconfirmedExamWarning');
+        const formEl = document.getElementById('placementGradesForm');
+        const bannerEl = document.getElementById('examInfoBanner');
+        const goToDetailsBtn = document.getElementById('warningGoToDetailsBtn');
+
+        if (CURRENT_LOADED_EXAM && goToDetailsBtn) {
+            goToDetailsBtn.href = `{% url 'training:placement_exams_list' %}?exam_id=${encodeURIComponent(CURRENT_LOADED_EXAM.id)}&open_details=1`;
+        }
+
+        if (!isHoldingConfirmed) {
+            if (warningEl) warningEl.classList.remove('d-none');
+            if (formEl) formEl.classList.add('d-none');
+            // تعطيل مدخلات الرصد
+            document.querySelectorAll('.grade-input, .attendance-select, .action-radio').forEach(el => el.disabled = true);
+        } else {
+            if (warningEl) warningEl.classList.add('d-none');
+            if (formEl) formEl.classList.remove('d-none');
+        }
+        return isHoldingConfirmed;
+    }
+
+    // متغيرات الحالة الأساسية للامتحان
+    let CURRENT_ASSESSMENT_MODE = "{{ exam.assessment_type|default:'theory_and_practical' }}";
+    let TOTAL_MAX_SCORE = parseFloat("{{ exam.total_max_grade|default:'100' }}") || 100.0;
+    let THEORY_MAX_SCORE = parseFloat("{{ exam.theory_max_grade|default:'60' }}") || 60.0;
+    let PRACTICAL_MAX_SCORE = parseFloat("{{ exam.practical_max_grade|default:'40' }}") || 40.0;
+    let CURRENT_EXAM_DATE = "{{ exam.exam_date|default:'2026-11-28' }}";
+    let CURRENT_LOADED_EXAM = null;
+
+    // --------------------------------------------------------------------------
+    // دالة فحص صلاحية النتيجة السابقة: أقل من 6 أشهر تقويمية بدقة (Calendar Months Math)
+    // يوم الذكرى الشهرية السادسة تماماً غير صالح (Strictly < 6 calendar months)
+    // --------------------------------------------------------------------------
+    function isEligibleCalendarMonths(prevDateStr, currentExamDateStr) {
+        if (!prevDateStr || !currentExamDateStr) return false;
+        const p = new Date(prevDateStr);
+        const c = new Date(currentExamDateStr);
+        if (isNaN(p.getTime()) || isNaN(c.getTime())) return false;
+
+        const pYear = p.getFullYear();
+        const pMonth = p.getMonth(); // 0-indexed (0=Jan..11=Dec)
+        const pDay = p.getDate();
+
+        const cYear = c.getFullYear();
+        const cMonth = c.getMonth();
+        const cDay = c.getDate();
+
+        const pTime = new Date(pYear, pMonth, pDay).getTime();
+        const cTime = new Date(cYear, cMonth, cDay).getTime();
+        if (cTime < pTime) return false;
+
+        // حساب تاريخ الذكرى الشهرية السادسة
+        const targetYear = pYear + Math.floor((pMonth + 6) / 12);
+        const targetMonth = (pMonth + 6) % 12;
+        // آخر يوم في الشهر المستهدف
+        const maxDaysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const actualTargetDay = Math.min(pDay, maxDaysInTargetMonth);
+        const exact6thAnniversaryTime = new Date(targetYear, targetMonth, actualTargetDay).getTime();
+
+        // الشرط: أقل تماماً من 6 أشهر تقويمية (يوم الذكرى السادسة نفسه غير صالح)
+        return cTime < exact6thAnniversaryTime;
+    }
+
+    // المزامنة مع بيانات التخزين المحلي (LocalStorage) إن وُجدت
+    function syncWithLocalStorageExam() {
+        const candidateKeys = [
+            'GASIM_PLACEMENT_EXAMS_DATA_V8',
+            'GASIM_PLACEMENT_EXAMS_DATA_V7',
+            'gasim_placement_exams',
+            'GASIM_PLACEMENT_EXAMS_DATA_V5',
+            'GASIM_PLACEMENT_EXAMS_DATA_V4',
+            'GASIM_PLACEMENT_EXAMS_DATA_V3'
+        ];
+        let foundExam = null;
+        const currentExamId = "{{ exam.id }}";
+
+        for (const k of candidateKeys) {
+            try {
+                const raw = localStorage.getItem(k);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        foundExam = parsed.find(e => 
+                            String(e.id) === String(currentExamId) || 
+                            String(e.exam_number) === String(currentExamId) ||
+                            String(e.code) === String(currentExamId) ||
+                            String(e.request_internal_id) === String(currentExamId)
+                        );
+                        if (foundExam) {
+                            CURRENT_LOADED_EXAM = foundExam;
+                            break;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('LocalStorage parse warning:', e);
+            }
+        }
+
+        if (foundExam) {
+            const reqInternalId = foundExam.request_internal_id || foundExam.exam_number || foundExam.code || "{{ exam.exam_number }}";
+            const purposeStr = foundExam.purpose ? (foundExam.purpose + (foundExam.sub_purpose ? ' — ' + foundExam.sub_purpose : '')) : (foundExam.target_course || 'امتحان تحديد مستوى');
+            const subjectTitle = foundExam.subject || foundExam.title || "{{ exam.subject }}";
+
+            const bannerSub = document.getElementById('bannerExamSubject');
+            if (bannerSub) bannerSub.textContent = purposeStr;
+
+            const bannerNum = document.getElementById('bannerExamNumber');
+            if (bannerNum) bannerNum.textContent = reqInternalId;
+
+            const breadcrumbLabel = document.getElementById('breadcrumbExamLabel');
+            if (breadcrumbLabel) breadcrumbLabel.textContent = `رصد درجات امتحان: ${reqInternalId} (${purposeStr})`;
+
+            const thSub = document.getElementById('thSubjectName');
+            if (thSub) thSub.textContent = `الدرجة (${subjectTitle})`;
+
+            const targetCourseEl = document.getElementById('bannerTargetCourse');
+            if (targetCourseEl) targetCourseEl.textContent = purposeStr;
+
+            const hostEntityEl = document.getElementById('bannerHostEntity');
+            if (hostEntityEl) hostEntityEl.textContent = foundExam.source_entity || foundExam.host_entity || '---';
+
+            if (foundExam.supervising_teacher || foundExam.supervisor) {
+                const teacher = foundExam.supervising_teacher || foundExam.supervisor;
+                const el = document.getElementById('bannerSupervisor');
+                if (el) el.textContent = teacher;
+                const thSup = document.getElementById('thSupervisorName');
+                if (thSup) thSup.textContent = teacher;
+            }
+            if (foundExam.exam_date) {
+                CURRENT_EXAM_DATE = foundExam.exam_date;
+                const el = document.getElementById('bannerExamDate');
+                if (el) el.textContent = foundExam.exam_date;
+            }
+            if (foundExam.assessment_type) {
+                CURRENT_ASSESSMENT_MODE = foundExam.assessment_type;
+                if (foundExam.total_max_grade) TOTAL_MAX_SCORE = parseFloat(foundExam.total_max_grade);
+                if (foundExam.theory_max_grade) THEORY_MAX_SCORE = parseFloat(foundExam.theory_max_grade);
+                if (foundExam.practical_max_grade) PRACTICAL_MAX_SCORE = parseFloat(foundExam.practical_max_grade);
+                applyAssessmentModeUI();
+            }
+
+            // إذا توفر سجل طلاب خاص بالامتحان في التخزين المحلي، اعتمد طلاب هذا الامتحان فقط
+            if (foundExam.trainees && Array.isArray(foundExam.trainees)) {
+                renderDynamicTrainees(foundExam.trainees);
+            }
+        }
+        checkExamHoldingConfirmed();
+    }
+
+    // إعادة بناء صفوف الطلاب ديناميكياً إذا جاءت من كائن الامتحان في التخزين المحلي
+    function renderDynamicTrainees(trainees) {
+        const tbody = document.getElementById('placementGradesTableBody');
+        if (!tbody) return;
+
+        const tableHeaderBadge = document.getElementById('tableHeaderBadge');
+        if (tableHeaderBadge) tableHeaderBadge.textContent = `${trainees.length} ممتحن بالامتحان`;
+
+        if (trainees.length === 0) {
+            tbody.innerHTML = `
+                <tr id="emptyTraineesRow">
+                    <td colspan="13" class="text-center py-5 text-muted">
+                        <div class="py-3">
+                            <i class="bi bi-people text-secondary fs-1 d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark">لا يوجد دارسون مسجلون في هذا الامتحان حالياً</h6>
+                            <p class="small text-muted mb-0">يمكنك إضافة دارسين من صفحة تفاصيل الامتحان في بوابة امتحانات تحديد المستوى.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            updateCategoryButtonCounts(0, 0);
+            return;
+        }
+
+        const officerRanks = ['ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'];
+        let officerCount = 0;
+        let ncoCount = 0;
+        let html = '';
+
+        trainees.forEach((t, idx) => {
+            const rank = (t.rank || '').trim();
+            const isOfficer = officerRanks.some(r => rank.includes(r));
+            const category = isOfficer ? 'officer' : 'nco';
+            if (isOfficer) officerCount++; else ncoCount++;
+
+            const militaryNum = t.military_number || `1000${idx}`;
+            const name = t.name || '';
+            const unit = t.unit || '';
+            const attendance = t.attendance_status || 'present';
+
+            // بيانات النتائج السابقة:
+            // ضوابط صارمة: المصدر امتحان تحديد مستوى سابق فقط (ممنوع الدورات)
+            // النجاح >= 50%
+            // المدة أقل من 6 أشهر تقويمية بدقة
+            let prevStatus = 'none';
+            let prevLabel = 'لا توجد نتيجة سابقة';
+            let prevBadge = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+            let prevPct = 0;
+            let prevDate = '';
+            let prevSource = '';
+            let action = 'mandatory';
+
+            // محاكاة بيانات امتحان سابق مع تطبيق القواعد بدقة
+            const mod = idx % 3;
+            if (mod === 0) {
+                // امتحان تحديد مستوى سابق قبل ~2.5 شهر ونسبة 85% (صالحة ومؤهلة)
+                prevDate = '2026-09-15';
+                prevPct = 85.0;
+                prevSource = 'امتحان تحديد مستوى سابق (001-26)';
+            } else if (mod === 1) {
+                // امتحان تحديد مستوى سابق من يناير 2026 (> 6 أشهر تقويمية -> منتهية الصلاحية)
+                prevDate = '2026-01-10';
+                prevPct = 80.0;
+                prevSource = 'امتحان تحديد مستوى سابق (045-25)';
+            }
+
+            if (prevDate) {
+                const isUnder6Months = isEligibleCalendarMonths(prevDate, CURRENT_EXAM_DATE);
+                const isPass = (prevPct >= 50.0);
+
+                if (isUnder6Months && isPass) {
+                    prevStatus = 'valid';
+                    prevLabel = 'صالحة (أقل من 6 أشهر تقويمية)';
+                    prevBadge = 'bg-success-subtle text-success border border-success-subtle';
+                    action = (t.action === 'retake') ? 'retake' : 'retain';
+                } else if (!isUnder6Months) {
+                    prevStatus = 'expired';
+                    prevLabel = 'انتهت الصلاحية (أكثر من 6 أشهر)';
+                    prevBadge = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+                    action = 'mandatory';
+                } else {
+                    prevStatus = 'failed';
+                    prevLabel = 'غير مؤهلة (راسب في السابق)';
+                    prevBadge = 'bg-danger-subtle text-danger border border-danger-subtle';
+                    action = 'mandatory';
+                }
+            }
+
+            // احتساب الدرجة المنقولة بما يتناسب مع توزيع درجات الامتحان الحالي
+            let transferredTheory = 0;
+            let transferredPractical = 0;
+            let transferredTotal = 0;
+
+            if (prevStatus === 'valid') {
+                if (CURRENT_ASSESSMENT_MODE === 'theory_only') {
+                    transferredTheory = parseFloat(((prevPct / 100) * TOTAL_MAX_SCORE).toFixed(1));
+                    transferredPractical = 0;
+                    transferredTotal = transferredTheory;
+                } else {
+                    transferredTheory = parseFloat(((prevPct / 100) * THEORY_MAX_SCORE).toFixed(1));
+                    transferredPractical = parseFloat(((prevPct / 100) * PRACTICAL_MAX_SCORE).toFixed(1));
+                    transferredTotal = parseFloat((transferredTheory + transferredPractical).toFixed(1));
+                }
+            }
+
+            const isRetain = (action === 'retain' && prevStatus === 'valid' && attendance === 'present');
+            const isAbsentWithoutRetain = (attendance === 'absent' && action !== 'retain');
+
+            let curTheoryVal = (t.theory_grade !== undefined && t.theory_grade !== null) ? t.theory_grade : (isRetain ? transferredTheory : '');
+            let curPracticalVal = (t.practical_grade !== undefined && t.practical_grade !== null) ? t.practical_grade : (isRetain ? transferredPractical : '');
+            let curTotalVal = (t.total_grade !== undefined && t.total_grade !== null) ? t.total_grade : (isRetain ? transferredTotal : '');
+            let curPctVal = (t.percentage !== undefined && t.percentage !== null) ? t.percentage : (isRetain ? `${prevPct}%` : '');
+            let curNotesVal = t.notes || (isAbsentWithoutRetain ? 'غائب عن الامتحان' : '');
+
+            html += `
+                <tr class="student-row" 
+                    id="row_${militaryNum}"
+                    data-category="${category}"
+                    data-num="${militaryNum}"
+                    data-rank="${rank}"
+                    data-name="${name}"
+                    data-attendance="${attendance}"
+                    data-search="${name} ${militaryNum} ${rank} ${unit}"
+                    data-prev-status="${prevStatus}"
+                    data-action="${action}"
+                    data-prev-total="${prevPct}"
+                    data-prev-theory="${transferredTheory}"
+                    data-prev-practical="${transferredPractical}">
+                    <td class="text-center text-muted fw-bold row-index">${idx + 1}</td>
+                    <td class="text-center">
+                        <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-2 py-1 border military-card-val">${militaryNum}</span>
+                    </td>
+                    <td class="text-center fw-bold text-dark">
+                        <span class="col-rank student-rank">${rank}</span>
+                    </td>
+                    <td>
+                        <strong class="text-dark d-block">
+                            <span class="col-name student-name">${name}</span>
+                        </strong>
+                        <small class="text-muted">${unit}</small>
+                    </td>
+
+                    <!-- حالة الحضور والغياب -->
+                    <td class="text-center">
+                        <select class="form-select form-select-sm fw-bold attendance-select mx-auto" style="width: 95px;"
+                            id="attendance_${militaryNum}" name="attendance_${militaryNum}"
+                            data-num="${militaryNum}"
+                            onchange="onAttendanceChange('${militaryNum}', this.value)">
+                            <option value="present" ${attendance !== 'absent' ? 'selected' : ''}>حاضر</option>
+                            <option value="absent" ${attendance === 'absent' ? 'selected' : ''}>غائب</option>
+                        </select>
+                    </td>
+
+                    <!-- النتيجة السابقة والإجراء -->
+                    <td class="text-center">
+                        <span class="badge ${prevBadge} px-2 py-1 rounded-pill mb-1">
+                            <i class="bi ${prevStatus === 'valid' ? 'bi-check-circle-fill' : (prevStatus === 'expired' ? 'bi-clock-history' : 'bi-dash-circle')} me-1"></i>${prevLabel}
+                        </span>
+                        ${prevDate ? `
+                            <div class="small fw-semibold text-dark">
+                                الدرجة السابقة: <strong>${prevPct}%</strong>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                ${prevSource} • ${prevDate}
+                            </div>
+                        ` : `
+                            <div class="text-muted small" style="font-size: 0.75rem;">
+                                لا يوجد سجل سابق للامتحان
+                            </div>
+                        `}
+                    </td>
+
+                    <!-- خيار الإجراء المطلوب -->
+                    <td>
+                        ${prevStatus === 'valid' ? `
+                            <div class="d-flex flex-column gap-1">
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input action-radio" type="radio" 
+                                           name="action_${militaryNum}" id="act_retain_${militaryNum}" value="retain"
+                                           ${action === 'retain' ? 'checked' : ''} onchange="onStudentActionChange('${militaryNum}', 'retain')">
+                                    <label class="form-check-label small fw-semibold text-success" for="act_retain_${militaryNum}">الاحتفاظ بالدرجة السابقة</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input action-radio" type="radio" 
+                                           name="action_${militaryNum}" id="act_retake_${militaryNum}" value="retake"
+                                           ${action === 'retake' ? 'checked' : ''} onchange="onStudentActionChange('${militaryNum}', 'retake')">
+                                    <label class="form-check-label small fw-semibold text-primary" for="act_retake_${militaryNum}">إعادة الامتحان لتحسين الدرجة</label>
+                                </div>
+                            </div>
+                        ` : (prevStatus === 'expired' ? `
+                            <span class="badge bg-warning bg-opacity-25 text-dark border border-warning px-2 py-1 small d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                <span>دخول إلزامي (لانتهاء الصلاحية)</span>
+                            </span>
+                        ` : `
+                            <span class="badge bg-secondary bg-opacity-15 text-dark border px-2 py-1 small d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-pencil-fill text-primary"></i>
+                                <span>دخول إلزامي للامتحان</span>
+                            </span>
+                        `)}
+                    </td>
+
+                    <!-- درجة النظري -->
+                    <td class="text-center p-2 col-theory">
+                        <input type="number" name="theory_${militaryNum}" class="form-control grade-input theory-input mx-auto"
+                               min="0" max="${THEORY_MAX_SCORE}" step="0.5" data-max="${THEORY_MAX_SCORE}" placeholder="-"
+                               value="${isRetain ? '' : curTheoryVal}"
+                               ${isRetain ? 'style="display: none;"' : ''} 
+                               ${attendance === 'absent' && !isRetain ? 'disabled value="0"' : ''}
+                               oninput="recalculateStudentRow('${militaryNum}')">
+                        <div class="adopted-display-theory" ${!isRetain ? 'style="display: none;"' : ''}>
+                            <span class="adopted-grade-box" title="درجة النظري المنقولة من الامتحان السابق"><i class="bi bi-check-lg"></i><span class="val-theory">${transferredTheory}</span></span>
+                        </div>
+                    </td>
+
+                    <!-- درجة العملي -->
+                    <td class="text-center p-2 col-practical">
+                        <input type="number" name="practical_${militaryNum}" class="form-control grade-input practical-input mx-auto"
+                               min="0" max="${PRACTICAL_MAX_SCORE}" step="0.5" data-max="${PRACTICAL_MAX_SCORE}" placeholder="-"
+                               value="${isRetain ? '' : curPracticalVal}"
+                               ${isRetain ? 'style="display: none;"' : ''} 
+                               ${attendance === 'absent' && !isRetain ? 'disabled value="0"' : ''}
+                               oninput="recalculateStudentRow('${militaryNum}')">
+                        <div class="adopted-display-practical" ${!isRetain ? 'style="display: none;"' : ''}>
+                            <span class="adopted-grade-box" title="درجة العملي المنقولة من الامتحان السابق"><i class="bi bi-check-lg"></i><span class="val-practical">${transferredPractical}</span></span>
+                        </div>
+                    </td>
+
+                    <!-- المجموع -->
+                    <td class="text-center fw-bold fs-6 total-cell bg-light">
+                        <span class="val-total">
+                            ${isRetain ? `<div>${transferredTotal}</div><div class="mt-1"><span class="badge bg-info-subtle text-info border border-info-subtle small px-2 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;"><i class="bi bi-arrow-left-right"></i>درجة منقولة من امتحان سابق</span></div>` : (curTotalVal ? curTotalVal : '<span class="text-muted small">قيد الرصد</span>')}
+                        </span>
+                    </td>
+
+                    <!-- النسبة (%) -->
+                    <td class="text-center fw-bold percentage-cell bg-light font-monospace">
+                        <span class="val-pct">${curPctVal ? curPctVal : (isRetain ? `${prevPct}%` : '<span class="text-muted small">-</span>')}</span>
+                    </td>
+
+                    <!-- التقدير -->
+                    <td class="text-center fw-bold grade-cell bg-light">
+                        <span class="val-grade">
+                            ${isRetain ? '<span class="badge badge-grade-a px-2 py-1">ممتاز (أ)</span>' : '<span class="badge bg-light text-secondary border px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>غير مكتمل</span>'}
+                        </span>
+                    </td>
+
+                    <!-- الملاحظات -->
+                    <td class="p-2">
+                        <input type="text" name="notes_${militaryNum}" class="form-control form-control-sm notes-input" value="${curNotesVal}" placeholder="ملاحظات الرصد...">
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+        updateCategoryButtonCounts(trainees.length, officerCount, ncoCount);
+        applyAssessmentModeUI();
+    }
+
+    function updateCategoryButtonCounts(total, officers, ncos) {
+        const btnAll = document.getElementById('btnCatAll');
+        const btnOff = document.getElementById('btnCatOfficers');
+        const btnNco = document.getElementById('btnCatNCOs');
+        if (btnAll) btnAll.textContent = `الكل (${total})`;
+        if (btnOff) btnOff.textContent = `ضباط (${officers})`;
+        if (btnNco) btnNco.textContent = `ضباط صف (${ncos})`;
+    }
+
+    // تطبيق حالة النظري والعملي على الجدول والعناصر
+    function applyAssessmentModeUI() {
+        const practicalCols = document.querySelectorAll('.col-practical');
+        const theoryMaxBadge = document.getElementById('badgeTheoryMax');
+        const practicalMaxBadge = document.getElementById('badgePracticalMax');
+        const totalMaxBadge = document.getElementById('badgeTotalMax');
+        const thTheoryMax = document.getElementById('thTheoryMax');
+        const thPracticalSub = document.getElementById('thPracticalSub');
+        const thSubjectMainCol = document.getElementById('thSubjectMainCol');
+
+        if (CURRENT_ASSESSMENT_MODE === 'theory_only') {
+            // إخفاء عمود العملي بالكامل
+            practicalCols.forEach(col => col.classList.add('d-none'));
+            THEORY_MAX_SCORE = TOTAL_MAX_SCORE;
+            PRACTICAL_MAX_SCORE = 0;
+
+            if (thSubjectMainCol) thSubjectMainCol.setAttribute('colspan', '1');
+            if (theoryMaxBadge) theoryMaxBadge.textContent = `نظري فقط: ${TOTAL_MAX_SCORE}`;
+            if (practicalMaxBadge) practicalMaxBadge.classList.add('d-none');
+            if (totalMaxBadge) totalMaxBadge.textContent = `الإجمالي: ${TOTAL_MAX_SCORE}`;
+            if (thTheoryMax) thTheoryMax.textContent = `العظمى: ${TOTAL_MAX_SCORE}`;
+
+            document.querySelectorAll('.theory-input').forEach(input => {
+                input.setAttribute('data-max', TOTAL_MAX_SCORE);
+                input.max = TOTAL_MAX_SCORE;
+            });
+        } else {
+            // إظهار عمود العملي
+            practicalCols.forEach(col => col.classList.remove('d-none'));
+            if (practicalMaxBadge) practicalMaxBadge.classList.remove('d-none');
+
+            if (thSubjectMainCol) thSubjectMainCol.setAttribute('colspan', '2');
+            if (theoryMaxBadge) theoryMaxBadge.textContent = `نظري: ${THEORY_MAX_SCORE}`;
+            if (practicalMaxBadge) practicalMaxBadge.textContent = `عملي: ${PRACTICAL_MAX_SCORE}`;
+            if (totalMaxBadge) totalMaxBadge.textContent = `الإجمالي: ${TOTAL_MAX_SCORE}`;
+            if (thTheoryMax) thTheoryMax.textContent = `العظمى: ${THEORY_MAX_SCORE}`;
+
+            document.querySelectorAll('.theory-input').forEach(input => {
+                input.setAttribute('data-max', THEORY_MAX_SCORE);
+                input.max = THEORY_MAX_SCORE;
+            });
+            document.querySelectorAll('.practical-input').forEach(input => {
+                input.setAttribute('data-max', PRACTICAL_MAX_SCORE);
+                input.max = PRACTICAL_MAX_SCORE;
+            });
+        }
+
+        recalculateAllRows();
+    }
+
+    // تحديد حالة الحضور لكافة الممتحنين كحاضر بضغطة زر واحدة
+    function markAllTraineesPresent() {
+        document.querySelectorAll('.attendance-select').forEach(sel => {
+            sel.value = 'present';
+            const mil = sel.getAttribute('data-num');
+            if (mil) onAttendanceChange(mil, 'present');
+        });
+    }
+
+    // التعامل مع تبديل حالة الحضور والغياب للممتحن
+    function onAttendanceChange(militaryNum, attendanceValue) {
+        const row = document.getElementById('row_' + militaryNum);
+        if (!row) return;
+
+        row.setAttribute('data-attendance', attendanceValue);
+        const theoryInput = row.querySelector('.theory-input');
+        const practicalInput = row.querySelector('.practical-input');
+        const notesInput = row.querySelector('.notes-input');
+        const action = row.getAttribute('data-action');
+        const prevStatus = row.getAttribute('data-prev-status');
+
+        if (attendanceValue === 'absent') {
+            if (prevStatus === 'valid' && action === 'retain') {
+                // غائب ولكن تم اعتماد درجته السابقة المنقولة
+                if (notesInput && !notesInput.value.trim()) {
+                    notesInput.value = 'غائب - اعتمدت نتيجته السابقة المنقولة';
+                }
+                if (theoryInput) theoryInput.disabled = true;
+                if (practicalInput) practicalInput.disabled = true;
+            } else {
+                // غائب ولا توجد نتيجة سابقة صالحة: يُرصد كـ "راسب" دون المستوى (0 درجات) مع تدوين الغياب
+                if (theoryInput) {
+                    theoryInput.value = '0';
+                    theoryInput.disabled = true;
+                }
+                if (practicalInput) {
+                    practicalInput.value = '0';
+                    practicalInput.disabled = true;
+                }
+                if (notesInput && (!notesInput.value.trim() || notesInput.value.includes('غائب'))) {
+                    notesInput.value = 'غائب عن الامتحان';
+                }
+                updateRowCalculatedCells(row, 0.0, true, false, false, true);
+            }
+        } else {
+            // حاضر
+            if (theoryInput) theoryInput.disabled = false;
+            if (practicalInput) practicalInput.disabled = false;
+            if (notesInput && notesInput.value === 'غائب عن الامتحان') {
+                notesInput.value = '';
+            }
+            if (action === 'retain' && prevStatus === 'valid') {
+                onStudentActionChange(militaryNum, 'retain');
+            } else {
+                recalculateStudentRow(militaryNum);
+            }
+        }
+        updateGradesCompletionUI();
+    }
+
+    // التعامل مع تبديل الإجراء للدارس (الاحتفاظ بالدرجة السابقة vs إعادة الامتحان)
+    function onStudentActionChange(militaryNum, actionType) {
+        const row = document.getElementById('row_' + militaryNum);
+        if (!row) return;
+
+        row.setAttribute('data-action', actionType);
+        const theoryInput = row.querySelector('.theory-input');
+        const practicalInput = row.querySelector('.practical-input');
+        const adoptedTheory = row.querySelector('.adopted-display-theory');
+        const adoptedPractical = row.querySelector('.adopted-display-practical');
+
+        if (actionType === 'retain') {
+            if (theoryInput) theoryInput.style.display = 'none';
+            if (practicalInput) practicalInput.style.display = 'none';
+            if (adoptedTheory) adoptedTheory.style.display = '';
+            if (adoptedPractical) adoptedPractical.style.display = '';
+
+            const prevPct = parseFloat(row.getAttribute('data-prev-total')) || 0;
+            let transTheory = 0;
+            let transPractical = 0;
+            let transTotal = 0;
+
+            if (CURRENT_ASSESSMENT_MODE === 'theory_only') {
+                transTheory = parseFloat(((prevPct / 100) * TOTAL_MAX_SCORE).toFixed(1));
+                transPractical = 0;
+                transTotal = transTheory;
+            } else {
+                transTheory = parseFloat(((prevPct / 100) * THEORY_MAX_SCORE).toFixed(1));
+                transPractical = parseFloat(((prevPct / 100) * PRACTICAL_MAX_SCORE).toFixed(1));
+                transTotal = parseFloat((transTheory + transPractical).toFixed(1));
+            }
+
+            const valTheoryEl = row.querySelector('.val-theory');
+            const valPracticalEl = row.querySelector('.val-practical');
+            if (valTheoryEl) valTheoryEl.textContent = transTheory;
+            if (valPracticalEl) valPracticalEl.textContent = transPractical;
+
+            updateRowCalculatedCells(row, transTotal, true, false, true);
+        } else {
+            if (theoryInput) theoryInput.style.display = '';
+            if (practicalInput) practicalInput.style.display = '';
+            if (adoptedTheory) adoptedTheory.style.display = 'none';
+            if (adoptedPractical) adoptedPractical.style.display = 'none';
+
+            recalculateStudentRow(militaryNum);
+        }
+        updateGradesCompletionUI();
+    }
+
+    // إعادة احتساب نتائج صف محدد
+    function recalculateStudentRow(militaryNum) {
+        const row = document.getElementById('row_' + militaryNum);
+        if (!row) return;
+
+        const attendance = row.getAttribute('data-attendance') || 'present';
+        const action = row.getAttribute('data-action');
+        const prevStatus = row.getAttribute('data-prev-status');
+
+        if (attendance === 'absent') {
+            if (action === 'retain' && prevStatus === 'valid') {
+                const prevPct = parseFloat(row.getAttribute('data-prev-total')) || 0;
+                const transTotal = (CURRENT_ASSESSMENT_MODE === 'theory_only') 
+                    ? parseFloat(((prevPct / 100) * TOTAL_MAX_SCORE).toFixed(1))
+                    : parseFloat((((prevPct / 100) * THEORY_MAX_SCORE) + ((prevPct / 100) * PRACTICAL_MAX_SCORE)).toFixed(1));
+                updateRowCalculatedCells(row, transTotal, true, false, true);
+                return;
+            } else {
+                updateRowCalculatedCells(row, 0.0, true, false, false, true);
+                return;
+            }
+        }
+
+        if (action === 'retain' && prevStatus === 'valid') {
+            const prevPct = parseFloat(row.getAttribute('data-prev-total')) || 0;
+            const transTotal = (CURRENT_ASSESSMENT_MODE === 'theory_only') 
+                ? parseFloat(((prevPct / 100) * TOTAL_MAX_SCORE).toFixed(1))
+                : parseFloat((((prevPct / 100) * THEORY_MAX_SCORE) + ((prevPct / 100) * PRACTICAL_MAX_SCORE)).toFixed(1));
+            updateRowCalculatedCells(row, transTotal, true, false, true);
+            return;
+        }
+
+        const theoryInput = row.querySelector('.theory-input');
+        const practicalInput = row.querySelector('.practical-input');
+
+        const theoryValStr = theoryInput ? theoryInput.value.trim() : '';
+        const practicalValStr = practicalInput ? practicalInput.value.trim() : '';
+
+        let theoryScore = 0;
+        let practicalScore = 0;
+        let isComplete = true;
+        let isInvalid = false;
+
+        if (theoryValStr === '') {
+            isComplete = false;
+            if (theoryInput) theoryInput.classList.remove('is-invalid', 'border-danger');
+        } else {
+            theoryScore = parseFloat(theoryValStr);
+            const maxTheory = parseFloat(theoryInput.getAttribute('data-max')) || THEORY_MAX_SCORE;
+            if (isNaN(theoryScore) || theoryScore < 0 || theoryScore > maxTheory) {
+                isInvalid = true;
+                theoryInput.classList.add('is-invalid', 'border-danger');
+            } else {
+                theoryInput.classList.remove('is-invalid', 'border-danger');
+            }
+        }
+
+        if (CURRENT_ASSESSMENT_MODE === 'theory_and_practical') {
+            if (practicalValStr === '') {
+                isComplete = false;
+                if (practicalInput) practicalInput.classList.remove('is-invalid', 'border-danger');
+            } else {
+                practicalScore = parseFloat(practicalValStr);
+                const maxPractical = parseFloat(practicalInput.getAttribute('data-max')) || PRACTICAL_MAX_SCORE;
+                if (isNaN(practicalScore) || practicalScore < 0 || practicalScore > maxPractical) {
+                    isInvalid = true;
+                    practicalInput.classList.add('is-invalid', 'border-danger');
+                } else {
+                    practicalInput.classList.remove('is-invalid', 'border-danger');
+                }
+            }
+        } else {
+            practicalScore = 0;
+        }
+
+        if (isInvalid) {
+            updateRowCalculatedCells(row, null, false, true);
+            return;
+        }
+
+        if (!isComplete) {
+            updateRowCalculatedCells(row, null, false, false);
+            return;
+        }
+
+        const totalScore = theoryScore + practicalScore;
+        updateRowCalculatedCells(row, totalScore, true, false, false);
+        updateGradesCompletionUI();
+    }
+
+    // تحديث خلايا المجموع والنسبة والتقدير لصف معين
+    function updateRowCalculatedCells(row, totalScore, isGraded, isError = false, isTransferred = false, isAbsent = false) {
+        const totalCell = row.querySelector('.val-total');
+        const pctCell = row.querySelector('.val-pct');
+        const gradeCell = row.querySelector('.val-grade');
+
+        if (isError) {
+            if (totalCell) totalCell.innerHTML = `<span class="text-danger small fw-bold">خطأ في الدرجة</span>`;
+            if (pctCell) pctCell.innerHTML = `<span class="text-danger small fw-bold">خطأ</span>`;
+            if (gradeCell) gradeCell.innerHTML = `<span class="badge bg-danger text-white px-2 py-1">تجاوز الحد</span>`;
+            row.setAttribute('data-is-graded', 'false');
+            return;
+        }
+
+        if (!isGraded || totalScore === null) {
+            if (totalCell) totalCell.innerHTML = `<span class="text-muted small">قيد الرصد</span>`;
+            if (pctCell) pctCell.innerHTML = `<span class="text-muted small">-</span>`;
+            if (gradeCell) gradeCell.innerHTML = `<span class="badge bg-light text-secondary border px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>غير مكتمل</span>`;
+            row.setAttribute('data-is-graded', 'false');
+            return;
+        }
+
+        // احتساب النسبة المئوية الدقيقة
+        const percentage = (TOTAL_MAX_SCORE > 0) ? ((totalScore / TOTAL_MAX_SCORE) * 100) : totalScore;
+
+        let gradeLabel = '';
+        let badgeClass = '';
+        if (isAbsent) {
+            gradeLabel = 'دون المستوى / راسب (غائب)';
+            badgeClass = 'bg-danger text-white';
+        } else if (percentage >= 85) {
+            gradeLabel = 'ممتاز (أ)';
+            badgeClass = 'badge-grade-a';
+        } else if (percentage >= 75) {
+            gradeLabel = 'جيد جداً (ب)';
+            badgeClass = 'badge-grade-b';
+        } else if (percentage >= 65) {
+            gradeLabel = 'جيد (ج)';
+            badgeClass = 'badge-grade-c';
+        } else if (percentage >= 50) {
+            gradeLabel = 'مقبول (د)';
+            badgeClass = 'badge-grade-d';
+        } else {
+            gradeLabel = 'دون المستوى / راسب';
+            badgeClass = 'bg-danger text-white';
+        }
+
+        const transferredBadgeHTML = isTransferred 
+            ? `<div class="mt-1"><span class="badge bg-info-subtle text-info border border-info-subtle small px-2 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;"><i class="bi bi-arrow-left-right"></i>درجة منقولة من امتحان سابق</span></div>` 
+            : '';
+
+        if (totalCell) {
+            totalCell.innerHTML = `<div>${totalScore.toFixed(1)}</div>${transferredBadgeHTML}`;
+        }
+        if (pctCell) pctCell.textContent = percentage.toFixed(1) + '%';
+        if (gradeCell) {
+            gradeCell.innerHTML = `<span class="badge ${badgeClass} px-2 py-1">${gradeLabel}</span>`;
+        }
+        row.setAttribute('data-is-graded', 'true');
+        row.setAttribute('data-current-total', totalScore.toFixed(1));
+        row.setAttribute('data-current-percentage', percentage.toFixed(1));
+    }
+
+    // إعادة احتساب كافة الصفوف
+    function recalculateAllRows() {
+        document.querySelectorAll('.student-row').forEach(row => {
+            const militaryNum = row.getAttribute('data-num');
+            if (militaryNum) recalculateStudentRow(militaryNum);
+        });
+        updateGradesCompletionUI();
+    }
+
+    // فلترة الجدول حسب الفئات
+    let currentGradeCat = 'all';
+    function filterGradesCategory(cat, btn) {
+        currentGradeCat = cat;
+        if (btn && btn.parentElement) {
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        filterGradesTable();
+    }
+
+    // البحث السريع بالاسم أو النمرة
+    function filterGradesTable() {
+        const searchInput = document.getElementById('gradeSearchInput');
+        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const rows = document.querySelectorAll('.student-row');
+
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-category');
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+            const matchesCat = (currentGradeCat === 'all' || rowCat === currentGradeCat);
+            const matchesQuery = query === '' || searchData.includes(query);
+
+            if (matchesCat && matchesQuery) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // محاكاة حفظ كمسودة
+    function simulateSaveDraft() {
+        saveCurrentGradesToStorage();
+        const modalEl = document.getElementById('saveSuccessModal');
+        if (modalEl) {
+            const titleEl = document.getElementById('saveModalTitle');
+            if (titleEl) titleEl.textContent = 'تم حفظ المسودة بنجاح';
+            const msgEl = document.getElementById('saveModalMessage');
+            if (msgEl) msgEl.textContent = 'تم حفظ مسودة درجات وإجراءات وحضور الطلاب محلياً ويمكن استئناف الرصد لاحقاً.';
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else {
+            alert('تم حفظ المسودة بنجاح.');
+        }
+    }
+
+    // حفظ الدرجات الحالية في LocalStorage
+    function saveCurrentGradesToStorage() {
+        try {
+            const grades = [];
+            const isTheoryOnly = (CURRENT_ASSESSMENT_MODE === 'theory_only');
+
+            document.querySelectorAll('.student-row').forEach(row => {
+                const militaryNum = row.getAttribute('data-num');
+                const attendance = row.getAttribute('data-attendance') || 'present';
+                const action = row.getAttribute('data-action');
+                const prevStatus = row.getAttribute('data-prev-status');
+                let rank = row.getAttribute('data-rank') || row.querySelector('.col-rank')?.textContent?.trim() || '';
+                let name = row.getAttribute('data-name') || row.querySelector('.col-name')?.textContent?.trim() || '';
+
+                const theoryInput = row.querySelector('.theory-input');
+                const practicalInput = row.querySelector('.practical-input');
+                const totalCell = row.querySelector('.val-total');
+                const pctCell = row.querySelector('.val-pct');
+                const notesInput = row.querySelector('.notes-input');
+
+                let theoryVal = null;
+                let practicalVal = null;
+                let isTransferred = false;
+
+                if (attendance === 'absent') {
+                    if (action === 'retain' && prevStatus === 'valid') {
+                        const adoptedTheory = row.querySelector('.val-theory');
+                        const adoptedPractical = row.querySelector('.val-practical');
+                        theoryVal = adoptedTheory ? parseFloat(adoptedTheory.textContent.trim()) : 0;
+                        practicalVal = isTheoryOnly ? '-' : (adoptedPractical ? parseFloat(adoptedPractical.textContent.trim()) : 0);
+                        isTransferred = true;
+                    } else {
+                        theoryVal = '-';
+                        practicalVal = '-';
+                    }
+                } else if (action === 'retain' && prevStatus === 'valid') {
+                    const adoptedTheory = row.querySelector('.val-theory');
+                    const adoptedPractical = row.querySelector('.val-practical');
+                    theoryVal = adoptedTheory ? parseFloat(adoptedTheory.textContent.trim()) : 0;
+                    practicalVal = isTheoryOnly ? '-' : (adoptedPractical ? parseFloat(adoptedPractical.textContent.trim()) : 0);
+                    isTransferred = true;
+                } else {
+                    if (theoryInput && theoryInput.value.trim() !== '') {
+                        theoryVal = parseFloat(theoryInput.value);
+                    }
+                    if (isTheoryOnly) {
+                        practicalVal = '-';
+                    } else if (practicalInput && practicalInput.value.trim() !== '') {
+                        practicalVal = parseFloat(practicalInput.value);
+                    }
+                }
+
+                let totalVal = totalCell ? totalCell.textContent.trim() : '';
+                // إزالة وسوم الدرجة المنقولة من نص المجموع إن وجدت
+                if (totalVal.includes('درجة منقولة')) {
+                    const matchNum = totalVal.match(/\d+(\.\d+)?/);
+                    totalVal = matchNum ? matchNum[0] : totalVal;
+                }
+                let pctVal = pctCell ? pctCell.textContent.trim() : '';
+                let notesVal = notesInput ? notesInput.value.trim() : '';
+
+                grades.push({
+                    military_number: militaryNum,
+                    rank: rank,
+                    name: name,
+                    attendance_status: attendance,
+                    is_transferred: isTransferred,
+                    theory: theoryVal !== null ? (typeof theoryVal === 'number' ? theoryVal.toFixed(1) : theoryVal) : '-',
+                    practical: practicalVal !== null ? (typeof practicalVal === 'number' ? practicalVal.toFixed(1) : practicalVal) : '-',
+                    total: totalVal,
+                    percentage: pctVal,
+                    notes: notesVal
+                });
+            });
+            const effectiveId = (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.id) ? CURRENT_LOADED_EXAM.id : "{{ exam.id }}";
+            localStorage.setItem('placement_grades_' + effectiveId, JSON.stringify(grades));
+            if (effectiveId !== "{{ exam.id }}") {
+                localStorage.setItem('placement_grades_' + "{{ exam.id }}", JSON.stringify(grades));
+            }
+            if (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.request_internal_id) {
+                localStorage.setItem('placement_grades_' + CURRENT_LOADED_EXAM.request_internal_id, JSON.stringify(grades));
+            }
+        } catch (e) {
+            console.warn('Failed to save placement grades to localStorage:', e);
+        }
+    }
+
+    // تفعيل خيار استخراج النتيجة بعد اعتماد درجات الامتحان
+    function enableExtractResultButton() {
+        const btn = document.getElementById('extractResultBtn');
+        if (btn) {
+            btn.classList.remove('disabled', 'opacity-50', 'pe-none');
+            btn.removeAttribute('disabled');
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            btn.title = 'فتح واستخراج كشف نتيجة الامتحان المعتمد وفق النموذج الرسمي للطباعة';
+        }
+        try {
+            localStorage.setItem('placement_approved_' + "{{ exam.id }}", 'true');
+        } catch (e) { }
+    }
+
+    // --------------------------------------------------------------------------
+    // فحص اكتمال رصد درجات كافة الممتحنين الحاضرين (يمنع الاعتماد قبل اكتمال الرصد)
+    // --------------------------------------------------------------------------
+    function checkExamGradesCompletion() {
+        const rows = document.querySelectorAll('#placementGradesTableBody tr.student-row');
+        if (rows.length === 0) {
+            return { isComplete: true, incompleteCount: 0, totalCount: 0, incompleteStudents: [], firstIncompleteRow: null };
+        }
+
+        let incompleteCount = 0;
+        const incompleteStudents = [];
+        let firstIncompleteRow = null;
+
+        rows.forEach(row => {
+            const attendance = row.getAttribute('data-attendance') || 'present';
+            const action = row.getAttribute('data-action');
+            const prevStatus = row.getAttribute('data-prev-status');
+            const name = row.getAttribute('data-name') || row.querySelector('.col-name')?.textContent?.trim() || 'ممتحن';
+
+            // إذا كان غائباً:
+            if (attendance === 'absent') {
+                return; // الغائب مسجل راسب أو منقول درجته، فلا يعطل الاعتماد
+            }
+
+            // إذا كان حاضراً واختار الاحتفاظ بنتيجة سابقة صالحة:
+            if (action === 'retain' && prevStatus === 'valid') {
+                return;
+            }
+
+            // إذا كان حاضراً ويتطلب رصد درجاته:
+            const theoryInput = row.querySelector('.theory-input');
+            const practicalInput = row.querySelector('.practical-input');
+
+            const theoryVal = theoryInput ? theoryInput.value.trim() : '';
+            const practicalVal = practicalInput ? practicalInput.value.trim() : '';
+
+            let rowIncomplete = false;
+
+            if (theoryVal === '' || isNaN(parseFloat(theoryVal))) {
+                rowIncomplete = true;
+            }
+
+            if (CURRENT_ASSESSMENT_MODE === 'theory_and_practical') {
+                if (practicalVal === '' || isNaN(parseFloat(practicalVal))) {
+                    rowIncomplete = true;
+                }
+            }
+
+            if (rowIncomplete) {
+                incompleteCount++;
+                incompleteStudents.push(name);
+                if (!firstIncompleteRow) firstIncompleteRow = row;
+            }
+        });
+
+        return {
+            isComplete: (incompleteCount === 0),
+            incompleteCount: incompleteCount,
+            totalCount: rows.length,
+            incompleteStudents: incompleteStudents,
+            firstIncompleteRow: firstIncompleteRow
+        };
+    }
+
+    function updateGradesCompletionUI() {
+        const result = checkExamGradesCompletion();
+        const alertBox = document.getElementById('incompleteGradesAlert');
+        const alertText = document.getElementById('incompleteGradesAlertText');
+        const submitBtn = document.getElementById('btnSubmitPlacementGrades');
+
+        if (!result.isComplete) {
+            if (alertBox) {
+                alertBox.classList.remove('d-none');
+                const modeText = (CURRENT_ASSESSMENT_MODE === 'theory_and_practical') ? 'الدرجتين النظرية والعملية' : 'الدرجة النظرية';
+                const studentListStr = result.incompleteStudents.slice(0, 5).join('، ') + (result.incompleteStudents.length > 5 ? '... وغيرهم' : '');
+                if (alertText) {
+                    alertText.innerHTML = `يوجد <strong>${result.incompleteCount}</strong> ممتحن حاضر لم تكتمل درجاتهم بعد (منهم: ${studentListStr}). يتطلب النظام رصد <strong>${modeText}</strong> لكافة الممتحنين الحاضرين قبل إتاحة الاعتماد. (الملاحظات النصية لا تُعد بديلاً عن الدرجات).`;
+                }
+            }
+            if (submitBtn) {
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-secondary');
+                submitBtn.setAttribute('title', `لا يمكن الاعتماد: متبقي ${result.incompleteCount} ممتحن بحاجة إلى رصد درجاتهم`);
+            }
+        } else {
+            if (alertBox) alertBox.classList.add('d-none');
+            if (submitBtn) {
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.classList.add('btn-primary');
+                submitBtn.removeAttribute('title');
+            }
+        }
+    }
+
+    function scrollToFirstIncompleteStudent() {
+        const result = checkExamGradesCompletion();
+        if (result.firstIncompleteRow) {
+            result.firstIncompleteRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            result.firstIncompleteRow.classList.add('table-warning');
+            setTimeout(() => result.firstIncompleteRow.classList.remove('table-warning'), 2500);
+
+            const theoryInput = result.firstIncompleteRow.querySelector('.theory-input');
+            const practicalInput = result.firstIncompleteRow.querySelector('.practical-input');
+            if (theoryInput && theoryInput.value.trim() === '') {
+                theoryInput.focus();
+            } else if (practicalInput && practicalInput.value.trim() === '') {
+                practicalInput.focus();
+            }
+        }
+    }
+
+    function handleFormSubmit(e) {
+        e.preventDefault();
+
+        // 1. منع الاعتماد إذا كانت هناك درجات ناقصة لأي ممتحن حاضر
+        const result = checkExamGradesCompletion();
+        if (!result.isComplete) {
+            updateGradesCompletionUI();
+            scrollToFirstIncompleteStudent();
+
+            const studentListText = result.incompleteStudents.slice(0, 4).join('، ') + (result.incompleteStudents.length > 4 ? ` و ${result.incompleteStudents.length - 4} آخرين` : '');
+            alert(`تنبيه: لا يمكن اعتماد ورصد الدرجات رسمياً لوجود درجات مطلوبة لم تُرصد بعد!
+
+يوجد عدد (${result.incompleteCount}) ممتحن حاضر لم تكتمل درجاتهم من أصل (${result.totalCount}).
+الطلاب غير مكتملي الرصد: ${studentListText}
+
+يجب رصد درجات كافة الممتحنين الحاضرين وفق مكونات الامتحان (نظري/عملي) قبل الاعتماد.
+(يمكنك استخدام زر «حفظ كمسودة» في حال رغبت بحفظ ما تم رصده مؤقتاً).`);
+            return false;
+        }
+
+        // 2. حفظ الدرجات الحالية وتفعيل الاعتماد
+        saveCurrentGradesToStorage();
+        enableExtractResultButton();
+
+        // حفظ تاريخ اعتماد الدرجات الفعلي (الشهر والسنة فقط وفق القالب الأصلي)
+        try {
+            const now = new Date();
+            const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            const formattedApprovalDate = `${arabicMonths[now.getMonth()]} ${now.getFullYear()}م`;
+            const effectiveId = (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.id) ? CURRENT_LOADED_EXAM.id : "{{ exam.id }}";
+            localStorage.setItem('placement_approval_date_' + effectiveId, formattedApprovalDate);
+            localStorage.setItem('placement_approved_' + effectiveId, 'true');
+            if (effectiveId !== "{{ exam.id }}") {
+                localStorage.setItem('placement_approval_date_' + "{{ exam.id }}", formattedApprovalDate);
+                localStorage.setItem('placement_approved_' + "{{ exam.id }}", 'true');
+            }
+            if (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.request_internal_id) {
+                localStorage.setItem('placement_approved_' + CURRENT_LOADED_EXAM.request_internal_id, 'true');
+            }
+        } catch (e) { }
+
+        // 3. تحديث حالة الامتحان في التخزين المحلي إلى "تم اعتماد النتائج" وتحديث المشاركين
+        try {
+            const candidateKeys = [
+                'GASIM_PLACEMENT_EXAMS_DATA_V7',
+                'gasim_placement_exams',
+                'GASIM_PLACEMENT_EXAMS_DATA_V5',
+                'GASIM_PLACEMENT_EXAMS_DATA_V4',
+                'GASIM_PLACEMENT_EXAMS_DATA_V3'
+            ];
+            candidateKeys.forEach(k => {
+                const raw = localStorage.getItem(k);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) {
+                        const ex = arr.find(item => String(item.id) === String("{{ exam.id }}") || String(item.exam_number) === String("{{ exam.id }}"));
+                        if (ex) {
+                            ex.status = 'approved';
+                            ex.status_label = 'تم اعتماد النتائج';
+                            ex.is_results_approved = true;
+
+                            const storedGradesRaw = localStorage.getItem('placement_grades_' + "{{ exam.id }}");
+                            if (storedGradesRaw && Array.isArray(ex.trainees)) {
+                                const storedGrades = JSON.parse(storedGradesRaw);
+                                ex.trainees.forEach(tr => {
+                                    const g = storedGrades.find(item => String(item.military_number) === String(tr.military_number));
+                                    if (g) {
+                                        tr.attendance_status = g.attendance_status || 'present';
+                                        tr.theory_grade = g.theory;
+                                        tr.practical_grade = g.practical;
+                                        tr.total_grade = g.total;
+                                        tr.percentage = g.percentage;
+                                        tr.notes = g.notes;
+                                    }
+                                });
+                            }
+                            localStorage.setItem(k, JSON.stringify(arr));
+                        }
+                    }
+                }
+            });
+        } catch (err) {
+            console.warn('Failed to update exam status in LocalStorage:', err);
+        }
+
+        const modalEl = document.getElementById('saveSuccessModal');
+        if (modalEl) {
+            const titleEl = document.getElementById('saveModalTitle');
+            if (titleEl) titleEl.textContent = 'تم اعتماد ورصد الدرجات رسمياً';
+            const msgEl = document.getElementById('saveModalMessage');
+            if (msgEl) {
+                msgEl.innerHTML = `
+                    تم اعتماد نتائج امتحان تحديد المستوى بنجاح وتحديث حالة السجل إلى «تم اعتماد النتائج».<br>
+                    <div class="mt-3 p-3 bg-light rounded-3 border text-center">
+                        <span class="text-success fw-bold d-block mb-2">
+                            <i class="bi bi-check-circle-fill me-1"></i> أصبح خيار «استخراج النتيجة» أعلى الصفحة متاحاً الآن.
+                        </span>
+                        <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 shadow-sm d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-printer-fill"></i>
+                            <span>فتح وطباعة كشف النتيجة المعتمد الآن</span>
+                        </a>
+                    </div>
+                `;
+            }
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else {
+            alert('تم اعتماد ورصد الدرجات بنجاح. أصبحت النتيجة معتمدة وخيار استخراج النتيجة متاحاً الآن.');
+        }
+    }
+
+    // تهيئة الصفحة عند التحميل
+    document.addEventListener('DOMContentLoaded', function () {
+        syncWithLocalStorageExam();
+        checkExamHoldingConfirmed();
+        applyAssessmentModeUI();
+
+        // التحقق من حالة اعتماد درجات الامتحان
+        const isAlreadyApproved = "{{ exam.status }}" === 'approved' ||
+            "{{ exam.status }}" === 'completed' ||
+            localStorage.getItem('placement_approved_' + "{{ exam.id }}") === 'true';
+        if (isAlreadyApproved) {
+            enableExtractResultButton();
+        }
+
+        updateGradesCompletionUI();
+    });
+</script>
+{% endblock %}

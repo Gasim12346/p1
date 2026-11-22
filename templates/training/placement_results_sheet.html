@@ -1,0 +1,737 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نتيجة امتحان تحديد مستوى - {{ exam.subject|default:"النتيجة الرسمية" }}</title>
+
+    <!-- Bootstrap RTL CSS (Local) -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
+
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 10mm 15mm 10mm 15mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            background-color: #e2e8f0;
+            color: #000000;
+            font-family: 'Traditional Arabic', 'Amiri', 'Times New Roman', 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px 10px;
+            direction: rtl;
+        }
+
+        /* Screen Preview Paper Sheet */
+        .paper-sheet {
+            background: #ffffff;
+            width: 297mm;
+            min-height: 205mm;
+            margin: 0 auto 30px auto;
+            padding: 14mm 20mm 12mm 20mm;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 1px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* Header Hierarchy (matching original military PDF template) */
+        .sheet-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .sheet-header .h-basmala {
+            font-size: 15pt;
+            font-weight: bold;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .sheet-header .h-confidential {
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            margin-bottom: 3px;
+        }
+
+        .sheet-header .h-dept {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            margin-bottom: 2px;
+        }
+
+        .sheet-header .h-institute {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            margin-bottom: 4px;
+        }
+
+        .sheet-header .h-subject {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            margin-bottom: 4px;
+        }
+
+        /* Table Structure (Exact 1:1 Match to Original PDF) */
+        .sheet-table-wrap {
+            width: 100%;
+            margin-top: 4px;
+            margin-bottom: 10px;
+        }
+
+        .sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000000;
+            text-align: center;
+            font-size: 12pt;
+            line-height: 1.25;
+        }
+
+        .sheet-table th,
+        .sheet-table td {
+            border: 1px solid #000000;
+            padding: 3px 5px;
+            vertical-align: middle;
+            color: #000000;
+        }
+
+        .sheet-table th {
+            font-weight: bold;
+            background-color: transparent;
+        }
+
+        .sheet-table .row-letters th {
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 2px 4px;
+            height: 22px;
+        }
+
+        .sheet-table .data-row {
+            height: 26px;
+        }
+
+        .sheet-table .data-row td {
+            font-weight: normal;
+        }
+
+        .sheet-table .data-row td.bold-cell {
+            font-weight: bold;
+        }
+
+        /* Column Widths (matching PDF geometry) */
+        .col-index {
+            width: 5%;
+        }
+
+        .col-card {
+            width: 12%;
+        }
+
+        .col-rank {
+            width: 15%;
+        }
+
+        .col-name {
+            width: 27%;
+        }
+
+        .col-theory {
+            width: 7%;
+        }
+
+        .col-practical {
+            width: 7%;
+        }
+
+        .col-total {
+            width: 8.5%;
+        }
+
+        .col-percentage {
+            width: 8.5%;
+        }
+
+        .col-notes {
+            width: 10%;
+        }
+
+        /* Footer Sections */
+        .sheet-footer {
+            margin-top: auto;
+            padding-top: 6px;
+        }
+
+        .note-pass {
+            font-size: 13pt;
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 8px;
+            padding-right: 4px;
+        }
+
+        .signatures-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            align-items: flex-end;
+            font-size: 13.5pt;
+            font-weight: bold;
+            line-height: 1.7;
+        }
+
+        .sig-right {
+            text-align: right;
+            padding-right: 4px;
+        }
+
+        .sig-center {
+            text-align: center;
+        }
+
+        .sig-center .page-num {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .sig-center .confidential-bottom {
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        .sig-left {
+            text-align: center;
+            padding-left: 4px;
+        }
+
+        /* Toolbar (hidden on print) */
+        .no-print-toolbar {
+            max-width: 297mm;
+            margin: 0 auto 15px auto;
+            background: #ffffff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        /* Print Media Query */
+        @media print {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .no-print-toolbar {
+                display: none !important;
+            }
+
+            .paper-sheet {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm 15mm 10mm 15mm !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-height: auto !important;
+                page-break-after: always;
+                break-after: page;
+            }
+
+            .paper-sheet:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- تنبيه عدم اعتماد النتيجة (يظهر إذا فُتح الرابط مباشرة دون اعتماد) -->
+    <div id="unaccreditedWarning" class="container py-5 text-center d-none" style="max-width: 650px; margin-top: 60px;">
+        <div class="card border-0 shadow-lg rounded-4 p-5 bg-white">
+            <div class="text-warning mb-3">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 3.5rem;"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-3">نتائج هذا الامتحان لم تُعتمد بعد</h4>
+            <p class="text-muted fs-6 mb-4 leading-relaxed">
+                وفقاً لضوابط النظام والقالب المعتمد، لا يمكن استخراج كشف النتيجة الرسمي أو طباعته إلا بعد اكتمال رصد كافة درجات الممتحنين واعتمادها رسمياً من شاشة رصد درجات الامتحان.
+            </p>
+            <div class="d-flex justify-content-center flex-wrap gap-2">
+                <a href="{% url 'training:placement_results_entry' exam.id %}" class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>الانتقال لرصد واعتماد الدرجات</span>
+                </a>
+                <a href="{% url 'training:placement_exams_list' %}" class="btn btn-outline-secondary fw-bold px-4 py-2 rounded-3">
+                    <i class="bi bi-arrow-right"></i>
+                    <span>العودة لبوابة الامتحانات</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar (No-Print) - خيار طباعة وحيد وواضح للنتيجة -->
+    <div class="no-print-toolbar">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary px-3 py-2 fs-6">
+                <i class="bi bi-file-earmark-check-fill me-1"></i>
+                كشف نتيجة امتحان تحديد المستوى الرسمي
+            </span>
+            <span class="text-muted small">
+                مطابق 1:1 للقالب المعتمد (العدد الفعلي للمشاركين: <strong class="text-dark">{{ total_participants
+                    }}</strong> دارس)
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" onclick="window.print()"
+                class="btn btn-primary fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                <i class="bi bi-printer-fill fs-5"></i>
+                <span>طباعة النتيجة</span>
+            </button>
+            <button type="button" onclick="window.close()"
+                class="btn btn-light border fw-bold px-3 py-2 rounded-3 text-secondary">
+                <i class="bi bi-x-lg"></i>
+                <span>إغلاق</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Container for Rendered Sheets -->
+    <div id="sheetsContainer">
+        {% for page in pages %}
+        <div class="paper-sheet" data-page-num="{{ page.page_number }}" data-total-pages="{{ page.total_pages }}">
+
+            <!-- Header -->
+            <div class="sheet-header">
+                <div class="h-basmala">بسم الله الرحمن الرحيم</div>
+                <div class="h-confidential">سري وشخصي</div>
+                <div class="h-dept">{{ dept_name }}</div>
+                <div class="h-institute">{{ institute_name }}</div>
+                <div class="h-subject">
+                    نتيجة أمتحان تحديد مستوى <span class="sheet-subject-val">{{ exam.subject|default:"اللغة الإنجليزية
+                        العسكرية" }}</span>
+                    {% if page.total_pages > 1 and page.page_number > 1 %}
+                    <span class="small fw-normal">(تابع صفحة {{ page.page_number }})</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 9-Column Table (تتطابق الصفوف مع عدد المشاركين الفعلي) -->
+            <div class="sheet-table-wrap">
+                <table class="sheet-table">
+                    <thead>
+                        <!-- Header Row 1 -->
+                        <tr>
+                            <th rowspan="2" class="col-index">م</th>
+                            <th rowspan="2" class="col-card">البطاقة</th>
+                            <th rowspan="2" class="col-rank">الرتبــــــة</th>
+                            <th rowspan="2" class="col-name">الاســـــــــــــــم</th>
+                            <th colspan="2" class="col-grades">الدرجـــــة</th>
+                            <th rowspan="2" class="col-total">المجموع</th>
+                            <th rowspan="2" class="col-percentage">النسبـــة</th>
+                            <th rowspan="2" class="col-notes">ملحوظـات</th>
+                        </tr>
+                        <!-- Header Row 2: Subheaders for Grades -->
+                        <tr>
+                            <th class="col-theory">نظري</th>
+                            <th class="col-practical">عملي</th>
+                        </tr>
+                        <!-- Header Row 3: Letter Indexing -->
+                        <tr class="row-letters">
+                            <th>(أ)</th>
+                            <th>(ب)</th>
+                            <th>(جـ)</th>
+                            <th>(د)</th>
+                            <th>(هـ)</th>
+                            <th>(و)</th>
+                            <th>(ز)</th>
+                            <th>(حـ)</th>
+                            <th>(طـ)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="sheet-table-body">
+                        {% if page.has_trainees %}
+                        {% for row in page.rows %}
+                        <tr class="data-row">
+                            <td class="col-index bold-cell">{{ row.serial }}</td>
+                            <td class="col-card td-card font-monospace">{{ row.military_number }}</td>
+                            <td class="col-rank td-rank bold-cell">{{ row.rank }}</td>
+                            <td class="col-name td-name bold-cell">{{ row.name }}</td>
+                            <td class="col-theory td-theory font-monospace">{{ row.theory }}</td>
+                            <td class="col-practical td-practical font-monospace">{{ row.practical }}</td>
+                            <td class="col-total td-total bold-cell font-monospace">{{ row.total }}</td>
+                            <td class="col-percentage td-percentage bold-cell font-monospace">{{ row.percentage }}</td>
+                            <td class="col-notes td-notes">{{ row.notes|default:'' }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted fw-bold">
+                                لا يوجد مشاركون مسجلون في هذا الامتحان
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer (المحطة والتاريخ المعتمد والتوقيع) -->
+            <div class="sheet-footer">
+                <div class="note-pass">ملحوظة : نسبة النجاح 50%</div>
+
+                <div class="signatures-grid">
+                    <!-- Right Side: Station & Date -->
+                    <div class="sig-right">
+                        <div>المحطة : <span class="sheet-station-val">{{ station_name }}</span></div>
+                        <div>التاريخ: <span class="sheet-date-val">{{ approval_date_formatted }}</span></div>
+                    </div>
+
+                    <!-- Center: Page & Confidentiality -->
+                    <div class="sig-center">
+                        <div class="page-num">({{ page.page_number }}من{{ page.total_pages }})</div>
+                        <div class="confidential-bottom">سـري وشخصي</div>
+                    </div>
+
+                    <!-- Left Side: Commander Signature -->
+                    <div class="sig-left">
+                        <div class="official-rank-val">{{ official_rank }} /</div>
+                        <div class="official-name-val">{{ official_name }}</div>
+                        <div class="official-title-val">{{ official_title }}</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Client-Side Synchronization Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentExamId = "{{ exam.id }}";
+
+            // البحث عن بيانات الامتحان في التخزين المحلي أولاً
+            const candidateKeys = [
+                'GASIM_PLACEMENT_EXAMS_DATA_V8',
+                'GASIM_PLACEMENT_EXAMS_DATA_V7',
+                'gasim_placement_exams',
+                'GASIM_PLACEMENT_EXAMS_DATA_V5',
+                'GASIM_PLACEMENT_EXAMS_DATA_V4',
+                'GASIM_PLACEMENT_EXAMS_DATA_V3'
+            ];
+            let foundExam = null;
+            for (const k of candidateKeys) {
+                try {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed)) {
+                            foundExam = parsed.find(e => 
+                                String(e.id) === String(currentExamId) || 
+                                String(e.exam_number) === String(currentExamId) ||
+                                (e.request_internal_id && String(e.request_internal_id) === String(currentExamId)) ||
+                                (e.code && String(e.code) === String(currentExamId))
+                            );
+                            if (foundExam) break;
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            // فحص حالة الاعتماد الرسمية: يُمنع عرض أو طباعة الكشف إذا لم تكن النتائج معتمدة
+            const isApproved = "{{ exam.status }}" === 'approved' ||
+                               "{{ exam.status }}" === 'completed' ||
+                               localStorage.getItem('placement_approved_' + currentExamId) === 'true' ||
+                               Boolean(foundExam && (
+                                   foundExam.status === 'approved' || 
+                                   foundExam.is_results_approved ||
+                                   (foundExam.id && localStorage.getItem('placement_approved_' + foundExam.id) === 'true') ||
+                                   (foundExam.request_internal_id && localStorage.getItem('placement_approved_' + foundExam.request_internal_id) === 'true')
+                               ));
+
+            const warningEl = document.getElementById('unaccreditedWarning');
+            const sheetsContainer = document.getElementById('sheetsContainer');
+            const toolbar = document.querySelector('.no-print-toolbar');
+
+            if (!isApproved) {
+                if (warningEl) warningEl.classList.remove('d-none');
+                if (sheetsContainer) sheetsContainer.classList.add('d-none');
+                if (toolbar) toolbar.classList.add('d-none');
+                return;
+            } else {
+                if (warningEl) warningEl.classList.add('d-none');
+                if (sheetsContainer) sheetsContainer.classList.remove('d-none');
+                if (toolbar) toolbar.classList.remove('d-none');
+            }
+
+            // دالة تنظيف وضبط تاريخ الاعتماد: الشهر والسنة فقط دون أي يوم أو أرقام أيام وفق النموذج الأصلي (مثال: نوفمبر 2026م)
+            function getSanitizedApprovalDate(rawDate) {
+                const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                const fallbackDate = "{{ approval_date_formatted|default:'نوفمبر 2026م' }}";
+                if (!rawDate) return fallbackDate;
+                const str = String(rawDate).trim();
+
+                // 1. فحص إذا كان النص يحتوي على اسم الشهر العربي
+                for (let i = 0; i < arabicMonths.length; i++) {
+                    const mName = arabicMonths[i];
+                    if (str.includes(mName)) {
+                        // استخراج السنة (4 أرقام) وتجاهل أي أرقام أيام تماماً
+                        const yMatch = str.match(/\b(20\d\d)\b/);
+                        const year = yMatch ? yMatch[1] : (new Date().getFullYear());
+                        return `${mName} ${year}م`;
+                    }
+                }
+
+                // 2. إذا كان تاريخاً رقمياً بصيغة ISO (YYYY-MM-DD أو YYYY/MM/DD)
+                const isoMatch = str.match(/(\d{4})[-\/](\d{1,2})/);
+                if (isoMatch) {
+                    const year = isoMatch[1];
+                    const mIdx = parseInt(isoMatch[2], 10) - 1;
+                    const mName = arabicMonths[mIdx] || arabicMonths[10];
+                    return `${mName} ${year}م`;
+                }
+
+                // 3. محاولة التحويل ككائن Date
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return `${arabicMonths[d.getMonth()]} ${d.getFullYear()}م`;
+                }
+
+                return fallbackDate;
+            }
+
+            // 1. مزامنة تاريخ اعتماد الدرجات الفعلي المحفوظ محلياً (الشهر والسنة فقط)
+            let effectiveApprovalDate = "{{ approval_date_formatted|default:'نوفمبر 2026م' }}";
+            try {
+                let storedApprovalDate = localStorage.getItem('placement_approval_date_' + currentExamId);
+                if (!storedApprovalDate && foundExam) {
+                    storedApprovalDate = (foundExam.id && localStorage.getItem('placement_approval_date_' + foundExam.id)) ||
+                                         (foundExam.request_internal_id && localStorage.getItem('placement_approval_date_' + foundExam.request_internal_id)) ||
+                                         foundExam.results_approved_date;
+                }
+                if (storedApprovalDate) {
+                    effectiveApprovalDate = getSanitizedApprovalDate(storedApprovalDate);
+                } else {
+                    effectiveApprovalDate = getSanitizedApprovalDate(effectiveApprovalDate);
+                }
+                document.querySelectorAll('.sheet-date-val').forEach(el => {
+                    el.textContent = effectiveApprovalDate;
+                });
+            } catch (e) { }
+
+            // 2. مزامنة عنوان الامتحان
+            if (foundExam) {
+                const sub = foundExam.subject || foundExam.title;
+                if (sub) {
+                    document.querySelectorAll('.sheet-subject-val').forEach(el => {
+                        el.textContent = sub;
+                    });
+                    document.title = `نتيجة امتحان تحديد مستوى - ${sub}`;
+                }
+            }
+
+            // 3. مزامنة وتوليد صفوف وصفحات الطلاب في حال توفر درجات مسجلة في LocalStorage
+            try {
+                let gradesRaw = localStorage.getItem('placement_grades_' + currentExamId);
+                if (!gradesRaw && foundExam) {
+                    gradesRaw = (foundExam.id && localStorage.getItem('placement_grades_' + foundExam.id)) ||
+                                (foundExam.request_internal_id && localStorage.getItem('placement_grades_' + foundExam.request_internal_id));
+                }
+                if (gradesRaw) {
+                    const gradesData = JSON.parse(gradesRaw);
+                    if (Array.isArray(gradesData) && gradesData.length > 0) {
+                        rebuildSheetsFromGrades(gradesData);
+                    }
+                } else if (foundExam && Array.isArray(foundExam.trainees) && foundExam.trainees.length > 0) {
+                    rebuildSheetsFromGrades(foundExam.trainees);
+                }
+            } catch (e) {
+                console.warn('Failed to sync placement grades from localStorage:', e);
+            }
+
+            // إعادة بناء الصفحات والجداول عند توفر بيانات طلاب ديناميكية في LocalStorage
+            function rebuildSheetsFromGrades(trainees) {
+                const container = document.getElementById('sheetsContainer');
+                if (!container) return;
+
+                const ROWS_PER_PAGE = 10;
+                const totalParticipants = trainees.length;
+                const totalPages = Math.ceil(totalParticipants / ROWS_PER_PAGE) || 1;
+
+                const subjectName = (foundExam && (foundExam.subject || foundExam.title)) || "{{ exam.subject|default:'اللغة الإنجليزية العسكرية' }}";
+                const deptName = "{{ dept_name|default:'إدارة نظم المعلومات والإحصاء' }}";
+                const instName = "{{ institute_name|default:'معهد نظم المعلومات والإحصاء' }}";
+                const stationName = "{{ station_name|default:'الخرطوم' }}";
+                const approvalDate = effectiveApprovalDate;
+                const officialRank = "{{ official_rank|default:'عقيد مهندس' }}";
+                const officialName = "{{ official_name|default:'المعز علي محمد خير' }}";
+                const officialTitle = "{{ official_title|default:'قائد معهد نظم المعلومات والإحصاء' }}";
+
+                let newHtml = '';
+
+                for (let pIdx = 0; pIdx < totalPages; pIdx++) {
+                    const pageNum = pIdx + 1;
+                    const pageSlice = trainees.slice(pIdx * ROWS_PER_PAGE, (pIdx + 1) * ROWS_PER_PAGE);
+
+                    let rowsHtml = '';
+                    pageSlice.forEach((t, rIdx) => {
+                        const serial = pIdx * ROWS_PER_PAGE + rIdx + 1;
+                        let tName = (t.name || '').trim();
+                        let tRank = (t.rank || '').trim();
+
+                        // إذا كان الاسم أو الرتبة غير متوفرين في كائن الدرجات، نسترجعهما فوراً من بيانات المشاركين المسجلين بالامتحان
+                        if (!tName || !tRank) {
+                            const matched = (foundExam?.trainees || []).find(tr => String(tr.military_number) === String(t.military_number));
+                            if (matched) {
+                                if (!tName) tName = (matched.name || '').trim();
+                                if (!tRank) tRank = (matched.rank || '').trim();
+                            }
+                        }
+
+                        let noteText = (t.notes || '').trim();
+                        const legacyPhrases = [
+                            'تم اعتماد النتيجة السابقة',
+                            'إعادة لتحسين الدرجة',
+                            'النتيجة السابقة منتهية',
+                            'دخول إلزامي للامتحان',
+                            'ناجح',
+                            'راسب'
+                        ];
+                        if (legacyPhrases.some(phrase => noteText === phrase)) {
+                            noteText = '';
+                        }
+
+                        let theoryVal = (t.theory !== undefined && t.theory !== null) ? t.theory : '-';
+                        let practicalVal = (t.practical !== undefined && t.practical !== null) ? t.practical : '-';
+                        let totalVal = t.total || '';
+                        let pctVal = t.percentage || '';
+
+                        if (t.attendance_status === 'absent' && !t.is_transferred) {
+                            theoryVal = '-';
+                            practicalVal = '-';
+                            totalVal = '0.0';
+                            pctVal = '0.0%';
+                            noteText = 'غائب عن الامتحان';
+                        } else if (t.is_transferred) {
+                            if (!noteText || noteText.includes('غائب')) {
+                                noteText = t.attendance_status === 'absent' ? 'غائب (اعتمدت نتيجته السابقة)' : 'درجة منقولة من امتحان سابق';
+                            }
+                        }
+
+                        rowsHtml += `
+                            <tr class="data-row">
+                                <td class="col-index bold-cell">${serial}</td>
+                                <td class="col-card td-card font-monospace">${t.military_number || ''}</td>
+                                <td class="col-rank td-rank bold-cell">${tRank}</td>
+                                <td class="col-name td-name bold-cell">${tName}</td>
+                                <td class="col-theory td-theory font-monospace">${theoryVal}</td>
+                                <td class="col-practical td-practical font-monospace">${practicalVal}</td>
+                                <td class="col-total td-total bold-cell font-monospace">${totalVal}</td>
+                                <td class="col-percentage td-percentage bold-cell font-monospace">${pctVal}</td>
+                                <td class="col-notes td-notes">${noteText}</td>
+                            </tr>
+                        `;
+                    });
+
+                    newHtml += `
+                        <div class="paper-sheet" data-page-num="${pageNum}" data-total-pages="${totalPages}">
+                            <div class="sheet-header">
+                                <div class="h-basmala">بسم الله الرحمن الرحيم</div>
+                                <div class="h-confidential">سري وشخصي</div>
+                                <div class="h-dept">${deptName}</div>
+                                <div class="h-institute">${instName}</div>
+                                <div class="h-subject">
+                                    نتيجة أمتحان تحديد مستوى <span class="sheet-subject-val">${subjectName}</span>
+                                    ${totalPages > 1 && pageNum > 1 ? `<span class="small fw-normal">(تابع صفحة ${pageNum})</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="sheet-table-wrap">
+                                <table class="sheet-table">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" class="col-index">م</th>
+                                            <th rowspan="2" class="col-card">البطاقة</th>
+                                            <th rowspan="2" class="col-rank">الرتبــــــة</th>
+                                            <th rowspan="2" class="col-name">الاســـــــــــــــم</th>
+                                            <th colspan="2" class="col-grades">الدرجـــــة</th>
+                                            <th rowspan="2" class="col-total">المجموع</th>
+                                            <th rowspan="2" class="col-percentage">النسبـــة</th>
+                                            <th rowspan="2" class="col-notes">ملحوظـات</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="col-theory">نظري</th>
+                                            <th class="col-practical">عملي</th>
+                                        </tr>
+                                        <tr class="row-letters">
+                                            <th>(أ)</th>
+                                            <th>(ب)</th>
+                                            <th>(جـ)</th>
+                                            <th>(د)</th>
+                                            <th>(هـ)</th>
+                                            <th>(و)</th>
+                                            <th>(ز)</th>
+                                            <th>(حـ)</th>
+                                            <th>(طـ)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="sheet-table-body">
+                                        ${rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="sheet-footer">
+                                <div class="note-pass">ملحوظة : نسبة النجاح 50%</div>
+                                <div class="signatures-grid">
+                                    <div class="sig-right">
+                                        <div>المحطة : <span class="sheet-station-val">${stationName}</span></div>
+                                        <div>التاريخ: <span class="sheet-date-val">${approvalDate}</span></div>
+                                    </div>
+                                    <div class="sig-center">
+                                        <div class="page-num">(${pageNum}من${totalPages})</div>
+                                        <div class="confidential-bottom">سـري وشخصي</div>
+                                    </div>
+                                    <div class="sig-left">
+                                        <div class="official-rank-val">${officialRank} /</div>
+                                        <div class="official-name-val">${officialName}</div>
+                                        <div class="official-title-val">${officialTitle}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = newHtml;
+            }
+        });
+    </script>
+</body>
+
+</html>

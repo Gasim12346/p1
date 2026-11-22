@@ -1160,6 +1160,12 @@
                             <i class="bi bi-diagram-3-fill"></i>
                             <span>الدورة التي تدرس</span>
                         </a>
+
+                        <!-- امتحانات خاصة -->
+                        <a href="{% url 'training:placement_exams_list' %}" class="sidebar-nav-link {% if 'placement_exam' in request.resolver_match.url_name or 'special' in request.resolver_match.url_name %}active{% endif %}" title="امتحانات خاصة (امتحانات تحديد المستوى)">
+                            <i class="bi bi-clipboard2-check-fill"></i>
+                            <span>امتحانات خاصة</span>
+                        </a>
                     {% endif %}
 
                     <!-- 5. النتيجة والشهادات -->
@@ -1219,6 +1225,8 @@
                                     <i class="bi bi-people-fill text-primary me-1"></i> الدارسين
                                 {% elif 'session' in request.resolver_match.url_name and 'result' not in request.resolver_match.url_name and 'sheet' not in request.resolver_match.url_name %}
                                     <i class="bi bi-diagram-3-fill text-primary me-1"></i> الدورة التي تدرس
+                                {% elif 'placement' in request.resolver_match.url_name or 'special' in request.resolver_match.url_name %}
+                                    <i class="bi bi-clipboard2-check-fill text-primary me-1"></i> امتحانات خاصة (تحديد المستوى)
                                 {% elif 'course' in request.resolver_match.url_name or 'subject' in request.resolver_match.url_name %}
                                     <i class="bi bi-journal-bookmark-fill text-primary me-1"></i> الدورات ومفردات المواد
                                 {% elif 'result' in request.resolver_match.url_name or 'grade' in request.resolver_match.url_name or 'sheet' in request.resolver_match.url_name %}
