@@ -37,32 +37,7 @@
             min-height: 297mm;
             height: 297mm;
             background: #ffffff;
-
-            padding: {
-                    {
-                    layout.page_padding_top|default: 16
-                }
-            }
-
-            mm {
-                    {
-                    layout.page_padding_horizontal|default: 20
-                }
-            }
-
-            mm {
-                    {
-                    layout.page_padding_bottom|default: 14
-                }
-            }
-
-            mm {
-                    {
-                    layout.page_padding_horizontal|default: 20
-                }
-            }
-
-            mm !important;
+            padding: {{ layout.page_padding_top|default:16 }}mm {{ layout.page_padding_horizontal|default:20 }}mm {{ layout.page_padding_bottom|default:14 }}mm {{ layout.page_padding_horizontal|default:20 }}mm !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
@@ -92,14 +67,7 @@
             height: 100%;
             object-fit: contain;
             mix-blend-mode: multiply !important;
-
-            opacity: {
-                    {
-                    order_settings.watermark_opacity|default: "0.12"
-                }
-            }
-
-            !important;
+            opacity: {{ order_settings.watermark_opacity|default:"0.12" }} !important;
             filter: grayscale(10%);
         }
 
@@ -124,188 +92,61 @@
 
         /* Header typography */
         .bismillah {
-            font-size: {
-                    {
-                    layout.bismillah_size|default: 17
-                }
-            }
-
-            px !important;
-
-            margin-bottom: {
-                    {
-                    layout.bismillah_margin_bottom|default: 2
-                }
-            }
-
-            px !important;
-
-            text-align: {
-                    {
-                    layout.bismillah_align|default: 'center'
-                }
-            }
-
-            !important;
+            font-size: {{ layout.bismillah_size|default:17 }}px !important;
+            margin-bottom: {{ layout.bismillah_margin_bottom|default:2 }}px !important;
+            text-align: {{ layout.bismillah_align|default:'center' }} !important;
             font-weight: normal;
         }
 
         .security-label {
-            font-size: {
-                    {
-                    layout.security_size|default: 18
-                }
-            }
-
-            px !important;
-
-            margin-bottom: {
-                    {
-                    layout.security_margin_bottom|default: 2
-                }
-            }
-
-            px !important;
-
-            text-align: {
-                    {
-                    layout.security_align|default: 'center'
-                }
-            }
-
-            !important;
+            font-size: {{ layout.security_size|default:18 }}px !important;
+            margin-bottom: {{ layout.security_margin_bottom|default:6 }}px !important;
+            text-align: {{ layout.security_align|default:'center' }} !important;
             font-weight: bold;
-            text-decoration: underline;
         }
 
         .order-title {
-            font-size: {
-                    {
-                    layout.title_size|default: 24
-                }
-            }
-
-            px !important;
-
-            margin-bottom: {
-                    {
-                    layout.title_margin_bottom|default: 6
-                }
-            }
-
-            px !important;
-
-            text-align: {
-                    {
-                    layout.title_align|default: 'center'
-                }
-            }
-
-            !important;
+            font-size: {{ layout.title_size|default:24 }}px !important;
+            margin-bottom: {{ layout.title_margin_bottom|default:10 }}px !important;
+            text-align: {{ layout.title_align|default:'center' }} !important;
             font-weight: bold;
             text-decoration: underline;
             letter-spacing: 2px;
         }
 
         .issuing-text {
-            font-size: {
-                    {
-                    layout.issuing_size|default: 15
-                }
-            }
-
-            px !important;
-
-            line-height: {
-                    {
-                    layout.issuing_line_height|default: 1.5
-                }
-            }
-
-            !important;
+            font-size: {{ layout.issuing_size|default:15 }}px !important;
+            line-height: {{ layout.issuing_line_height|default:1.6 }} !important;
             margin-top: 6px;
-
-            margin-bottom: {
-                    {
-                    layout.issuing_margin_bottom|default: 8
-                }
-            }
-
-            px !important;
-
-            text-align: {
-                    {
-                    layout.issuing_align|default: 'center'
-                }
-            }
-
-            !important;
+            margin-bottom: {{ layout.issuing_margin_bottom|default:6 }}px !important;
+            text-align: {{ layout.issuing_align|default:'center' }} !important;
             padding: 0 10px;
             font-weight: normal;
         }
 
         /* Trainee & Movement Details */
         .trainee-line {
-            font-size: {
-                    {
-                    layout.trainee_line_size|default: 16
-                }
-            }
-
-            px !important;
+            font-size: {{ layout.trainee_line_size|default:16 }}px !important;
             margin-top: 6px;
-
-            margin-bottom: {
-                    {
-                    layout.trainee_line_margin_bottom|default: 6
-                }
-            }
-
-            px !important;
+            margin-bottom: {{ layout.trainee_line_margin_bottom|default:8 }}px !important;
             border-bottom: 1px dashed transparent;
         }
 
         .details-table {
-            width: 100%;
+            width: 85%;
             border-collapse: collapse;
-
-            font-size: {
-                    {
-                    layout.table_font_size|default: 15.5
-                }
-            }
-
-            px !important;
+            font-size: {{ layout.table_font_size|default:15.5 }}px !important;
             margin-top: 2px;
-
-            margin-bottom: {
-                    {
-                    layout.table_margin_bottom|default: 8
-                }
-            }
-
-            px !important;
+            margin-bottom: {{ layout.table_margin_bottom|default:12 }}px !important;
         }
 
         .details-table td {
-            padding: {
-                    {
-                    layout.table_row_padding|default: 2.2
-                }
-            }
-
-            px 0 !important;
+            padding: {{ layout.table_row_padding|default:2.8 }}px 0 !important;
             vertical-align: middle;
         }
 
         .details-table .label-col {
-            width: {
-                    {
-                    layout.table_label_width|default: 130
-                }
-            }
-
-            px !important;
+            width: {{ layout.table_label_width|default:135 }}px !important;
             font-weight: bold;
             white-space: nowrap;
         }
@@ -319,49 +160,15 @@
             font-size: 16.5px;
             font-weight: bold;
             text-decoration: underline;
-
-            text-align: {
-                    {
-                    layout.admin_inst_header_align|default: 'center'
-                }
-            }
-
-            !important;
-
-            margin-top: {
-                    {
-                    layout.admin_inst_margin_top|default: 8
-                }
-            }
-
-            px !important;
+            text-align: {{ layout.admin_inst_header_align|default:'center' }} !important;
+            margin-top: {{ layout.admin_inst_margin_top|default:8 }}px !important;
             margin-bottom: 4px;
         }
 
         .admin-instructions-body {
-            font-size: {
-                    {
-                    layout.admin_inst_size|default: 14.5
-                }
-            }
-
-            px !important;
-
-            line-height: {
-                    {
-                    layout.admin_inst_line_height|default: 1.6
-                }
-            }
-
-            !important;
-
-            text-align: {
-                    {
-                    layout.admin_inst_align|default: 'center'
-                }
-            }
-
-            !important;
+            font-size: {{ layout.admin_inst_size|default:14.5 }}px !important;
+            line-height: {{ layout.admin_inst_line_height|default:1.6 }} !important;
+            text-align: {{ layout.admin_inst_align|default:'center' }} !important;
             padding: 0 12px;
         }
 
@@ -369,134 +176,48 @@
             font-size: 16.5px;
             font-weight: bold;
             text-decoration: underline;
-
-            text-align: {
-                    {
-                    layout.declaration_header_align|default: 'center'
-                }
-            }
-
-            !important;
-
-            margin-top: {
-                    {
-                    layout.declaration_margin_top|default: 8
-                }
-            }
-
-            px !important;
+            text-align: {{ layout.declaration_header_align|default:'center' }} !important;
+            margin-top: {{ layout.declaration_margin_top|default:8 }}px !important;
             margin-bottom: 4px;
         }
 
         .declaration-body {
-            font-size: {
-                    {
-                    layout.declaration_size|default: 14.5
-                }
-            }
-
-            px !important;
-
-            line-height: {
-                    {
-                    layout.declaration_line_height|default: 1.6
-                }
-            }
-
-            !important;
-
-            text-align: {
-                    {
-                    layout.declaration_align|default: 'center'
-                }
-            }
-
-            !important;
+            font-size: {{ layout.declaration_size|default:14.5 }}px !important;
+            line-height: {{ layout.declaration_line_height|default:1.6 }} !important;
+            text-align: {{ layout.declaration_align|default:'center' }} !important;
             padding: 0 12px;
         }
 
         .traveler-sig-container {
             display: flex;
             justify-content: {% if layout.traveler_sig_align == 'right' %}flex-start{% elif layout.traveler_sig_align == 'center' %}center{% else %}flex-end{% endif %};
-
-            margin-top: {
-                    {
-                    layout.traveler_sig_margin_top|default: 4
-                }
-            }
-
-            px;
+            margin-top: {{ layout.traveler_sig_margin_top|default:4 }}px;
             margin-bottom: 4px;
             padding: 0 16px;
         }
-
         .traveler-sig-text {
-            font-size: {
-                    {
-                    layout.traveler_sig_size|default: 14
-                }
-            }
-
-            px;
+            font-size: {{ layout.traveler_sig_size|default:14 }}px;
         }
 
         /* Signatures and Copies Footer */
         .signatures-wrapper {
-            margin-top: {
-                    {
-                    layout.signatures_margin_top|default: 12
-                }
-            }
-
-            px !important;
+            margin-top: {{ layout.signatures_margin_top|default:12 }}px !important;
         }
 
         .signer-box {
-            font-size: {
-                    {
-                    layout.signer_box_size|default: 15
-                }
-            }
-
-            px !important;
+            font-size: {{ layout.signer_box_size|default:15 }}px !important;
             line-height: 1.35;
-
-            text-align: {
-                    {
-                    layout.signer_box_align|default: 'right'
-                }
-            }
-
-            !important;
+            text-align: {{ layout.signer_box_align|default:'right' }} !important;
         }
 
         .copies-box {
-            font-size: {
-                    {
-                    layout.copies_box_size|default: 14
-                }
-            }
-
-            px !important;
+            font-size: {{ layout.copies_box_size|default:14 }}px !important;
             line-height: 1.45;
-
-            text-align: {
-                    {
-                    layout.copies_box_align|default: 'right'
-                }
-            }
-
-            !important;
+            text-align: {{ layout.copies_box_align|default:'right' }} !important;
         }
 
         .security-bottom {
-            margin-top: {
-                    {
-                    layout.security_bottom_margin_top|default: 8
-                }
-            }
-
-            px !important;
+            margin-top: {{ layout.security_bottom_margin_top|default:8 }}px !important;
         }
 
         /* Print styles */
@@ -514,32 +235,7 @@
             .movement-page {
                 box-shadow: none;
                 margin: 0;
-
-                padding: {
-                        {
-                        layout.page_padding_top|default: 16
-                    }
-                }
-
-                mm {
-                        {
-                        layout.page_padding_horizontal|default: 20
-                    }
-                }
-
-                mm {
-                        {
-                        layout.page_padding_bottom|default: 14
-                    }
-                }
-
-                mm {
-                        {
-                        layout.page_padding_horizontal|default: 20
-                    }
-                }
-
-                mm !important;
+                padding: {{ layout.page_padding_top|default:16 }}mm {{ layout.page_padding_horizontal|default:20 }}mm {{ layout.page_padding_bottom|default:14 }}mm {{ layout.page_padding_horizontal|default:20 }}mm !important;
                 width: 100%;
                 height: 100vh;
                 page-break-after: avoid;
@@ -573,18 +269,15 @@
 
     <!-- Controls (Hidden on Print) -->
     <div class="no-print">
-        <button onclick="window.print()"
-            class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2">
+        <button onclick="window.print()" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2">
             <i class="bi bi-printer-fill fs-5"></i>
             <span>طباعة أمر التحرك</span>
         </button>
         <div class="btn-group shadow-sm" role="group">
-            <a href="?type=officer"
-                class="btn btn-outline-light {% if is_officer %}active fw-bold bg-white text-dark{% endif %}">
+            <a href="?type=officer" class="btn btn-outline-light {% if is_officer %}active fw-bold bg-white text-dark{% endif %}">
                 نموذج الضابط
             </a>
-            <a href="?type=nco"
-                class="btn btn-outline-light {% if not is_officer %}active fw-bold bg-white text-dark{% endif %}">
+            <a href="?type=nco" class="btn btn-outline-light {% if not is_officer %}active fw-bold bg-white text-dark{% endif %}">
                 نموذج ضابط الصف
             </a>
         </div>
@@ -600,14 +293,11 @@
         <!-- Watermark -->
         <div class="watermark-container">
             {% if order_settings.watermark_image %}
-            <img src="{{ order_settings.watermark_image.url }}" alt="Watermark" class="watermark-img"
-                style="opacity: {{ order_settings.watermark_opacity|default:'0.12' }};">
+                <img src="{{ order_settings.watermark_image.url }}" alt="Watermark" class="watermark-img" style="opacity: {{ order_settings.watermark_opacity|default:'0.12' }};">
             {% elif order_settings.watermark_url %}
-            <img src="{{ order_settings.watermark_url }}" alt="Watermark" class="watermark-img"
-                style="opacity: {{ order_settings.watermark_opacity|default:'0.12' }};">
+                <img src="{{ order_settings.watermark_url }}" alt="Watermark" class="watermark-img" style="opacity: {{ order_settings.watermark_opacity|default:'0.12' }};">
             {% else %}
-            <img src="{% static 'img/movement_order_watermark.png' %}" alt="Watermark" class="watermark-img"
-                style="opacity: 1;">
+                <img src="{% static 'img/movement_order_watermark.png' %}" alt="Watermark" class="watermark-img" style="opacity: 1;">
             {% endif %}
         </div>
 
@@ -616,7 +306,7 @@
             <div>
                 <div class="text-center">
                     <div class="bismillah">{{ order_settings.bismillah_text }}</div>
-                    <div class="security-label mt-1"><u>{{ order_settings.security_label }}</u></div>
+                    <div class="security-label mt-1">{{ order_settings.security_label }}</div>
                     <div class="order-title mt-1"><u>{{ order_settings.order_title }}</u></div>
                 </div>
 
@@ -625,180 +315,170 @@
                     {{ order_settings.issuing_authority_text }}
                 </div>
 
+                <!-- Star separator under issuing authority text -->
+                <div class="stars-separator text-center" style="letter-spacing: 3px; font-size: 14px; margin-top: 6px; margin-bottom: 8px;">
+                    *************************
+                </div>
+
                 <!-- Trainee Info Line (Officer vs NCO) -->
                 {% if is_officer %}
-                <div class="trainee-line officer-line">
-                    <div class="d-flex align-items-center w-100 px-1"
-                        style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
+                    <div class="trainee-line officer-line">
+                        <div class="d-flex align-items-center w-100 px-1"
+                             style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
                                     {% elif layout.trainee_line_layout == 'side_by_side_center' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'center' %}justify-content: center !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
                                     {% elif layout.trainee_line_layout == 'side_by_side_left' or layout.trainee_line_layout == 'name_first_left' %}justify-content: flex-end !important; gap: {{ layout.trainee_line_gap|default:20 }}px;
                                     {% elif layout.trainee_line_layout == 'split' or layout.trainee_line_layout == 'reverse' %}justify-content: space-between !important;
                                     {% else %}justify-content: flex-start !important; gap: {{ layout.trainee_line_gap|default:20 }}px;{% endif %}">
-                        <div class="card-part fw-bold fs-6"
-                            style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
-                            رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number
-                                }}</span>
-                        </div>
-                        <div class="name-part fw-bold fs-6"
-                            style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
-                            {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name
-                            }}
+                            <div class="card-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %} white-space: nowrap;">
+                                رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
+                            </div>
+                            <div class="name-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %} white-space: nowrap;">
+                                {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
+                            </div>
                         </div>
                     </div>
-                    <div class="name-part fw-bold fs-6"
-                        style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %}">
-                        {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="trainee-line nco-line">
-                <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
-                    الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number
-                        }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }}
-                    &nbsp;&nbsp; {{ enrollment.trainee.name }}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Traveler Signature (موضع بداية الصفحة) -->
-            {% if layout.traveler_sig_position == 'top' %}
-            <div class="traveler-sig-container">
-                <div class="traveler-sig-text fw-bold">
-                    توقيع المسافر &nbsp;:&nbsp; ....................................................
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Movement Details Table -->
-            <table class="details-table">
-                <tbody>
-                    <tr>
-                        <td class="label-col">مـــــــــــــــــن &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.from_location }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">الـــــــــــــــــي &nbsp;:</td>
-                        <td class="val-col">{{ destination_unit }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">الســـــــــلاح &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.arms_default }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">الذخيـــــــرة &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.ammunition_default }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">الغــــــــرض &nbsp;:</td>
-                        <td class="val-col">{{ purpose }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">تاريخ القيام &nbsp;:</td>
-                        <td class="val-col">
-                            {% if movement_date %}
-                            {{ movement_date|date:"d / m / Y" }}م
-                            {% else %}
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{
-                            current_year }}م
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">اللبـــــــــــس &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.clothing_instructions }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">وسيلة السفر &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.travel_means }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label-col">التصديق &nbsp;:</td>
-                        <td class="val-col">{{ order_settings.ratification_text }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Traveler Signature (موضع وسط الصفحة بعد الجدول) -->
-            {% if layout.traveler_sig_position == 'after_table' %}
-            <div class="traveler-sig-container">
-                <div class="traveler-sig-text fw-bold">
-                    توقيع المسافر &nbsp;:&nbsp; ....................................................
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Administrative Instructions -->
-            <div>
-                <div class="admin-instructions-header">التعليمات الادارية</div>
-                <div class="admin-instructions-body mt-1">
-                    {{ admin_instructions|default:order_settings.admin_instructions }}
-                </div>
-            </div>
-
-            <!-- Traveler's Declaration / Certificate -->
-            <div>
-                <div class="declaration-header">الشهـــــــــــادة</div>
-                <div class="declaration-body mt-1">
-                    {{ order_settings.certificate_declaration }}
-                </div>
-                {% if layout.traveler_sig_position != 'top' and layout.traveler_sig_position != 'after_table' %}
-                <div class="traveler-sig-container">
-                    <div class="traveler-sig-text fw-bold">
-                        توقيع المسافر &nbsp;:&nbsp; ....................................................
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Bottom Signatures and Copies -->
-        <div class="signatures-wrapper pt-1">
-            <div class="d-flex justify-content-between align-items-start px-2">
-                {% if layout.footer_layout == 'signer_first' %}
-                <!-- Right/Signer Box (التواقيع أولاً) -->
-                <div class="signer-box"
-                    style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
-                    <div class="fw-bold">{{ order_settings.signer_rank }}</div>
-                    <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
-                    <div class="fw-bold">{{ order_settings.signer_title }}</div>
-                    <div class="fw-bold">{{ order_settings.signer_dept }}</div>
-                </div>
-
-                <!-- Left/Copies Box (النسخ ثانياً في الجهة الأخرى) -->
-                <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
-                    <div class="fw-bold mb-1">نسخة الي :</div>
-                    <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
-                    <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
-                </div>
                 {% else %}
-                <!-- Right/Copies Box (النسخ أولاً) -->
-                <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
-                    <div class="fw-bold mb-1">نسخة الي :</div>
-                    <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
-                    <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
+                    <div class="trainee-line nco-line">
+                        <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
+                            الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.full_rank|default:enrollment.current_rank }} &nbsp;&nbsp; {{ enrollment.trainee.name }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Traveler Signature (موضع بداية الصفحة) -->
+                {% if layout.traveler_sig_position == 'top' %}
+                    <div class="traveler-sig-container">
+                        <div class="traveler-sig-text fw-bold">
+                            توقيع المسافر &nbsp;:&nbsp; ....................................................
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Movement Details Table -->
+                <table class="details-table">
+                    <tbody>
+                        <tr>
+                            <td class="label-col">مـــــــــــــــــن &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.from_location }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">الـــــــــــــــــي &nbsp;:</td>
+                            <td class="val-col">{{ destination_unit }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">الســـــــــلاح &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.arms_default }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">الذخيـــــــرة &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.ammunition_default }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">الغــــــــرض &nbsp;:</td>
+                            <td class="val-col">{{ purpose }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">تاريخ القيام &nbsp;:</td>
+                            <td class="val-col">
+                                {% if movement_date %}
+                                    {{ movement_date|date:"d / m / Y" }}م
+                                {% else %}
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp; {{ current_year }}م
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">اللبـــــــــــس &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.clothing_instructions }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">وسيلة السفر &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.travel_means }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">التصديق &nbsp;:</td>
+                            <td class="val-col">{{ order_settings.ratification_text }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Traveler Signature (موضع وسط الصفحة بعد الجدول) -->
+                {% if layout.traveler_sig_position == 'after_table' %}
+                    <div class="traveler-sig-container">
+                        <div class="traveler-sig-text fw-bold">
+                            توقيع المسافر &nbsp;:&nbsp; ....................................................
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Administrative Instructions -->
+                <div>
+                    <div class="admin-instructions-header">التعليمات الادارية</div>
+                    <div class="admin-instructions-body mt-1">
+                        {{ admin_instructions|default:order_settings.admin_instructions }}
+                    </div>
                 </div>
 
-                <!-- Left/Signer Box (التواقيع في الجهة الأخرى بمحاذاة اليمين) -->
-                <div class="signer-box"
-                    style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
-                    <div class="fw-bold">{{ order_settings.signer_rank }}</div>
-                    <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
-                    <div class="fw-bold">{{ order_settings.signer_title }}</div>
-                    <div class="fw-bold">{{ order_settings.signer_dept }}</div>
+                <!-- Traveler's Declaration / Certificate -->
+                <div>
+                    <div class="declaration-header">الشهـــــــــــادة</div>
+                    <div class="declaration-body mt-1">
+                        {{ order_settings.certificate_declaration }}
+                    </div>
+                    {% if layout.traveler_sig_position != 'top' and layout.traveler_sig_position != 'after_table' %}
+                    <div class="traveler-sig-container">
+                        <div class="traveler-sig-text fw-bold">
+                            توقيع المسافر &nbsp;:&nbsp; ....................................................
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
 
-            <!-- Bottom Security Label -->
-            <div class="text-center security-label security-bottom mb-1" style="text-decoration: underline;">
-                <u>{{ order_settings.security_label }}</u>
+            <!-- Bottom Signatures and Copies -->
+            <div class="signatures-wrapper pt-1">
+                <div class="d-flex justify-content-between align-items-start px-2">
+                    {% if layout.footer_layout == 'signer_first' %}
+                        <!-- Right/Signer Box (التواقيع أولاً) -->
+                        <div class="signer-box" style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
+                            <div class="fw-bold">{{ order_settings.signer_rank }}</div>
+                            <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_title }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_dept }}</div>
+                        </div>
+
+                        <!-- Left/Copies Box (النسخ ثانياً في الجهة الأخرى) -->
+                        <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
+                            <div class="fw-bold mb-1">نسخة الي :</div>
+                            <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
+                            <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
+                        </div>
+                    {% else %}
+                        <!-- Right/Copies Box (النسخ أولاً) -->
+                        <div class="copies-box" style="text-align: {{ layout.copies_box_align|default:'right' }} !important;">
+                            <div class="fw-bold mb-1">نسخة الي :</div>
+                            <div>{{ copy_to_1|default:order_settings.copy_to_1 }}</div>
+                            <div>{{ copy_to_2|default:order_settings.copy_to_2 }}</div>
+                        </div>
+
+                        <!-- Left/Signer Box (التواقيع في الجهة الأخرى بمحاذاة اليمين) -->
+                        <div class="signer-box" style="min-width: 250px; text-align: {{ layout.signer_box_align|default:'right' }} !important;">
+                            <div class="fw-bold">{{ order_settings.signer_rank }}</div>
+                            <div class="fw-bold fs-6 my-1">{{ order_settings.signer_name }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_title }}</div>
+                            <div class="fw-bold">{{ order_settings.signer_dept }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bottom Security Label -->
+                <div class="text-center security-label security-bottom mb-1" style="text-decoration: underline;">
+                    <u>{{ order_settings.security_label }}</u>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
 </body>
-
 </html>
 {% endwith %}
