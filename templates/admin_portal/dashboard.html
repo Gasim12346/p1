@@ -2327,13 +2327,16 @@
                                     <div style="position: relative; z-index: 2; background: transparent;">
                                         <div class="text-center">
                                             <div id="previewMovBismillah" style="font-size: 0.76rem;">{{ movement_settings.bismillah_text }}</div>
-                                            <div id="previewMovSecurity" style="font-weight: bold; text-decoration: underline; font-size: 0.78rem; margin-top: 2px;">{{ movement_settings.security_label }}</div>
+                                            <div id="previewMovSecurity" style="font-weight: bold; font-size: 0.78rem; margin-top: 2px;">{{ movement_settings.security_label }}</div>
                                             <div id="previewMovTitle" style="font-weight: 800; text-decoration: underline; font-size: 0.95rem; margin-top: 2px;">{{ movement_settings.order_title }}</div>
                                         </div>
 
                                         <div id="previewMovIssuing" style="font-size: 0.68rem; text-align: center; margin-top: 6px; line-height: 1.4;">
                                             {{ movement_settings.issuing_authority_text }}
                                         </div>
+
+                                        <!-- فاصل النجوم أسفل الديباجة -->
+                                        <div id="previewMovStars" style="text-align: center; font-size: 0.65rem; letter-spacing: 2px; margin: 4px 0;">*************************</div>
 
                                         <!-- سطر بيانات الدارس الضابط -->
                                         <div id="previewMovOfficerLine" style="margin-top: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: bold;">
@@ -2351,7 +2354,7 @@
                                         </div>
 
                                         <!-- جدول بيانات ومسار التحرك -->
-                                        <table id="previewMovTable" style="width: 100%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
+                                        <table id="previewMovTable" style="width: 85%; font-size: 0.69rem; margin-top: 4px; border-collapse: collapse;">
                                             <tr>
                                                 <td class="mov-label-col" style="width: 95px; font-weight: bold; padding: 1.5px 0;">مـــــــــــــــــن :</td>
                                                 <td id="previewMovFrom">{{ movement_settings.from_location }}</td>
@@ -4135,48 +4138,48 @@
     // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
     // ========================================================
     const DEFAULT_MOV_LAYOUT = {
-        page_padding_top: 16,
-        page_padding_bottom: 14,
-        page_padding_horizontal: 20,
+        page_padding_top: 20,
+        page_padding_bottom: 18,
+        page_padding_horizontal: 22,
         bismillah_size: 17,
-        bismillah_margin_bottom: 2,
+        bismillah_margin_bottom: 6,
         bismillah_align: 'center',
         security_size: 18,
-        security_margin_bottom: 2,
+        security_margin_bottom: 6,
         security_align: 'center',
         title_size: 24,
-        title_margin_bottom: 6,
+        title_margin_bottom: 10,
         title_align: 'center',
         issuing_size: 15,
-        issuing_line_height: 1.5,
-        issuing_margin_bottom: 8,
+        issuing_line_height: 1.6,
+        issuing_margin_bottom: 6,
         issuing_align: 'center',
         trainee_line_size: 16,
-        trainee_line_margin_bottom: 6,
-        trainee_line_layout: 'split',
-        trainee_line_gap: 25,
+        trainee_line_margin_bottom: 8,
+        trainee_line_layout: 'side_by_side_right',
+        trainee_line_gap: 35,
         trainee_nco_align: 'right',
         table_font_size: 15.5,
-        table_row_padding: 2.2,
-        table_label_width: 130,
-        table_margin_bottom: 8,
+        table_row_padding: 2.8,
+        table_label_width: 135,
+        table_margin_bottom: 12,
         admin_inst_header_align: 'center',
         admin_inst_size: 14.5,
-        admin_inst_line_height: 1.6,
-        admin_inst_margin_top: 8,
+        admin_inst_line_height: 1.65,
+        admin_inst_margin_top: 10,
         admin_inst_align: 'center',
         declaration_header_align: 'center',
         declaration_size: 14.5,
-        declaration_line_height: 1.6,
-        declaration_margin_top: 8,
+        declaration_line_height: 1.65,
+        declaration_margin_top: 10,
         declaration_align: 'center',
         traveler_sig_align: 'left',
-        signatures_margin_top: 12,
+        signatures_margin_top: 16,
         signer_box_size: 15,
         signer_box_align: 'center',
         copies_box_size: 14,
         copies_box_align: 'right',
-        security_bottom_margin_top: 8
+        security_bottom_margin_top: 14
     };
 
     window.getMovementLayoutData = function() {
@@ -4311,42 +4314,43 @@
         const bismillah = document.getElementById('previewMovBismillah');
         if (bismillah) {
             bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
-            bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
+            bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 6) * scale}px`;
             bismillah.style.textAlign = cfg.bismillah_align || 'center';
         }
 
         const security = document.getElementById('previewMovSecurity');
         if (security) {
             security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
-            security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
+            security.style.marginBottom = `${(cfg.security_margin_bottom || 6) * scale}px`;
             security.style.textAlign = cfg.security_align || 'center';
+            security.style.textDecoration = 'none';
         }
 
         const title = document.getElementById('previewMovTitle');
         if (title) {
             title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
-            title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
+            title.style.marginBottom = `${(cfg.title_margin_bottom || 10) * scale}px`;
             title.style.textAlign = cfg.title_align || 'center';
         }
 
         const issuing = document.getElementById('previewMovIssuing');
         if (issuing) {
             issuing.style.fontSize = `${(cfg.issuing_size || 15) * scale}px`;
-            issuing.style.marginBottom = `${(cfg.issuing_margin_bottom || 8) * scale}px`;
+            issuing.style.marginBottom = `${(cfg.issuing_margin_bottom || 6) * scale}px`;
             issuing.style.textAlign = cfg.issuing_align || 'center';
         }
 
         const officerLine = document.getElementById('previewMovOfficerLine');
         if (officerLine) {
             officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
-            officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
+            officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 8) * scale}px`;
         }
 
         const officerInner = document.getElementById('previewMovOfficerLineInner');
         const cardPart = document.getElementById('previewMovCardPart');
         const namePart = document.getElementById('previewMovNamePart');
-        const layout = cfg.trainee_line_layout || 'split';
-        const gap = (cfg.trainee_line_gap || 25) * scale;
+        const layout = cfg.trainee_line_layout || 'side_by_side_right';
+        const gap = (cfg.trainee_line_gap || 35) * scale;
 
         if (cardPart && namePart) {
             if (layout.startsWith('name_first') || layout === 'reverse') {
@@ -4390,16 +4394,17 @@
 
         const table = document.getElementById('previewMovTable');
         if (table) {
+            table.style.width = '85%';
             table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
-            table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
+            table.style.marginBottom = `${(cfg.table_margin_bottom || 12) * scale}px`;
             const labels = table.querySelectorAll('.mov-label-col');
             labels.forEach(lbl => {
-                lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
-                lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+                lbl.style.width = `${(cfg.table_label_width || 135) * scale}px`;
+                lbl.style.padding = `${(cfg.table_row_padding || 2.8) * scale}px 0`;
             });
             const allTds = table.querySelectorAll('td');
             allTds.forEach(td => {
-                td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+                td.style.padding = `${(cfg.table_row_padding || 2.8) * scale}px 0`;
             });
         }
 

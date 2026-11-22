@@ -5119,10 +5119,10 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
     def test_movement_order_default_layout(self):
         """التحقق من الحصول على المسافات الافتراضية لأمر التحرك عند عدم وجود تخصيص"""
         layout = self.movement_settings.get_layout()
-        self.assertEqual(layout['page_padding_top'], 16)
-        self.assertEqual(layout['page_padding_horizontal'], 20)
-        self.assertEqual(layout['table_label_width'], 130)
-        self.assertEqual(layout['trainee_line_layout'], 'split')
+        self.assertEqual(layout['page_padding_top'], 20)
+        self.assertEqual(layout['page_padding_horizontal'], 22)
+        self.assertEqual(layout['table_label_width'], 135)
+        self.assertEqual(layout['trainee_line_layout'], 'side_by_side_right')
 
     def test_movement_order_custom_layout_override(self):
         """التحقق من دمج التخصيصات المحفوظة مع القيم الافتراضية لأمر التحرك"""
@@ -5138,7 +5138,7 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         self.assertEqual(layout['table_label_width'], 160)
         self.assertEqual(layout['trainee_line_layout'], 'reverse')
         self.assertEqual(layout['issuing_align'], 'right')
-        self.assertEqual(layout['page_padding_horizontal'], 20)
+        self.assertEqual(layout['page_padding_horizontal'], 22)
 
     def test_cert_form_layout_json_parsing(self):
         """التحقق من معالجة حقل التنسيقات عند الإرسال عبر نموذج الاستمارة للشهادة"""
