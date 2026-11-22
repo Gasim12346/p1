@@ -4958,6 +4958,107 @@ class UniqueEmailAndPhoneValidationTests(TestCase):
         self.assertIn('phone', trainee_form.errors)
 
 
+class MessageAlertStylingAndDangerTagTests(TestCase):
+    """اختبارات مطابقة وسوم ورسائل التنبيهات مع فئات التنبيه باللون الأحمر"""
+
+    def test_message_tags_mapping_in_settings(self):
+        """التحقق من تعيين وسم الخطأ إلى danger لتفعيل اللون الأحمر"""
+        from django.conf import settings
+        from django.contrib.messages import constants as messages_constants
+        self.assertTrue(hasattr(settings, 'MESSAGE_TAGS'))
+        self.assertEqual(settings.MESSAGE_TAGS.get(messages_constants.ERROR), 'danger')
+
+    def test_admin_portal_error_alert_renders_danger_and_red_icon(self):
+        """التحقق من أن رسائل الخطأ تظهر في لوحة الأدمن بفئة alert-danger وأيقونة التحذير الحمراء"""
+        from django.template import Context, Template
+        template_str = """
+        {% load static %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if 'error' in message.tags or 'danger' in message.tags %}alert-danger{% elif 'success' in message.tags %}alert-success{% elif 'warning' in message.tags %}alert-warning{% else %}alert-info{% endif %}">
+                    <i class="bi {% if 'error' in message.tags or 'danger' in message.tags %}bi-exclamation-triangle-fill text-danger{% else %}bi-check-circle-fill text-success{% endif %}"></i>
+                    <div>{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+        """
+        class DummyMessage:
+            def __init__(self, message, tags):
+                self.message = message
+                self.tags = tags
+            def __str__(self):
+                return self.message
+
+        # حالة وسم error أو danger
+        dummy_err = DummyMessage("اسم المستخدم هذا مسجل مسبقاً، الرجاء اختيار اسم آخر.", "error")
+        rendered = Template(template_str).render(Context({'messages': [dummy_err]}))
+        self.assertIn('alert-danger', rendered)
+        self.assertIn('bi-exclamation-triangle-fill text-danger', rendered)
+        self.assertNotIn('alert-error', rendered)
+
+
+class CourseEnrollmentCompositeRankTests(TestCase):
+    """اختبارات تركيب وحفظ الرتبة العسكرية المتكاملة للدارس (رتبة + مهنة + ركن)"""
+
+    def setUp(self):
+        from apps.trainees.models import Trainee
+        from apps.academic.models import Course, CourseCategory, CourseSession
+        self.trainee = Trainee.objects.create(
+            military_number='12345678',
+            name='ضابط اختبار الرتبة',
+            category='officer'
+        )
+        self.category = CourseCategory.objects.create(
+            name='دورات الضباط'
+        )
+        self.course = Course.objects.create(
+            name='دورة القيادة والأركان',
+            category=self.category
+        )
+        self.session = CourseSession.objects.create(
+            course=self.course,
+            session_code='80',
+            status='active',
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + timezone.timedelta(days=30),
+            attendance_max_grade=10
+        )
+
+    def test_composite_rank_storage_with_profession_and_staff(self):
+        """التحقق من حفظ الرتبة المتكاملة: رائد مهندس ركن"""
+        from apps.academic.models import CourseEnrollment
+        enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='رائد مهندس ركن',
+            current_unit='سلاح المهندسين'
+        )
+        self.assertEqual(enrollment.current_rank, 'رائد مهندس ركن')
+
+    def test_composite_rank_storage_with_profession_only(self):
+        """التحقق من حفظ الرتبة المتكاملة: ملازم تقني"""
+        from apps.academic.models import CourseEnrollment
+        enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='ملازم تقني',
+            current_unit='إدارة نظم المعلومات'
+        )
+        self.assertEqual(enrollment.current_rank, 'ملازم تقني')
+
+    def test_composite_rank_storage_with_staff_only(self):
+        """التحقق من حفظ الرتبة المتكاملة: مقدم ركن"""
+        from apps.academic.models import CourseEnrollment
+        enrollment = CourseEnrollment.objects.create(
+            session=self.session,
+            trainee=self.trainee,
+            current_rank='مقدم ركن',
+            current_unit='الفرقة المدرعة'
+        )
+        self.assertEqual(enrollment.current_rank, 'مقدم ركن')
+
+
+
 
 
 

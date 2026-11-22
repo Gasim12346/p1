@@ -310,6 +310,8 @@
                         <th style="min-width: 180px;">اسم الدارس</th>
                         <th style="min-width: 100px;">التصنيف</th>
                         <th style="min-width: 170px;">الرتبة أثناء الدورة</th>
+                        <th style="min-width: 160px;">المهنة / التخصص</th>
+                        <th style="min-width: 150px; text-align: center;">أركان حرب (ركن)</th>
                         <th style="min-width: 160px;">القوة أثناء الدورة</th>
                         <th style="min-width: 200px;">الوحدة أثناء الدورة</th>
                         <th style="min-width: 170px;">تاريخ أمر التحرك <span class="text-danger">*</span></th>
@@ -319,7 +321,7 @@
                 <tbody>
                     <!-- رسالة التوجيه قبل اختيار التصنيف -->
                     <tr id="selectCategoryFirstRow">
-                        <td colspan="9" class="text-center py-5 bg-white">
+                        <td colspan="11" class="text-center py-5 bg-white">
                             <div class="py-4">
                                 <div class="mb-3">
                                     <span
@@ -432,6 +434,35 @@
                             </select>
                             <input type="text" id="custom_rank_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="syncRank('{{ t.military_number }}')">
                         </td>
+                        <!-- حقل المهنة / التخصص (مرتبط بالرتبة) -->
+                        <td>
+                            <select id="profession_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleProfessionChange('{{ t.military_number }}')">
+                                <option value="">-- بدون مهنة --</option>
+                                <option value="تقني">تقني</option>
+                                <option value="مهندس">مهندس</option>
+                                <option value="دكتور">دكتور</option>
+                                <option value="طبيب">طبيب</option>
+                                <option value="صيدلي">صيدلي</option>
+                                <option value="حقوقي">حقوقي</option>
+                                <option value="طيار">طيار</option>
+                                <option value="بحري">بحري</option>
+                                <option value="إداري">إداري</option>
+                                <option value="فني">فني</option>
+                                <option value="محاسب">محاسب</option>
+                                <option value="__custom__">✍️ مهنة أخرى (يدوية)</option>
+                            </select>
+                            <input type="text" id="custom_profession_{{ t.military_number }}" class="form-control form-control-sm mt-1" style="display: none;" placeholder="اكتب المهنة يدوياً" oninput="syncRank('{{ t.military_number }}')">
+                        </td>
+                        <!-- حقل أركان حرب (يظهر فقط للرتب من رائد إلى فريق) -->
+                        <td class="text-center">
+                            <div id="staff_container_{{ t.military_number }}" style="display: none;">
+                                <select id="staff_select_{{ t.military_number }}" class="form-select form-select-sm border-warning fw-bold text-dark" onchange="syncRank('{{ t.military_number }}')">
+                                    <option value="">-- بدون ركن --</option>
+                                    <option value="ركن">ركن (أركان حرب)</option>
+                                </select>
+                            </div>
+                            <span id="staff_placeholder_{{ t.military_number }}" class="text-muted small">--</span>
+                        </td>
                         <!-- حقل القوة وقت الدورة (قائمة منسدلة) -->
                         <td>
                             <select name="force_{{ t.military_number }}" id="force_select_{{ t.military_number }}" class="form-select form-select-sm" onchange="handleForceChange('{{ t.military_number }}')">
@@ -461,13 +492,13 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
+                        <td colspan="11" class="text-center py-5 text-muted">
                             لا يوجد دارسون مسجلون في النظام. يرجى تسجيل دارسين من قسم الدارسين أولاً.
                         </td>
                     </tr>
                     {% endfor %}
                     <tr id="noFilterMatchRow" style="display: none;">
-                        <td colspan="9" class="text-center py-5 text-muted">
+                        <td colspan="11" class="text-center py-5 text-muted">
                             <i class="bi bi-funnel text-secondary fs-2 d-block mb-2"></i>
                             <span class="fw-bold fs-6">لا يوجد دارسون يطابقون خيار التصنيف أو البحث المختار!</span>
                             <p class="small text-muted mt-1 mb-0">يمكنك اختيار تصنيف آخر مثل "مشتركة (جميع الدارسين)" أو
@@ -1459,30 +1490,94 @@
         ]
     };
 
+    const STAFF_ELIGIBLE_RANKS = ['رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'];
+
     function handleRankSelect(num) {
         const select = document.getElementById('rank_select_' + num);
         const customInput = document.getElementById('custom_rank_' + num);
-        const finalInput = document.getElementById('final_rank_' + num);
-        if (!select || !finalInput) return;
+        const staffContainer = document.getElementById('staff_container_' + num);
+        const staffPlaceholder = document.getElementById('staff_placeholder_' + num);
+        const staffSelect = document.getElementById('staff_select_' + num);
+        if (!select) return;
 
         if (select.value === '__custom__') {
             if (customInput) {
                 customInput.style.display = 'block';
                 customInput.focus();
-                finalInput.value = customInput.value.trim();
             }
+            if (staffContainer) staffContainer.style.display = 'none';
+            if (staffPlaceholder) staffPlaceholder.style.display = 'inline';
+            if (staffSelect) staffSelect.value = '';
         } else {
             if (customInput) customInput.style.display = 'none';
-            finalInput.value = select.value;
+            if (STAFF_ELIGIBLE_RANKS.includes(select.value)) {
+                if (staffContainer) staffContainer.style.display = 'block';
+                if (staffPlaceholder) staffPlaceholder.style.display = 'none';
+            } else {
+                if (staffContainer) staffContainer.style.display = 'none';
+                if (staffPlaceholder) staffPlaceholder.style.display = 'inline';
+                if (staffSelect) staffSelect.value = '';
+            }
         }
+        syncRank(num);
+    }
+
+    function handleProfessionChange(num) {
+        const profSelect = document.getElementById('profession_select_' + num);
+        const customProfInput = document.getElementById('custom_profession_' + num);
+        if (profSelect && customProfInput) {
+            if (profSelect.value === '__custom__') {
+                customProfInput.style.display = 'block';
+                customProfInput.focus();
+            } else {
+                customProfInput.style.display = 'none';
+            }
+        }
+        syncRank(num);
     }
 
     function syncRank(num) {
-        const customInput = document.getElementById('custom_rank_' + num);
+        const rankSelect = document.getElementById('rank_select_' + num);
+        const customRankInput = document.getElementById('custom_rank_' + num);
+        const profSelect = document.getElementById('profession_select_' + num);
+        const customProfInput = document.getElementById('custom_profession_' + num);
+        const staffSelect = document.getElementById('staff_select_' + num);
         const finalInput = document.getElementById('final_rank_' + num);
-        if (customInput && finalInput) {
-            finalInput.value = customInput.value.trim();
+
+        if (!finalInput) return;
+
+        let baseRank = '';
+        if (rankSelect) {
+            if (rankSelect.value === '__custom__' && customRankInput) {
+                baseRank = customRankInput.value.trim();
+            } else if (rankSelect.value) {
+                baseRank = rankSelect.value.trim();
+            }
         }
+
+        let profession = '';
+        if (profSelect) {
+            if (profSelect.value === '__custom__' && customProfInput) {
+                profession = customProfInput.value.trim();
+            } else if (profSelect.value) {
+                profession = profSelect.value.trim();
+            }
+        }
+
+        let staff = '';
+        if (staffSelect && STAFF_ELIGIBLE_RANKS.includes(baseRank)) {
+            staff = staffSelect.value.trim();
+        }
+
+        let compositeRank = baseRank;
+        if (profession) {
+            compositeRank = compositeRank ? (compositeRank + ' ' + profession) : profession;
+        }
+        if (staff) {
+            compositeRank = compositeRank ? (compositeRank + ' ' + staff) : staff;
+        }
+
+        finalInput.value = compositeRank.trim();
     }
 
     function handleForceChange(num, initialUnit = null) {
