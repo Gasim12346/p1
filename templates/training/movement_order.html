@@ -94,12 +94,14 @@
         .bismillah {
             font-size: {{ layout.bismillah_size|default:17 }}px !important;
             margin-bottom: {{ layout.bismillah_margin_bottom|default:2 }}px !important;
+            text-align: {{ layout.bismillah_align|default:'center' }} !important;
             font-weight: normal;
         }
 
         .security-label {
             font-size: {{ layout.security_size|default:18 }}px !important;
             margin-bottom: {{ layout.security_margin_bottom|default:2 }}px !important;
+            text-align: {{ layout.security_align|default:'center' }} !important;
             font-weight: bold;
             text-decoration: underline;
         }
@@ -107,6 +109,7 @@
         .order-title {
             font-size: {{ layout.title_size|default:24 }}px !important;
             margin-bottom: {{ layout.title_margin_bottom|default:6 }}px !important;
+            text-align: {{ layout.title_align|default:'center' }} !important;
             font-weight: bold;
             text-decoration: underline;
             letter-spacing: 2px;
@@ -158,7 +161,7 @@
             font-size: 16.5px;
             font-weight: bold;
             text-decoration: underline;
-            text-align: center;
+            text-align: {{ layout.admin_inst_header_align|default:'center' }} !important;
             margin-top: {{ layout.admin_inst_margin_top|default:8 }}px !important;
             margin-bottom: 4px;
         }
@@ -174,7 +177,7 @@
             font-size: 16.5px;
             font-weight: bold;
             text-decoration: underline;
-            text-align: center;
+            text-align: {{ layout.declaration_header_align|default:'center' }} !important;
             margin-top: {{ layout.declaration_margin_top|default:8 }}px !important;
             margin-bottom: 4px;
         }
@@ -184,6 +187,13 @@
             line-height: {{ layout.declaration_line_height|default:1.6 }} !important;
             text-align: {{ layout.declaration_align|default:'center' }} !important;
             padding: 0 12px;
+        }
+
+        .traveler-sig-container {
+            display: flex;
+            justify-content: {% if layout.traveler_sig_align == 'right' %}flex-start{% elif layout.traveler_sig_align == 'center' %}center{% else %}flex-end{% endif %};
+            margin-top: 8px;
+            padding: 0 16px;
         }
 
         /* Signatures and Copies Footer */
@@ -305,18 +315,22 @@
                 <!-- Trainee Info Line (Officer vs NCO) -->
                 {% if is_officer %}
                     <div class="trainee-line officer-line">
-                        <div class="d-flex {% if layout.trainee_line_layout == 'reverse' %}justify-content-between flex-row-reverse{% elif layout.trainee_line_layout == 'center' %}justify-content-center gap-4{% else %}justify-content-between{% endif %} align-items-center w-100 px-1">
-                            <div class="fw-bold fs-6">
+                        <div class="d-flex align-items-center w-100 px-1"
+                             style="{% if layout.trainee_line_layout == 'side_by_side_right' or layout.trainee_line_layout == 'name_first_right' %}justify-content: flex-start; gap: {{ layout.trainee_line_gap|default:25 }}px;
+                                    {% elif layout.trainee_line_layout == 'side_by_side_center' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'center' %}justify-content: center; gap: {{ layout.trainee_line_gap|default:25 }}px;
+                                    {% elif layout.trainee_line_layout == 'side_by_side_left' or layout.trainee_line_layout == 'name_first_left' %}justify-content: flex-end; gap: {{ layout.trainee_line_gap|default:25 }}px;
+                                    {% else %}justify-content: space-between;{% endif %}">
+                            <div class="card-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 2;{% else %}order: 1;{% endif %}">
                                 رقم البطاقة &nbsp;:&nbsp; <span class="font-monospace">{{ enrollment.trainee.military_number }}</span>
                             </div>
-                            <div class="fw-bold fs-6">
+                            <div class="name-part fw-bold fs-6" style="{% if layout.trainee_line_layout == 'name_first_right' or layout.trainee_line_layout == 'name_first_center' or layout.trainee_line_layout == 'name_first_left' or layout.trainee_line_layout == 'reverse' %}order: 1;{% else %}order: 2;{% endif %}">
                                 {{ enrollment.current_rank }} &nbsp; {{ enrollment.trainee.name }}
                             </div>
                         </div>
                     </div>
                 {% else %}
                     <div class="trainee-line nco-line">
-                        <div class="fw-bold fs-6 px-1 {% if layout.trainee_line_layout == 'center' %}text-center{% elif layout.trainee_line_layout == 'reverse' %}text-start{% endif %}">
+                        <div class="fw-bold fs-6 px-1" style="text-align: {{ layout.trainee_nco_align|default:'right' }};">
                             الأشخاص &nbsp;:&nbsp; نمرة &nbsp;<span class="font-monospace">{{ enrollment.trainee.military_number }}</span> &nbsp;&nbsp; {{ enrollment.current_rank }} &nbsp;&nbsp; {{ enrollment.trainee.name }}
                         </div>
                     </div>
@@ -384,7 +398,7 @@
                     <div class="declaration-body mt-1">
                         {{ order_settings.certificate_declaration }}
                     </div>
-                    <div class="d-flex justify-content-end mt-2 px-3">
+                    <div class="traveler-sig-container">
                         <div class="fw-bold fs-6">
                             توقيع المسافر &nbsp;:&nbsp; ....................................................
                         </div>

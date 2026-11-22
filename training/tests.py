@@ -5155,6 +5155,25 @@ class CertificateAndMovementOrderLayoutTests(TestCase):
         saved = form.save()
         self.assertEqual(saved.layout_config, {})
 
+    def test_side_by_side_trainee_layout(self):
+        """التحقق من وضع اسم الطالب بجانب البطاقة مع المسافة الفاصلة ومحاذاة العناوين"""
+        self.movement_settings.layout_config = {
+            'trainee_line_layout': 'side_by_side_right',
+            'trainee_line_gap': 35,
+            'bismillah_align': 'right',
+            'title_align': 'right',
+            'declaration_header_align': 'right',
+            'traveler_sig_align': 'right',
+        }
+        self.movement_settings.save()
+        layout = self.movement_settings.get_layout()
+        self.assertEqual(layout['trainee_line_layout'], 'side_by_side_right')
+        self.assertEqual(layout['trainee_line_gap'], 35)
+        self.assertEqual(layout['bismillah_align'], 'right')
+        self.assertEqual(layout['title_align'], 'right')
+        self.assertEqual(layout['declaration_header_align'], 'right')
+        self.assertEqual(layout['traveler_sig_align'], 'right')
+
 
 
 
