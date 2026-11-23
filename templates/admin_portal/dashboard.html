@@ -4698,6 +4698,28 @@
                             <select id="modal_inst_rank_select" class="form-select form-select-lg"
                                 onchange="modalHandleRankChange()" required>
                                 <option value="">-- اختر الرتبة --</option>
+                                <optgroup label="رتب الضباط" id="modal_ranks_officer">
+                                    <option value="ملازم">ملازم</option>
+                                    <option value="ملازم أول">ملازم أول</option>
+                                    <option value="نقيب">نقيب</option>
+                                    <option value="رائد">رائد</option>
+                                    <option value="مقدم">مقدم</option>
+                                    <option value="عقيد">عقيد</option>
+                                    <option value="عميد">عميد</option>
+                                    <option value="لواء">لواء</option>
+                                    <option value="فريق">فريق</option>
+                                    <option value="فريق أول">فريق أول</option>
+                                </optgroup>
+                                <optgroup label="رتب ضباط الصف" id="modal_ranks_nco">
+                                    <option value="جندي">جندي</option>
+                                    <option value="وكيل عريف">وكيل عريف</option>
+                                    <option value="عريف">عريف</option>
+                                    <option value="رقيب">رقيب</option>
+                                    <option value="رقيب أول">رقيب أول</option>
+                                    <option value="مساعد">مساعد</option>
+                                    <option value="مساعد أول">مساعد أول</option>
+                                </optgroup>
+                                <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
                             </select>
                             <input type="hidden" name="rank" id="modal_inst_final_rank" required>
                             <input type="text" id="modal_inst_custom_rank" class="form-control form-control-lg mt-2"
@@ -4801,301 +4823,929 @@
 {% endblock %}
 
 {% block extra_js %}
+
+<!-- ===================================================================== -->
+<!-- [SCRIPT 1] إدارة هيئة التعليم والمعلمين والرتب والوحدات (Instructors)  -->
+<!-- ===================================================================== -->
 <script>
-    const INSTRUCTOR_RANKS = {
-        'officer': [
-            'ملازم',
-            'ملازم أول',
-            'نقيب',
-            'رائد',
-            'مقدم',
-            'عقيد',
-            'عميد',
-            'لواء',
-            'فريق',
-            'فريق أول'
-        ],
-        'nco': [
-            'جندي',
-            'وكيل عريف',
-            'عريف',
-            'رقيب',
-            'رقيب أول',
-            'مساعد',
-            'مساعد أول'
-        ]
-    };
+(function () {
+    'use strict';
+    try {
+        const INSTRUCTOR_RANKS = {
+            'officer': [
+                'ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم',
+                'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول'
+            ],
+            'nco': [
+                'جندي', 'وكيل عريف', 'عريف', 'رقيب', 'رقيب أول',
+                'مساعد', 'مساعد أول'
+            ]
+        };
 
-    const INSTRUCTOR_FORCE_UNITS = {
-        'القوات البرية': [
-            'سلاح المشاة',
-            'سلاح المدرعات',
-            'سلاح المدفعية',
-            'سلاح الإشارة',
-            'سلاح المهندسين',
-            'سلاح الصيانة',
-            'سلاح النقل',
-            'الإدارة المالية',
-            'إدارة نظم المعلومات',
-            'إدارة التدريب',
-            'هيئة الإمداد والتموين',
-            'الشرطة العسكرية',
-            'شعبة الاستخبارات',
-            'لواء القوات الخاصة',
-            'إدارة العمليات',
-            'قيادة القوات البرية'
-        ],
-        'القوات البحرية': [
-            'قاعدة بورتسودان البحرية',
-            'قاعدة فلامنجو البحرية',
-            'أسطول الزوارق والسفن',
-            'لواء المشاة البحرية',
-            'جناح الضفادع البشرية',
-            'ورش الصيانة البحرية',
-            'إدارة نظم المعلومات البحرية',
-            'الإدارة المالية البحرية',
-            'جناح الاتصالات الساحلية',
-            'مركز تدريب القوات البحرية',
-            'قيادة القوات البحرية'
-        ],
-        'القوات الجوية': [
-            'قاعدة وادي سيدنا الجوية',
-            'قاعدة الشهيد مختار الجوية',
-            'قاعدة الأبيض الجوية',
-            'قاعدة مروي الجوية',
-            'جناح المقاتلات',
-            'جناح النقل الجوي',
-            'جناح المروحيات',
-            'مجمع صيانة الطيران',
-            'الملاحة والمراقبة الجوية',
-            'إدارة نظم المعلومات الجوية',
-            'الإدارة المالية الجوية',
-            'كلية القوات الجوية',
-            'قيادة القوات الجوية'
-        ],
-        'قوات الدفاع الجوي': [
-            'لواء الصواريخ م/ط',
-            'كتائب المدفعية م/ط',
-            'مراكز الرادارات والإنذار المبكر',
-            'قيادة السيطرة والتوجيه',
-            'الحرب الإلكترونية',
-            'سلاح الإشارة للدفاع الجوي',
-            'ورش الصيانة الفنية',
-            'مركز تدريب الدفاع الجوي',
-            'إدارة نظم المعلومات',
-            'الإدارة المالية',
-            'قيادة قوات الدفاع الجوي'
-        ]
-    };
+        const INSTRUCTOR_FORCE_UNITS = {
+            'القوات البرية': [
+                'اللواء الأول مدرع', 'اللواء الثاني مشاة آلي', 'اللواء الثالث مدفعية',
+                'سلاح المدرعات', 'سلاح المدفعية', 'سلاح المشاة', 'سلاح المظلات',
+                'سلاح الصاعقة / القوات الخاصة', 'سلاح الإشارة البري', 'سلاح الهندسة العسكرية',
+                'سلاح الصيانة والنقل', 'سلاح الإمداد والتموين', 'الشرطة العسكرية البرية',
+                'إدارة نظم المعلومات والتحول الرقمي', 'الإدارة المالية البرية',
+                'إدارة شؤون الضباط والأفراد', 'إدارة التدريب العسكري والعمليات',
+                'معهد نظم المعلومات للقوات المسلحة', 'كلية القيادة والأركان',
+                'الكلية الحربية', 'قيادة المنطقة الشمالية العسكرية', 'قيادة المنطقة الشرقية العسكرية',
+                'قيادة المنطقة الغربية العسكرية', 'قيادة المنطقة الجنوبية العسكرية',
+                'قيادة المنطقة المركزية العسكرية', 'رئاسة هيئة الأركان العامة البرية'
+            ],
+            'القوات البحرية': [
+                'لواء الفرقاطات والمدمرات', 'لواء الغواصات البحرية', 'سرب زوارق الصواريخ السريعة',
+                'سرب كاسحات الألغام البحرية', 'لواء الإنزال البرمائي ومشاة البحرية',
+                'سلاح الضفادع البشرية والقوات الخاصة البحرية', 'سلاح الإشارة والاتصالات البحرية',
+                'سلاح الصيانة والترسانة البحرية', 'سلاح التسليح والإمداد البحري',
+                'مراكز العمليات البحرية والإنذار الساحلي', 'الشرطة العسكرية البحرية',
+                'قاعدة الإسكندرية البحرية', 'قاعدة البحر الأحمر البحرية', 'قاعدة بورسعيد البحرية',
+                'مركز تدريب القوات البحرية', 'إدارة نظم المعلومات والاتصالات البحرية',
+                'الإدارة المالية البحرية', 'كلية الدراسات البحرية', 'قيادة القوات البحرية'
+            ],
+            'القوات الجوية': [
+                'لواء المقاتلات الجوية الاعتراضية', 'لواء القاذفات المقاتلة والهجوم الأرضي',
+                'لواء طائرات النقل الجوي التكتيكي والإمداد', 'لواء المروحيات الهجومية والبحث والإنقاذ',
+                'سرب طائرات الاستطلاع والحرب الإلكترونية', 'سرب الطائرات المسيّرة (الدرونز والتحكم الذاتي)',
+                'سلاح التسليح والذخائر الجوية المتطورة', 'سلاح الإشارة والرادارات الجوية',
+                'سلاح الصيانة وورش هياكل ومحركات الطائرات', 'سلاح الإمداد والخدمات الفنية الجوية',
+                'الشرطة العسكرية الجوية', 'قاعدة القاهرة الجوية', 'قاعدة المنصورة الجوية',
+                'قاعدة أسوان الجوية', 'قاعدة الغردقة الجوية', 'مراكز التوجيه والسيطرة والمراقبة الجوية',
+                'معهد التدريب الجوي المشترك', 'إدارة نظم المعلومات الجوية', 'الإدارة المالية الجوية',
+                'كلية القوات الجوية', 'قيادة القوات الجوية'
+            ],
+            'قوات الدفاع الجوي': [
+                'لواء الصواريخ م/ط', 'كتائب المدفعية م/ط', 'مراكز الرادارات والإنذار المبكر',
+                'قيادة السيطرة والتوجيه', 'الحرب الإلكترونية', 'سلاح الإشارة للدفاع الجوي',
+                'ورش الصيانة الفنية', 'مركز تدريب الدفاع الجوي', 'إدارة نظم المعلومات',
+                'الإدارة المالية', 'قيادة قوات الدفاع الجوي'
+            ]
+        };
 
-    function modalUpdateRanks(initialRank = '') {
-        const catSelect = document.getElementById('modal_inst_category');
-        const rankSelect = document.getElementById('modal_inst_rank_select');
-        const customRank = document.getElementById('modal_inst_custom_rank');
-        const finalRank = document.getElementById('modal_inst_final_rank');
-        if (!catSelect || !rankSelect || !finalRank) return;
+        function modalUpdateRanks(initialRank = '') {
+            const catSelect = document.getElementById('modal_inst_category');
+            const rankSelect = document.getElementById('modal_inst_rank_select');
+            const customRank = document.getElementById('modal_inst_custom_rank');
+            const finalRank = document.getElementById('modal_inst_final_rank');
+            if (!catSelect || !rankSelect || !finalRank) return;
 
-        const cat = catSelect.value || 'officer';
-        const ranks = INSTRUCTOR_RANKS[cat] || [];
-        rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
+            const cat = catSelect.value || 'officer';
+            const ranks = INSTRUCTOR_RANKS[cat] || (cat === 'nco'
+                ? ['جندي', 'وكيل عريف', 'عريف', 'رقيب', 'رقيب أول', 'مساعد', 'مساعد أول']
+                : ['ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق', 'فريق أول']);
 
-        let matched = false;
-        ranks.forEach(r => {
-            const opt = document.createElement('option');
-            opt.value = r;
-            opt.textContent = r;
-            if (initialRank && initialRank === r) {
-                opt.selected = true;
-                matched = true;
-            }
-            rankSelect.appendChild(opt);
-        });
+            rankSelect.innerHTML = '<option value="">-- اختر الرتبة --</option>';
 
-        const customOpt = document.createElement('option');
-        customOpt.value = '__custom__';
-        customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
-        rankSelect.appendChild(customOpt);
+            let matched = false;
+            ranks.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                if (initialRank && initialRank === r) {
+                    opt.selected = true;
+                    matched = true;
+                }
+                rankSelect.appendChild(opt);
+            });
 
-        if (initialRank) {
-            if (matched) {
-                if (customRank) customRank.style.display = 'none';
-                finalRank.value = initialRank;
+            const customOpt = document.createElement('option');
+            customOpt.value = '__custom__';
+            customOpt.textContent = '✍️ رتبة أخرى (كتابة يدوية)';
+            rankSelect.appendChild(customOpt);
+
+            if (initialRank) {
+                if (matched) {
+                    if (customRank) customRank.style.display = 'none';
+                    finalRank.value = initialRank;
+                } else {
+                    customOpt.selected = true;
+                    if (customRank) {
+                        customRank.style.display = 'block';
+                        customRank.value = initialRank;
+                    }
+                    finalRank.value = initialRank;
+                }
             } else {
-                customOpt.selected = true;
+                if (customRank) customRank.style.display = 'none';
+                finalRank.value = '';
+            }
+        }
+
+        function modalHandleRankChange() {
+            const rankSelect = document.getElementById('modal_inst_rank_select');
+            const customRank = document.getElementById('modal_inst_custom_rank');
+            const finalRank = document.getElementById('modal_inst_final_rank');
+            if (!rankSelect || !finalRank) return;
+
+            if (rankSelect.value === '__custom__') {
                 if (customRank) {
                     customRank.style.display = 'block';
-                    customRank.value = initialRank;
+                    customRank.focus();
+                    finalRank.value = customRank.value.trim();
                 }
-                finalRank.value = initialRank;
+            } else {
+                if (customRank) customRank.style.display = 'none';
+                finalRank.value = rankSelect.value;
             }
-        } else {
-            if (customRank) customRank.style.display = 'none';
-            finalRank.value = '';
         }
-    }
 
-    function modalHandleRankChange() {
-        const rankSelect = document.getElementById('modal_inst_rank_select');
-        const customRank = document.getElementById('modal_inst_custom_rank');
-        const finalRank = document.getElementById('modal_inst_final_rank');
-        if (!rankSelect || !finalRank) return;
-
-        if (rankSelect.value === '__custom__') {
-            if (customRank) {
-                customRank.style.display = 'block';
-                customRank.focus();
+        function modalSyncCustomRank() {
+            const customRank = document.getElementById('modal_inst_custom_rank');
+            const finalRank = document.getElementById('modal_inst_final_rank');
+            if (customRank && finalRank) {
                 finalRank.value = customRank.value.trim();
             }
-        } else {
-            if (customRank) customRank.style.display = 'none';
-            finalRank.value = rankSelect.value;
-        }
-    }
-
-    function modalSyncCustomRank() {
-        const customRank = document.getElementById('modal_inst_custom_rank');
-        const finalRank = document.getElementById('modal_inst_final_rank');
-        if (customRank && finalRank) {
-            finalRank.value = customRank.value.trim();
-        }
-    }
-
-    function modalUpdateUnits(initialUnit = '') {
-        const forceSelect = document.getElementById('modal_inst_force');
-        const unitSelect = document.getElementById('modal_inst_unit_select');
-        const customUnit = document.getElementById('modal_inst_custom_unit');
-        const finalUnit = document.getElementById('modal_inst_final_unit');
-        if (!forceSelect || !unitSelect || !finalUnit) return;
-
-        const force = forceSelect.value;
-        if (!force || !INSTRUCTOR_FORCE_UNITS[force]) {
-            unitSelect.innerHTML = '<option value="">-- اختر القوة أولاً لعرض الوحدات --</option>';
-            unitSelect.disabled = true;
-            unitSelect.classList.add('bg-light');
-            if (customUnit) customUnit.style.display = 'none';
-            finalUnit.value = '';
-            return;
         }
 
-        unitSelect.disabled = false;
-        unitSelect.classList.remove('bg-light');
-        unitSelect.innerHTML = `<option value="">-- اختر الوحدة (${force}) --</option>`;
+        function modalUpdateUnits(initialUnit = '') {
+            const forceSelect = document.getElementById('modal_inst_force');
+            const unitSelect = document.getElementById('modal_inst_unit_select');
+            const customUnit = document.getElementById('modal_inst_custom_unit');
+            const finalUnit = document.getElementById('modal_inst_final_unit');
+            if (!forceSelect || !unitSelect || !finalUnit) return;
 
-        const units = INSTRUCTOR_FORCE_UNITS[force];
-        let matched = false;
-        units.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u;
-            opt.textContent = u;
-            if (initialUnit && initialUnit === u) {
-                opt.selected = true;
-                matched = true;
-            }
-            unitSelect.appendChild(opt);
-        });
-
-        const customOpt = document.createElement('option');
-        customOpt.value = '__custom__';
-        customOpt.textContent = '✍️ وحدة أخرى (كتابة يدوية)';
-        unitSelect.appendChild(customOpt);
-
-        if (initialUnit) {
-            if (matched) {
+            const force = forceSelect.value;
+            if (!force || !INSTRUCTOR_FORCE_UNITS[force]) {
+                unitSelect.innerHTML = '<option value="">-- اختر القوة أولاً لعرض الوحدات --</option>';
+                unitSelect.disabled = true;
+                unitSelect.classList.add('bg-light');
                 if (customUnit) customUnit.style.display = 'none';
-                finalUnit.value = initialUnit;
+                finalUnit.value = '';
+                return;
+            }
+
+            unitSelect.disabled = false;
+            unitSelect.classList.remove('bg-light');
+            unitSelect.innerHTML = `<option value="">-- اختر الوحدة (${force}) --</option>`;
+
+            const units = INSTRUCTOR_FORCE_UNITS[force];
+            let matched = false;
+            units.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                if (initialUnit && initialUnit === u) {
+                    opt.selected = true;
+                    matched = true;
+                }
+                unitSelect.appendChild(opt);
+            });
+
+            const customOpt = document.createElement('option');
+            customOpt.value = '__custom__';
+            customOpt.textContent = '✍️ وحدة أخرى (كتابة يدوية)';
+            unitSelect.appendChild(customOpt);
+
+            if (initialUnit) {
+                if (matched) {
+                    if (customUnit) customUnit.style.display = 'none';
+                    finalUnit.value = initialUnit;
+                } else {
+                    customOpt.selected = true;
+                    if (customUnit) {
+                        customUnit.style.display = 'block';
+                        customUnit.value = initialUnit;
+                    }
+                    finalUnit.value = initialUnit;
+                }
             } else {
-                customOpt.selected = true;
+                if (customUnit) customUnit.style.display = 'none';
+                finalUnit.value = '';
+            }
+        }
+
+        function modalHandleUnitChange() {
+            const unitSelect = document.getElementById('modal_inst_unit_select');
+            const customUnit = document.getElementById('modal_inst_custom_unit');
+            const finalUnit = document.getElementById('modal_inst_final_unit');
+            if (!unitSelect || !finalUnit) return;
+
+            if (unitSelect.value === '__custom__') {
                 if (customUnit) {
                     customUnit.style.display = 'block';
-                    customUnit.value = initialUnit;
+                    customUnit.focus();
+                    finalUnit.value = customUnit.value.trim();
                 }
-                finalUnit.value = initialUnit;
+            } else {
+                if (customUnit) customUnit.style.display = 'none';
+                finalUnit.value = unitSelect.value;
             }
-        } else {
-            if (customUnit) customUnit.style.display = 'none';
-            finalUnit.value = '';
         }
-    }
 
-    function modalHandleUnitChange() {
-        const unitSelect = document.getElementById('modal_inst_unit_select');
-        const customUnit = document.getElementById('modal_inst_custom_unit');
-        const finalUnit = document.getElementById('modal_inst_final_unit');
-        if (!unitSelect || !finalUnit) return;
-
-        if (unitSelect.value === '__custom__') {
-            if (customUnit) {
-                customUnit.style.display = 'block';
-                customUnit.focus();
+        function modalSyncCustomUnit() {
+            const customUnit = document.getElementById('modal_inst_custom_unit');
+            const finalUnit = document.getElementById('modal_inst_final_unit');
+            if (customUnit && finalUnit) {
                 finalUnit.value = customUnit.value.trim();
             }
-        } else {
-            if (customUnit) customUnit.style.display = 'none';
-            finalUnit.value = unitSelect.value;
         }
+
+        // إتاحة الوظائف على النطاق العام window
+        window.INSTRUCTOR_RANKS = INSTRUCTOR_RANKS;
+        window.INSTRUCTOR_FORCE_UNITS = INSTRUCTOR_FORCE_UNITS;
+        window.modalUpdateRanks = modalUpdateRanks;
+        window.modalHandleRankChange = modalHandleRankChange;
+        window.modalSyncCustomRank = modalSyncCustomRank;
+        window.modalUpdateUnits = modalUpdateUnits;
+        window.modalHandleUnitChange = modalHandleUnitChange;
+        window.modalSyncCustomUnit = modalSyncCustomUnit;
+
+        // ربط الأحداث عند تحميل المستند وعند فتح النافذة المنبثقة
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('addInstructorModal');
+            if (modal) {
+                modal.addEventListener('show.bs.modal', function () {
+                    modalUpdateRanks();
+                    modalUpdateUnits();
+                });
+            }
+            modalUpdateRanks();
+        });
+    } catch (err) {
+        console.error('Error in Instructor Module:', err);
     }
+})();
+</script>
 
-    function modalSyncCustomUnit() {
-        const customUnit = document.getElementById('modal_inst_custom_unit');
-        const finalUnit = document.getElementById('modal_inst_final_unit');
-        if (customUnit && finalUnit) {
-            finalUnit.value = customUnit.value.trim();
+
+<!-- ===================================================================== -->
+<!-- [SCRIPT 2] إدارة المستخدمين وحسابات الصلاحيات (User Accounts & Roles)  -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+    try {
+        function openChangeRoleModal(userId, username, fullname, currentRole, instructorMilNum, isSelf, canManageUsers, canView, canAdd, canEdit, canDelete, canGrade, canApproveResults) {
+            const form = document.getElementById('changeRoleForm');
+            if (form) form.action = `/admin-portal/users/${userId}/update-role/`;
+            const usrEl = document.getElementById('modalTargetUsername');
+            const fullEl = document.getElementById('modalTargetUserFullname');
+            if (usrEl) usrEl.textContent = username;
+            if (fullEl) fullEl.textContent = fullname;
+
+            const roleSelect = document.getElementById('modalRoleSelect');
+            if (roleSelect) roleSelect.value = currentRole;
+
+            const instSelect = document.getElementById('modalInstructorSelect');
+            if (instSelect) instSelect.value = instructorMilNum || '';
+
+            // تعبئة خانات أذونات وصلاحيات الأمان بأسلوب ويندوز
+            const manageEl = document.getElementById('role_perm_manage_users');
+            const viewEl = document.getElementById('role_perm_view');
+            const addEl = document.getElementById('role_perm_add');
+            const editEl = document.getElementById('role_perm_edit');
+            const delEl = document.getElementById('role_perm_delete');
+            const gradeEl = document.getElementById('role_perm_grade');
+            const approveEl = document.getElementById('role_perm_approve');
+
+            if (manageEl) manageEl.checked = !!canManageUsers;
+            if (viewEl) viewEl.checked = !!canView;
+            if (addEl) addEl.checked = !!canAdd;
+            if (editEl) editEl.checked = !!canEdit;
+            if (delEl) delEl.checked = !!canDelete;
+            if (gradeEl) gradeEl.checked = !!canGrade;
+            if (approveEl) approveEl.checked = !!canApproveResults;
+
+            handleModalRoleChange(currentRole);
+
+            const warning = document.getElementById('modalSelfAdminWarning');
+            if (isSelf && (currentRole === 'admin' || canManageUsers)) {
+                if (warning) warning.style.display = 'block';
+                if (manageEl) manageEl.disabled = true;
+            } else {
+                if (warning) warning.style.display = 'none';
+                if (manageEl) manageEl.disabled = false;
+            }
+
+            const modalEl = document.getElementById('changeRoleModal');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
         }
+
+        function applyPresetRole(role) {
+            const manageEl = document.getElementById('role_perm_manage_users');
+            const viewEl = document.getElementById('role_perm_view');
+            const addEl = document.getElementById('role_perm_add');
+            const editEl = document.getElementById('role_perm_edit');
+            const delEl = document.getElementById('role_perm_delete');
+            const gradeEl = document.getElementById('role_perm_grade');
+            const approveEl = document.getElementById('role_perm_approve');
+
+            if (role === 'admin') {
+                if (manageEl) manageEl.checked = true;
+                if (viewEl) viewEl.checked = true;
+                if (addEl) addEl.checked = true;
+                if (editEl) editEl.checked = true;
+                if (delEl) delEl.checked = true;
+                if (gradeEl) gradeEl.checked = true;
+                if (approveEl) approveEl.checked = true;
+            } else if (role === 'training_officer') {
+                if (manageEl) manageEl.checked = false;
+                if (viewEl) viewEl.checked = true;
+                if (addEl) addEl.checked = true;
+                if (editEl) editEl.checked = true;
+                if (delEl) delEl.checked = false;
+                if (gradeEl) gradeEl.checked = true;
+                if (approveEl) approveEl.checked = true;
+            } else if (role === 'instructor') {
+                if (manageEl) manageEl.checked = false;
+                if (viewEl) viewEl.checked = true;
+                if (addEl) addEl.checked = false;
+                if (editEl) editEl.checked = false;
+                if (delEl) delEl.checked = false;
+                if (gradeEl) gradeEl.checked = true;
+                if (approveEl) approveEl.checked = false;
+            } else if (role === 'supervisor') {
+                if (manageEl) manageEl.checked = false;
+                if (viewEl) viewEl.checked = true;
+                if (addEl) addEl.checked = false;
+                if (editEl) editEl.checked = false;
+                if (delEl) delEl.checked = false;
+                if (gradeEl) gradeEl.checked = false;
+                if (approveEl) approveEl.checked = false;
+            }
+            handlePermissionCheckboxClick();
+        }
+
+        function handleFullControlClick(fullControlCheckbox) {
+            const isChecked = fullControlCheckbox.checked;
+            const subCheckboxes = [
+                'role_perm_manage_users', 'role_perm_view', 'role_perm_add',
+                'role_perm_edit', 'role_perm_delete', 'role_perm_grade', 'role_perm_approve'
+            ];
+            subCheckboxes.forEach(id => {
+                const cb = document.getElementById(id);
+                if (cb && !cb.disabled) cb.checked = isChecked;
+            });
+        }
+
+        function handlePermissionCheckboxClick() {
+            const subCheckboxes = [
+                'role_perm_manage_users', 'role_perm_view', 'role_perm_add',
+                'role_perm_edit', 'role_perm_delete', 'role_perm_grade', 'role_perm_approve'
+            ];
+            const fullControlCheckbox = document.getElementById('role_perm_full_control');
+            if (!fullControlCheckbox) return;
+
+            let allChecked = true;
+            let noneChecked = true;
+            subCheckboxes.forEach(id => {
+                const cb = document.getElementById(id);
+                if (cb) {
+                    if (cb.checked) noneChecked = false;
+                    else allChecked = false;
+                }
+            });
+
+            if (allChecked) {
+                fullControlCheckbox.checked = true;
+                fullControlCheckbox.indeterminate = false;
+            } else if (noneChecked) {
+                fullControlCheckbox.checked = false;
+                fullControlCheckbox.indeterminate = false;
+            } else {
+                fullControlCheckbox.checked = false;
+                fullControlCheckbox.indeterminate = true;
+            }
+        }
+
+        function handleModalRoleChange(role) {
+            const instContainer = document.getElementById('modalInstructorSelectContainer');
+            if (instContainer) {
+                if (role === 'instructor' || role === 'supervisor') {
+                    instContainer.style.display = 'block';
+                } else {
+                    instContainer.style.display = 'none';
+                }
+            }
+        }
+
+        function updateCreateInstructorVisibility(role) {
+            const container = document.getElementById('createUserInstructorContainer');
+            if (container) {
+                if (role === 'instructor' || role === 'supervisor') {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleUserCustomRank(prefix) {
+            const sel = document.getElementById(prefix + 'RankSelect');
+            const custom = document.getElementById(prefix + 'CustomRank');
+            if (!sel || !custom) return;
+            if (sel.value === '__custom__') {
+                custom.style.display = 'block';
+                custom.focus();
+            } else {
+                custom.style.display = 'none';
+                custom.value = '';
+            }
+        }
+
+        function toggleUserCustomUnit(prefix) {
+            const sel = document.getElementById(prefix + 'UnitSelect');
+            const custom = document.getElementById(prefix + 'CustomUnit');
+            if (!sel || !custom) return;
+            if (sel.value === '__custom__') {
+                custom.style.display = 'block';
+                custom.focus();
+            } else {
+                custom.style.display = 'none';
+                custom.value = '';
+            }
+        }
+
+        const INSTRUCTORS_DATA_MAP = {
+            {% for inst in instructors %}
+            "{{ inst.pk|escapejs }}": {
+                "military_number": "{{ inst.military_number|escapejs }}",
+                "name": "{{ inst.name|escapejs }}",
+                "rank": "{{ inst.rank|escapejs }}",
+                "unit": "{{ inst.unit|default:''|escapejs }}",
+                "phone": "{{ inst.phone|default:''|escapejs }}",
+                "email": "{% if inst.user_profiles.first and inst.user_profiles.first.user.email %}{{ inst.user_profiles.first.user.email|escapejs }}{% endif %}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function applyInstructorDataToUserForm(instId, prefix) {
+            const notice = document.getElementById(prefix + 'InstNotice');
+            if (!instId || !INSTRUCTORS_DATA_MAP[instId]) {
+                if (notice) notice.style.display = 'none';
+                return;
+            }
+
+            const data = INSTRUCTORS_DATA_MAP[instId];
+            const modalOrForm = (prefix === 'createUser') ? document.getElementById('addUserModal') : document.querySelector('form');
+            if (!modalOrForm) return;
+
+            // 1. النمرة العسكرية
+            const milInput = modalOrForm.querySelector('input[name="military_number"]');
+            if (milInput && data.military_number) {
+                milInput.value = data.military_number;
+            }
+
+            // 2. الاسم الأول واسم العائلة
+            const firstNameInput = modalOrForm.querySelector('input[name="first_name"]');
+            const lastNameInput = modalOrForm.querySelector('input[name="last_name"]');
+            if (data.name) {
+                const parts = data.name.trim().split(/\s+/);
+                if (parts.length > 0 && firstNameInput) {
+                    firstNameInput.value = parts[0];
+                }
+                if (lastNameInput) {
+                    lastNameInput.value = parts.length > 1 ? parts.slice(1).join(' ') : '';
+                }
+            }
+
+            // 3. اسم المستخدم
+            if (prefix === 'createUser') {
+                const usernameInput = modalOrForm.querySelector('input[name="username"]');
+                if (usernameInput && !usernameInput.value && data.military_number) {
+                    usernameInput.value = data.military_number;
+                }
+            }
+
+            // 4. الرتبة
+            const rankSelect = document.getElementById(prefix + 'RankSelect');
+            const customRank = document.getElementById(prefix + 'CustomRank');
+            if (rankSelect && data.rank) {
+                let foundRank = false;
+                for (let i = 0; i < rankSelect.options.length; i++) {
+                    const optVal = rankSelect.options[i].value.trim();
+                    const optTxt = rankSelect.options[i].text.trim();
+                    if (optVal === data.rank.trim() || optTxt === data.rank.trim()) {
+                        rankSelect.selectedIndex = i;
+                        foundRank = true;
+                        break;
+                    }
+                }
+                if (!foundRank) {
+                    rankSelect.value = '__custom__';
+                    if (customRank) {
+                        customRank.style.display = 'block';
+                        customRank.value = data.rank;
+                    }
+                } else if (customRank) {
+                    customRank.style.display = 'none';
+                    customRank.value = '';
+                }
+            }
+
+            // 5. الوحدة
+            const unitSelect = document.getElementById(prefix + 'UnitSelect');
+            const customUnit = document.getElementById(prefix + 'CustomUnit');
+            if (unitSelect && data.unit) {
+                let foundUnit = false;
+                for (let i = 0; i < unitSelect.options.length; i++) {
+                    const optVal = unitSelect.options[i].value.trim();
+                    const optTxt = unitSelect.options[i].text.trim();
+                    if (optVal === data.unit.trim() || optTxt === data.unit.trim()) {
+                        unitSelect.selectedIndex = i;
+                        foundUnit = true;
+                        break;
+                    }
+                }
+                if (!foundUnit) {
+                    unitSelect.value = '__custom__';
+                    if (customUnit) {
+                        customUnit.style.display = 'block';
+                        customUnit.value = data.unit;
+                    }
+                } else if (customUnit) {
+                    customUnit.style.display = 'none';
+                    customUnit.value = '';
+                }
+            }
+
+            // 6. رقم الهاتف
+            const phoneInput = modalOrForm.querySelector('input[name="phone"]');
+            if (phoneInput && data.phone) {
+                phoneInput.value = data.phone;
+            }
+
+            // 7. البريد الإلكتروني
+            const emailInput = modalOrForm.querySelector('input[name="email"]');
+            if (emailInput && data.email && !emailInput.value) {
+                emailInput.value = data.email;
+            }
+
+            if (notice) notice.style.display = 'block';
+        }
+
+        // إتاحة الوظائف على النطاق العام window
+        window.openChangeRoleModal = openChangeRoleModal;
+        window.applyPresetRole = applyPresetRole;
+        window.handleFullControlClick = handleFullControlClick;
+        window.handlePermissionCheckboxClick = handlePermissionCheckboxClick;
+        window.handleModalRoleChange = handleModalRoleChange;
+        window.updateCreateInstructorVisibility = updateCreateInstructorVisibility;
+        window.toggleUserCustomRank = toggleUserCustomRank;
+        window.toggleUserCustomUnit = toggleUserCustomUnit;
+        window.applyInstructorDataToUserForm = applyInstructorDataToUserForm;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const createInstSelect = document.querySelector('#addUserModal select[name="instructor"]');
+            if (createInstSelect) {
+                createInstSelect.addEventListener('change', function () {
+                    applyInstructorDataToUserForm(this.value, 'createUser');
+                });
+            }
+        });
+    } catch (err) {
+        console.error('Error in User Accounts Module:', err);
     }
+})();
+</script>
 
-    // دوال إدارة قسم الصلاحيات والمستخدمين
-    function openChangeRoleModal(userId, username, fullname, currentRole, instructorMilNum, isSelf, canManageUsers, canView, canAdd, canEdit, canDelete, canGrade, canApproveResults) {
-        const form = document.getElementById('changeRoleForm');
-        form.action = `/admin-portal/users/${userId}/update-role/`;
-        document.getElementById('modalTargetUsername').textContent = username;
-        document.getElementById('modalTargetUserFullname').textContent = fullname;
 
-        const roleSelect = document.getElementById('modalRoleSelect');
-        if (roleSelect) {
-            roleSelect.value = currentRole;
+<!-- ===================================================================== -->
+<!-- [SCRIPT 3] الرسوم والمخططات البيانية التفاعلية (Analytics Charts)      -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+    try {
+        const GRADE_DIST_DATA = {{ grade_distribution_json|default:"[]"|safe }};
+        const FORCES_DIST_DATA = {{ forces_list_json|default:"[]"|safe }};
+        const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
+        const FORCES_COLOR_PALETTE = [
+            '#0284c7', '#15803d', '#1e3a8a', '#d97706',
+            '#4f46e5', '#7c3aed', '#dc2626', '#0891b2'
+        ];
+
+        let currentGradeChartType = 'doughnut';
+        let currentForceChartType = 'bar';
+
+        function applyForcePillColors() {
+            document.querySelectorAll('.force-pill-badge').forEach((pill, idx) => {
+                const color = FORCES_COLOR_PALETTE[idx % FORCES_COLOR_PALETTE.length];
+                pill.style.borderColor = color;
+                pill.style.color = color;
+            });
         }
 
-        const instSelect = document.getElementById('modalInstructorSelect');
-        if (instSelect) {
-            instSelect.value = instructorMilNum || '';
+        const centerDonutGradePlugin = {
+            id: 'centerDonutGradePlugin',
+            beforeDraw: function (chart) {
+                if (chart.config.type !== 'doughnut') return;
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return;
+                const centerX = (chartArea.left + chartArea.right) / 2;
+                const centerY = (chartArea.top + chartArea.bottom) / 2;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 26px Cairo, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(TOTAL_GRADED_TRAINEES, centerX, centerY - 10);
+                ctx.font = '700 12px Cairo, sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText('دارس معتمد', centerX, centerY + 14);
+                ctx.restore();
+            }
+        };
+
+        function renderGradesChart(chartType) {
+            const canvas = document.getElementById('gradesAnalyticsChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            if (window.gradesChartInstance) {
+                window.gradesChartInstance.destroy();
+                window.gradesChartInstance = null;
+            }
+
+            const labels = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.label) : [];
+            const dataValues = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.count) : [];
+            const backgroundColors = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.color) : [];
+
+            Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
+
+            if (chartType === 'doughnut') {
+                window.gradesChartInstance = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 3,
+                            borderColor: '#ffffff',
+                            hoverOffset: 12,
+                            borderRadius: 6,
+                            spacing: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        animation: { duration: 800, easing: 'easeOutQuart' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                cornerRadius: 8,
+                                boxPadding: 6,
+                                callbacks: {
+                                    label: function (context) {
+                                        const idx = context.dataIndex;
+                                        const item = GRADE_DIST_DATA[idx];
+                                        return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [centerDonutGradePlugin]
+                });
+            } else {
+                window.gradesChartInstance = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'عدد الدارسين',
+                            data: dataValues,
+                            backgroundColor: backgroundColors,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            maxBarThickness: 46
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800, easing: 'easeOutQuart' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                cornerRadius: 8,
+                                boxPadding: 6,
+                                callbacks: {
+                                    label: function (context) {
+                                        const idx = context.dataIndex;
+                                        const item = GRADE_DIST_DATA[idx];
+                                        return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: '#f1f5f9' },
+                                ticks: { precision: 0, color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
-        // تعبئة خانات أذونات وصلاحيات الأمان بأسلوب ويندوز
-        const manageEl = document.getElementById('role_perm_manage_users');
-        const viewEl = document.getElementById('role_perm_view');
-        const addEl = document.getElementById('role_perm_add');
-        const editEl = document.getElementById('role_perm_edit');
-        const delEl = document.getElementById('role_perm_delete');
-        const gradeEl = document.getElementById('role_perm_grade');
-        const approveEl = document.getElementById('role_perm_approve');
+        function renderForcesChart(chartType) {
+            const canvas = document.getElementById('forcesAnalyticsChart');
+            if (!canvas || typeof Chart === 'undefined') return;
 
-        if (manageEl) manageEl.checked = !!canManageUsers;
-        if (viewEl) viewEl.checked = !!canView;
-        if (addEl) addEl.checked = !!canAdd;
-        if (editEl) editEl.checked = !!canEdit;
-        if (delEl) delEl.checked = !!canDelete;
-        if (gradeEl) gradeEl.checked = !!canGrade;
-        if (approveEl) approveEl.checked = !!canApproveResults;
+            if (window.forcesChartInstance) {
+                window.forcesChartInstance.destroy();
+                window.forcesChartInstance = null;
+            }
 
-        handleModalRoleChange(currentRole);
+            const labels = Array.isArray(FORCES_DIST_DATA) ? FORCES_DIST_DATA.map(d => d.name) : [];
+            const dataValues = Array.isArray(FORCES_DIST_DATA) ? FORCES_DIST_DATA.map(d => d.count) : [];
+            const backgroundColors = labels.map((_, i) => FORCES_COLOR_PALETTE[i % FORCES_COLOR_PALETTE.length]);
 
-        const warning = document.getElementById('modalSelfAdminWarning');
-        if (isSelf && (currentRole === 'admin' || canManageUsers)) {
-            if (warning) warning.style.display = 'block';
-            if (manageEl) manageEl.disabled = true;
-        } else {
-            if (warning) warning.style.display = 'none';
-            if (manageEl) manageEl.disabled = false;
+            Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
+
+            if (chartType === 'bar') {
+                window.forcesChartInstance = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'عدد المنتسبين',
+                            data: dataValues,
+                            backgroundColor: backgroundColors,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            maxBarThickness: 38
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800, easing: 'easeOutQuart' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                cornerRadius: 8,
+                                boxPadding: 6,
+                                callbacks: {
+                                    label: function (context) {
+                                        const idx = context.dataIndex;
+                                        const item = FORCES_DIST_DATA[idx];
+                                        return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: '#f1f5f9' },
+                                ticks: { precision: 0, color: '#94a3b8' }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
+                            }
+                        }
+                    }
+                });
+            } else {
+                window.forcesChartInstance = new Chart(canvas, {
+                    type: 'polarArea',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: backgroundColors.map(c => c + 'cc'),
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800, easing: 'easeOutQuart' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function (context) {
+                                        const idx = context.dataIndex;
+                                        const item = FORCES_DIST_DATA[idx];
+                                        return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                ticks: { display: false },
+                                grid: { color: '#f1f5f9' }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
-        const modalEl = document.getElementById('changeRoleModal');
-        if (modalEl) {
-            const modal = new bootstrap.Modal(modalEl);
-            modal.show();
+        function switchGradeChartType(type) {
+            currentGradeChartType = type;
+            const btnDoughnut = document.getElementById('btnGradeChartDoughnut');
+            const btnBar = document.getElementById('btnGradeChartBar');
+            if (btnDoughnut && btnBar) {
+                if (type === 'doughnut') {
+                    btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                    btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                } else {
+                    btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                    btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                }
+            }
+            renderGradesChart(type);
         }
+
+        function switchForceChartType(type) {
+            currentForceChartType = type;
+            const btnBar = document.getElementById('btnForceChartBar');
+            const btnPolar = document.getElementById('btnForceChartPolar');
+            if (btnBar && btnPolar) {
+                if (type === 'bar') {
+                    btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                    btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                } else {
+                    btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
+                    btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+                }
+            }
+            renderForcesChart(type);
+        }
+
+        function initAnalyticsCharts() {
+            if (typeof Chart === 'undefined') {
+                setTimeout(initAnalyticsCharts, 120);
+                return;
+            }
+            applyForcePillColors();
+            renderGradesChart(currentGradeChartType);
+            renderForcesChart(currentForceChartType);
+        }
+
+        // إتاحة الوظائف على النطاق العام window
+        window.switchGradeChartType = switchGradeChartType;
+        window.switchForceChartType = switchForceChartType;
+        window.initAnalyticsCharts = initAnalyticsCharts;
+        window.renderGradesChart = renderGradesChart;
+        window.renderForcesChart = renderForcesChart;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initAnalyticsCharts();
+            const tabAnalytics = document.getElementById('tab-analytics');
+            if (tabAnalytics) {
+                tabAnalytics.addEventListener('shown.bs.tab', function () {
+                    initAnalyticsCharts();
+                });
+            }
+        });
+    } catch (err) {
+        console.error('Error in Analytics Charts Module:', err);
     }
+})();
+</script>
 
-    window.switchCertPreview = function (type) {
+
+<!-- ===================================================================== -->
+<!-- [SCRIPT 4] تخصيص تصاميم الشهادات وأمر التحرك (Layout Customizers)     -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+    try {
+window.switchCertPreview = function (type) {
         const detailed = document.getElementById('previewDetailedCert');
         const landscape = document.getElementById('previewLandscapeCert');
         const btnDetailed = document.getElementById('btnPreviewDetailed');
@@ -5438,7 +6088,10 @@
         declaration_line_height: 1.65,
         declaration_margin_top: 10,
         declaration_align: 'center',
+        traveler_sig_position: 'declaration',
         traveler_sig_align: 'left',
+        traveler_sig_size: 14,
+        traveler_sig_margin_top: 4,
         signatures_margin_top: 16,
         footer_layout: 'copies_first',
         signer_box_size: 15,
@@ -5476,113 +6129,50 @@
         { key: 'copies_box_align', name: 'mov_copies_align' },
     ];
 
-    // ========================================================
-    // تخصيص المسافات ومواقع الكلمات لأمر التحرك (Movement Layout)
-    // ========================================================
-    const DEFAULT_MOV_LAYOUT = {
-        page_padding_top: 20,
-        page_padding_bottom: 18,
-        page_padding_horizontal: 22,
-        bismillah_size: 17,
-        bismillah_margin_bottom: 6,
-        bismillah_align: 'center',
-        security_size: 18,
-        security_margin_bottom: 6,
-        security_align: 'center',
-        title_size: 24,
-        title_margin_bottom: 10,
-        title_align: 'center',
-        issuing_size: 15,
-        issuing_line_height: 1.6,
-        issuing_margin_bottom: 6,
-        issuing_align: 'center',
-        trainee_line_size: 16,
-        trainee_line_margin_bottom: 8,
-        trainee_line_layout: 'side_by_side_right',
-        trainee_line_gap: 20,
-        trainee_nco_align: 'right',
-        table_font_size: 15.5,
-        table_row_padding: 2.8,
-        table_label_width: 135,
-        table_margin_bottom: 12,
-        admin_inst_header_align: 'center',
-        admin_inst_size: 14.5,
-        admin_inst_line_height: 1.65,
-        admin_inst_margin_top: 10,
-        admin_inst_align: 'center',
-        declaration_header_align: 'center',
-        declaration_size: 14.5,
-        declaration_line_height: 1.65,
-        declaration_margin_top: 10,
-        declaration_align: 'center',
-        traveler_sig_position: 'declaration',
-        traveler_sig_align: 'left',
-        traveler_sig_size: 14,
-        traveler_sig_margin_top: 4,
-        signatures_margin_top: 16,
-        footer_layout: 'copies_first',
-        signer_box_size: 15,
-        signer_box_align: 'right',
-        copies_box_size: 14,
-        copies_box_align: 'right',
-        security_bottom_margin_top: 14
+    window.initMovementLayout = function () {
+        const cfg = window.getMovementLayoutData();
+
+        const numFields = [
+            'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
+            'bismillah_size', 'bismillah_margin_bottom',
+            'security_size', 'security_margin_bottom',
+            'title_size', 'title_margin_bottom',
+            'issuing_size', 'issuing_margin_bottom',
+            'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
+            'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
+            'admin_inst_size', 'admin_inst_margin_top',
+            'declaration_size', 'declaration_margin_top',
+            'traveler_sig_size', 'traveler_sig_margin_top',
+            'signatures_margin_top', 'signer_box_size',
+            'copies_box_size', 'security_bottom_margin_top'
+        ];
+
+        numFields.forEach(f => {
+            const el = document.getElementById('mov_cfg_' + f);
+            if (el && cfg[f] !== undefined) {
+                el.value = cfg[f];
+            }
+        });
+
+        const footerSelect = document.getElementById('mov_cfg_footer_layout');
+        if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
+
+        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+        if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
+
+        movRadioGroupDefinitions.forEach(rg => {
+            const val = cfg[rg.key];
+            if (val) {
+                const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
+                if (radio) radio.checked = true;
+            }
+        });
+
+        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+        if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
+
+        window.applyMovementLayoutToPreview(cfg);
     };
-
-    const numFields = [
-        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-        'bismillah_size', 'bismillah_margin_bottom',
-        'security_size', 'security_margin_bottom',
-        'title_size', 'title_margin_bottom',
-        'issuing_size', 'issuing_margin_bottom',
-        'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-        'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-        'admin_inst_size', 'admin_inst_margin_top',
-        'declaration_size', 'declaration_margin_top',
-        'signatures_margin_top', 'signer_box_size',
-        'copies_box_size', 'security_bottom_margin_top'
-    ];
-
-    numFields.forEach(f => {
-        const el = document.getElementById('mov_cfg_' + f);
-        if (el && cfg[f] !== undefined) {
-            el.value = cfg[f];
-        }
-    });
-
-    const footerSelect = document.getElementById('mov_cfg_footer_layout');
-    if (footerSelect && cfg.footer_layout) footerSelect.value = cfg.footer_layout;
-
-    const numFields = [
-        'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-        'bismillah_size', 'bismillah_margin_bottom',
-        'security_size', 'security_margin_bottom',
-        'title_size', 'title_margin_bottom',
-        'issuing_size', 'issuing_margin_bottom',
-        'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-        'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-        'admin_inst_size', 'admin_inst_margin_top',
-        'declaration_size', 'declaration_margin_top',
-        'traveler_sig_size', 'traveler_sig_margin_top',
-        'signatures_margin_top', 'signer_box_size',
-        'copies_box_size', 'security_bottom_margin_top'
-    ];
-
-    const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
-    if (traineeSelect && cfg.trainee_line_layout) traineeSelect.value = cfg.trainee_line_layout;
-
-    movRadioGroupDefinitions.forEach(rg => {
-        const val = cfg[rg.key];
-        if (val) {
-            const radio = document.querySelector(`input[name="${rg.name}"][value="${val}"]`);
-            if (radio) radio.checked = true;
-        }
-    });
-
-    const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
-    if (travSigPosSelect && cfg.traveler_sig_position) travSigPosSelect.value = cfg.traveler_sig_position;
-
-    window.applyMovementLayoutToPreview(cfg);
-                };
 
     window.updateMovementLayout = function () {
         const numFields = [
@@ -5595,6 +6185,7 @@
             'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
             'admin_inst_size', 'admin_inst_margin_top',
             'declaration_size', 'declaration_margin_top',
+            'traveler_sig_size', 'traveler_sig_margin_top',
             'signatures_margin_top', 'signer_box_size',
             'copies_box_size', 'security_bottom_margin_top'
         ];
@@ -5610,224 +6201,188 @@
         const footerSelect = document.getElementById('mov_cfg_footer_layout');
         if (footerSelect) cfg.footer_layout = footerSelect.value;
 
-        window.updateMovementLayout = function () {
-            const numFields = [
-                'page_padding_top', 'page_padding_bottom', 'page_padding_horizontal',
-                'bismillah_size', 'bismillah_margin_bottom',
-                'security_size', 'security_margin_bottom',
-                'title_size', 'title_margin_bottom',
-                'issuing_size', 'issuing_margin_bottom',
-                'trainee_line_size', 'trainee_line_margin_bottom', 'trainee_line_gap',
-                'table_font_size', 'table_row_padding', 'table_label_width', 'table_margin_bottom',
-                'admin_inst_size', 'admin_inst_margin_top',
-                'declaration_size', 'declaration_margin_top',
-                'traveler_sig_size', 'traveler_sig_margin_top',
-                'signatures_margin_top', 'signer_box_size',
-                'copies_box_size', 'security_bottom_margin_top'
-            ];
+        const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
+        if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
 
-            const traineeSelect = document.getElementById('mov_cfg_trainee_line_layout');
-            if (traineeSelect) cfg.trainee_line_layout = traineeSelect.value;
+        movRadioGroupDefinitions.forEach(rg => {
+            const radio = document.querySelector(`input[name="${rg.name}"]:checked`);
+            if (radio) cfg[rg.key] = radio.value;
+        });
 
-            movRadioGroupDefinitions.forEach(rg => {
-                const radio = document.querySelector(`input[name="${rg.name}"]:checked`);
-                if (radio) cfg[rg.key] = radio.value;
+        const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
+        if (travSigPosSelect) cfg.traveler_sig_position = travSigPosSelect.value;
+
+        const hiddenInput = document.getElementById('id_movement_layout_config');
+        if (hiddenInput) {
+            hiddenInput.value = JSON.stringify(cfg);
+        }
+
+        window.applyMovementLayoutToPreview(cfg);
+    };
+
+    window.applyMovementLayoutToPreview = function (cfg) {
+        const paper = document.getElementById('previewMovementPaper');
+        if (!paper) return;
+
+        const scale = 0.52;
+
+        const padTop = (cfg.page_padding_top || 16) * 0.9;
+        const padBottom = (cfg.page_padding_bottom || 14) * 0.9;
+        const padHoriz = (cfg.page_padding_horizontal || 20) * 0.7;
+        paper.style.padding = `${padTop}px ${padHoriz}px ${padBottom}px ${padHoriz}px`;
+
+        const bismillah = document.getElementById('previewMovBismillah');
+        if (bismillah) {
+            bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
+            bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
+            bismillah.style.textAlign = cfg.bismillah_align || 'center';
+        }
+
+        const security = document.getElementById('previewMovSecurity');
+        if (security) {
+            security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
+            security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
+            security.style.textAlign = cfg.security_align || 'center';
+        }
+
+        const title = document.getElementById('previewMovTitle');
+        if (title) {
+            title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
+            title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
+            title.style.textAlign = cfg.title_align || 'center';
+        }
+
+        const officerLine = document.getElementById('previewMovOfficerLine');
+        if (officerLine) {
+            officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
+            officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
+        }
+
+        const officerInner = document.getElementById('previewMovOfficerLineInner');
+        const cardPart = document.getElementById('previewMovCardPart');
+        const namePart = document.getElementById('previewMovNamePart');
+        const layout = cfg.trainee_line_layout || 'side_by_side_right';
+        const gap = (cfg.trainee_line_gap || 20) * scale;
+
+        if (officerInner) {
+            officerInner.style.display = 'flex';
+            officerInner.style.alignItems = 'center';
+            officerInner.style.width = '100%';
+
+            if (layout === 'split' || layout === 'reverse') {
+                officerInner.style.setProperty('justify-content', 'space-between', 'important');
+                officerInner.style.gap = '0px';
+            } else if (layout === 'side_by_side_right' || layout === 'name_first_right') {
+                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
+                officerInner.style.gap = `${gap}px`;
+            } else if (layout === 'side_by_side_center' || layout === 'name_first_center' || layout === 'center') {
+                officerInner.style.setProperty('justify-content', 'center', 'important');
+                officerInner.style.gap = `${gap}px`;
+            } else if (layout === 'side_by_side_left' || layout === 'name_first_left') {
+                officerInner.style.setProperty('justify-content', 'flex-end', 'important');
+                officerInner.style.gap = `${gap}px`;
+            } else {
+                officerInner.style.setProperty('justify-content', 'flex-start', 'important');
+                officerInner.style.gap = `${gap}px`;
+            }
+        }
+
+        if (cardPart && namePart) {
+            if (layout === 'name_first_right' || layout === 'name_first_center' || layout === 'name_first_left' || layout === 'reverse') {
+                namePart.style.order = '1';
+                cardPart.style.order = '2';
+            } else {
+                cardPart.style.order = '1';
+                namePart.style.order = '2';
+            }
+        }
+
+        const ncoLine = document.getElementById('previewMovNcoLine');
+        if (ncoLine) {
+            ncoLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
+            ncoLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
+            ncoLine.style.textAlign = cfg.trainee_nco_align || 'right';
+        }
+
+        const table = document.getElementById('previewMovTable');
+        if (table) {
+            table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
+            table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
+            const labels = table.querySelectorAll('.mov-label-col');
+            labels.forEach(lbl => {
+                lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
+                lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
             });
+            const allTds = table.querySelectorAll('td');
+            allTds.forEach(td => {
+                td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
+            });
+        }
 
-            const travSigPosSelect = document.getElementById('mov_cfg_traveler_sig_position');
-            if (travSigPosSelect) cfg.traveler_sig_position = travSigPosSelect.value;
+        const adminInstHeader = document.getElementById('previewMovAdminInstHeader');
+        if (adminInstHeader) {
+            adminInstHeader.style.textAlign = cfg.admin_inst_header_align || 'center';
+        }
+        const adminInst = document.getElementById('previewMovAdminInst');
+        if (adminInst) {
+            adminInst.style.fontSize = `${(cfg.admin_inst_size || 14.5) * scale}px`;
+            adminInst.style.textAlign = cfg.admin_inst_align || 'center';
+        }
 
-            const merged = Object.assign({}, DEFAULT_MOV_LAYOUT, cfg);
+        const signersWrapper = document.getElementById('previewMovSignersWrapper');
+        if (signersWrapper) {
+            signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
+        }
+        const copiesBlock = document.getElementById('previewMovCopiesBlock');
+        const signerBlock = document.getElementById('previewMovSignerBlock');
+        const footerLayout = cfg.footer_layout || 'copies_first';
 
-            const hiddenInput = document.getElementById('id_movement_layout_config');
-            if (hiddenInput) {
-                hiddenInput.value = JSON.stringify(merged);
+        if (copiesBlock && signerBlock) {
+            if (footerLayout === 'signer_first') {
+                signerBlock.style.order = '1';
+                copiesBlock.style.order = '2';
+            } else {
+                copiesBlock.style.order = '1';
+                signerBlock.style.order = '2';
             }
+        }
 
-            window.applyMovementLayoutToPreview(merged);
-        };
+        const declWrapper = document.getElementById('previewMovDeclarationWrapper');
+        if (declWrapper) {
+            declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
+        }
+        const declHeader = document.getElementById('previewMovDeclarationHeader');
+        if (declHeader) {
+            declHeader.style.textAlign = cfg.declaration_header_align || 'center';
+        }
+        const declaration = document.getElementById('previewMovDeclaration');
+        if (declaration) {
+            declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
+            declaration.style.textAlign = cfg.declaration_align || 'center';
+        }
+        const travSig = document.getElementById('previewMovTravelerSign');
+        if (travSig) {
+            travSig.style.textAlign = cfg.traveler_sig_align || 'left';
+            travSig.style.fontSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
+            travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
 
-        window.applyMovementLayoutToPreview = function (cfg) {
-            const paper = document.getElementById('previewMovementPaper');
-            if (!paper) return;
-
-            const scale = 0.52;
-
-            const padTop = (cfg.page_padding_top || 16) * 0.9;
-            const padBottom = (cfg.page_padding_bottom || 14) * 0.9;
-            const padHoriz = (cfg.page_padding_horizontal || 20) * 0.7;
-            paper.style.padding = `${padTop}px ${padHoriz}px ${padBottom}px ${padHoriz}px`;
-
-            const bismillah = document.getElementById('previewMovBismillah');
-            if (bismillah) {
-                bismillah.style.fontSize = `${(cfg.bismillah_size || 17) * scale}px`;
-                bismillah.style.marginBottom = `${(cfg.bismillah_margin_bottom || 2) * scale}px`;
-                bismillah.style.textAlign = cfg.bismillah_align || 'center';
-            }
-
-            const security = document.getElementById('previewMovSecurity');
-            if (security) {
-                security.style.fontSize = `${(cfg.security_size || 18) * scale}px`;
-                security.style.marginBottom = `${(cfg.security_margin_bottom || 2) * scale}px`;
-                security.style.textAlign = cfg.security_align || 'center';
-            }
-
-            const title = document.getElementById('previewMovTitle');
-            if (title) {
-                title.style.fontSize = `${(cfg.title_size || 24) * scale}px`;
-                title.style.marginBottom = `${(cfg.title_margin_bottom || 6) * scale}px`;
-                title.style.textAlign = cfg.title_align || 'center';
-            }
-
-            const officerLine = document.getElementById('previewMovOfficerLine');
-            if (officerLine) {
-                officerLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
-                officerLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
-            }
-
-            const officerInner = document.getElementById('previewMovOfficerLineInner');
-            const cardPart = document.getElementById('previewMovCardPart');
-            const namePart = document.getElementById('previewMovNamePart');
-            const layout = cfg.trainee_line_layout || 'side_by_side_right';
-            const gap = (cfg.trainee_line_gap || 20) * scale;
-
-            if (officerInner) {
-                officerInner.style.display = 'flex';
-                officerInner.style.alignItems = 'center';
-                officerInner.style.width = '100%';
-
-                if (layout === 'split' || layout === 'reverse') {
-                    officerInner.style.setProperty('justify-content', 'space-between', 'important');
-                    officerInner.style.gap = '0px';
-                } else if (layout === 'side_by_side_right' || layout === 'name_first_right') {
-                    officerInner.style.setProperty('justify-content', 'flex-start', 'important');
-                    officerInner.style.gap = `${gap}px`;
-                } else if (layout === 'side_by_side_center' || layout === 'name_first_center' || layout === 'center') {
-                    officerInner.style.setProperty('justify-content', 'center', 'important');
-                    officerInner.style.gap = `${gap}px`;
-                } else if (layout === 'side_by_side_left' || layout === 'name_first_left') {
-                    officerInner.style.setProperty('justify-content', 'flex-end', 'important');
-                    officerInner.style.gap = `${gap}px`;
-                } else {
-                    officerInner.style.setProperty('justify-content', 'flex-start', 'important');
-                    officerInner.style.gap = `${gap}px`;
-                }
-            }
-
-            if (cardPart && namePart) {
-                if (layout === 'name_first_right' || layout === 'name_first_center' || layout === 'name_first_left' || layout === 'reverse') {
-                    namePart.style.order = '1';
-                    cardPart.style.order = '2';
-                } else {
-                    cardPart.style.order = '1';
-                    namePart.style.order = '2';
-                }
-            }
-
-            const ncoLine = document.getElementById('previewMovNcoLine');
-            if (ncoLine) {
-                ncoLine.style.fontSize = `${(cfg.trainee_line_size || 16) * scale}px`;
-                ncoLine.style.marginBottom = `${(cfg.trainee_line_margin_bottom || 6) * scale}px`;
-                ncoLine.style.textAlign = cfg.trainee_nco_align || 'right';
-            }
-
+            const pos = cfg.traveler_sig_position || 'declaration';
             const table = document.getElementById('previewMovTable');
-            if (table) {
-                table.style.fontSize = `${(cfg.table_font_size || 15.5) * scale}px`;
-                table.style.marginBottom = `${(cfg.table_margin_bottom || 8) * scale}px`;
-                const labels = table.querySelectorAll('.mov-label-col');
-                labels.forEach(lbl => {
-                    lbl.style.width = `${(cfg.table_label_width || 130) * scale}px`;
-                    lbl.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
-                });
-                const allTds = table.querySelectorAll('td');
-                allTds.forEach(td => {
-                    td.style.padding = `${(cfg.table_row_padding || 2.2) * scale}px 0`;
-                });
-            }
+            const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
 
-            const adminInstHeader = document.getElementById('previewMovAdminInstHeader');
-            if (adminInstHeader) {
-                adminInstHeader.style.textAlign = cfg.admin_inst_header_align || 'center';
-            }
-            const adminInst = document.getElementById('previewMovAdminInst');
-            if (adminInst) {
-                adminInst.style.fontSize = `${(cfg.admin_inst_size || 14.5) * scale}px`;
-                adminInst.style.textAlign = cfg.admin_inst_align || 'center';
-            }
-
-            const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-            if (declWrapper) {
-                declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
-            }
-            const declHeader = document.getElementById('previewMovDeclarationHeader');
-            if (declHeader) {
-                declHeader.style.textAlign = cfg.declaration_header_align || 'center';
-            }
-            const declaration = document.getElementById('previewMovDeclaration');
-            if (declaration) {
-                declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
-                declaration.style.textAlign = cfg.declaration_align || 'center';
-            }
-            const travSig = document.getElementById('previewMovTravelerSign');
-            if (travSig) {
-                travSig.style.textAlign = cfg.traveler_sig_align || 'left';
-            }
-
-            const signersWrapper = document.getElementById('previewMovSignersWrapper');
-            if (signersWrapper) {
-                signersWrapper.style.marginTop = `${(cfg.signatures_margin_top || 12) * scale}px`;
-            }
-            const copiesBlock = document.getElementById('previewMovCopiesBlock');
-            const signerBlock = document.getElementById('previewMovSignerBlock');
-            const footerLayout = cfg.footer_layout || 'copies_first';
-
-            if (copiesBlock && signerBlock) {
-                if (footerLayout === 'signer_first') {
-                    signerBlock.style.order = '1';
-                    copiesBlock.style.order = '2';
+            if (pos === 'top' && table && table.parentNode) {
+                table.parentNode.insertBefore(travSig, table);
+            } else if (pos === 'after_table' && table && table.parentNode) {
+                if (adminInstWrapper) {
+                    adminInstWrapper.parentNode.insertBefore(travSig, adminInstWrapper);
                 } else {
-                    copiesBlock.style.order = '1';
-                    signerBlock.style.order = '2';
+                    table.parentNode.insertBefore(travSig, table.nextSibling);
                 }
+            } else if (declWrapper) {
+                declWrapper.appendChild(travSig);
             }
-
-            const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-            if (declWrapper) {
-                declWrapper.style.marginTop = `${(cfg.declaration_margin_top || 8) * scale}px`;
-            }
-            const declHeader = document.getElementById('previewMovDeclarationHeader');
-            if (declHeader) {
-                declHeader.style.textAlign = cfg.declaration_header_align || 'center';
-            }
-            const declaration = document.getElementById('previewMovDeclaration');
-            if (declaration) {
-                declaration.style.fontSize = `${(cfg.declaration_size || 14.5) * scale}px`;
-                declaration.style.textAlign = cfg.declaration_align || 'center';
-            }
-            const travSig = document.getElementById('previewMovTravelerSign');
-            if (travSig) {
-                travSig.style.textAlign = cfg.traveler_sig_align || 'left';
-                travSig.style.fontSize = `${(cfg.traveler_sig_size || 14) * scale}px`;
-                travSig.style.marginTop = `${(cfg.traveler_sig_margin_top != null ? cfg.traveler_sig_margin_top : 4) * scale}px`;
-
-                const pos = cfg.traveler_sig_position || 'declaration';
-                const declWrapper = document.getElementById('previewMovDeclarationWrapper');
-                const table = document.getElementById('previewMovTable');
-                const adminInstWrapper = document.getElementById('previewMovAdminInstWrapper');
-
-                if (pos === 'top' && table && table.parentNode) {
-                    table.parentNode.insertBefore(travSig, table);
-                } else if (pos === 'after_table' && table && table.parentNode) {
-                    if (adminInstWrapper) {
-                        adminInstWrapper.parentNode.insertBefore(travSig, adminInstWrapper);
-                    } else {
-                        table.parentNode.insertBefore(travSig, table.nextSibling);
-                    }
-                } else if (declWrapper) {
-                    declWrapper.appendChild(travSig);
-                }
-            }
+        }
+    };
 
             // ========================================================
             // تخصيص المسافات ومواقع الكلمات للشهادة (Certificate Layout)
@@ -6014,642 +6569,30 @@
             };
 
             // =====================================================================
-            // بيانات ومخططات التحليلات البيانية العامة (Analytics Charts.js)
-            // =====================================================================
-            const GRADE_DIST_DATA = {{ grade_distribution_json|default:"[]"|safe }};
-            const FORCES_DIST_DATA = {{ forces_list_json|default:"[]"|safe }};
-            const TOTAL_GRADED_TRAINEES = {{ enrollments_graded|default:0 }};
-    const FORCES_COLOR_PALETTE = [
-        '#0284c7', // أزرق سماوي / جوية
-        '#15803d', // أخضر عسكري / برية
-        '#1e3a8a', // كحلي ملكي / بحرية
-        '#7c3aed', // بنفسجي / دفاع جوي
-        '#d97706', // ذهبي / حرس
-        '#059669', // تركواز / شرطة عسكرية
-        '#e11d48', // أحمر داكن / أمن
-        '#475569'  // رمادي / أخرى
-    ];
 
-    let currentGradeChartType = 'doughnut';
-    let currentForceChartType = 'bar';
-
-    function applyForcePillColors() {
-        const dots = document.querySelectorAll('.force-color-dot');
-        dots.forEach((dot, idx) => {
-            const color = FORCES_COLOR_PALETTE[idx % FORCES_COLOR_PALETTE.length];
-            dot.style.backgroundColor = color;
-        });
-    }
-
-    const centerDonutGradePlugin = {
-        id: 'centerDonutGradePlugin',
-        afterDraw(chart) {
-            if (chart.config.type !== 'doughnut') return;
-            const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const centerX = left + width / 2;
-            const centerY = top + height / 2;
-
-            ctx.font = '900 26px Cairo, sans-serif';
-            ctx.fillStyle = '#0f172a';
-            ctx.fillText(TOTAL_GRADED_TRAINEES, centerX, centerY - 10);
-
-            ctx.font = '700 12px Cairo, sans-serif';
-            ctx.fillStyle = '#64748b';
-            ctx.fillText('دارس معتمد', centerX, centerY + 14);
-            ctx.restore();
-        }
-    };
-
-    function renderGradesChart(chartType) {
-        const canvas = document.getElementById('gradesAnalyticsChart');
-        if (!canvas || typeof Chart === 'undefined') return;
-
-        if (window.gradesChartInstance) {
-            window.gradesChartInstance.destroy();
-            window.gradesChartInstance = null;
-        }
-
-        const labels = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.label) : [];
-        const dataValues = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.count) : [];
-        const backgroundColors = Array.isArray(GRADE_DIST_DATA) ? GRADE_DIST_DATA.map(d => d.color) : [];
-
-        Chart.defaults.font.family = "'Cairo', 'Segoe UI', Tahoma, sans-serif";
-
-        if (chartType === 'doughnut') {
-            window.gradesChartInstance = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataValues,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
-                        hoverOffset: 12,
-                        borderRadius: 6,
-                        spacing: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '72%',
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            boxPadding: 6,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const item = GRADE_DIST_DATA[idx];
-                                    return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [centerDonutGradePlugin]
-            });
-        } else {
-            window.gradesChartInstance = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'عدد الدارسين',
-                        data: dataValues,
-                        backgroundColor: backgroundColors,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        maxBarThickness: 46
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            boxPadding: 6,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const item = GRADE_DIST_DATA[idx];
-                                    return item ? ` ${item.count} دارس بنسبة (${item.pct}%)` : '';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11, weight: '600' }, color: '#475569' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: { precision: 0, color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    function renderForcesChart(chartType) {
-        const canvas = document.getElementById('forcesAnalyticsChart');
-        if (!canvas || typeof Chart === 'undefined') return;
-
-        if (window.forcesChartInstance) {
-            window.forcesChartInstance.destroy();
-            window.forcesChartInstance = null;
-        }
-
-        const hasData = Array.isArray(FORCES_DIST_DATA) && FORCES_DIST_DATA.length > 0;
-        const labels = hasData ? FORCES_DIST_DATA.map(f => f.name) : ['لا توجد بيانات'];
-        const dataValues = hasData ? FORCES_DIST_DATA.map(f => f.count) : [0];
-        const colors = hasData
-            ? FORCES_DIST_DATA.map((_, i) => FORCES_COLOR_PALETTE[i % FORCES_COLOR_PALETTE.length])
-            : ['#cbd5e1'];
-
-        if (chartType === 'bar') {
-            window.forcesChartInstance = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'عدد المنتسبين',
-                        data: dataValues,
-                        backgroundColor: colors,
-                        borderRadius: 8,
-                        maxBarThickness: 34
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
-                                    return ` ${context.raw} دارس بنسبة (${pct}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: { precision: 0, color: '#94a3b8' }
-                        },
-                        y: {
-                            grid: { display: false },
-                            ticks: { font: { size: 12, weight: '700' }, color: '#334155' }
-                        }
-                    }
-                }
-            });
-        } else {
-            window.forcesChartInstance = new Chart(canvas, {
-                type: 'polarArea',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataValues,
-                        backgroundColor: colors.map(c => c + 'cc'),
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { font: { size: 11, weight: 'bold' }, boxWidth: 12, padding: 12 }
-                        },
-                        tooltip: {
-                            rtl: true,
-                            backgroundColor: '#0f172a',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function (context) {
-                                    const idx = context.dataIndex;
-                                    const pct = FORCES_DIST_DATA[idx] ? FORCES_DIST_DATA[idx].pct : 0;
-                                    return ` ${context.raw} دارس (${pct}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        r: {
-                            ticks: { display: false },
-                            grid: { color: '#f1f5f9' }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    function switchGradeChartType(type) {
-        currentGradeChartType = type;
-        const btnDoughnut = document.getElementById('btnGradeChartDoughnut');
-        const btnBar = document.getElementById('btnGradeChartBar');
-        if (btnDoughnut && btnBar) {
-            if (type === 'doughnut') {
-                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-            } else {
-                btnDoughnut.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.initMovementLayout === 'function') {
+                window.initMovementLayout();
             }
-        }
-        renderGradesChart(type);
-    }
-
-    function switchForceChartType(type) {
-        currentForceChartType = type;
-        const btnBar = document.getElementById('btnForceChartBar');
-        const btnPolar = document.getElementById('btnForceChartPolar');
-        if (btnBar && btnPolar) {
-            if (type === 'bar') {
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-            } else {
-                btnBar.className = 'btn btn-sm rounded-pill px-3 fw-bold text-muted btn-light';
-                btnPolar.className = 'btn btn-sm rounded-pill px-3 fw-bold btn-primary';
-            }
-        }
-        renderForcesChart(type);
-    }
-
-    function initAnalyticsCharts() {
-        if (typeof Chart === 'undefined') {
-            setTimeout(initAnalyticsCharts, 120);
-            return;
-        }
-        applyForcePillColors();
-        renderGradesChart(currentGradeChartType);
-        renderForcesChart(currentForceChartType);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof window.initMovementLayout === 'function') {
-            window.initMovementLayout();
-        }
-        if (typeof window.initCertLayout === 'function') {
-            window.initCertLayout();
-        }
-        // تعبئة كافة بيانات المعلم تلقائياً عند اختياره في نافذة إضافة مستخدم
-        const createInstSelect = document.querySelector('#addUserModal select[name="instructor"]');
-        if (createInstSelect) {
-            createInstSelect.addEventListener('change', function () {
-                applyInstructorDataToUserForm(this.value, 'createUser');
-            });
-        }
-        function updateCreateInstructorVisibility(r) {
-            const instCol = document.getElementById('createUserInstructorWrapper');
-            if (instCol) {
-                if (r === 'instructor' || r === 'supervisor') {
-                    instCol.style.display = 'block';
-                    const sel = instCol.querySelector('select');
-                    if (sel && sel.value) {
-                        applyInstructorDataToUserForm(sel.value, 'createUser');
-                    }
-                } else {
-                    instCol.style.display = 'none';
-                    const sel = instCol.querySelector('select');
-                    if (sel) sel.value = '';
-                    const notice = document.getElementById('createUserInstNotice');
-                    if (notice) notice.style.display = 'none';
-                }
-            }
-        }
-
-        // مزامنة الأذونات في نافذة إضافة مستخدم جديد
-        const createRoleSelect = document.querySelector('#addUserModal select[name="role"]');
-        if (createRoleSelect) {
-            createRoleSelect.addEventListener('change', function () {
-                const r = this.value;
-                updateCreateInstructorVisibility(r);
-                const m = document.getElementById('create_perm_manage_users');
-                const v = document.getElementById('create_perm_view');
-                const a = document.getElementById('create_perm_add');
-                const e = document.getElementById('create_perm_edit');
-                const d = document.getElementById('create_perm_delete');
-                const g = document.getElementById('create_perm_grade');
-                const ap = document.getElementById('create_perm_approve');
-                if (r === 'admin') {
-                    if (m) m.checked = true; if (v) v.checked = true; if (a) a.checked = true;
-                    if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = true; if (ap) ap.checked = true;
-                } else if (r === 'registrar') {
-                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = true;
-                    if (e) e.checked = true; if (d) d.checked = true; if (g) g.checked = false; if (ap) ap.checked = false;
-                } else if (r === 'supervisor') {
-                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
-                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = true;
-                } else if (r === 'instructor') {
-                    if (m) m.checked = false; if (v) v.checked = false; if (a) a.checked = false;
-                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = true; if (ap) ap.checked = false;
-                } else if (r === 'regular') {
-                    if (m) m.checked = false; if (v) v.checked = true; if (a) a.checked = false;
-                    if (e) e.checked = false; if (d) d.checked = false; if (g) g.checked = false; if (ap) ap.checked = false;
-                }
-            });
-            updateCreateInstructorVisibility(createRoleSelect.value);
-        }
-
-        const addUserModalElem = document.getElementById('addUserModal');
-        if (addUserModalElem) {
-            addUserModalElem.addEventListener('show.bs.modal', function () {
-                if (createRoleSelect) {
-                    updateCreateInstructorVisibility(createRoleSelect.value);
-                }
-            });
-        }
-        // تفعيل التبويب الممرر في الرابط أو المعرف تلقائياً
-        function autoActivateTab() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tabParam = urlParams.get('tab');
-            const hash = window.location.hash;
-
-            let targetTabId = null;
-            if (tabParam) {
-                targetTabId = 'tab-' + tabParam;
-            } else if (urlParams.get('activity_user') || urlParams.get('activity_action') || urlParams.get('activity_category') || urlParams.get('activity_q')) {
-                targetTabId = 'tab-activity-log';
-            } else if (urlParams.get('matrix_user')) {
-                targetTabId = 'tab-permissions-matrix';
-            } else if (hash && hash.startsWith('#pane-')) {
-                targetTabId = hash.replace('#pane-', 'tab-');
-            }
-
-            if (targetTabId) {
-                const tabBtn = document.getElementById(targetTabId);
-                if (tabBtn) {
-                    const tabInstance = bootstrap.Tab.getOrCreateInstance(tabBtn);
-                    tabInstance.show();
-                }
-            }
-
-            if (tabParam === 'certificate' || hash === '#pane-certificate' || hash === '#subpane-movement-order' || hash === '#pane-movement-order') {
-                if (hash === '#subpane-movement-order' || hash === '#pane-movement-order') {
-                    const movBtn = document.getElementById('subtab-movement-btn');
-                    if (movBtn) {
-                        const movTab = bootstrap.Tab.getOrCreateInstance(movBtn);
-                        movTab.show();
-                    }
-                }
-            }
-        }
-        autoActivateTab();
-
-        // تحديث عنوان الصفحة في المتصفح عند التبديل بين التبويبات
-        document.querySelectorAll('#adminCommandTabs button[data-bs-toggle="pill"]').forEach(btn => {
-            btn.addEventListener('shown.bs.tab', function (e) {
-                const targetPane = e.target.getAttribute('data-bs-target');
-                if (targetPane && window.history && window.history.replaceState) {
-                    window.history.replaceState(null, null, targetPane);
-                }
-            });
-        });
-
-        // مزامنة فورية حية لحقول نصوص الشهادة مع المعاينة
-        const certSyncMap = [
-            { inputId: 'id_basic_cert_title', targetId: 'previewDetailedBasicTitle' },
-            { inputId: 'id_header_line_1', targetId: 'previewDetailedHeader1' },
-            { inputId: 'id_header_line_2', targetId: 'previewDetailedHeader2' },
-            { inputId: 'id_default_certificate_note', targetId: 'previewDetailedNote' },
-            { inputId: 'id_station_text', targetId: 'previewDetailedStation' },
-            { inputId: 'id_seal_notice', targetId: 'previewDetailedSeal' },
-            { inputId: 'id_right_signer_rank', targetId: 'previewDetailedRightRank' },
-            { inputId: 'id_right_signer_name', targetId: 'previewDetailedRightName' },
-            { inputId: 'id_right_signer_title', targetId: 'previewDetailedRightTitle' },
-            { inputId: 'id_left_signer_rank', targetId: 'previewDetailedLeftRank' },
-            { inputId: 'id_left_signer_name', targetId: 'previewDetailedLeftName' },
-            { inputId: 'id_left_signer_title', targetId: 'previewDetailedLeftTitle' },
-            { inputId: 'id_center_signer_rank', targetId: 'previewDetailedCenterRank' },
-            { inputId: 'id_center_signer_name', targetId: 'previewDetailedCenterName' },
-            { inputId: 'id_center_signer_title', targetId: 'previewDetailedCenterTitle' },
-        ];
-        certSyncMap.forEach(item => {
-            const inputEl = document.getElementById(item.inputId);
-            const targetEl = document.getElementById(item.targetId);
-            if (inputEl && targetEl) {
-                inputEl.addEventListener('input', function () {
-                    targetEl.textContent = this.value;
-                });
+            if (typeof window.initCertLayout === 'function') {
+                window.initCertLayout();
             }
         });
+    } catch (err) {
+        console.error('Error in Layout Customizers Module:', err);
+    }
+})();
+</script>
 
-        // مزامنة فورية حية لحقول نصوص أمر التحرك مع المعاينة
-        const movSyncMap = [
-            { name: 'bismillah_text', targetId: 'previewMovBismillah' },
-            { name: 'security_label', targetId: 'previewMovSecurity' },
-            { name: 'security_label', targetId: 'previewMovSecurityBottom' },
-            { name: 'order_title', targetId: 'previewMovTitle' },
-            { name: 'issuing_authority_text', targetId: 'previewMovIssuing' },
-            { name: 'from_location', targetId: 'previewMovFrom' },
-            { name: 'to_location_default', targetId: 'previewMovTo' },
-            { name: 'arms_default', targetId: 'previewMovArms' },
-            { name: 'ammunition_default', targetId: 'previewMovAmmo' },
-            { name: 'purpose_prefix', targetId: 'previewMovPurposePrefix' },
-            { name: 'clothing_instructions', targetId: 'previewMovClothing' },
-            { name: 'travel_means', targetId: 'previewMovTravel' },
-            { name: 'ratification_text', targetId: 'previewMovRatification' },
-            { name: 'admin_instructions', targetId: 'previewMovAdminInst' },
-            { name: 'certificate_declaration', targetId: 'previewMovDeclaration' },
-            { name: 'signer_rank', targetId: 'previewMovSignerRank' },
-            { name: 'signer_name', targetId: 'previewMovSignerName' },
-            { name: 'signer_title', targetId: 'previewMovSignerTitle' },
-            { name: 'signer_dept', targetId: 'previewMovSignerDept' },
-            { name: 'copy_to_1', targetId: 'previewMovCopy1' },
-            { name: 'copy_to_2', targetId: 'previewMovCopy2' },
-        ];
-        movSyncMap.forEach(item => {
-            const inputEl = document.querySelector(`#subpane-movement-order [name="${item.name}"]`);
-            const targetEl = document.getElementById(item.targetId);
-            if (inputEl && targetEl) {
-                inputEl.addEventListener('input', function () {
-                    let val = this.value;
-                    if (item.name === 'admin_instructions' || item.name === 'copy_to_1') {
-                        val = val.replace(/\{unit\}/g, 'سلاح الإشارة');
-                    }
-                    targetEl.textContent = val;
-                });
-            }
-        });
 
-        // مزامنة شفافية العلامة المائية لأمر التحرك لحظياً
-        const opacityInput = document.querySelector('#subpane-movement-order input[name="watermark_opacity"]');
-        const watermarkImg = document.getElementById('previewMovWatermarkImg');
-        if (opacityInput && watermarkImg) {
-            opacityInput.addEventListener('input', function () {
-                const val = parseFloat(this.value);
-                if (!isNaN(val)) {
-                    watermarkImg.style.opacity = val;
-                }
-            });
-        }
-
-        // استرجاع وتفعيل التبويب المختار في السايد بار عبر رابط الهاش URL Hash
-        const hash = window.location.hash;
-        if (hash) {
-            const triggerEl = document.querySelector(`.admin-sidebar-nav [data-bs-target="${hash}"]`);
-            if (triggerEl) {
-                const tab = new bootstrap.Tab(triggerEl);
-                tab.show();
-            }
-        }
-        const tabButtons = document.querySelectorAll('.admin-sidebar-nav button[data-bs-toggle="pill"]');
-        tabButtons.forEach(btn => {
-            btn.addEventListener('shown.bs.tab', function (e) {
-                const target = e.target.getAttribute('data-bs-target');
-                if (target) {
-                    history.replaceState(null, null, target);
-                }
-            });
-        });
-
-        // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
-        const filterCards = document.querySelectorAll('.role-filter-card');
-        const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
-        const countBadge = document.getElementById('usersFilterCountBadge');
-
-        filterCards.forEach(card => {
-            card.addEventListener('click', function () {
-                filterCards.forEach(c => {
-                    c.classList.remove('active', 'border-primary', 'shadow');
-                    c.style.backgroundColor = '';
-                });
-                this.classList.add('active', 'border-primary', 'shadow');
-                this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
-
-                const filterRole = this.getAttribute('data-filter-role');
-                let visibleCount = 0;
-
-                userRows.forEach(row => {
-                    const rowRole = row.getAttribute('data-role');
-                    if (filterRole === 'all' || rowRole === filterRole) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-
-                if (countBadge) {
-                    countBadge.textContent = `${visibleCount} مستخدم`;
-                }
-            });
-        });
-
-        // حقل البحث السريع في جدول المستخدمين
-        const usersSearchInput = document.getElementById('usersSearchInput');
-        if (usersSearchInput) {
-            usersSearchInput.addEventListener('input', function () {
-                const query = this.value.toLowerCase().trim();
-                let visibleCount = 0;
-                userRows.forEach(row => {
-                    const username = row.getAttribute('data-username') || '';
-                    const fullname = row.getAttribute('data-fullname') || '';
-                    const military = row.getAttribute('data-military') || '';
-                    if (username.includes(query) || fullname.includes(query) || military.includes(query)) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                if (countBadge) {
-                    countBadge.textContent = `${visibleCount} مستخدم`;
-                }
-            });
-        }
-
-        // تصفية فورية حية في جدول سجل النشاط
-        const liveActivitySearchInput = document.getElementById('liveActivitySearchInput');
-        const activityRows = document.querySelectorAll('#activityLogsTable tbody tr.activity-row');
-        const activityCountBadge = document.getElementById('activityVisibleCountBadge');
-
-        if (liveActivitySearchInput) {
-            liveActivitySearchInput.addEventListener('input', function () {
-                const q = this.value.toLowerCase().trim();
-                let count = 0;
-                activityRows.forEach(row => {
-                    const text = row.getAttribute('data-search-text') || '';
-                    if (!q || text.includes(q)) {
-                        row.style.display = '';
-                        count++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                if (activityCountBadge) {
-                    activityCountBadge.textContent = `${count} عملية معروضة`;
-                }
-            });
-        }
-
-        const modal = document.getElementById('addInstructorModal');
-        if (modal) {
-            modal.addEventListener('show.bs.modal', function () {
-                modalUpdateRanks();
-                modalUpdateUnits();
-            });
-            // Initial call if modal is somehow active
-            modalUpdateRanks();
-        }
-
-        // =====================================================================
-        // إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
+<!-- ===================================================================== -->
+<!-- [SCRIPT 5] مصفوفة الأذونات والصلاحيات الديناميكية (Permissions Matrix) -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+    try {
+// إدارة مصفوفة الأذونات والصلاحيات الديناميكية (Dynamic Permissions Matrix)
         // =====================================================================
         const MODULES_PERM_CATALOG = {{ modules_permissions_catalog_json| safe }};
     const ROLE_DEFAULT_PERMISSIONS = {{ default_role_permissions_json| safe }};
@@ -6950,42 +6893,190 @@
     }
 
     // =====================================================================
-    // المخططات البيانية التفاعلية المدعومة بأنيميشن سلس (Animated Charts.js)
-    // =====================================================================
-    initAnalyticsCharts();
-    });
 
-    // دوال التنقل المباشر
-    function openUserPermissionsMatrix(userId) {
-        const matrixTabBtn = document.getElementById('tab-permissions-matrix');
-        if (matrixTabBtn) {
-            const tab = new bootstrap.Tab(matrixTabBtn);
-            tab.show();
-        }
-        const sel = document.getElementById('matrixUserSelect');
-        if (sel) {
-            sel.value = userId;
-            sel.dispatchEvent(new Event('change'));
-        }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function switchToPermissionsMatrixTab() {
-        const btn = document.getElementById('tab-permissions-matrix');
-        if (btn) {
-            const tab = new bootstrap.Tab(btn);
-            tab.show();
+        // إتاحة وظائف التنقل والمصفوفة على النطاق العام window
+        window.loadUserMatrix = loadUserMatrix;
+        window.applyMatrixData = applyMatrixData;
+        window.saveMatrixAction = saveMatrixAction;
+        window.openUserPermissionsMatrix = function(userId) {
+            const matrixTabBtn = document.getElementById('tab-permissions-matrix');
+            if (matrixTabBtn) {
+                const tab = bootstrap.Tab.getOrCreateInstance(matrixTabBtn);
+                tab.show();
+            }
+            const sel = document.getElementById('matrixUserSelect');
+            if (sel) {
+                sel.value = userId;
+                sel.dispatchEvent(new Event('change'));
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        };
+        window.switchToPermissionsMatrixTab = function() {
+            const btn = document.getElementById('tab-permissions-matrix');
+            if (btn) {
+                const tab = bootstrap.Tab.getOrCreateInstance(btn);
+                tab.show();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+        window.switchToUsersTab = function() {
+            const btn = document.getElementById('tab-users');
+            if (btn) {
+                const tab = bootstrap.Tab.getOrCreateInstance(btn);
+                tab.show();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+    } catch (err) {
+        console.error('Error in Permissions Matrix Module:', err);
     }
+})();
+</script>
 
-    function switchToUsersTab() {
-        const btn = document.getElementById('tab-users');
-        if (btn) {
-            const tab = new bootstrap.Tab(btn);
-            tab.show();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+<!-- ===================================================================== -->
+<!-- [SCRIPT 6] التنقل والتبويبات وفلاتر الجداول وسجل النشاط والعمليات     -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+    try {
+        function autoActivateTab() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const hash = window.location.hash;
+
+            let targetTabId = null;
+            if (tabParam) {
+                targetTabId = 'tab-' + tabParam;
+            } else if (urlParams.get('activity_user') || urlParams.get('activity_action') || urlParams.get('activity_category') || urlParams.get('activity_q')) {
+                targetTabId = 'tab-activity-log';
+            } else if (urlParams.get('matrix_user')) {
+                targetTabId = 'tab-permissions-matrix';
+            } else if (hash && hash.startsWith('#pane-')) {
+                targetTabId = hash.replace('#pane-', 'tab-');
+            }
+
+            if (targetTabId) {
+                const tabBtn = document.getElementById(targetTabId);
+                if (tabBtn) {
+                    const tabInstance = bootstrap.Tab.getOrCreateInstance(tabBtn);
+                    tabInstance.show();
+                }
+            }
+
+            if (tabParam === 'certificate' || hash === '#pane-certificate' || hash === '#subpane-movement-order' || hash === '#pane-movement-order') {
+                if (hash === '#subpane-movement-order' || hash === '#pane-movement-order') {
+                    const movBtn = document.getElementById('subtab-movement-btn');
+                    if (movBtn) {
+                        const movTab = bootstrap.Tab.getOrCreateInstance(movBtn);
+                        movTab.show();
+                    }
+                }
+            }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            autoActivateTab();
+
+            // تحديث عنوان وهاش الصفحة في المتصفح عند التبديل بين التبويبات
+            document.querySelectorAll('#adminCommandTabs button[data-bs-toggle="pill"], .admin-sidebar-nav button[data-bs-toggle="pill"]').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', function (e) {
+                    const tabName = e.target.querySelector('.tab-title') ? e.target.querySelector('.tab-title').textContent.trim() : '';
+                    if (tabName) {
+                        document.title = tabName + ' | بوابة القيادة والأدمن';
+                    }
+                    const targetPane = e.target.getAttribute('data-bs-target');
+                    if (targetPane && window.history && window.history.replaceState) {
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.hash = targetPane;
+                        window.history.replaceState(null, null, currentUrl.toString());
+                    }
+                });
+            });
+
+            // فلترة سريعة لجدول المستخدمين بحسب بطاقات الصلاحيات
+            const filterCards = document.querySelectorAll('.role-filter-card');
+            const userRows = document.querySelectorAll('#usersPermissionsTable tbody tr.user-row');
+            const countBadge = document.getElementById('usersFilterCountBadge');
+
+            function filterUsersByRole(role) {
+                let visibleCount = 0;
+                userRows.forEach(row => {
+                    const userRole = row.getAttribute('data-role');
+                    if (!role || role === 'all' || userRole === role) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                if (countBadge) {
+                    countBadge.textContent = `${visibleCount} مستخدم معروض`;
+                }
+            }
+
+            filterCards.forEach(card => {
+                card.addEventListener('click', function () {
+                    filterCards.forEach(c => {
+                        c.classList.remove('border-primary', 'shadow-sm', 'bg-primary', 'bg-opacity-10');
+                        c.classList.add('border-light');
+                    });
+                    this.classList.remove('border-light');
+                    this.classList.add('border-primary', 'shadow-sm', 'bg-primary', 'bg-opacity-10');
+                    const role = this.getAttribute('data-filter-role');
+                    filterUsersByRole(role);
+                });
+            });
+
+            // بحث فوري في جدول المستخدمين
+            const userSearch = document.getElementById('userSearchInput');
+            if (userSearch) {
+                userSearch.addEventListener('input', function () {
+                    const term = this.value.toLowerCase().trim();
+                    let visibleCount = 0;
+                    userRows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(term)) {
+                            row.style.display = '';
+                            visibleCount++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    if (countBadge) {
+                        countBadge.textContent = `${visibleCount} مستخدم معروض`;
+                    }
+                });
+            }
+
+            // فلترة فورية لسجل النشاط والعمليات
+            const activitySearch = document.getElementById('activitySearchInstant');
+            const activityRows = document.querySelectorAll('#activityLogsTable tbody tr.activity-row');
+            const activityCountBadge = document.getElementById('activityFilterCountBadge');
+            if (activitySearch) {
+                activitySearch.addEventListener('input', function () {
+                    const term = this.value.toLowerCase().trim();
+                    let count = 0;
+                    activityRows.forEach(row => {
+                        const txt = row.textContent.toLowerCase();
+                        if (txt.includes(term)) {
+                            row.style.display = '';
+                            count++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    if (activityCountBadge) {
+                        activityCountBadge.textContent = `${count} عملية معروضة`;
+                    }
+                });
+            }
+        });
+    } catch (err) {
+        console.error('Error in Tabs & Controller Module:', err);
     }
+})();
 </script>
 {% endblock %}
+

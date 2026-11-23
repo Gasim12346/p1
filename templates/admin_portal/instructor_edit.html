@@ -55,6 +55,28 @@
                             <label class="form-label fw-bold small text-dark">الرتبة <span class="text-danger">*</span></label>
                             <select id="edit_inst_rank_select" class="form-select form-select-lg" onchange="editHandleRankChange()" required>
                                 <option value="">-- اختر الرتبة --</option>
+                                <optgroup label="رتب الضباط" id="edit_ranks_officer">
+                                    <option value="ملازم">ملازم</option>
+                                    <option value="ملازم أول">ملازم أول</option>
+                                    <option value="نقيب">نقيب</option>
+                                    <option value="رائد">رائد</option>
+                                    <option value="مقدم">مقدم</option>
+                                    <option value="عقيد">عقيد</option>
+                                    <option value="عميد">عميد</option>
+                                    <option value="لواء">لواء</option>
+                                    <option value="فريق">فريق</option>
+                                    <option value="فريق أول">فريق أول</option>
+                                </optgroup>
+                                <optgroup label="رتب ضباط الصف" id="edit_ranks_nco">
+                                    <option value="جندي">جندي</option>
+                                    <option value="وكيل عريف">وكيل عريف</option>
+                                    <option value="عريف">عريف</option>
+                                    <option value="رقيب">رقيب</option>
+                                    <option value="رقيب أول">رقيب أول</option>
+                                    <option value="مساعد">مساعد</option>
+                                    <option value="مساعد أول">مساعد أول</option>
+                                </optgroup>
+                                <option value="__custom__">✍️ رتبة أخرى (كتابة يدوية)</option>
                             </select>
                             <input type="hidden" name="rank" id="edit_inst_final_rank" value="{{ instructor.rank }}" required>
                             <input type="text" id="edit_inst_custom_rank" class="form-control form-control-lg mt-2" style="display: none;" placeholder="اكتب الرتبة يدوياً" oninput="editSyncCustomRank()">
