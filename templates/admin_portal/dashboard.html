@@ -4163,7 +4163,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold small">نوع وصلاحية الحساب <span
                                     class="text-danger">*</span></label>
-                            {{ user_create_form.role }}
+                            <div id="createUserRoleSelectWrapper">{{ user_create_form.role }}</div>
                         </div>
                         <div class="col-md-6" id="createUserInstructorWrapper" style="display: none;">
                             <label class="form-label fw-bold small">ربط بملف المعلم (إذا كان الحساب لمعلم أو
@@ -5214,18 +5214,20 @@
         }
 
         function handleModalRoleChange(role) {
-            const instContainer = document.getElementById('modalInstructorSelectContainer');
+            const instContainer = document.getElementById('modalInstructorWrapper');
             if (instContainer) {
                 if (role === 'instructor' || role === 'supervisor') {
                     instContainer.style.display = 'block';
                 } else {
                     instContainer.style.display = 'none';
+                    const instSelect = document.getElementById('modalInstructorSelect');
+                    if (instSelect) instSelect.value = '';
                 }
             }
         }
 
         function updateCreateInstructorVisibility(role) {
-            const container = document.getElementById('createUserInstructorContainer');
+            const container = document.getElementById('createUserInstructorWrapper');
             if (container) {
                 if (role === 'instructor' || role === 'supervisor') {
                     container.style.display = 'block';
@@ -5396,6 +5398,16 @@
                 createInstSelect.addEventListener('change', function () {
                     applyInstructorDataToUserForm(this.value, 'createUser');
                 });
+            }
+
+            // ربط حدث تغيير الدور في نافذة إضافة مستخدم جديد لإظهار/إخفاء حقل ربط المعلم
+            const createRoleSelect = document.querySelector('#addUserModal select[name="role"]');
+            if (createRoleSelect) {
+                createRoleSelect.addEventListener('change', function () {
+                    updateCreateInstructorVisibility(this.value);
+                });
+                // تحقق من الحالة الأولية عند تحميل الصفحة
+                updateCreateInstructorVisibility(createRoleSelect.value);
             }
         });
     } catch (err) {
