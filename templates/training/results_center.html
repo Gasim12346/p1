@@ -26,7 +26,7 @@
             <i class="bi bi-pencil-square fs-5 text-primary"></i>
             <span class="d-none d-sm-inline">اختيار الدورة وتاريخها لرصد الدرجات</span>
             <span class="d-sm-none">رصد درجات الدورات</span>
-            <span class="badge bg-primary rounded-pill">{{ sessions|length }}</span>
+            <span class="badge bg-primary rounded-pill">{% if session_record_type == 'placement' %}{{ placement_orders|length }}{% else %}{{ sessions|length }}{% endif %}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -34,7 +34,7 @@
             <i class="bi bi-clock-history fs-5 text-warning"></i>
             <span class="d-none d-sm-inline">السجل التاريخي الشامل لجميع نتائج الدارسين والشهادات</span>
             <span class="d-sm-none">السجل التاريخي والشهادات</span>
-            <span class="badge bg-warning text-dark rounded-pill">{{ archive_sessions|length }}</span>
+            <span class="badge bg-warning text-dark rounded-pill">{% if archive_record_type == 'placement' %}{{ archive_placement_orders|length }}{% else %}{{ archive_sessions|length }}{% endif %}</span>
         </button>
     </li>
 </ul>
@@ -44,199 +44,397 @@
     <!-- Tab 1: اختيار الدورة وتاريخها لرصد الدرجات -->
     <div class="tab-pane fade {% if active_tab == 'sessions' %}show active{% endif %}" id="sessionsTabContent" role="tabpanel">
         
-        <!-- Courses Filter & Search Bar -->
+        <!-- Courses & Placement Exams Filter & Search Bar -->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3">
-                <form method="get" class="row g-2 align-items-center">
-                    <input type="hidden" name="tab" value="sessions">
-                    
-                    <!-- Search input -->
-                    <div class="col-lg-3 col-md-6">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" name="session_q" value="{{ session_q }}" class="form-control border-start-0" placeholder="بحث باسم الدورة، رقم الدفعة...">
-                        </div>
-                    </div>
-
-                    <!-- Category Filter -->
-                    <div class="col-lg-2 col-md-6">
-                        <select name="session_cat" class="form-select">
-                            <option value="">جميع تصنيفات الدورات</option>
-                            {% for cat in categories %}
-                                <option value="{{ cat.id }}" {% if session_cat == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Trainee Target Group Filter -->
-                    <div class="col-lg-2 col-md-4">
-                        <select name="session_target_cat" id="sessionTargetCatSelect" class="form-select" onchange="filterSessionsByTargetCat(this.value, null)">
-                            <option value="">جميع فئات الدارسين</option>
-                            <option value="officer" {% if session_target_cat == 'officer' %}selected{% endif %}>ضباط</option>
-                            <option value="nco" {% if session_target_cat == 'nco' %}selected{% endif %}>ضباط صف</option>
-                            <option value="joint" {% if session_target_cat == 'joint' %}selected{% endif %}>مشتركة</option>
-                            <option value="civilian" {% if session_target_cat == 'civilian' %}selected{% endif %}>مدنيين</option>
-                        </select>
-                    </div>
-
-                    <!-- Year Filter -->
-                    <div class="col-lg-2 col-md-4">
-                        <select name="session_year" class="form-select">
-                            <option value="">جميع السنوات</option>
-                            {% for y in available_years %}
-                                <option value="{{ y }}" {% if session_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Status Filter -->
-                    <div class="col-lg-1 col-md-4">
-                        <select name="session_status" class="form-select">
-                            <option value="">الحالة</option>
-                            <option value="active" {% if session_status == 'active' %}selected{% endif %}>جارية</option>
-                            <option value="completed" {% if session_status == 'completed' %}selected{% endif %}>معتمدة</option>
-                            <option value="planned" {% if session_status == 'planned' %}selected{% endif %}>مخطط</option>
-                        </select>
-                    </div>
-
-                    <!-- Submit & Reset Buttons -->
-                    <div class="col-lg-2 col-md-12 d-flex gap-1">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">بحث</button>
-                        {% if session_q or session_cat or session_status or session_year or session_target_cat %}
-                            <a href="{% url 'training:results_center' %}?tab=sessions" class="btn btn-light border text-danger" title="إلغاء التصفية">
-                                <i class="bi bi-x-lg"></i>
+                <!-- Record Type Switcher (سجلات الدورات التدريبية / سجلات امتحانات تحديد المستوى) -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="small fw-bold text-dark"><i class="bi bi-collection-fill text-primary me-1"></i>نوع السجلات:</span>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="نوع السجل">
+                            <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=courses" class="btn {% if session_record_type != 'placement' %}btn-primary active fw-bold text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 shadow-none">
+                                <i class="bi bi-mortarboard-fill me-1"></i> سجلات الدورات التدريبية
+                                <span class="badge {% if session_record_type != 'placement' %}bg-white text-primary{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ sessions|length }}</span>
                             </a>
-                        {% endif %}
-                    </div>
-
-                    <!-- Quick Trainee Category Filter Buttons -->
-                    <div class="col-12 pt-3 border-top mt-2">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-primary me-1"></i>تصفية سريعة بحسب تصنيف الدارسين:</span>
-                            </div>
-                            <div class="d-flex flex-wrap gap-1" id="sessionTargetCatBtnGroup">
-                                <button type="button" class="btn btn-sm {% if not session_target_cat or session_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('all', this)">
-                                    <i class="bi bi-people-fill me-1"></i> الكل
-                                    <span class="badge {% if not session_target_cat or session_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ session_counts.all }}</span>
-                                </button>
-                                <button type="button" class="btn btn-sm {% if session_target_cat == 'officer' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('officer', this)">
-                                    <i class="bi bi-shield-shaded me-1"></i> دورات الضباط
-                                    <span class="badge {% if session_target_cat == 'officer' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ session_counts.officer }}</span>
-                                </button>
-                                <button type="button" class="btn btn-sm {% if session_target_cat == 'nco' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('nco', this)">
-                                    <i class="bi bi-award-fill me-1"></i> دورات ضباط الصف
-                                    <span class="badge {% if session_target_cat == 'nco' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ session_counts.nco }}</span>
-                                </button>
-                                <button type="button" class="btn btn-sm {% if session_target_cat == 'joint' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('joint', this)">
-                                    <i class="bi bi-shuffle me-1"></i> دورات مشتركة
-                                    <span class="badge {% if session_target_cat == 'joint' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ session_counts.joint }}</span>
-                                </button>
-                                <button type="button" class="btn btn-sm {% if session_target_cat == 'civilian' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold session-target-btn" style="{% if session_target_cat == 'civilian' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterSessionsByTargetCat('civilian', this)">
-                                    <i class="bi bi-person-badge-fill me-1"></i> دورات المدنيين
-                                    <span class="badge {% if session_target_cat == 'civilian' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if session_target_cat != 'civilian' %}background-color: #7e22ce !important;{% endif %}">{{ session_counts.civilian }}</span>
-                                </button>
-                            </div>
+                            <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=placement" class="btn {% if session_record_type == 'placement' %}btn-primary active fw-bold text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 shadow-none">
+                                <i class="bi bi-award-fill me-1"></i> سجلات امتحانات تحديد المستوى
+                                <span class="badge {% if session_record_type == 'placement' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ placement_orders|length }}</span>
+                            </a>
                         </div>
                     </div>
-                </form>
+                </div>
+
+                {% if session_record_type == 'placement' %}
+                    <!-- Placement Exams Filter Form -->
+                    <form method="get" class="row g-2 align-items-center">
+                        <input type="hidden" name="tab" value="sessions">
+                        <input type="hidden" name="session_record_type" value="placement">
+                        
+                        <!-- Search input -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="placement_q" value="{{ placement_q }}" class="form-control border-start-0" placeholder="رقم الطلب، الغرض، أو الجهة...">
+                            </div>
+                        </div>
+
+                        <!-- Candidate Category Filter -->
+                        <div class="col-lg-2 col-md-6">
+                            <select name="placement_target_cat" id="placementTargetCatSelect" class="form-select" onchange="filterPlacementByTargetCat(this.value, null)">
+                                <option value="">جميع فئات الممتحنين</option>
+                                <option value="officer" {% if placement_target_cat == 'officer' or placement_target_cat == 'officers' %}selected{% endif %}>ضباط</option>
+                                <option value="nco" {% if placement_target_cat == 'nco' or placement_target_cat == 'ncos' %}selected{% endif %}>ضباط صف</option>
+                                <option value="joint" {% if placement_target_cat == 'joint' or placement_target_cat == 'mixed' %}selected{% endif %}>مشتركة</option>
+                                <option value="civilian" {% if placement_target_cat == 'civilian' or placement_target_cat == 'civilians' %}selected{% endif %}>مدنيين</option>
+                            </select>
+                        </div>
+
+                        <!-- Year Filter -->
+                        <div class="col-lg-2 col-md-4">
+                            <select name="placement_year" class="form-select">
+                                <option value="">جميع السنوات</option>
+                                {% for y in available_years %}
+                                    <option value="{{ y }}" {% if placement_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-lg-2 col-md-4">
+                            <select name="placement_status" class="form-select">
+                                <option value="">الحالة</option>
+                                <option value="in_progress" {% if placement_status == 'in_progress' %}selected{% endif %}>قيد التنفيذ</option>
+                                <option value="confirmed" {% if placement_status == 'confirmed' %}selected{% endif %}>تم الانعقاد</option>
+                                <option value="pending_approval" {% if placement_status == 'pending_approval' %}selected{% endif %}>بانتظار الاعتماد</option>
+                            </select>
+                        </div>
+
+                        <!-- Submit & Reset Buttons -->
+                        <div class="col-lg-2 col-md-4 d-flex gap-1">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">بحث</button>
+                            {% if placement_q or placement_status or placement_year or placement_target_cat %}
+                                <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=placement" class="btn btn-light border text-danger" title="إلغاء التصفية">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Quick Category Filter Buttons for Placement -->
+                        <div class="col-12 pt-3 border-top mt-2">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-primary me-1"></i>تصفية سريعة بحسب فئة الممتحنين:</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1" id="placementTargetCatBtnGroup">
+                                    <button type="button" class="btn btn-sm {% if not placement_target_cat or placement_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold placement-target-btn" onclick="filterPlacementByTargetCat('all', this)">
+                                        <i class="bi bi-people-fill me-1"></i> الكل
+                                        <span class="badge {% if not placement_target_cat or placement_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ placement_counts.all }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if placement_target_cat == 'officer' or placement_target_cat == 'officers' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold placement-target-btn" onclick="filterPlacementByTargetCat('officer', this)">
+                                        <i class="bi bi-shield-shaded me-1"></i> امتحانات الضباط
+                                        <span class="badge {% if placement_target_cat == 'officer' or placement_target_cat == 'officers' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ placement_counts.officer }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if placement_target_cat == 'nco' or placement_target_cat == 'ncos' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold placement-target-btn" onclick="filterPlacementByTargetCat('nco', this)">
+                                        <i class="bi bi-award-fill me-1"></i> امتحانات ضباط الصف
+                                        <span class="badge {% if placement_target_cat == 'nco' or placement_target_cat == 'ncos' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ placement_counts.nco }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if placement_target_cat == 'joint' or placement_target_cat == 'mixed' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold placement-target-btn" onclick="filterPlacementByTargetCat('joint', this)">
+                                        <i class="bi bi-shuffle me-1"></i> امتحانات مشتركة
+                                        <span class="badge {% if placement_target_cat == 'joint' or placement_target_cat == 'mixed' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ placement_counts.joint }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if placement_target_cat == 'civilian' or placement_target_cat == 'civilians' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold placement-target-btn" style="{% if placement_target_cat == 'civilian' or placement_target_cat == 'civilians' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterPlacementByTargetCat('civilian', this)">
+                                        <i class="bi bi-person-badge-fill me-1"></i> امتحانات المدنيين
+                                        <span class="badge {% if placement_target_cat == 'civilian' or placement_target_cat == 'civilians' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if placement_target_cat != 'civilian' and placement_target_cat != 'civilians' %}background-color: #7e22ce !important;{% endif %}">{{ placement_counts.civilian }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                {% else %}
+                    <!-- Existing Course Sessions Filter Form (UNCHANGED) -->
+                    <form method="get" class="row g-2 align-items-center">
+                        <input type="hidden" name="tab" value="sessions">
+                        <input type="hidden" name="session_record_type" value="courses">
+                        
+                        <!-- Search input -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="session_q" value="{{ session_q }}" class="form-control border-start-0" placeholder="بحث باسم الدورة، رقم الدفعة...">
+                            </div>
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="col-lg-2 col-md-6">
+                            <select name="session_cat" class="form-select">
+                                <option value="">جميع تصنيفات الدورات</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if session_cat == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Trainee Target Group Filter -->
+                        <div class="col-lg-2 col-md-4">
+                            <select name="session_target_cat" id="sessionTargetCatSelect" class="form-select" onchange="filterSessionsByTargetCat(this.value, null)">
+                                <option value="">جميع فئات الدارسين</option>
+                                <option value="officer" {% if session_target_cat == 'officer' %}selected{% endif %}>ضباط</option>
+                                <option value="nco" {% if session_target_cat == 'nco' %}selected{% endif %}>ضباط صف</option>
+                                <option value="joint" {% if session_target_cat == 'joint' %}selected{% endif %}>مشتركة</option>
+                                <option value="civilian" {% if session_target_cat == 'civilian' %}selected{% endif %}>مدنيين</option>
+                            </select>
+                        </div>
+
+                        <!-- Year Filter -->
+                        <div class="col-lg-2 col-md-4">
+                            <select name="session_year" class="form-select">
+                                <option value="">جميع السنوات</option>
+                                {% for y in available_years %}
+                                    <option value="{{ y }}" {% if session_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-lg-1 col-md-4">
+                            <select name="session_status" class="form-select">
+                                <option value="">الحالة</option>
+                                <option value="active" {% if session_status == 'active' %}selected{% endif %}>جارية</option>
+                                <option value="planned" {% if session_status == 'planned' %}selected{% endif %}>مخطط</option>
+                            </select>
+                        </div>
+
+                        <!-- Submit & Reset Buttons -->
+                        <div class="col-lg-2 col-md-12 d-flex gap-1">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">بحث</button>
+                            {% if session_q or session_cat or session_status or session_year or session_target_cat %}
+                                <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=courses" class="btn btn-light border text-danger" title="إلغاء التصفية">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Quick Trainee Category Filter Buttons -->
+                        <div class="col-12 pt-3 border-top mt-2">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-primary me-1"></i>تصفية سريعة بحسب تصنيف الدارسين:</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1" id="sessionTargetCatBtnGroup">
+                                    <button type="button" class="btn btn-sm {% if not session_target_cat or session_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('all', this)">
+                                        <i class="bi bi-people-fill me-1"></i> الكل
+                                        <span class="badge {% if not session_target_cat or session_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ session_counts.all }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if session_target_cat == 'officer' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('officer', this)">
+                                        <i class="bi bi-shield-shaded me-1"></i> دورات الضباط
+                                        <span class="badge {% if session_target_cat == 'officer' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ session_counts.officer }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if session_target_cat == 'nco' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('nco', this)">
+                                        <i class="bi bi-award-fill me-1"></i> دورات ضباط الصف
+                                        <span class="badge {% if session_target_cat == 'nco' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ session_counts.nco }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if session_target_cat == 'joint' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold session-target-btn" onclick="filterSessionsByTargetCat('joint', this)">
+                                        <i class="bi bi-shuffle me-1"></i> دورات مشتركة
+                                        <span class="badge {% if session_target_cat == 'joint' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ session_counts.joint }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm {% if session_target_cat == 'civilian' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold session-target-btn" style="{% if session_target_cat == 'civilian' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterSessionsByTargetCat('civilian', this)">
+                                        <i class="bi bi-person-badge-fill me-1"></i> دورات المدنيين
+                                        <span class="badge {% if session_target_cat == 'civilian' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if session_target_cat != 'civilian' %}background-color: #7e22ce !important;{% endif %}">{{ session_counts.civilian }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Sessions List Table -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-            <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div>
-                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-card-checklist text-primary"></i>
-                        الدورات المتاحة لرصد النتائج واستخراج الشهادات
-                    </h5>
+        {% if session_record_type == 'placement' %}
+            <!-- Placement Exams List Table -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-award-fill text-primary"></i>
+                            سجلات امتحانات تحديد المستوى المتاحة للرصد والنتائج
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
+                        <span class="text-muted small">العدد: <strong class="text-dark" id="placementVisibleCount">{{ placement_orders|length }}</strong> امتحان</span>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
-                    <span class="text-muted small">العدد: <strong class="text-dark" id="sessionsVisibleCount">{{ sessions|length }}</strong> دورة</span>
+
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="placementTable">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px;">اسم الامتحان والمادة</th>
+                                <th style="min-width: 120px;">كود الطلب / الإشارة</th>
+                                <th style="min-width: 160px;">تاريخ الانعقاد والجهة</th>
+                                <th style="min-width: 100px; text-align: center;">الممتحنون</th>
+                                <th style="min-width: 110px; text-align: center;">حالة الرصد</th>
+                                <th style="min-width: 150px; text-align: center;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in placement_orders %}
+                                <tr class="placement-row" data-target-cat="{{ exam.classification }}" data-year="{{ exam.exam_date|date:'Y' }}" data-search="{{ exam.order_code }} {{ exam.signal_number }} {{ exam.subject_name }} {{ exam.purpose }} {{ exam.source_entity }}">
+                                    <td>
+                                        <div class="fw-bold text-dark fs-6">{{ exam.subject_name }} — {{ exam.purpose }}{% if exam.sub_purpose %} ({{ exam.sub_purpose }}){% endif %}</div>
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-laptop me-1"></i>امتحان تحديد مستوى</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ exam.order_code|default:exam.internal_order_number }}</div>
+                                        <span class="badge {% if exam.classification == 'officers' %}bg-primary-subtle text-primary border border-primary-subtle{% elif exam.classification == 'ncos' %}bg-warning-subtle text-dark border border-warning-subtle{% elif exam.classification == 'mixed' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
+                                            {{ exam.get_classification_display }}
+                                        </span>
+                                        <small class="text-muted d-block font-monospace mt-1">إشارة: {{ exam.signal_number }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> تاريخ الانعقاد: <strong class="text-dark">{{ exam.exam_date|date:"Y-m-d" }}</strong></small>
+                                        <small class="d-block text-muted text-truncate" style="max-width: 220px;" title="{{ exam.source_entity }}"><i class="bi bi-building me-1 text-primary"></i> <strong class="text-dark">{{ exam.source_entity }}</strong></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
+                                            <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ exam.candidates.count }} ممتحن
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if exam.status == 'pending_approval' %}
+                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #cffafe !important; color: #0e7490 !important; border: 1px solid #67e8f9 !important; font-weight: 800;">
+                                                <i class="bi bi-hourglass-split me-1" style="color: #0e7490 !important;"></i> بانتظار الاعتماد
+                                            </span>
+                                        {% elif exam.status == 'confirmed' %}
+                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #fef3c7 !important; color: #92400e !important; border: 1px solid #fde68a !important; font-weight: 800;">
+                                                <i class="bi bi-pencil me-1" style="color: #92400e !important;"></i> قيد الرصد
+                                            </span>
+                                        {% else %}
+                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1 !important; font-weight: 700;">
+                                                <i class="bi bi-clock me-1"></i> قيد الإجراء
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'training:placement_results_entry' exam.id %}?from=sessions" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm">
+                                                <i class="bi bi-pencil-square"></i>
+                                                <span>رصد الدرجات</span>
+                                            </a>
+                                            <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة العام">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                        لا توجد سجلات امتحانات تحديد مستوى مطابقة لمعايير البحث والتصفية.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr id="placementNoMatchRow" style="display: none;">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                    لا توجد امتحانات مطابقة لتصنيف الممتحنين المحدد.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        {% else %}
+            <!-- Sessions List Table -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-card-checklist text-primary"></i>
+                            الدورات المتاحة لرصد النتائج واستخراج الشهادات
+                        </h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب لعرض باقي الأعمدة</span>
+                        <span class="text-muted small">العدد: <strong class="text-dark" id="sessionsVisibleCount">{{ sessions|length }}</strong> دورة</span>
+                    </div>
+                </div>
 
-            <div class="table-responsive">
-                <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="sessionsTable">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 180px;">اسم الدورة والتصنيف</th>
-                            <th style="min-width: 120px;">رقم الدفعة</th>
-                            <th style="min-width: 160px;">فترة الدورة وتاريخها</th>
-                            <th style="min-width: 100px; text-align: center;">الدارسون</th>
-                            <th style="min-width: 110px; text-align: center;">حالة الرصد</th>
-                            <th style="min-width: 150px; text-align: center;">الإجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for session in sessions %}
-                            <tr class="session-row" data-target-cat="{{ session.target_category }}" data-category="{{ session.course.category_id }}" data-year="{{ session.start_date|date:'Y' }}" data-search="{{ session.course.name }} {{ session.session_code }} {{ session.get_target_category_display }} {{ session.course.category.name }}">
-                                <td>
-                                    <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
-                                    <span class="badge bg-light text-dark border">{{ session.course.category.name }}</span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-primary">{{ session.session_code }}</div>
-                                    <span class="badge {% if session.target_category == 'officer' %}bg-primary-subtle text-primary border border-primary-subtle{% elif session.target_category == 'nco' %}bg-warning-subtle text-dark border border-warning-subtle{% elif session.target_category == 'joint' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
-                                        {{ session.get_target_category_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></small>
-                                    <small class="d-block text-muted"><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></small>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
-                                        <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ session.enrollments.count }} دارس
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    {% if session.status == 'completed' %}
-                                        <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 800;">
-                                            <i class="bi bi-check-all me-1" style="color: #15803d !important;"></i> نتائج معتمدة
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="sessionsTable">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px;">اسم الدورة والتصنيف</th>
+                                <th style="min-width: 120px;">رقم الدفعة</th>
+                                <th style="min-width: 160px;">فترة الدورة وتاريخها</th>
+                                <th style="min-width: 100px; text-align: center;">الدارسون</th>
+                                <th style="min-width: 110px; text-align: center;">حالة الرصد</th>
+                                <th style="min-width: 150px; text-align: center;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in sessions %}
+                                <tr class="session-row" data-target-cat="{{ session.target_category }}" data-category="{{ session.course.category_id }}" data-year="{{ session.start_date|date:'Y' }}" data-search="{{ session.course.name }} {{ session.session_code }} {{ session.get_target_category_display }} {{ session.course.category.name }}">
+                                    <td>
+                                        <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
+                                        <span class="badge bg-light text-dark border">{{ session.course.category.name }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ session.session_code }}</div>
+                                        <span class="badge {% if session.target_category == 'officer' %}bg-primary-subtle text-primary border border-primary-subtle{% elif session.target_category == 'nco' %}bg-warning-subtle text-dark border border-warning-subtle{% elif session.target_category == 'joint' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
+                                            {{ session.get_target_category_display }}
                                         </span>
-                                    {% else %}
+                                    </td>
+                                    <td>
+                                        <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></small>
+                                        <small class="d-block text-muted"><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
+                                            <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ session.enrollments.count }} دارس
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
                                         <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #fef3c7 !important; color: #92400e !important; border: 1px solid #fde68a !important; font-weight: 800;">
                                             <i class="bi bi-pencil me-1" style="color: #92400e !important;"></i> قيد الرصد
                                         </span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm">
-                                            <i class="bi bi-pencil-square"></i>
-                                            <span>رصد الدرجات</span>
-                                        </a>
-                                        <a href="{% url 'training:session_discipline_attendance' session.id %}" class="btn btn-sm btn-success fw-bold px-3 py-1 rounded-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm" title="رصد كشف الحضور والغياب والضبط والربط للدورة">
-                                            <i class="bi bi-calendar-check"></i>
-                                            <span>رصد الحضور والضبط</span>
-                                        </a>
-                                        <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة العام">
-                                            <i class="bi bi-printer"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'training:results_entry' session.id %}" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm">
+                                                <i class="bi bi-pencil-square"></i>
+                                                <span>رصد الدرجات</span>
+                                            </a>
+                                            <a href="{% url 'training:session_discipline_attendance' session.id %}" class="btn btn-sm btn-success fw-bold px-3 py-1 rounded-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm" title="رصد كشف الحضور والغياب والضبط والربط للدورة">
+                                                <i class="bi bi-calendar-check"></i>
+                                                <span>رصد الحضور والضبط</span>
+                                            </a>
+                                            <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة العام">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                        لا توجد دورات مطابقة لمعايير البحث والتصفية.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr id="sessionNoMatchRow" style="display: none;">
                                 <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
-                                    لا توجد دورات مطابقة لمعايير البحث والتصفية.
+                                    <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                    لا توجد دورات مطابقة لتصنيف الدارسين المحدد.
                                 </td>
                             </tr>
-                        {% endfor %}
-                        <tr id="sessionNoMatchRow" style="display: none;">
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
-                                لا توجد دورات مطابقة لتصنيف الدارسين المحدد.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        {% endif %}
     </div>
 
     <!-- Tab 2: السجل التاريخي الشامل لجميع نتائج الدارسين والشهادات -->
@@ -484,218 +682,427 @@
 
         {% else %}
 
-            <!-- عرض قائمة الدورات في السجل التاريخي (Course-first display) -->
+            <!-- Historical Courses & Placement Exams Search & Filter Card -->
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-white py-3 px-4 border-bottom">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-funnel-fill text-warning"></i>
-                        <h6 class="fw-bold mb-0 text-dark">البحث والفلترة في السجل التاريخي للدورات والشهادات</h6>
+                        <h6 class="fw-bold mb-0 text-dark">
+                            {% if archive_record_type == 'placement' %}
+                            البحث والفلترة في السجل التاريخي لامتحانات تحديد المستوى
+                            {% else %}
+                            البحث والفلترة في السجل التاريخي للدورات والشهادات
+                            {% endif %}
+                        </h6>
                     </div>
                 </div>
                 <div class="card-body p-3">
-                    <form method="get" class="row g-2 align-items-end">
-                        <input type="hidden" name="tab" value="archive">
-
-                        <!-- Search Input -->
-                        <div class="col-lg-3 col-md-6">
-                            <label class="form-label small fw-bold text-dark">بحث باسم الدورة، رقم الدفعة، أو اسم/نمرة دارس</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                                <input type="text" name="archive_q" value="{{ archive_q }}" class="form-control border-start-0" placeholder="اسم الدورة، رقم الدفعة، أو اسم الدارس...">
+                    <!-- Record Type Switcher for Historical Archive -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small fw-bold text-dark"><i class="bi bi-collection-fill text-warning me-1"></i>نوع السجلات في السجل التاريخي:</span>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="نوع السجل التاريخي">
+                                <a href="{% url 'training:results_center' %}?tab=archive&archive_record_type=courses" class="btn {% if archive_record_type != 'placement' %}btn-warning text-dark active fw-bold{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 shadow-none">
+                                    <i class="bi bi-mortarboard-fill me-1"></i> الدورات التدريبية المعتمدة
+                                    <span class="badge {% if archive_record_type != 'placement' %}bg-dark text-white{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ archive_sessions|length }}</span>
+                                </a>
+                                <a href="{% url 'training:results_center' %}?tab=archive&archive_record_type=placement" class="btn {% if archive_record_type == 'placement' %}btn-warning text-dark active fw-bold{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 shadow-none">
+                                    <i class="bi bi-award-fill me-1"></i> امتحانات تحديد المستوى المعتمدة
+                                    <span class="badge {% if archive_record_type == 'placement' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ archive_placement_orders|length }}</span>
+                                </a>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Category Filter -->
-                        <div class="col-lg-2 col-md-6">
-                            <label class="form-label small fw-bold text-dark">تصنيف الدورة</label>
-                            <select name="archive_cat" class="form-select">
-                                <option value="">جميع التصنيفات</option>
-                                {% for cat in categories %}
-                                    <option value="{{ cat.id }}" {% if archive_cat == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                    {% if archive_record_type == 'placement' %}
+                        <!-- Placement Exams Archive Filter Form -->
+                        <form method="get" class="row g-2 align-items-end">
+                            <input type="hidden" name="tab" value="archive">
+                            <input type="hidden" name="archive_record_type" value="placement">
 
-                        <!-- Trainee Target Group Filter -->
-                        <div class="col-lg-2 col-md-4">
-                            <label class="form-label small fw-bold text-dark">تصنيف الدارسين</label>
-                            <select name="archive_target_cat" id="archiveTargetCatSelect" class="form-select" onchange="filterArchiveSessionsByTargetCat(this.value, null)">
-                                <option value="">جميع فئات الدارسين</option>
-                                <option value="officer" {% if archive_target_cat == 'officer' %}selected{% endif %}>ضباط</option>
-                                <option value="nco" {% if archive_target_cat == 'nco' %}selected{% endif %}>ضباط صف</option>
-                                <option value="joint" {% if archive_target_cat == 'joint' %}selected{% endif %}>مشتركة</option>
-                                <option value="civilian" {% if archive_target_cat == 'civilian' %}selected{% endif %}>مدنيين</option>
-                            </select>
-                        </div>
-
-                        <!-- Gregorian Year Filter -->
-                        <div class="col-lg-2 col-md-4">
-                            <label class="form-label small fw-bold text-dark"><i class="bi bi-calendar-event text-warning me-1"></i>السنة الميلادية</label>
-                            <select name="archive_year" class="form-select">
-                                <option value="">جميع السنوات</option>
-                                {% for y in available_years %}
-                                    <option value="{{ y }}" {% if archive_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Status Badge / Approved only -->
-                        <div class="col-lg-2 col-md-4">
-                            <label class="form-label small fw-bold text-dark">حالة الاعتماد بالسجل</label>
-                            <div class="form-control bg-light text-success fw-bold d-flex align-items-center gap-1" style="height: 38px;">
-                                <i class="bi bi-patch-check-fill text-success"></i>
-                                <span style="font-size: 0.85rem;">معتمدة ومكتملة فقط</span>
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="col-lg-1 col-md-4 d-flex">
-                            <button type="submit" class="btn btn-warning w-100 fw-bold shadow-sm" title="تطبيق الفلتر">
-                                <i class="bi bi-filter"></i> فلترة
-                            </button>
-                        </div>
-
-                        <!-- Quick Trainee Category Filter Buttons for Archive -->
-                        <div class="col-12 pt-3 border-top mt-2">
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-warning me-1"></i>تصفية سريعة بحسب تصنيف الدارسين:</span>
-                                </div>
-                                <div class="d-flex flex-wrap gap-1" id="archiveTargetCatBtnGroup">
-                                    <button type="button" class="btn btn-sm {% if not archive_target_cat or archive_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('all', this)">
-                                        <i class="bi bi-people-fill me-1"></i> الكل
-                                        <span class="badge {% if not archive_target_cat or archive_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ archive_counts.all }}</span>
-                                    </button>
-                                    <button type="button" class="btn btn-sm {% if archive_target_cat == 'officer' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('officer', this)">
-                                        <i class="bi bi-shield-shaded me-1"></i> دورات الضباط
-                                        <span class="badge {% if archive_target_cat == 'officer' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ archive_counts.officer }}</span>
-                                    </button>
-                                    <button type="button" class="btn btn-sm {% if archive_target_cat == 'nco' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('nco', this)">
-                                        <i class="bi bi-award-fill me-1"></i> دورات ضباط الصف
-                                        <span class="badge {% if archive_target_cat == 'nco' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ archive_counts.nco }}</span>
-                                    </button>
-                                    <button type="button" class="btn btn-sm {% if archive_target_cat == 'joint' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('joint', this)">
-                                        <i class="bi bi-shuffle me-1"></i> دورات مشتركة
-                                        <span class="badge {% if archive_target_cat == 'joint' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ archive_counts.joint }}</span>
-                                    </button>
-                                    <button type="button" class="btn btn-sm {% if archive_target_cat == 'civilian' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold archive-target-btn" style="{% if archive_target_cat == 'civilian' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterArchiveSessionsByTargetCat('civilian', this)">
-                                        <i class="bi bi-person-badge-fill me-1"></i> دورات المدنيين
-                                        <span class="badge {% if archive_target_cat == 'civilian' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if archive_target_cat != 'civilian' %}background-color: #7e22ce !important;{% endif %}">{{ archive_counts.civilian }}</span>
-                                    </button>
+                            <!-- Search Input -->
+                            <div class="col-lg-5 col-md-6">
+                                <label class="form-label small fw-bold text-dark">بحث برقم الطلب، الغرض، أو اسم ممتحن</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="archive_placement_q" value="{{ archive_placement_q }}" class="form-control border-start-0" placeholder="رقم الطلب، الغرض، اسم دارس...">
                                 </div>
                             </div>
-                        </div>
-                    </form>
+
+                            <!-- Candidate Category Filter -->
+                            <div class="col-lg-2 col-md-6">
+                                <label class="form-label small fw-bold text-dark">تصنيف الممتحنين</label>
+                                <select name="archive_placement_target_cat" id="archivePlacementTargetCatSelect" class="form-select" onchange="filterArchivePlacementByTargetCat(this.value, null)">
+                                    <option value="">جميع فئات الممتحنين</option>
+                                    <option value="officer" {% if archive_placement_target_cat == 'officer' or archive_placement_target_cat == 'officers' %}selected{% endif %}>ضباط</option>
+                                    <option value="nco" {% if archive_placement_target_cat == 'nco' or archive_placement_target_cat == 'ncos' %}selected{% endif %}>ضباط صف</option>
+                                    <option value="joint" {% if archive_placement_target_cat == 'joint' or archive_placement_target_cat == 'mixed' %}selected{% endif %}>مشتركة</option>
+                                    <option value="civilian" {% if archive_placement_target_cat == 'civilian' or archive_placement_target_cat == 'civilians' %}selected{% endif %}>مدنيين</option>
+                                </select>
+                            </div>
+
+                            <!-- Year Filter -->
+                            <div class="col-lg-2 col-md-4">
+                                <label class="form-label small fw-bold text-dark"><i class="bi bi-calendar-event text-warning me-1"></i>السنة الميلادية</label>
+                                <select name="archive_placement_year" class="form-select">
+                                    <option value="">جميع السنوات</option>
+                                    {% for y in available_years %}
+                                        <option value="{{ y }}" {% if archive_placement_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Status Badge / Approved Only (STRICT REQUIREMENT) -->
+                            <div class="col-lg-2 col-md-4">
+                                <label class="form-label small fw-bold text-dark">حالة الاعتماد بالسجل</label>
+                                <div class="form-control bg-light text-success fw-bold d-flex align-items-center gap-1" style="height: 38px;">
+                                    <i class="bi bi-patch-check-fill text-success"></i>
+                                    <span style="font-size: 0.85rem;">معتمدة ومكتملة فقط</span>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-lg-1 col-md-4 d-flex">
+                                <button type="submit" class="btn btn-warning w-100 fw-bold shadow-sm" title="تطبيق الفلتر">
+                                    <i class="bi bi-filter"></i> فلترة
+                                </button>
+                            </div>
+
+                            <!-- Quick Candidate Category Filter Buttons -->
+                            <div class="col-12 pt-3 border-top mt-2">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-warning me-1"></i>تصفية سريعة بحسب فئة الممتحنين:</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1" id="archivePlacementTargetCatBtnGroup">
+                                        <button type="button" class="btn btn-sm {% if not archive_placement_target_cat or archive_placement_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold archive-placement-target-btn" onclick="filterArchivePlacementByTargetCat('all', this)">
+                                            <i class="bi bi-people-fill me-1"></i> الكل
+                                            <span class="badge {% if not archive_placement_target_cat or archive_placement_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ archive_placement_counts.all }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_placement_target_cat == 'officer' or archive_placement_target_cat == 'officers' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold archive-placement-target-btn" onclick="filterArchivePlacementByTargetCat('officer', this)">
+                                            <i class="bi bi-shield-shaded me-1"></i> امتحانات الضباط
+                                            <span class="badge {% if archive_placement_target_cat == 'officer' or archive_placement_target_cat == 'officers' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ archive_placement_counts.officer }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_placement_target_cat == 'nco' or archive_placement_target_cat == 'ncos' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold archive-placement-target-btn" onclick="filterArchivePlacementByTargetCat('nco', this)">
+                                            <i class="bi bi-award-fill me-1"></i> امتحانات ضباط الصف
+                                            <span class="badge {% if archive_placement_target_cat == 'nco' or archive_placement_target_cat == 'ncos' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ archive_placement_counts.nco }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_placement_target_cat == 'joint' or archive_placement_target_cat == 'mixed' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold archive-placement-target-btn" onclick="filterArchivePlacementByTargetCat('joint', this)">
+                                            <i class="bi bi-shuffle me-1"></i> امتحانات مشتركة
+                                            <span class="badge {% if archive_placement_target_cat == 'joint' or archive_placement_target_cat == 'mixed' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ archive_placement_counts.joint }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_placement_target_cat == 'civilian' or archive_placement_target_cat == 'civilians' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold archive-placement-target-btn" style="{% if archive_placement_target_cat == 'civilian' or archive_placement_target_cat == 'civilians' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterArchivePlacementByTargetCat('civilian', this)">
+                                            <i class="bi bi-person-badge-fill me-1"></i> امتحانات المدنيين
+                                            <span class="badge {% if archive_placement_target_cat == 'civilian' or archive_placement_target_cat == 'civilians' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if archive_placement_target_cat != 'civilian' and archive_placement_target_cat != 'civilians' %}background-color: #7e22ce !important;{% endif %}">{{ archive_placement_counts.civilian }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <!-- Courses Archive Filter Form (UNCHANGED) -->
+                        <form method="get" class="row g-2 align-items-end">
+                            <input type="hidden" name="tab" value="archive">
+                            <input type="hidden" name="archive_record_type" value="courses">
+
+                            <!-- Search Input -->
+                            <div class="col-lg-3 col-md-6">
+                                <label class="form-label small fw-bold text-dark">بحث باسم الدورة، رقم الدفعة، أو اسم/نمرة دارس</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="archive_q" value="{{ archive_q }}" class="form-control border-start-0" placeholder="اسم الدورة، رقم الدفعة، أو اسم الدارس...">
+                                </div>
+                            </div>
+
+                            <!-- Category Filter -->
+                            <div class="col-lg-2 col-md-6">
+                                <label class="form-label small fw-bold text-dark">تصنيف الدورة</label>
+                                <select name="archive_cat" class="form-select">
+                                    <option value="">جميع التصنيفات</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.id }}" {% if archive_cat == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Trainee Target Group Filter -->
+                            <div class="col-lg-2 col-md-4">
+                                <label class="form-label small fw-bold text-dark">تصنيف الدارسين</label>
+                                <select name="archive_target_cat" id="archiveTargetCatSelect" class="form-select" onchange="filterArchiveSessionsByTargetCat(this.value, null)">
+                                    <option value="">جميع فئات الدارسين</option>
+                                    <option value="officer" {% if archive_target_cat == 'officer' %}selected{% endif %}>ضباط</option>
+                                    <option value="nco" {% if archive_target_cat == 'nco' %}selected{% endif %}>ضباط صف</option>
+                                    <option value="joint" {% if archive_target_cat == 'joint' %}selected{% endif %}>مشتركة</option>
+                                    <option value="civilian" {% if archive_target_cat == 'civilian' %}selected{% endif %}>مدنيين</option>
+                                </select>
+                            </div>
+
+                            <!-- Gregorian Year Filter -->
+                            <div class="col-lg-2 col-md-4">
+                                <label class="form-label small fw-bold text-dark"><i class="bi bi-calendar-event text-warning me-1"></i>السنة الميلادية</label>
+                                <select name="archive_year" class="form-select">
+                                    <option value="">جميع السنوات</option>
+                                    {% for y in available_years %}
+                                        <option value="{{ y }}" {% if archive_year == y|stringformat:"s" %}selected{% endif %}>عام {{ y }} م</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Status Badge / Approved only -->
+                            <div class="col-lg-2 col-md-4">
+                                <label class="form-label small fw-bold text-dark">حالة الاعتماد بالسجل</label>
+                                <div class="form-control bg-light text-success fw-bold d-flex align-items-center gap-1" style="height: 38px;">
+                                    <i class="bi bi-patch-check-fill text-success"></i>
+                                    <span style="font-size: 0.85rem;">معتمدة ومكتملة فقط</span>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-lg-1 col-md-4 d-flex">
+                                <button type="submit" class="btn btn-warning w-100 fw-bold shadow-sm" title="تطبيق الفلتر">
+                                    <i class="bi bi-filter"></i> فلترة
+                                </button>
+                            </div>
+
+                            <!-- Quick Trainee Category Filter Buttons for Archive -->
+                            <div class="col-12 pt-3 border-top mt-2">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small fw-bold text-dark"><i class="bi bi-person-lines-fill text-warning me-1"></i>تصفية سريعة بحسب تصنيف الدارسين:</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1" id="archiveTargetCatBtnGroup">
+                                        <button type="button" class="btn btn-sm {% if not archive_target_cat or archive_target_cat == 'all' %}btn-dark active text-white{% else %}btn-light border text-dark{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('all', this)">
+                                            <i class="bi bi-people-fill me-1"></i> الكل
+                                            <span class="badge {% if not archive_target_cat or archive_target_cat == 'all' %}bg-white text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill ms-1">{{ archive_counts.all }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_target_cat == 'officer' %}btn-primary active text-white{% else %}btn-light border text-primary{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('officer', this)">
+                                            <i class="bi bi-shield-shaded me-1"></i> دورات الضباط
+                                            <span class="badge {% if archive_target_cat == 'officer' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} rounded-pill ms-1">{{ archive_counts.officer }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_target_cat == 'nco' %}btn-warning active text-dark{% else %}btn-light border text-warning-emphasis{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('nco', this)">
+                                            <i class="bi bi-award-fill me-1"></i> دورات ضباط الصف
+                                            <span class="badge {% if archive_target_cat == 'nco' %}bg-dark text-white{% else %}bg-warning text-dark{% endif %} rounded-pill ms-1">{{ archive_counts.nco }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_target_cat == 'joint' %}btn-info active text-white{% else %}btn-light border text-info-emphasis{% endif %} rounded-pill px-3 fw-bold archive-target-btn" onclick="filterArchiveSessionsByTargetCat('joint', this)">
+                                            <i class="bi bi-shuffle me-1"></i> دورات مشتركة
+                                            <span class="badge {% if archive_target_cat == 'joint' %}bg-white text-dark{% else %}bg-info text-white{% endif %} rounded-pill ms-1">{{ archive_counts.joint }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm {% if archive_target_cat == 'civilian' %}active text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold archive-target-btn" style="{% if archive_target_cat == 'civilian' %}background-color: #7e22ce !important; color: white !important; border-color: #7e22ce;{% else %}color: #7e22ce; border-color: #d8b4fe;{% endif %}" onclick="filterArchiveSessionsByTargetCat('civilian', this)">
+                                            <i class="bi bi-person-badge-fill me-1"></i> دورات المدنيين
+                                            <span class="badge {% if archive_target_cat == 'civilian' %}bg-white text-dark{% else %}text-white{% endif %} rounded-pill ms-1" style="{% if archive_target_cat != 'civilian' %}background-color: #7e22ce !important;{% endif %}">{{ archive_counts.civilian }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Historical Courses Table Card -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-                <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div>
-                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-patch-check-fill text-success"></i>
-                            الدورات المعتمدة في السجل التاريخي والأرشيف الأكاديمي
-                        </h5>
-                        <small class="text-muted">عرض الدورات المعتمدة والمكتملة فقط - انقر على أي دورة لعرض نتائج طلبتها وشهاداتهم</small>
+            {% if archive_record_type == 'placement' %}
+                <!-- Placement Exams Historical Table Card (STRICTLY APPROVED EXAMS ONLY) -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-patch-check-fill text-success"></i>
+                                امتحانات تحديد المستوى المعتمدة في السجل التاريخي والأرشيف
+                            </h5>
+                            <small class="text-muted">عرض سجلات الامتحانات المعتمدة رسمياً فقط — انقر على أي سجل لعرض تفاصيل نتائجه وممتحنيه</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-3 py-2 rounded-pill">
+                                إجمالي الامتحانات المعتمدة: <strong id="archivePlacementVisibleCount">{{ archive_placement_orders|length }}</strong> امتحان
+                            </span>
+                            {% if archive_placement_q or archive_placement_year or archive_placement_target_cat %}
+                                <a href="{% url 'training:results_center' %}?tab=archive&archive_record_type=placement" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold text-white shadow-sm">
+                                    <i class="bi bi-x-circle me-1 text-white"></i> إلغاء التصفية
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب</span>
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-3 py-2 rounded-pill">
-                            إجمالي الدورات المعتمدة: <strong id="archiveVisibleCount">{{ archive_sessions|length }}</strong> دورة
-                        </span>
-                        {% if archive_q or archive_cat or archive_year or archive_status or archive_target_cat %}
-                            <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold text-white shadow-sm">
-                                <i class="bi bi-x-circle me-1 text-white"></i> إلغاء التصفية
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
 
-                <div class="table-responsive">
-                    <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="archiveCoursesTable">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 50px; text-align: center;">#</th>
-                                <th style="min-width: 200px;">اسم الدورة والتصنيف</th>
-                                <th style="min-width: 120px;">رقم الدفعة</th>
-                                <th style="min-width: 170px;">فترة الدورة وتاريخها</th>
-                                <th style="min-width: 110px; text-align: center;">الدارسون</th>
-                                <th style="min-width: 130px; text-align: center;">حالة الاعتماد في السجل</th>
-                                <th style="min-width: 180px; text-align: center;">الإجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for session in archive_sessions %}
-                                <tr class="archive-session-row" data-target-cat="{{ session.target_category }}" data-enrolled-cats="{% for en in session.enrollments.all %}{{ en.trainee.category }},{% endfor %}" style="cursor: pointer;" onclick="if (!event.target.closest('a, button')) { window.location.href='{% url 'training:results_entry' session.id %}?from=archive'; }">
-                                    <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
-                                    <td>
-                                        <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
-                                        <span class="badge bg-light text-dark border">{{ session.course.category.name }}</span>
-                                        {% if archive_q %}
-                                            <small class="d-block text-primary mt-1"><i class="bi bi-check-circle me-1"></i>مطابقة لطلب البحث</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-primary fs-6">{{ session.session_code }}</div>
-                                        <span class="badge {% if session.target_category == 'officer' %}bg-primary-subtle text-primary border border-primary-subtle{% elif session.target_category == 'nco' %}bg-warning-subtle text-dark border border-warning-subtle{% elif session.target_category == 'joint' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
-                                            {{ session.get_target_category_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></small>
-                                        <small class="d-block text-muted"><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></small>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
-                                            <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ session.enrollments.count }} دارس
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        {% if session.status == 'completed' %}
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="archivePlacementTable">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 50px; text-align: center;">#</th>
+                                    <th style="min-width: 200px;">اسم الامتحان والمادة</th>
+                                    <th style="min-width: 120px;">كود الطلب / الإشارة</th>
+                                    <th style="min-width: 170px;">تاريخ الانعقاد والجهة</th>
+                                    <th style="min-width: 110px; text-align: center;">الممتحنون</th>
+                                    <th style="min-width: 130px; text-align: center;">حالة الاعتماد في السجل</th>
+                                    <th style="min-width: 180px; text-align: center;">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exam in archive_placement_orders %}
+                                    <tr class="archive-placement-row" data-target-cat="{{ exam.classification }}" style="cursor: pointer;" onclick="if (!event.target.closest('a, button')) { window.location.href='{% url 'training:placement_results_entry' exam.id %}?from=archive'; }">
+                                        <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="fw-bold text-dark fs-6">{{ exam.subject_name }} — {{ exam.purpose }}{% if exam.sub_purpose %} ({{ exam.sub_purpose }}){% endif %}</div>
+                                            <span class="badge bg-light text-dark border">{{ exam.subject_name }}</span>
+                                            {% if archive_placement_q %}
+                                                <small class="d-block text-primary mt-1"><i class="bi bi-check-circle me-1"></i>مطابقة لطلب البحث</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-primary fs-6">{{ exam.order_code|default:exam.internal_order_number }}</div>
+                                            <span class="badge {% if exam.classification == 'officers' %}bg-primary-subtle text-primary border border-primary-subtle{% elif exam.classification == 'ncos' %}bg-warning-subtle text-dark border border-warning-subtle{% elif exam.classification == 'mixed' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
+                                                {{ exam.get_classification_display }}
+                                            </span>
+                                            <small class="text-muted d-block font-monospace mt-1">إشارة: {{ exam.signal_number }}</small>
+                                        </td>
+                                        <td>
+                                            <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> تاريخ الانعقاد: <strong class="text-dark">{{ exam.exam_date|date:"Y-m-d" }}</strong></small>
+                                            <small class="d-block text-muted text-truncate" style="max-width: 220px;" title="{{ exam.source_entity }}"><i class="bi bi-building me-1 text-warning"></i> <strong class="text-dark">{{ exam.source_entity }}</strong></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
+                                                <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ exam.candidates.count }} ممتحن
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
                                             <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 800;">
                                                 <i class="bi bi-check-all me-1" style="color: #15803d !important;"></i> نتائج معتمدة ومكتملة
                                             </span>
-                                        {% else %}
-                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #fef3c7 !important; color: #92400e !important; border: 1px solid #fde68a !important; font-weight: 800;">
-                                                <i class="bi bi-pencil me-1" style="color: #92400e !important;"></i> قيد الرصد
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="d-inline-flex align-items-center gap-1" onclick="event.stopPropagation();">
-                                            <a href="{% url 'training:results_entry' session.id %}?from=archive" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="عرض نتائج ودارسي الدورة">
-                                                <i class="bi bi-people-fill"></i>
-                                                <span>عرض طلبة الدورة</span>
-                                            </a>
-                                            <a href="{% url 'training:session_discipline_attendance' session.id %}" class="btn btn-sm btn-success fw-bold px-3 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="رصد كشف الحضور والضبط">
-                                                <i class="bi bi-calendar-check"></i>
-                                                <span>رصد الحضور والضبط</span>
-                                            </a>
-                                            <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة العام">
-                                                <i class="bi bi-printer"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-inline-flex align-items-center gap-1" onclick="event.stopPropagation();">
+                                                <a href="{% url 'training:placement_results_entry' exam.id %}?from=archive" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="عرض تفاصيل الامتحان">
+                                                    <i class="bi bi-eye"></i>
+                                                    <span>عرض التفاصيل</span>
+                                                </a>
+                                                <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة المعتمد">
+                                                    <i class="bi bi-printer"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                            لا توجد امتحانات تحديد مستوى معتمدة في السجل التاريخي تطابق معايير البحث والفلترة.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                <tr id="archivePlacementNoMatchRow" style="display: none;">
                                     <td colspan="7" class="text-center py-5 text-muted">
-                                        <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
-                                        لا توجد دورات مسجلة في السجل التاريخي تطابق معايير البحث والفلترة.
+                                        <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                        لا توجد امتحانات معتمدة مطابقة لتصنيف الممتحنين المحدد في السجل التاريخي.
                                     </td>
                                 </tr>
-                            {% endfor %}
-                            <tr id="archiveNoMatchRow" style="display: none;">
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
-                                    لا توجد دورات مطابقة لتصنيف الدارسين المحدد في السجل التاريخي.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                <!-- Historical Courses Table Card -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-patch-check-fill text-success"></i>
+                                الدورات المعتمدة في السجل التاريخي والأرشيف الأكاديمي
+                            </h5>
+                            <small class="text-muted">عرض الدورات المعتمدة والمكتملة فقط - انقر على أي دورة لعرض نتائج طلبتها وشهاداتهم</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="scroll-hint"><i class="bi bi-arrow-left-right text-primary"></i> اسحب للجانب</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold px-3 py-2 rounded-pill">
+                                إجمالي الدورات المعتمدة: <strong id="archiveVisibleCount">{{ archive_sessions|length }}</strong> دورة
+                            </span>
+                            {% if archive_q or archive_cat or archive_year or archive_status or archive_target_cat %}
+                                <a href="{% url 'training:results_center' %}?tab=archive" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold text-white shadow-sm">
+                                    <i class="bi bi-x-circle me-1 text-white"></i> إلغاء التصفية
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover align-middle mb-0 text-nowrap" id="archiveCoursesTable">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 50px; text-align: center;">#</th>
+                                    <th style="min-width: 200px;">اسم الدورة والتصنيف</th>
+                                    <th style="min-width: 120px;">رقم الدفعة</th>
+                                    <th style="min-width: 170px;">فترة الدورة وتاريخها</th>
+                                    <th style="min-width: 110px; text-align: center;">الدارسون</th>
+                                    <th style="min-width: 130px; text-align: center;">حالة الاعتماد في السجل</th>
+                                    <th style="min-width: 180px; text-align: center;">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in archive_sessions %}
+                                    <tr class="archive-session-row" data-target-cat="{{ session.target_category }}" data-enrolled-cats="{% for en in session.enrollments.all %}{{ en.trainee.category }},{% endfor %}" style="cursor: pointer;" onclick="if (!event.target.closest('a, button')) { window.location.href='{% url 'training:results_entry' session.id %}?from=archive'; }">
+                                        <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="fw-bold text-dark fs-6">{{ session.course.name }}</div>
+                                            <span class="badge bg-light text-dark border">{{ session.course.category.name }}</span>
+                                            {% if archive_q %}
+                                                <small class="d-block text-primary mt-1"><i class="bi bi-check-circle me-1"></i>مطابقة لطلب البحث</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-primary fs-6">{{ session.session_code }}</div>
+                                            <span class="badge {% if session.target_category == 'officer' %}bg-primary-subtle text-primary border border-primary-subtle{% elif session.target_category == 'nco' %}bg-warning-subtle text-dark border border-warning-subtle{% elif session.target_category == 'joint' %}bg-info-subtle text-dark border border-info-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} rounded-pill px-2 py-0 mt-1 d-block" style="font-size: 0.72rem; width: fit-content;">
+                                                {{ session.get_target_category_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="d-block text-muted"><i class="bi bi-calendar-event me-1 text-success"></i> من: <strong class="text-dark">{{ session.start_date|date:"Y-m-d" }}</strong></small>
+                                            <small class="d-block text-muted"><i class="bi bi-calendar-check me-1 text-danger"></i> إلى: <strong class="text-dark">{{ session.end_date|date:"Y-m-d" }}</strong></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #7dd3fc !important; font-weight: 700;">
+                                                <i class="bi bi-people-fill me-1" style="color: #0369a1 !important;"></i> {{ session.enrollments.count }} دارس
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if session.status == 'completed' %}
+                                                <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #86efac !important; font-weight: 800;">
+                                                    <i class="bi bi-check-all me-1" style="color: #15803d !important;"></i> نتائج معتمدة ومكتملة
+                                                </span>
+                                            {% else %}
+                                                <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #fef3c7 !important; color: #92400e !important; border: 1px solid #fde68a !important; font-weight: 800;">
+                                                    <i class="bi bi-pencil me-1" style="color: #92400e !important;"></i> قيد الرصد
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-inline-flex align-items-center gap-1" onclick="event.stopPropagation();">
+                                                <a href="{% url 'training:results_entry' session.id %}?from=archive" class="btn btn-sm btn-primary fw-bold px-3 py-1 rounded-2 shadow-sm d-inline-flex align-items-center gap-1" title="عرض تفاصيل الدورة">
+                                                    <i class="bi bi-eye"></i>
+                                                    <span>عرض التفاصيل</span>
+                                                </a>
+                                                <a href="{% url 'training:session_results_sheet' session.id %}" target="_blank" class="btn btn-sm btn-outline-secondary px-2 py-1 rounded-2" title="طباعة كشف النتيجة العام">
+                                                    <i class="bi bi-printer"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                            لا توجد دورات مسجلة في السجل التاريخي تطابق معايير البحث والفلترة.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                <tr id="archiveNoMatchRow" style="display: none;">
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="bi bi-funnel text-muted fs-1 d-block mb-2 opacity-50"></i>
+                                        لا توجد دورات مطابقة لتصنيف الدارسين المحدد في السجل التاريخي.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
 
         {% endif %}
 
@@ -1119,6 +1526,134 @@
                 url.searchParams.delete('trainee_category');
             } else {
                 url.searchParams.set('archive_target_cat', cat);
+            }
+            window.history.replaceState({}, '', url);
+        } catch(e) {}
+    }
+
+    // دوال الفلترة الفورية لامتحانات تحديد المستوى (تبويب رصد الدرجات)
+    function filterPlacementByTargetCat(cat, btn) {
+        if (!cat) cat = 'all';
+
+        const container = document.getElementById('placementTargetCatBtnGroup');
+        if (container) {
+            container.querySelectorAll('button').forEach(b => {
+                b.classList.remove('active', 'btn-dark', 'btn-primary', 'btn-warning', 'btn-info', 'text-white');
+                b.classList.add('btn-light', 'border');
+            });
+            if (btn) {
+                btn.classList.remove('btn-light', 'border');
+                btn.classList.add('active');
+                if (cat === 'all') btn.classList.add('btn-dark', 'text-white');
+                else if (cat === 'officer' || cat === 'officers') btn.classList.add('btn-primary', 'text-white');
+                else if (cat === 'nco' || cat === 'ncos') btn.classList.add('btn-warning', 'text-dark');
+                else if (cat === 'joint' || cat === 'mixed') btn.classList.add('btn-info', 'text-white');
+                else if (cat === 'civilian' || cat === 'civilians') btn.classList.add('text-white');
+            }
+        }
+
+        const select = document.getElementById('placementTargetCatSelect');
+        if (select && select.value !== (cat === 'all' ? '' : cat)) {
+            select.value = (cat === 'all' ? '' : cat);
+        }
+
+        const rows = document.querySelectorAll('#placementTable tbody tr.placement-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-target-cat');
+            const match = (cat === 'all') ||
+                          ((cat === 'officer' || cat === 'officers') && (rowCat === 'officers' || rowCat === 'officer')) ||
+                          ((cat === 'nco' || cat === 'ncos') && (rowCat === 'ncos' || rowCat === 'nco')) ||
+                          ((cat === 'joint' || cat === 'mixed') && (rowCat === 'mixed' || rowCat === 'joint')) ||
+                          ((cat === 'civilian' || cat === 'civilians') && (rowCat === 'civilians' || rowCat === 'civilian'));
+            if (match) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const countEl = document.getElementById('placementVisibleCount');
+        if (countEl) countEl.textContent = visibleCount;
+
+        const noMatchRow = document.getElementById('placementNoMatchRow');
+        if (noMatchRow) {
+            noMatchRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', 'sessions');
+            url.searchParams.set('session_record_type', 'placement');
+            if (cat === 'all') {
+                url.searchParams.delete('placement_target_cat');
+            } else {
+                url.searchParams.set('placement_target_cat', cat);
+            }
+            window.history.replaceState({}, '', url);
+        } catch(e) {}
+    }
+
+    // دوال الفلترة الفورية لامتحانات تحديد المستوى (السجل التاريخي والأرشيف)
+    function filterArchivePlacementByTargetCat(cat, btn) {
+        if (!cat) cat = 'all';
+
+        const container = document.getElementById('archivePlacementTargetCatBtnGroup');
+        if (container) {
+            container.querySelectorAll('button').forEach(b => {
+                b.classList.remove('active', 'btn-dark', 'btn-primary', 'btn-warning', 'btn-info', 'text-white');
+                b.classList.add('btn-light', 'border');
+            });
+            if (btn) {
+                btn.classList.remove('btn-light', 'border');
+                btn.classList.add('active');
+                if (cat === 'all') btn.classList.add('btn-dark', 'text-white');
+                else if (cat === 'officer' || cat === 'officers') btn.classList.add('btn-primary', 'text-white');
+                else if (cat === 'nco' || cat === 'ncos') btn.classList.add('btn-warning', 'text-dark');
+                else if (cat === 'joint' || cat === 'mixed') btn.classList.add('btn-info', 'text-white');
+                else if (cat === 'civilian' || cat === 'civilians') btn.classList.add('text-white');
+            }
+        }
+
+        const select = document.getElementById('archivePlacementTargetCatSelect');
+        if (select && select.value !== (cat === 'all' ? '' : cat)) {
+            select.value = (cat === 'all' ? '' : cat);
+        }
+
+        const rows = document.querySelectorAll('#archivePlacementTable tbody tr.archive-placement-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-target-cat');
+            const match = (cat === 'all') ||
+                          ((cat === 'officer' || cat === 'officers') && (rowCat === 'officers' || rowCat === 'officer')) ||
+                          ((cat === 'nco' || cat === 'ncos') && (rowCat === 'ncos' || rowCat === 'nco')) ||
+                          ((cat === 'joint' || cat === 'mixed') && (rowCat === 'mixed' || rowCat === 'joint')) ||
+                          ((cat === 'civilian' || cat === 'civilians') && (rowCat === 'civilians' || rowCat === 'civilian'));
+            if (match) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const countEl = document.getElementById('archivePlacementVisibleCount');
+        if (countEl) countEl.textContent = visibleCount;
+
+        const noMatchRow = document.getElementById('archivePlacementNoMatchRow');
+        if (noMatchRow) {
+            noMatchRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', 'archive');
+            url.searchParams.set('archive_record_type', 'placement');
+            if (cat === 'all') {
+                url.searchParams.delete('archive_placement_target_cat');
+            } else {
+                url.searchParams.set('archive_placement_target_cat', cat);
             }
             window.history.replaceState({}, '', url);
         } catch(e) {}

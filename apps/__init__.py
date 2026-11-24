@@ -1,1 +1,3 @@
-# Apps package for modular architecture
+"""
+تطبيق امتحانات تحديد المستوى (Placement Exams Portal)
+"""

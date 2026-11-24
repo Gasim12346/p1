@@ -40,6 +40,11 @@
         color: #ffffff !important;
     }
 
+    .badge-grade-f {
+        background-color: #dc2626 !important;
+        color: #ffffff !important;
+    }
+
     .adopted-grade-box {
         background: #f0fdf4;
         border: 1px dashed #86efac;
@@ -100,16 +105,21 @@
         <li class="breadcrumb-item"><a href="{% url 'training:home' %}" class="text-decoration-none">الرئيسية</a></li>
         {% if from_source == 'placement_list' %}
         <li class="breadcrumb-item">
-            <a href="{% url 'training:placement_exams_list' %}" class="text-decoration-none">بوابة امتحانات تحديد
-                المستوى</a>
+            <a href="{% url 'training:placement_exams_list' %}" class="text-decoration-none">بوابة امتحانات تحديد المستوى</a>
+        </li>
+        {% elif from_source == 'archive' or from_tab == 'archive' %}
+        <li class="breadcrumb-item">
+            <a href="{% url 'training:results_center' %}?tab=archive" class="text-decoration-none">النتيجة والشهادات</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'training:results_center' %}?tab=archive&archive_record_type=placement" class="text-decoration-none">السجل التاريخي لامتحانات تحديد المستوى</a>
         </li>
         {% else %}
         <li class="breadcrumb-item">
             <a href="{% url 'training:results_center' %}" class="text-decoration-none">النتيجة والشهادات</a>
         </li>
         <li class="breadcrumb-item">
-            <a href="{% url 'training:results_center' %}?tab=sessions&source=placement&exam_id={{ exam.id }}&auto_open=0"
-                class="text-decoration-none">سجل امتحانات تحديد المستوى</a>
+            <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=placement" class="text-decoration-none">سجل امتحانات تحديد المستوى</a>
         </li>
         {% endif %}
         <li class="breadcrumb-item active" aria-current="page" id="breadcrumbExamLabel">
@@ -181,8 +191,14 @@
                 <i class="bi bi-arrow-right"></i>
                 <span>العودة لبوابة الامتحانات</span>
             </a>
+            {% elif from_source == 'archive' or from_tab == 'archive' %}
+            <a href="{% url 'training:results_center' %}?tab=archive&archive_record_type=placement"
+                class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة إلى السجل التاريخي</span>
+            </a>
             {% else %}
-            <a href="{% url 'training:results_center' %}?tab=sessions&source=placement&exam_id={{ exam.id }}&auto_open=0"
+            <a href="{% url 'training:results_center' %}?tab=sessions&session_record_type=placement"
                 class="btn btn-light text-dark fw-bold rounded-3 px-3 shadow-sm d-inline-flex align-items-center gap-1">
                 <i class="bi bi-arrow-right"></i>
                 <span>العودة لسجل الامتحانات</span>
@@ -222,6 +238,26 @@
     </div>
 </div>
 
+
+{% if is_approved %}
+<div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 py-3 px-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="fs-2 text-success">
+            <i class="bi bi-shield-fill-check"></i>
+        </div>
+        <div>
+            <h5 class="fw-bold mb-1 text-success">نتائج الامتحان معتمدة رسمياً</h5>
+            <div class="text-dark small">تم اعتماد ورصد درجات هذا الامتحان في النظام بصورة نهائية، والسجل مقفل ضد التعديل أو الرصد لحماية موثوقية النتائج.</div>
+        </div>
+    </div>
+    <div>
+        <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="bi bi-printer-fill"></i>
+            <span>طباعة كشف النتيجة المعتمد</span>
+        </a>
+    </div>
+</div>
+{% endif %}
 
 <!-- Grade Entry Table Form (مطابق لشكل سجل رصد درجات دورة تدريبية محددة) -->
 <form id="placementGradesForm" onsubmit="handleFormSubmit(event)">
@@ -370,7 +406,8 @@
                             <select class="form-select form-select-sm fw-bold attendance-select mx-auto" style="width: 95px;"
                                 id="attendance_{{ t.military_number }}" name="attendance_{{ t.military_number }}"
                                 data-num="{{ t.military_number }}"
-                                onchange="onAttendanceChange('{{ t.military_number }}', this.value)">
+                                onchange="onAttendanceChange('{{ t.military_number }}', this.value)"
+                                {% if not can_edit_scores %}disabled{% endif %}>
                                 <option value="present" {% if t.attendance_status != 'absent' %}selected{% endif %}>حاضر</option>
                                 <option value="absent" {% if t.attendance_status == 'absent' %}selected{% endif %}>غائب</option>
                             </select>
@@ -422,7 +459,8 @@
                                     <input class="form-check-input action-radio" type="radio"
                                         name="action_{{ t.military_number }}" id="act_retain_{{ t.military_number }}"
                                         value="retain" {% if t.action == 'retain' %}checked{% endif %}
-                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retain')">
+                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retain')"
+                                        {% if not can_edit_scores %}disabled{% endif %}>
                                     <label class="form-check-label small fw-semibold text-success"
                                         for="act_retain_{{ t.military_number }}">
                                         الاحتفاظ بالدرجة السابقة
@@ -432,7 +470,8 @@
                                     <input class="form-check-input action-radio" type="radio"
                                         name="action_{{ t.military_number }}" id="act_retake_{{ t.military_number }}"
                                         value="retake" {% if t.action == 'retake' %}checked{% endif %}
-                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retake')">
+                                        onchange="onStudentActionChange('{{ t.military_number }}', 'retake')"
+                                        {% if not can_edit_scores %}disabled{% endif %}>
                                     <label class="form-check-label small fw-semibold text-primary"
                                         for="act_retake_{{ t.military_number }}">
                                         إعادة الامتحان لتحسين الدرجة
@@ -458,11 +497,12 @@
                         <td class="text-center p-2 col-theory">
                             <div class="input-wrap-theory">
                                 <input type="number" name="theory_{{ t.military_number }}"
-                                    class="form-control grade-input theory-input mx-auto" min="0"
+                                    class="form-control grade-input theory-input mx-auto" min="0.1"
                                     max="{{ exam.theory_max_grade|default:60 }}" step="0.5"
                                     data-max="{{ exam.theory_max_grade|default:60 }}" placeholder="-"
                                     value="{% if t.action != 'retain' and t.current_theory is not None %}{{ t.current_theory|unlocalize }}{% endif %}"
-                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}>
+                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}
+                                    {% if not can_edit_scores %}disabled{% endif %}>
                                 <div class="adopted-display-theory" {% if t.action != 'retain' %}style="display: none;"
                                     {% endif %}>
                                     <span class="adopted-grade-box" title="تم اعتماد درجة النظري من النتيجة السابقة">
@@ -477,11 +517,12 @@
                         <td class="text-center p-2 col-practical">
                             <div class="input-wrap-practical">
                                 <input type="number" name="practical_{{ t.military_number }}"
-                                    class="form-control grade-input practical-input mx-auto" min="0"
+                                    class="form-control grade-input practical-input mx-auto" min="0.1"
                                     max="{{ exam.practical_max_grade|default:40 }}" step="0.5"
                                     data-max="{{ exam.practical_max_grade|default:40 }}" placeholder="-"
                                     value="{% if t.action != 'retain' and t.current_practical is not None %}{{ t.current_practical|unlocalize }}{% endif %}"
-                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}>
+                                    oninput="recalculateStudentRow('{{ t.military_number }}')" {% if t.action == 'retain' %}style="display: none;" {% endif %}
+                                    {% if not can_edit_scores %}disabled{% endif %}>
                                 <div class="adopted-display-practical" {% if t.action != 'retain' %}style="display: none;" {% endif %}>
                                     <span class="adopted-grade-box" title="تم اعتماد درجة العملي من النتيجة السابقة">
                                         <i class="bi bi-check-lg"></i>
@@ -524,7 +565,8 @@
                         <td class="p-2">
                             <input type="text" name="notes_{{ t.military_number }}"
                                 class="form-control form-control-sm notes-input" value="{{ t.notes|default:'' }}"
-                                placeholder="ملاحظات الرصد...">
+                                placeholder="ملاحظات الرصد..."
+                                {% if not can_edit_scores %}disabled{% endif %}>
                         </td>
                     </tr>
                     {% empty %}
@@ -585,9 +627,20 @@
                     <span>إلغاء والعودة</span>
                 </a>
                 {% endif %}
+                {% if is_approved %}
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-2 bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-3 fw-bold">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>النتائج معتمدة رسمياً ومقفلة بالكامل</span>
+                </div>
+                <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank"
+                    class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-3 shadow d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-printer-fill"></i>
+                    <span>طباعة كشف النتيجة المعتمد</span>
+                </a>
+                {% else %}
                 <button type="button"
                     class="btn btn-outline-primary fw-bold px-3 py-2 rounded-3 d-inline-flex align-items-center gap-2"
-                    onclick="simulateSaveDraft()">
+                    onclick="saveGradesBackend(false)">
                     <i class="bi bi-file-earmark-arrow-down"></i>
                     <span>حفظ كمسودة</span>
                 </button>
@@ -596,6 +649,7 @@
                     <i class="bi bi-patch-check-fill"></i>
                     <span>اعتماد ورصد الدرجات</span>
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -638,35 +692,40 @@
 <script>
     // دالة التحقق من تأكيد انعقاد الامتحان ومنع رصد الدرجات قبل التأكيد
     function checkExamHoldingConfirmed() {
-        let isHoldingConfirmed = false;
+        let isHoldingConfirmed = {{ is_confirmed|yesno:"true,false" }};
+        let isApproved = {{ is_approved|yesno:"true,false" }};
+
         if (CURRENT_LOADED_EXAM) {
-            isHoldingConfirmed = Boolean(
-                CURRENT_LOADED_EXAM.is_confirmed || 
-                CURRENT_LOADED_EXAM.status === 'confirmed' || 
-                CURRENT_LOADED_EXAM.status === 'approved' || 
-                CURRENT_LOADED_EXAM.status === 'completed'
-            );
-        } else {
-            const serverStatus = "{{ exam.status|default:'' }}";
-            const serverConfirmed = {{ exam.is_confirmed|yesno:"true,false" }};
-            isHoldingConfirmed = Boolean(serverConfirmed || serverStatus === 'confirmed' || serverStatus === 'approved' || serverStatus === 'completed');
+            if (CURRENT_LOADED_EXAM.status === 'approved' || CURRENT_LOADED_EXAM.is_results_approved) {
+                isApproved = true;
+                isHoldingConfirmed = true;
+            } else if (CURRENT_LOADED_EXAM.is_confirmed || CURRENT_LOADED_EXAM.status === 'confirmed' || CURRENT_LOADED_EXAM.status === 'completed') {
+                isHoldingConfirmed = true;
+            }
         }
 
         const warningEl = document.getElementById('unconfirmedExamWarning');
         const formEl = document.getElementById('placementGradesForm');
-        const bannerEl = document.getElementById('examInfoBanner');
         const goToDetailsBtn = document.getElementById('warningGoToDetailsBtn');
 
         if (CURRENT_LOADED_EXAM && goToDetailsBtn) {
             goToDetailsBtn.href = `{% url 'training:placement_exams_list' %}?exam_id=${encodeURIComponent(CURRENT_LOADED_EXAM.id)}&open_details=1`;
         }
 
-        if (!isHoldingConfirmed) {
+        if (isApproved) {
+            // معتمد رسمياً: الشاشة ظاهرة وكافة المدخلات معطلة
+            if (warningEl) warningEl.classList.add('d-none');
+            if (formEl) formEl.classList.remove('d-none');
+            document.querySelectorAll('.grade-input, .attendance-select, .action-radio, .notes-input').forEach(el => el.disabled = true);
+            const btnSubmit = document.getElementById('btnSubmitPlacementGrades');
+            if (btnSubmit) btnSubmit.disabled = true;
+        } else if (!isHoldingConfirmed) {
+            // غير مؤكد الانعقاد: يمنع الرصد حتى تأكيد الانعقاد
             if (warningEl) warningEl.classList.remove('d-none');
             if (formEl) formEl.classList.add('d-none');
-            // تعطيل مدخلات الرصد
-            document.querySelectorAll('.grade-input, .attendance-select, .action-radio').forEach(el => el.disabled = true);
+            document.querySelectorAll('.grade-input, .attendance-select, .action-radio, .notes-input').forEach(el => el.disabled = true);
         } else {
+            // مؤكد الانعقاد ومتاح للرصد
             if (warningEl) warningEl.classList.add('d-none');
             if (formEl) formEl.classList.remove('d-none');
         }
@@ -794,8 +853,9 @@
                 applyAssessmentModeUI();
             }
 
-            // إذا توفر سجل طلاب خاص بالامتحان في التخزين المحلي، اعتمد طلاب هذا الامتحان فقط
-            if (foundExam.trainees && Array.isArray(foundExam.trainees)) {
+            // إذا توفر سجل طلاب خاص بالامتحان في التخزين المحلي ولم يكن هناك طلاب من قاعدة البيانات، يتم استخدامهم
+            const SERVER_TRAINEES_COUNT = {{ all_trainees|length }};
+            if (foundExam.trainees && Array.isArray(foundExam.trainees) && SERVER_TRAINEES_COUNT === 0) {
                 renderDynamicTrainees(foundExam.trainees);
             }
         }
@@ -1279,7 +1339,7 @@
         } else {
             theoryScore = parseFloat(theoryValStr);
             const maxTheory = parseFloat(theoryInput.getAttribute('data-max')) || THEORY_MAX_SCORE;
-            if (isNaN(theoryScore) || theoryScore < 0 || theoryScore > maxTheory) {
+            if (isNaN(theoryScore) || theoryScore <= 0 || theoryScore > maxTheory) {
                 isInvalid = true;
                 theoryInput.classList.add('is-invalid', 'border-danger');
             } else {
@@ -1294,7 +1354,7 @@
             } else {
                 practicalScore = parseFloat(practicalValStr);
                 const maxPractical = parseFloat(practicalInput.getAttribute('data-max')) || PRACTICAL_MAX_SCORE;
-                if (isNaN(practicalScore) || practicalScore < 0 || practicalScore > maxPractical) {
+                if (isNaN(practicalScore) || practicalScore <= 0 || practicalScore > maxPractical) {
                     isInvalid = true;
                     practicalInput.classList.add('is-invalid', 'border-danger');
                 } else {
@@ -1329,7 +1389,7 @@
         if (isError) {
             if (totalCell) totalCell.innerHTML = `<span class="text-danger small fw-bold">خطأ في الدرجة</span>`;
             if (pctCell) pctCell.innerHTML = `<span class="text-danger small fw-bold">خطأ</span>`;
-            if (gradeCell) gradeCell.innerHTML = `<span class="badge bg-danger text-white px-2 py-1">تجاوز الحد</span>`;
+            if (gradeCell) gradeCell.innerHTML = `<span class="badge bg-danger text-white px-2 py-1" title="يجب أن تكون الدرجة أكبر من صفر ولا تتجاوز الدرجة العظمى">غير صالحة (صفر/سالب/تجاوز)</span>`;
             row.setAttribute('data-is-graded', 'false');
             return;
         }
@@ -1423,20 +1483,179 @@
         });
     }
 
+    // دالة إرسال الدرجات وحفظها في قاعدة البيانات مباشرة عبر الخادم
+    function saveGradesBackend(isApproval) {
+        if (isApproval) {
+            // منع الاعتماد إذا كانت هناك درجات ناقصة لأي ممتحن حاضر
+            const compResult = checkExamGradesCompletion();
+            if (!compResult.isComplete) {
+                updateGradesCompletionUI();
+                scrollToFirstIncompleteStudent();
+
+                const studentListText = compResult.incompleteStudents.slice(0, 4).join('، ') + 
+                    (compResult.incompleteStudents.length > 4 ? ` و ${compResult.incompleteStudents.length - 4} آخرين` : '');
+                alert(`تنبيه: لا يمكن اعتماد ورصد الدرجات رسمياً لوجود درجات مطلوبة لم تُرصد بعد!
+
+يوجد عدد (${compResult.incompleteCount}) ممتحن حاضر لم تكتمل درجاتهم من أصل (${compResult.totalCount}).
+الطلاب غير مكتملي الرصد: ${studentListText}
+
+يجب رصد درجات كافة الممتحنين الحاضرين وفق مكونات الامتحان (نظري/عملي) قبل الاعتماد.
+(يمكنك استخدام زر «حفظ كمسودة» في حال رغبت بحفظ ما تم رصده مؤقتاً).`);
+                return false;
+            }
+        }
+
+        const grades = [];
+        const isTheoryOnly = (CURRENT_ASSESSMENT_MODE === 'theory_only');
+        let hasValidationError = false;
+        let valErrorMessage = '';
+
+        document.querySelectorAll('.student-row').forEach(row => {
+            if (hasValidationError) return;
+            const militaryNum = row.getAttribute('data-num');
+            const attendance = row.getAttribute('data-attendance') || 'present';
+            const action = row.getAttribute('data-action') || 'retake';
+            const prevStatus = row.getAttribute('data-prev-status');
+
+            const theoryInput = row.querySelector('.theory-input');
+            const practicalInput = row.querySelector('.practical-input');
+            const notesInput = row.querySelector('.notes-input');
+
+            let theoryVal = null;
+            let practicalVal = null;
+            let isTransferred = false;
+
+            if (attendance === 'absent') {
+                if (action === 'retain' && prevStatus === 'valid') {
+                    const adoptedTheory = row.querySelector('.val-theory');
+                    const adoptedPractical = row.querySelector('.val-practical');
+                    theoryVal = adoptedTheory ? parseFloat(adoptedTheory.textContent.trim()) : null;
+                    practicalVal = isTheoryOnly ? null : (adoptedPractical ? parseFloat(adoptedPractical.textContent.trim()) : null);
+                    isTransferred = true;
+                }
+            } else if (action === 'retain' && prevStatus === 'valid') {
+                const adoptedTheory = row.querySelector('.val-theory');
+                const adoptedPractical = row.querySelector('.val-practical');
+                theoryVal = adoptedTheory ? parseFloat(adoptedTheory.textContent.trim()) : null;
+                practicalVal = isTheoryOnly ? null : (adoptedPractical ? parseFloat(adoptedPractical.textContent.trim()) : null);
+                isTransferred = true;
+            } else {
+                if (theoryInput && theoryInput.value.trim() !== '') {
+                    theoryVal = parseFloat(theoryInput.value);
+                    const maxTheory = parseFloat(theoryInput.getAttribute('data-max')) || THEORY_MAX_SCORE;
+                    if (isNaN(theoryVal) || theoryVal <= 0 || theoryVal > maxTheory) {
+                        hasValidationError = true;
+                        valErrorMessage = `درجة النظري للممتحن (رقم: ${militaryNum}) غير صالحة. يجب أن تكون أكبر من صفر ولا تتجاوز الدرجة العظمى (${maxTheory}).`;
+                        return;
+                    }
+                }
+                if (!isTheoryOnly && practicalInput && practicalInput.value.trim() !== '') {
+                    practicalVal = parseFloat(practicalInput.value);
+                    const maxPractical = parseFloat(practicalInput.getAttribute('data-max')) || PRACTICAL_MAX_SCORE;
+                    if (isNaN(practicalVal) || practicalVal <= 0 || practicalVal > maxPractical) {
+                        hasValidationError = true;
+                        valErrorMessage = `درجة العملي للممتحن (رقم: ${militaryNum}) غير صالحة. يجب أن تكون أكبر من صفر ولا تتجاوز الدرجة العظمى (${maxPractical}).`;
+                        return;
+                    }
+                }
+            }
+
+            grades.push({
+                military_number: militaryNum,
+                attendance_status: attendance,
+                action_type: action,
+                is_transferred: isTransferred,
+                theory: theoryVal,
+                practical: practicalVal,
+                notes: notesInput ? notesInput.value.trim() : ''
+            });
+        });
+
+        if (hasValidationError) {
+            alert(valErrorMessage);
+            return false;
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                is_approval: Boolean(isApproval),
+                grades: grades
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                const errStr = data.errors ? data.errors.join('\n') : (data.message || 'حدث خطأ أثناء حفظ الدرجات.');
+                alert('تعذر حفظ الدرجات:\n' + errStr);
+                return;
+            }
+
+            saveCurrentGradesToStorage();
+
+            if (isApproval) {
+                enableExtractResultButton();
+
+                const modalEl = document.getElementById('saveSuccessModal');
+                if (modalEl) {
+                    const titleEl = document.getElementById('saveModalTitle');
+                    if (titleEl) titleEl.textContent = 'تم اعتماد ورصد الدرجات رسمياً';
+                    const msgEl = document.getElementById('saveModalMessage');
+                    if (msgEl) {
+                        msgEl.innerHTML = `
+                            تم اعتماد نتائج امتحان تحديد المستوى وتحديث حالة السجل في قاعدة البيانات بنجاح إلى «تم اعتماد النتائج».<br>
+                            <div class="mt-3 p-3 bg-light rounded-3 border text-center">
+                                <span class="text-success fw-bold d-block mb-2">
+                                    <i class="bi bi-shield-lock-fill me-1"></i> أصبحت النتائج معتمدة رسمياً ومقفلة ضد التعديل.
+                                </span>
+                                <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 shadow-sm d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-printer-fill"></i>
+                                    <span>فتح وطباعة كشف النتيجة المعتمد الآن</span>
+                                </a>
+                            </div>
+                        `;
+                    }
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        window.location.reload();
+                    }, { once: true });
+                } else {
+                    alert('تم اعتماد ورصد الدرجات بنجاح في قاعدة البيانات.');
+                    window.location.reload();
+                }
+            } else {
+                const modalEl = document.getElementById('saveSuccessModal');
+                if (modalEl) {
+                    const titleEl = document.getElementById('saveModalTitle');
+                    if (titleEl) titleEl.textContent = 'تم حفظ المسودة بنجاح';
+                    const msgEl = document.getElementById('saveModalMessage');
+                    if (msgEl) msgEl.textContent = 'تم حفظ مسودة درجات وإجراءات وحضور الطلاب في قاعدة البيانات بنجاح، ويمكن استئناف الرصد لاحقاً.';
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                } else {
+                    alert('تم حفظ المسودة بنجاح في قاعدة البيانات.');
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Save grades error:', err);
+            alert('حدث خطأ في الاتصال بالخادم أثناء حفظ الدرجات.');
+        });
+
+        return true;
+    }
+
     // محاكاة حفظ كمسودة
     function simulateSaveDraft() {
-        saveCurrentGradesToStorage();
-        const modalEl = document.getElementById('saveSuccessModal');
-        if (modalEl) {
-            const titleEl = document.getElementById('saveModalTitle');
-            if (titleEl) titleEl.textContent = 'تم حفظ المسودة بنجاح';
-            const msgEl = document.getElementById('saveModalMessage');
-            if (msgEl) msgEl.textContent = 'تم حفظ مسودة درجات وإجراءات وحضور الطلاب محلياً ويمكن استئناف الرصد لاحقاً.';
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-        } else {
-            alert('تم حفظ المسودة بنجاح.');
-        }
+        saveGradesBackend(false);
     }
 
     // حفظ الدرجات الحالية في LocalStorage
@@ -1654,113 +1873,7 @@
 
     function handleFormSubmit(e) {
         e.preventDefault();
-
-        // 1. منع الاعتماد إذا كانت هناك درجات ناقصة لأي ممتحن حاضر
-        const result = checkExamGradesCompletion();
-        if (!result.isComplete) {
-            updateGradesCompletionUI();
-            scrollToFirstIncompleteStudent();
-
-            const studentListText = result.incompleteStudents.slice(0, 4).join('، ') + (result.incompleteStudents.length > 4 ? ` و ${result.incompleteStudents.length - 4} آخرين` : '');
-            alert(`تنبيه: لا يمكن اعتماد ورصد الدرجات رسمياً لوجود درجات مطلوبة لم تُرصد بعد!
-
-يوجد عدد (${result.incompleteCount}) ممتحن حاضر لم تكتمل درجاتهم من أصل (${result.totalCount}).
-الطلاب غير مكتملي الرصد: ${studentListText}
-
-يجب رصد درجات كافة الممتحنين الحاضرين وفق مكونات الامتحان (نظري/عملي) قبل الاعتماد.
-(يمكنك استخدام زر «حفظ كمسودة» في حال رغبت بحفظ ما تم رصده مؤقتاً).`);
-            return false;
-        }
-
-        // 2. حفظ الدرجات الحالية وتفعيل الاعتماد
-        saveCurrentGradesToStorage();
-        enableExtractResultButton();
-
-        // حفظ تاريخ اعتماد الدرجات الفعلي (الشهر والسنة فقط وفق القالب الأصلي)
-        try {
-            const now = new Date();
-            const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-            const formattedApprovalDate = `${arabicMonths[now.getMonth()]} ${now.getFullYear()}م`;
-            const effectiveId = (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.id) ? CURRENT_LOADED_EXAM.id : "{{ exam.id }}";
-            localStorage.setItem('placement_approval_date_' + effectiveId, formattedApprovalDate);
-            localStorage.setItem('placement_approved_' + effectiveId, 'true');
-            if (effectiveId !== "{{ exam.id }}") {
-                localStorage.setItem('placement_approval_date_' + "{{ exam.id }}", formattedApprovalDate);
-                localStorage.setItem('placement_approved_' + "{{ exam.id }}", 'true');
-            }
-            if (CURRENT_LOADED_EXAM && CURRENT_LOADED_EXAM.request_internal_id) {
-                localStorage.setItem('placement_approved_' + CURRENT_LOADED_EXAM.request_internal_id, 'true');
-            }
-        } catch (e) { }
-
-        // 3. تحديث حالة الامتحان في التخزين المحلي إلى "تم اعتماد النتائج" وتحديث المشاركين
-        try {
-            const candidateKeys = [
-                'GASIM_PLACEMENT_EXAMS_DATA_V7',
-                'gasim_placement_exams',
-                'GASIM_PLACEMENT_EXAMS_DATA_V5',
-                'GASIM_PLACEMENT_EXAMS_DATA_V4',
-                'GASIM_PLACEMENT_EXAMS_DATA_V3'
-            ];
-            candidateKeys.forEach(k => {
-                const raw = localStorage.getItem(k);
-                if (raw) {
-                    const arr = JSON.parse(raw);
-                    if (Array.isArray(arr)) {
-                        const ex = arr.find(item => String(item.id) === String("{{ exam.id }}") || String(item.exam_number) === String("{{ exam.id }}"));
-                        if (ex) {
-                            ex.status = 'approved';
-                            ex.status_label = 'تم اعتماد النتائج';
-                            ex.is_results_approved = true;
-
-                            const storedGradesRaw = localStorage.getItem('placement_grades_' + "{{ exam.id }}");
-                            if (storedGradesRaw && Array.isArray(ex.trainees)) {
-                                const storedGrades = JSON.parse(storedGradesRaw);
-                                ex.trainees.forEach(tr => {
-                                    const g = storedGrades.find(item => String(item.military_number) === String(tr.military_number));
-                                    if (g) {
-                                        tr.attendance_status = g.attendance_status || 'present';
-                                        tr.theory_grade = g.theory;
-                                        tr.practical_grade = g.practical;
-                                        tr.total_grade = g.total;
-                                        tr.percentage = g.percentage;
-                                        tr.notes = g.notes;
-                                    }
-                                });
-                            }
-                            localStorage.setItem(k, JSON.stringify(arr));
-                        }
-                    }
-                }
-            });
-        } catch (err) {
-            console.warn('Failed to update exam status in LocalStorage:', err);
-        }
-
-        const modalEl = document.getElementById('saveSuccessModal');
-        if (modalEl) {
-            const titleEl = document.getElementById('saveModalTitle');
-            if (titleEl) titleEl.textContent = 'تم اعتماد ورصد الدرجات رسمياً';
-            const msgEl = document.getElementById('saveModalMessage');
-            if (msgEl) {
-                msgEl.innerHTML = `
-                    تم اعتماد نتائج امتحان تحديد المستوى بنجاح وتحديث حالة السجل إلى «تم اعتماد النتائج».<br>
-                    <div class="mt-3 p-3 bg-light rounded-3 border text-center">
-                        <span class="text-success fw-bold d-block mb-2">
-                            <i class="bi bi-check-circle-fill me-1"></i> أصبح خيار «استخراج النتيجة» أعلى الصفحة متاحاً الآن.
-                        </span>
-                        <a href="{% url 'training:placement_results_sheet' exam.id %}" target="_blank" class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-2 shadow-sm d-inline-flex align-items-center gap-1">
-                            <i class="bi bi-printer-fill"></i>
-                            <span>فتح وطباعة كشف النتيجة المعتمد الآن</span>
-                        </a>
-                    </div>
-                `;
-            }
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-        } else {
-            alert('تم اعتماد ورصد الدرجات بنجاح. أصبحت النتيجة معتمدة وخيار استخراج النتيجة متاحاً الآن.');
-        }
+        return saveGradesBackend(true);
     }
 
     // تهيئة الصفحة عند التحميل

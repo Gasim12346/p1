@@ -55,6 +55,18 @@ def admin_report_print_view(request):
     system_settings = SystemSettings.get_settings(institute=request.institute)
 
     params = request.GET
+
+    # معالجة تقرير امتحانات تحديد المستوى المخصص للطباعة الرسمية
+    if params.get('report_type') == 'placement_exams':
+        report_data = get_report_data(params, institute=request.institute)
+        return render(request, 'training/admin_report_print.html', {
+            'is_placement_report': True,
+            'report_data': report_data,
+            'filters_summary': report_data.get('filters_summary', ''),
+            'cert_settings': cert_settings,
+            'system_settings': system_settings,
+        })
+
     has_filters = any(k in params for k in [
         'start_date', 'end_date', 'all_dates', 'force', 'unit',
         'course_id', 'category_id', 'session_id', 'status',
@@ -535,6 +547,16 @@ def reports_hub_view(request):
             'status': s.status
         })
 
+    # خيارات الفلترة الخاصة بامتحانات تحديد المستوى
+    from apps.placement_exams.models import PlacementExamOrder
+    placement_qs = PlacementExamOrder.objects.all()
+    if request.institute:
+        placement_qs = placement_qs.filter(institute=request.institute)
+
+    placement_purposes = sorted([p for p in placement_qs.exclude(purpose='').values_list('purpose', flat=True).distinct() if p])
+    placement_sources = sorted([s for s in placement_qs.exclude(source_entity='').values_list('source_entity', flat=True).distinct() if s])
+    placement_years = sorted(list(placement_qs.values_list('year', flat=True).distinct()), reverse=True)
+
     # جلب بيانات التقرير المفلترة مع عزل بيانات المعهد
     report_data = get_report_data(request.GET, institute=request.institute)
     system_settings = SystemSettings.get_settings(institute=request.institute)
@@ -548,6 +570,9 @@ def reports_hub_view(request):
         'forces': forces,
         'units': units,
         'trainee_categories': trainee_categories,
+        'placement_purposes': placement_purposes,
+        'placement_sources': placement_sources,
+        'placement_years': placement_years,
         'system_settings': system_settings,
         'current_filters': request.GET,
         'force_units_map_json': json.dumps(force_units_map, ensure_ascii=False),

@@ -354,6 +354,7 @@
                         <option value="dropped_trainees" {% if report_data.report_type == 'dropped_trainees' %}selected{% endif %}>4. تقرير الدارسين المقطوعة دوراتهم وأوامر التحرك</option>
                         <option value="instructors" {% if report_data.report_type == 'instructors' %}selected{% endif %}>5. تقرير هيئة التعليم وتكليفات المعلمين</option>
                         <option value="course_subjects" {% if report_data.report_type == 'course_subjects' %}selected{% endif %}>6. تقرير المواد الدراسية وهيئة التدريس ومعدلات النجاح</option>
+                        <option value="placement_exams" {% if report_data.report_type == 'placement_exams' %}selected{% endif %}>7. تقرير امتحانات تحديد المستوى</option>
                     </select>
                 </div>
 
@@ -394,6 +395,112 @@
                 </div>
 
                 <hr class="my-2 border-slate-200">
+
+                {% if report_data.report_type == 'placement_exams' %}
+                <!-- فلاتر امتحانات تحديد المستوى المخصصة (بدون فلتر اسم الدورة وبدون فلتر المواد الامتحانية) -->
+                <div class="col-6 col-md-4 col-lg-3">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-bullseye text-primary me-1"></i>غرض الامتحان:
+                    </label>
+                    <select name="placement_purpose" id="filter_placement_purpose" class="form-select form-select-sm searchable-select">
+                        <option value="">-- كافة الأغراض --</option>
+                        {% for pur in placement_purposes %}
+                            <option value="{{ pur }}" {% if current_filters.placement_purpose == pur %}selected{% endif %}>{{ pur }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-3">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-building text-primary me-1"></i>الجهة الطالبة / الراسلة:
+                    </label>
+                    <select name="placement_source_entity" id="filter_placement_source" class="form-select form-select-sm searchable-select">
+                        <option value="">-- كافة الجهات --</option>
+                        {% for src in placement_sources %}
+                            <option value="{{ src }}" {% if current_filters.placement_source_entity == src %}selected{% endif %}>{{ src }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-calendar-check text-primary me-1"></i>سنة الطلب:
+                    </label>
+                    <select name="placement_year" id="filter_placement_year" class="form-select form-select-sm searchable-select">
+                        <option value="">-- كافة السنوات --</option>
+                        {% for yr in placement_years %}
+                            <option value="{{ yr }}" {% if current_filters.placement_year == yr|stringformat:"s" %}selected{% endif %}>{{ yr }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-people-fill text-primary me-1"></i>فئة الممتحنين:
+                    </label>
+                    <select name="placement_target_cat" id="filter_placement_target_cat" class="form-select form-select-sm searchable-select">
+                        <option value="">-- كافة الفئات --</option>
+                        <option value="officers" {% if current_filters.placement_target_cat == 'officers' %}selected{% endif %}>ضباط</option>
+                        <option value="ncos" {% if current_filters.placement_target_cat == 'ncos' %}selected{% endif %}>ضباط صف</option>
+                        <option value="civilians" {% if current_filters.placement_target_cat == 'civilians' %}selected{% endif %}>مدنيين</option>
+                        <option value="mixed" {% if current_filters.placement_target_cat == 'mixed' %}selected{% endif %}>مشترك</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-dark fw-bold mb-1">
+                        <i class="bi bi-shield-check text-success me-1"></i>حالة الامتحان:
+                    </label>
+                    <select name="placement_status" id="filter_placement_status" class="form-select form-select-sm border-success fw-semibold searchable-select">
+                        <option value="all" {% if current_filters.placement_status == 'all' or not current_filters.placement_status %}selected{% endif %}>-- كافة الحالات --</option>
+                        <option value="approved" {% if current_filters.placement_status == 'approved' %}selected{% endif %}>معتمد نهائياً</option>
+                        <option value="pending_approval" {% if current_filters.placement_status == 'pending_approval' %}selected{% endif %}>بانتظار الاعتماد</option>
+                        <option value="confirmed" {% if current_filters.placement_status == 'confirmed' %}selected{% endif %}>تم تأكيد الانعقاد</option>
+                        <option value="in_progress" {% if current_filters.placement_status == 'in_progress' %}selected{% endif %}>قيد التنفيذ</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-3">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="bi bi-check-circle text-primary me-1"></i>حالة النتيجة:
+                    </label>
+                    <select name="placement_result_status" id="filter_placement_result_status" class="form-select form-select-sm searchable-select">
+                        <option value="all" {% if current_filters.placement_result_status == 'all' or not current_filters.placement_result_status %}selected{% endif %}>-- كافة النتائج --</option>
+                        <option value="passed" {% if current_filters.placement_result_status == 'passed' %}selected{% endif %}>الناجحون فقط</option>
+                        <option value="failed" {% if current_filters.placement_result_status == 'failed' %}selected{% endif %}>الراسبون فقط</option>
+                        <option value="absent" {% if current_filters.placement_result_status == 'absent' %}selected{% endif %}>الغائبون فقط</option>
+                        <option value="approved_only" {% if current_filters.placement_result_status == 'approved_only' %}selected{% endif %}>النتائج المعتمدة فقط</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-8 col-lg-5">
+                    <label class="form-label small text-muted mb-1">بحث نصي (الكود، الإشارة، الجهة، أو اسم الممتحن):</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="اكتب كود الطلب أو الإشارة أو اسم الدارس للبحث السريع..." value="{{ current_filters.q }}">
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-12 col-lg-4 d-flex align-items-end justify-content-end gap-2 mt-3 flex-wrap">
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-funnel-fill"></i>
+                        <span>تطبيق الفلترة وعرض التقرير</span>
+                    </button>
+                    <a href="{% url 'training:reports_export_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm px-3 fw-bold d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        <span>حفظ إكسل</span>
+                    </a>
+                    <a href="{% url 'training:admin_report_print' %}?{{ request.GET.urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm px-3 fw-bold d-inline-flex align-items-center gap-1" title="معاينة وطباعة التقرير الرسمي المعتمد">
+                        <i class="bi bi-printer-fill"></i>
+                        <span>طباعة رسمية</span>
+                    </a>
+                    <a href="{% url 'training:reports_hub' %}?report_type=placement_exams" class="btn btn-outline-secondary btn-sm px-3" title="إعادة تعيين الفلاتر">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>إعادة تعيين</span>
+                    </a>
+                </div>
+
+                {% else %}
 
                 <!-- 3. Course & Trainee Dimensions -->
                 <div class="col-6 col-md-4 col-lg-3">
@@ -520,6 +627,7 @@
                         <span>إعادة تعيين</span>
                     </a>
                 </div>
+                {% endif %}
 
             </div>
         </form>
@@ -699,6 +807,46 @@
                     <div class="kpi-num text-warning">{{ report_data.stats.total_graded_exams }}</div>
                 </div>
             </div>
+        {% elif report_data.report_type == 'placement_exams' %}
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-primary">
+                    <div class="kpi-title">إجمالي أوامر الامتحانات</div>
+                    <div class="kpi-num text-primary">{{ report_data.stats.total_exams }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-success">
+                    <div class="kpi-title">الامتحانات المعتمدة</div>
+                    <div class="kpi-num text-success">{{ report_data.stats.approved_exams }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-warning">
+                    <div class="kpi-title">قيد التنفيذ والمؤكدة</div>
+                    <div class="kpi-num text-warning">{{ report_data.stats.active_exams }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-info">
+                    <div class="kpi-title">إجمالي الممتحنين</div>
+                    <div class="kpi-num text-info">{{ report_data.stats.total_candidates }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-success">
+                    <div class="kpi-title">الناجحون بالامتحان</div>
+                    <div class="kpi-num text-success">{{ report_data.stats.total_passed }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="kpi-stat-card border-secondary">
+                    <div class="kpi-title">نسبة النجاح العامة</div>
+                    <div class="kpi-num text-dark">{{ report_data.stats.overall_pass_rate }}%</div>
+                    <div class="small fw-semibold text-muted mt-1">
+                        {{ report_data.stats.officers }} ض / {{ report_data.stats.nco }} صف / {{ report_data.stats.civilians }} مد
+                    </div>
+                </div>
+            </div>
         {% endif %}
     </div>
 
@@ -836,6 +984,8 @@
                             <th class="text-center">إجراءات ووثائق</th>
                         {% elif report_data.report_type == 'sessions' %}
                             <th class="text-center" style="width: 170px;">تقرير الدورة والدارسين</th>
+                        {% elif report_data.report_type == 'placement_exams' %}
+                            <th class="text-center" style="width: 180px;">إجراءات الامتحان</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -848,11 +998,11 @@
                                         <span class="badge bg-light text-dark border">{{ cell.value }}</span>
                                     {% elif cell.key == 'result_status' %}
                                         <span class="badge bg-{{ row.status_class }} px-2 py-1">{{ cell.value }}</span>
-                                    {% elif cell.key == 'percentage' %}
-                                        {% if row.percentage_num is not None %}
-                                            <span class="fw-bold {% if row.percentage_num >= 50 %}text-success{% else %}text-danger{% endif %}">{{ cell.value }}</span>
+                                    {% elif cell.key == 'percentage' or cell.key == 'pass_rate' %}
+                                        {% if row.percentage_num is not None or row.pass_rate_num is not None %}
+                                            <span class="fw-bold {% if row.percentage_num >= 50 or row.pass_rate_num >= 50 %}text-success{% else %}text-danger{% endif %}">{{ cell.value }}</span>
                                         {% else %}
-                                            <span class="text-muted">---</span>
+                                            <span class="text-muted">{{ cell.value|default:"---" }}</span>
                                         {% endif %}
                                     {% elif cell.key == 'session_status_label' or cell.key == 'status_label' or cell.key == 'session_status' %}
                                         <span class="badge bg-{{ row.session_status_class|default:row.status_class|default:'primary' }} px-2 py-1">{{ cell.value }}</span>
@@ -886,6 +1036,17 @@
                                     </a>
                                     <a href="{% url 'training:reports_export_excel' %}?report_type=trainees&session_id={{ row.id }}" class="btn btn-sm btn-outline-success fw-bold py-1 px-2" title="تصدير ملف إكسل متكامل للدورة (ورقة الدارسين + ورقة المواد والأساتذة)">
                                         <i class="bi bi-file-earmark-excel-fill"></i> إكسل
+                                    </a>
+                                </td>
+                            {% elif report_data.report_type == 'placement_exams' %}
+                                <td class="text-center text-nowrap">
+                                    {% if row.is_approved or row.is_confirmed %}
+                                        <a href="{% url 'training:placement_results_sheet' row.id %}" target="_blank" class="btn btn-sm btn-outline-success fw-bold py-1 px-2" title="استعراض وطباعة كشف النتيجة المعتمد">
+                                            <i class="bi bi-file-earmark-check"></i> كشف النتيجة
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'training:placement_results_entry' row.id %}" class="btn btn-sm btn-outline-primary fw-bold py-1 px-2" title="رصد الدرجات أو تفاصيل الطلب">
+                                        <i class="bi bi-pencil-square"></i> رصد/معاينة
                                     </a>
                                 </td>
                             {% endif %}

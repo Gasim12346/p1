@@ -38,6 +38,12 @@ from training.forms import (
     MovementOrderSettingsForm, OFFICER_RANKS,
     SystemSettingsForm, UserCreateForm, UserEditForm, AdminLoginForm
 )
+from apps.placement_exams.models import (
+    PlacementExamOrder,
+    PlacementExamCandidate,
+    PlacementExamStatus,
+    CandidateClassification,
+)
 from apps.reports.reports import (
     get_report_data, export_report_to_excel, get_default_date_range, get_sessions_subjects_summary
 )
@@ -1327,6 +1333,9 @@ def results_center_view(request):
         else:
             sessions = sessions.none()
 
+    # التبويب الأول مخصص للحالات الأخرى فقط؛ السجلات المعتمدة تُعرض في السجل التاريخي الشامل
+    sessions = sessions.exclude(status='completed')
+
     if session_q:
         sessions = sessions.filter(
             Q(course__name__icontains=session_q) |
@@ -1334,7 +1343,7 @@ def results_center_view(request):
         )
     if session_cat:
         sessions = sessions.filter(course__category_id=session_cat)
-    if session_status:
+    if session_status and session_status != 'completed':
         sessions = sessions.filter(status=session_status)
     if session_year and session_year.isdigit():
         sessions = sessions.filter(start_date__year=int(session_year))
@@ -1448,6 +1457,156 @@ def results_center_view(request):
     current_year = datetime.now().year
     for y in range(current_year - 5, current_year + 2):
         db_years.add(y)
+
+    # -------------------------------------------------------------
+    # سجلات امتحانات تحديد المستوى: التبويب الأول (رصد الدرجات)
+    # -------------------------------------------------------------
+    session_record_type = request.GET.get('session_record_type', '').strip() or request.GET.get('record_type', '').strip() or 'courses'
+    placement_q = request.GET.get('placement_q', '').strip()
+    placement_target_cat = request.GET.get('placement_target_cat', '').strip()
+    placement_year = request.GET.get('placement_year', '').strip()
+    placement_status = request.GET.get('placement_status', '').strip()
+
+    if session_record_type == 'placement':
+        if not placement_q and session_q:
+            placement_q = session_q
+        if not placement_target_cat and session_target_cat:
+            placement_target_cat = session_target_cat
+        if not placement_year and session_year:
+            placement_year = session_year
+        if not placement_status and session_status:
+            placement_status = session_status
+
+    placement_orders_base = PlacementExamOrder.objects.select_related('supervisor', 'institute').prefetch_related('candidates', 'candidates__trainee').all()
+    if request.institute:
+        placement_orders_base = placement_orders_base.filter(Q(institute=request.institute) | Q(institute__isnull=True))
+
+    if is_instructor_user(request.user) and not is_admin_user(request.user):
+        inst = get_user_instructor(request.user)
+        if inst:
+            placement_orders_base = placement_orders_base.filter(supervisor=inst)
+        else:
+            placement_orders_base = placement_orders_base.none()
+
+    # التبويب الأول مخصص للحالات الأخرى فقط؛ السجلات المعتمدة تُعرض في السجل التاريخي الشامل
+    placement_orders_base = placement_orders_base.exclude(status=PlacementExamStatus.APPROVED)
+
+    placement_orders = placement_orders_base
+
+    if placement_q:
+        placement_orders = placement_orders.filter(
+            Q(order_code__icontains=placement_q) |
+            Q(signal_number__icontains=placement_q) |
+            Q(source_entity__icontains=placement_q) |
+            Q(host_entity__icontains=placement_q) |
+            Q(purpose__icontains=placement_q) |
+            Q(sub_purpose__icontains=placement_q) |
+            Q(subject_name__icontains=placement_q) |
+            Q(candidates__name_snapshot__icontains=placement_q) |
+            Q(candidates__military_number_snapshot__icontains=placement_q)
+        ).distinct()
+
+    if placement_status and placement_status != 'approved':
+        placement_orders = placement_orders.filter(status=placement_status)
+
+    if placement_year and placement_year.isdigit():
+        placement_orders = placement_orders.filter(Q(year=int(placement_year)) | Q(exam_date__year=int(placement_year)))
+
+    cat_map = {
+        'officer': 'officers',
+        'nco': 'ncos',
+        'joint': 'mixed',
+        'civilian': 'civilians',
+        'officers': 'officers',
+        'ncos': 'ncos',
+        'mixed': 'mixed',
+        'civilians': 'civilians',
+    }
+
+    placement_counts = {
+        'all': placement_orders.count(),
+        'officer': placement_orders.filter(classification='officers').count(),
+        'nco': placement_orders.filter(classification='ncos').count(),
+        'joint': placement_orders.filter(classification='mixed').count(),
+        'civilian': placement_orders.filter(classification='civilians').count(),
+    }
+
+    if placement_target_cat and placement_target_cat != 'all':
+        target_db_cat = cat_map.get(placement_target_cat, placement_target_cat)
+        placement_orders = placement_orders.filter(classification=target_db_cat)
+
+    placement_orders = placement_orders.order_by('-exam_date', '-id')
+
+    # -------------------------------------------------------------
+    # سجلات امتحانات تحديد المستوى: التبويب الثاني (السجل التاريخي الشامل)
+    # شرط صارم بالمنطق وقاعدة البيانات: المعتمدة فقط (approved only)
+    # -------------------------------------------------------------
+    archive_record_type = request.GET.get('archive_record_type', '').strip() or request.GET.get('archive_type', '').strip() or 'courses'
+    archive_placement_q = request.GET.get('archive_placement_q', '').strip()
+    archive_placement_target_cat = request.GET.get('archive_placement_target_cat', '').strip()
+    archive_placement_year = request.GET.get('archive_placement_year', '').strip()
+
+    if archive_record_type == 'placement':
+        if not archive_placement_q and search_query:
+            archive_placement_q = search_query
+        if not archive_placement_target_cat and trainee_cat_filter:
+            archive_placement_target_cat = trainee_cat_filter
+        if not archive_placement_year and year_filter:
+            archive_placement_year = year_filter
+
+    # شرط حاسم: تظهر فقط سجلات الامتحانات التي وصلت لحالة الاعتماد النهائية (approved)
+    archive_placement_orders_base = PlacementExamOrder.objects.filter(
+        status=PlacementExamStatus.APPROVED
+    ).select_related('supervisor', 'institute').prefetch_related('candidates', 'candidates__trainee')
+
+    if request.institute:
+        archive_placement_orders_base = archive_placement_orders_base.filter(Q(institute=request.institute) | Q(institute__isnull=True))
+
+    if is_instructor_user(request.user) and not is_admin_user(request.user):
+        inst = get_user_instructor(request.user)
+        if inst:
+            archive_placement_orders_base = archive_placement_orders_base.filter(supervisor=inst)
+        else:
+            archive_placement_orders_base = archive_placement_orders_base.none()
+
+    archive_placement_orders = archive_placement_orders_base
+
+    if archive_placement_q:
+        archive_placement_orders = archive_placement_orders.filter(
+            Q(order_code__icontains=archive_placement_q) |
+            Q(signal_number__icontains=archive_placement_q) |
+            Q(source_entity__icontains=archive_placement_q) |
+            Q(host_entity__icontains=archive_placement_q) |
+            Q(purpose__icontains=archive_placement_q) |
+            Q(sub_purpose__icontains=archive_placement_q) |
+            Q(subject_name__icontains=archive_placement_q) |
+            Q(candidates__name_snapshot__icontains=archive_placement_q) |
+            Q(candidates__military_number_snapshot__icontains=archive_placement_q)
+        ).distinct()
+
+    if archive_placement_year and archive_placement_year.isdigit():
+        archive_placement_orders = archive_placement_orders.filter(
+            Q(year=int(archive_placement_year)) | Q(exam_date__year=int(archive_placement_year))
+        )
+
+    archive_placement_counts = {
+        'all': archive_placement_orders.count(),
+        'officer': archive_placement_orders.filter(classification='officers').count(),
+        'nco': archive_placement_orders.filter(classification='ncos').count(),
+        'joint': archive_placement_orders.filter(classification='mixed').count(),
+        'civilian': archive_placement_orders.filter(classification='civilians').count(),
+    }
+
+    if archive_placement_target_cat and archive_placement_target_cat != 'all':
+        target_db_cat = cat_map.get(archive_placement_target_cat, archive_placement_target_cat)
+        archive_placement_orders = archive_placement_orders.filter(classification=target_db_cat)
+
+    archive_placement_orders = archive_placement_orders.order_by('-exam_date', '-id')
+
+    # قائمة السنوات المتاحة للفلترة
+    exam_years = set(PlacementExamOrder.objects.dates('exam_date', 'year').values_list('exam_date__year', flat=True))
+    exam_years.update(PlacementExamOrder.objects.values_list('year', flat=True))
+    db_years.update([y for y in exam_years if y])
     available_years = sorted(list(db_years), reverse=True)
 
     # إحصائيات عامة للنتائج
@@ -1464,7 +1623,9 @@ def results_center_view(request):
         active_tab = 'archive'
     elif (
         search_query or grade_filter or trainee_cat_filter or selected_session_filter or
-        year_filter or archive_cat or archive_status or archive_session_id
+        year_filter or archive_cat or archive_status or archive_session_id or
+        archive_record_type == 'placement' or archive_placement_q or archive_placement_target_cat or
+        archive_placement_year
     ):
         active_tab = 'archive'
     else:
@@ -1489,7 +1650,7 @@ def results_center_view(request):
             selected_archive_subjects = selected_archive_session.get_subjects()
             selected_archive_enrollments = selected_archive_session.enrollments.filter(is_dropped=False).select_related('trainee').prefetch_related('grades').all()
             selected_archive_total_possible = selected_archive_session.total_possible_score
-            selected_archive_is_locked = (selected_archive_session.status == 'completed' and not is_admin_user(request.user))
+            selected_archive_is_locked = (selected_archive_session.status == 'completed')
 
     context = {
         'sessions': sessions,
@@ -1504,6 +1665,19 @@ def results_center_view(request):
         'session_year': session_year,
         'session_target_cat': session_target_cat,
         'session_counts': session_counts,
+        'session_record_type': session_record_type,
+        'placement_orders': placement_orders,
+        'placement_counts': placement_counts,
+        'placement_q': placement_q,
+        'placement_target_cat': placement_target_cat,
+        'placement_year': placement_year,
+        'placement_status': placement_status,
+        'archive_record_type': archive_record_type,
+        'archive_placement_orders': archive_placement_orders,
+        'archive_placement_counts': archive_placement_counts,
+        'archive_placement_q': archive_placement_q,
+        'archive_placement_target_cat': archive_placement_target_cat,
+        'archive_placement_year': archive_placement_year,
         'search_query': search_query,
         'archive_q': search_query,
         'archive_cat': archive_cat,
@@ -1627,9 +1801,9 @@ def results_entry_view(request, session_id):
 
     # معالجة حفظ الدرجات والاعتماد
     if request.method == 'POST' and ('save_grades' in request.POST or 'mark_completed' in request.POST):
-        # إذا كانت الدورة معتمدة ومكتملة، لا يُسمح بتعديل درجاتها إلا لمدير النظام
-        if session.status == 'completed' and not is_admin:
-            messages.error(request, 'إجراء محظور: نتائج هذه الدورة معتمدة ومقفلة، وتعديل الدرجات محصور بمدير النظام (Admin) فقط.')
+        # إذا كانت الدورة معتمدة ومكتملة، يمنع تعديل أو رصد الدرجات نهائياً
+        if session.status == 'completed':
+            messages.error(request, 'إجراء محظور: نتائج هذه الدورة معتمدة ومقفلة نهائياً، ولا يمكن تعديل أو رصد الدرجات للدورات المعتمدة.')
             return redirect('training:results_entry', session_id=session.id)
 
         # التحقق من طلب الاعتماد (mark_completed)
@@ -1710,8 +1884,8 @@ def results_entry_view(request, session_id):
                         try:
                             score = Decimal(grade_raw)
                             max_sub_grade = Decimal(str(sub.max_grade))
-                            if score < Decimal('0.00'):
-                                validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" لا يمكن أن تكون أقل من صفر.')
+                            if score <= Decimal('0.00'):
+                                validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" يجب أن تكون أكبر من صفر (يمنع إدخال الصفر أو القيم السالبة).')
                             elif score > max_sub_grade:
                                 validation_errors.append(f'درجة مادة "{sub.name}" للدارس "{en.trainee.name}" ({score}) تتجاوز الحد الأقصى للمادة ({sub.max_grade}).')
                         except (ValueError, InvalidOperation):
@@ -1812,7 +1986,7 @@ def results_entry_view(request, session_id):
                 except ValueError:
                     pass
 
-    is_locked = (session.status == 'completed' and not is_admin_user(request.user))
+    is_locked = (session.status == 'completed')
 
     # فحص اكتمال رصد كافة درجات المواد والمواظبة
     subjects_total_max = sum(s.max_grade for s in subjects)
@@ -2066,7 +2240,7 @@ def session_discipline_attendance_view(request, session_id):
         'days_list': days_list,
         'other_infractions_list': OTHER_INFRACTIONS_LIST,
         'can_edit': can_edit,
-        'is_locked': session.status == 'completed' and not is_adm,
+        'is_locked': session.status == 'completed',
     }
     return render(request, 'training/session_discipline_attendance.html', context)
 

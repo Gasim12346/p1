@@ -6,18 +6,23 @@
 3. كشف النتيجة الرسمي القابل للطباعة بحجم A4 والتجزئة التلقائية للصفحات.
 """
 
-from decimal import Decimal
+import json
+from decimal import Decimal, InvalidOperation
+from datetime import datetime, date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST, require_http_methods
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Q, Max
+from django.http import JsonResponse
 
 from apps.core.models import Institute, SystemSettings
 from apps.documents.models import CertificateSettings
 from apps.core.permissions import is_instructor_user, is_admin_user
 from apps.academic.models import Instructor
-from apps.trainees.models import Trainee
+from apps.trainees.models import Trainee, TraineeRelative
 from .models import (
     PlacementExamOrder,
     PlacementExamCandidate,
@@ -136,6 +141,109 @@ def get_sample_placement_exams():
     return sample_exams
 
 
+def get_candidate_previous_result(military_number, current_order=None, receipt_date=None):
+    """
+    البحث التلقائي في الطلبات والامتحانات السابقة للممتحن:
+    إن وُجدت نتيجة سابقة معتمدة ولم تتجاوز فترة صلاحيتها (180 يوماً / 6 أشهر من تاريخ استلام الطلب)،
+    يتم إرجاع بياناتها لنقلها لصفحة رصد الدرجات والنتيجة مع إمكانية تعديلها بعد تأكيد الانعقاد.
+    """
+    if not military_number:
+        return {
+            'status': 'none',
+            'label': 'لا توجد نتيجة سابقة',
+            'badge': 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+            'date': None,
+            'source': None,
+            'has_breakdown': False,
+            'theory': None,
+            'practical': None,
+            'total': None,
+            'action': 'exam',
+            'candidate_id': None,
+            'is_valid': False,
+        }
+
+    mil_str = str(military_number).strip()
+    qs = PlacementExamCandidate.objects.filter(
+        military_number_snapshot=mil_str,
+        order__status=PlacementExamStatus.APPROVED,
+        is_graded=True,
+        total_score__isnull=False
+    )
+    if current_order and getattr(current_order, 'id', None):
+        qs = qs.exclude(order_id=current_order.id)
+
+    prev_cand = qs.order_by('-order__exam_date', '-id').first()
+    if not prev_cand:
+        return {
+            'status': 'none',
+            'label': 'لا توجد نتيجة سابقة',
+            'badge': 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+            'date': None,
+            'source': None,
+            'has_breakdown': False,
+            'theory': None,
+            'practical': None,
+            'total': None,
+            'action': 'exam',
+            'candidate_id': None,
+            'is_valid': False,
+        }
+
+    ref_date = receipt_date
+    if not ref_date and current_order and getattr(current_order, 'receipt_date', None):
+        ref_date = current_order.receipt_date
+    if not ref_date:
+        ref_date = timezone.now().date()
+    elif isinstance(ref_date, str):
+        try:
+            ref_date = datetime.strptime(ref_date, '%Y-%m-%d').date()
+        except ValueError:
+            ref_date = timezone.now().date()
+
+    exam_date = prev_cand.order.exam_date
+    diff_days = (ref_date - exam_date).days if (ref_date and exam_date) else 999
+    is_valid = (0 <= diff_days <= 180)
+
+    source_display = f"{prev_cand.order.purpose} ({prev_cand.order.order_code or f'طلب #{prev_cand.order.internal_order_number}'})"
+    theory = float(prev_cand.theory_score) if prev_cand.theory_score is not None else None
+    practical = float(prev_cand.practical_score) if prev_cand.practical_score is not None else None
+    total = float(prev_cand.total_score) if prev_cand.total_score is not None else 0.0
+
+    if is_valid:
+        return {
+            'status': 'valid',
+            'label': 'صالحة (أقل من 6 أشهر)',
+            'badge': 'bg-success-subtle text-success border border-success-subtle',
+            'date': exam_date.strftime('%Y-%m-%d') if exam_date else '',
+            'source': source_display,
+            'has_breakdown': bool(theory is not None and practical is not None),
+            'theory': theory,
+            'practical': practical,
+            'total': total,
+            'action': 'retain',
+            'candidate_id': prev_cand.id,
+            'diff_days': diff_days,
+            'is_valid': True,
+        }
+    else:
+        return {
+            'status': 'expired',
+            'label': 'انتهت صلاحية النتيجة (> 6 أشهر)',
+            'badge': 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+            'date': exam_date.strftime('%Y-%m-%d') if exam_date else '',
+            'source': source_display,
+            'has_breakdown': bool(theory is not None and practical is not None),
+            'theory': theory,
+            'practical': practical,
+            'total': total,
+            'action': 'exam',
+            'candidate_id': prev_cand.id,
+            'diff_days': diff_days,
+            'is_valid': False,
+        }
+
+
 def _order_to_dict(order):
     """تحويل نموذج PlacementExamOrder إلى قاموس متوافق كلياً مع قوالب العرض"""
     code_display = order.order_code or f"طلب #{str(order.internal_order_number).zfill(3)}"
@@ -178,9 +286,9 @@ def _order_to_dict(order):
         'sub_purpose': order.sub_purpose,
         'classification': order.classification,
         'classification_label': order.get_classification_display(),
-        'receipt_date': order.receipt_date.strftime('%Y-%m-%d') if order.receipt_date else '',
-        'exam_date': order.exam_date.strftime('%Y-%m-%d') if order.exam_date else '',
-        'exam_time': order.exam_time.strftime('%H:%M') if order.exam_time else '09:00',
+        'receipt_date': order.receipt_date.strftime('%Y-%m-%d') if hasattr(order.receipt_date, 'strftime') else str(order.receipt_date or ''),
+        'exam_date': order.exam_date.strftime('%Y-%m-%d') if hasattr(order.exam_date, 'strftime') else str(order.exam_date or ''),
+        'exam_time': order.exam_time.strftime('%H:%M') if hasattr(order.exam_time, 'strftime') else (str(order.exam_time) if order.exam_time else '09:00'),
         'exam_day_name': '',
         'subject': order.subject_name,
         'title': f"امتحان تحديد المستوى ({order.subject_name})",
@@ -241,24 +349,45 @@ def placement_exams_list_view(request):
     exam_dates = sorted(list(set(e['exam_date'] for e in exams if e.get('exam_date'))), reverse=True)
     exam_years = sorted(list(set(e['exam_date'][:4] for e in exams if e.get('exam_date'))), reverse=True)
 
-    # قائمة الدارسين المعتمدة
-    trainees_qs = Trainee.objects.all()[:30]
-    if trainees_qs.exists():
+    # قائمة الدارسين المعتمدة من قاعدة البيانات الفعلية
+    def _resolve_trainee_rank(t):
+        r = getattr(t, 'rank', '') or ''
+        if r:
+            return r
+        cand_rank = PlacementExamCandidate.objects.filter(
+            military_number_snapshot=str(t.military_number)
+        ).exclude(rank_snapshot='').values_list('rank_snapshot', flat=True).last()
+        if cand_rank:
+            return cand_rank
+        cat = getattr(t, 'category', 'officer')
+        if cat == 'officer':
+            return 'ملازم'
+        elif cat == 'nco':
+            return 'رقيب'
+        elif cat == 'civilian':
+            return 'موظف'
+        return 'ملازم'
+
+    all_trainees = Trainee.objects.all().order_by('category', 'military_number')
+    if all_trainees.exists():
         registered_trainees = [
             {
                 'military_number': str(t.military_number),
                 'name': t.name,
-                'rank': getattr(t, 'rank', '') or '',
-                'force': getattr(t, 'force', '') or '',
-                'unit': getattr(t, 'unit', '') or ''
+                'rank': _resolve_trainee_rank(t),
+                'force': getattr(t, 'force', '') or 'القوات البرية السودانية',
+                'unit': getattr(t, 'unit', '') or '',
+                'category': getattr(t, 'category', 'officer'),
+                'batch': getattr(t, 'batch', None),
+                'phone': getattr(t, 'phone', ''),
             }
-            for t in trainees_qs
+            for t in all_trainees
         ]
     else:
         registered_trainees = [
-            {'military_number': '11029481', 'name': 'محمد بن ناصر الشهري', 'rank': 'نقيب', 'force': 'القوات البرية', 'unit': 'سلاح المدرعات'},
-            {'military_number': '10984723', 'name': 'تركي بن سعد القحطاني', 'rank': 'ملازم أول', 'force': 'القوات الجوية', 'unit': 'جناح الطيران'},
-            {'military_number': '10847291', 'name': 'سلمان بن حمد الدوسري', 'rank': 'رئيس رقباء', 'force': 'القوات البحرية', 'unit': 'قاعدة البحر الأحمر'},
+            {'military_number': '482910', 'name': 'عثمان البشير فضل المولى', 'rank': 'نقيب', 'force': 'القوات البرية السودانية', 'unit': 'سلاح المدرعات (الشجرة)', 'category': 'officer'},
+            {'military_number': '519203', 'name': 'طارق أحمد البدوي', 'rank': 'ملازم أول', 'force': 'القوات البرية السودانية', 'unit': 'سلاح المدرعات (الشجرة)', 'category': 'officer'},
+            {'military_number': '620194', 'name': 'محمد عبد الله إدريس', 'rank': 'مساعد', 'force': 'القوات البرية السودانية', 'unit': 'سلاح المدرعات (الشجرة)', 'category': 'nco'},
         ]
 
     # قائمة المعلمين المعتمدة بالنظام
@@ -292,16 +421,163 @@ def placement_exams_list_view(request):
 
 @login_required
 def placement_results_entry_view(request, exam_id):
-    """شاشة رصد درجات امتحانات تحديد المستوى وإجراءات المرشحين"""
-    selected_exam = None
-    
-    # محاولة جلب الطلب من قاعدة البيانات أولاً
+    """
+    شاشة رصد درجات امتحانات تحديد المستوى وإجراءات المرشحين.
+    - تدعم الحفظ الفعلي في قاعدة البيانات (PlacementExamOrder & PlacementExamCandidate).
+    - البحث التلقائي في النتائج السابقة ونقلها تلقائياً مع إمكانية تعديلها بعد تأكيد الانعقاد.
+    - منع تعديل أو رصد الدرجات للامتحانات المعتمدة نهائياً.
+    - منع الصفر والسالب وتجاوز الدرجة العظمى.
+    """
+    order = None
     if str(exam_id).isdigit():
         order = PlacementExamOrder.objects.filter(id=int(exam_id)).first()
-        if order:
-            selected_exam = _order_to_dict(order)
 
-    if not selected_exam:
+    # معالجة طلب الحفظ أو الاعتماد عبر POST
+    if request.method == 'POST':
+        if order and order.status == PlacementExamStatus.APPROVED:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'error': 'إجراء محظور: نتائج هذا الامتحان معتمدة ومقفلة نهائياً، ولا يمكن تعديل أو رصد الدرجات.'}, status=403)
+            messages.error(request, 'إجراء محظور: نتائج هذا الامتحان معتمدة ومقفلة نهائياً، ولا يمكن تعديل أو رصد الدرجات.')
+            return redirect('training:placement_results_entry', exam_id=exam_id)
+
+        post_data = {}
+        if request.content_type == 'application/json':
+            try:
+                post_data = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                post_data = {}
+        else:
+            post_data = request.POST
+
+        action = post_data.get('action', 'save')
+        is_approval = bool(post_data.get('is_approval', False) or action == 'approve')
+        grades_list = post_data.get('grades', [])
+        if isinstance(grades_list, str):
+            try:
+                grades_list = json.loads(grades_list)
+            except Exception:
+                grades_list = []
+
+        validation_errors = []
+        theory_max = Decimal(str(order.theory_max_score)) if order else Decimal('50.0')
+        practical_max = Decimal(str(order.practical_max_score)) if order else Decimal('50.0')
+        total_max = Decimal(str(order.total_max_score)) if order else Decimal('100.0')
+
+        if grades_list and order:
+            with transaction.atomic():
+                for g in grades_list:
+                    mil = str(g.get('military_number', '')).strip()
+                    cand = order.candidates.filter(military_number_snapshot=mil).first()
+                    if not cand:
+                        continue
+
+                    att_status = g.get('attendance_status', 'present')
+                    cand.attendance_status = att_status
+                    cand.notes = g.get('notes', '') or ''
+                    action_type = g.get('action', CandidateActionType.EXAM)
+                    cand.action_type = action_type
+
+                    raw_theory = g.get('theory')
+                    raw_practical = g.get('practical')
+                    raw_total = g.get('total')
+
+                    if att_status == 'absent':
+                        if action_type == 'retain' and g.get('is_transferred'):
+                            pass
+                        else:
+                            cand.theory_score = None
+                            cand.practical_score = None
+                            cand.total_score = None
+                            cand.is_graded = False
+                            cand.save()
+                            continue
+
+                    t_val = None
+                    p_val = None
+
+                    if raw_theory not in [None, '', '-']:
+                        try:
+                            t_val = Decimal(str(raw_theory))
+                            if t_val <= Decimal('0.0'):
+                                validation_errors.append(f'درجة النظري للممتحن ({cand.name_snapshot}) يجب أن تكون أكبر من صفر (يمنع الصفر أو القيم السالبة).')
+                            elif t_val > theory_max:
+                                validation_errors.append(f'درجة النظري للممتحن ({cand.name_snapshot}) ({t_val}) تتجاوز الحد الأقصى للنظري ({theory_max}).')
+                        except (ValueError, InvalidOperation):
+                            validation_errors.append(f'درجة النظري للممتحن ({cand.name_snapshot}) غير صالحة.')
+
+                    if raw_practical not in [None, '', '-']:
+                        try:
+                            p_val = Decimal(str(raw_practical))
+                            if p_val <= Decimal('0.0'):
+                                validation_errors.append(f'درجة العملي للممتحن ({cand.name_snapshot}) يجب أن تكون أكبر من صفر (يمنع الصفر أو القيم السالبة).')
+                            elif p_val > practical_max:
+                                validation_errors.append(f'درجة العملي للممتحن ({cand.name_snapshot}) ({p_val}) تتجاوز الحد الأقصى للعملي ({practical_max}).')
+                        except (ValueError, InvalidOperation):
+                            validation_errors.append(f'درجة العملي للممتحن ({cand.name_snapshot}) غير صالحة.')
+
+                    if validation_errors:
+                        break
+
+                    cand.theory_score = t_val
+                    cand.practical_score = p_val
+                    if t_val is not None and p_val is not None:
+                        cand.total_score = t_val + p_val
+                    elif t_val is not None and order.assessment_type == AssessmentType.THEORY_ONLY:
+                        cand.total_score = t_val
+                    elif raw_total not in [None, '', '-']:
+                        try:
+                            tot_val = Decimal(str(raw_total))
+                            if tot_val <= Decimal('0.0'):
+                                validation_errors.append(f'المجموع الكلي للممتحن ({cand.name_snapshot}) يجب أن يكون أكبر من صفر.')
+                            elif tot_val > total_max:
+                                validation_errors.append(f'المجموع الكلي للممتحن ({cand.name_snapshot}) يتجاوز الدرجة العظمى ({total_max}).')
+                            else:
+                                cand.total_score = tot_val
+                        except (ValueError, InvalidOperation):
+                            pass
+
+                    if cand.total_score is not None:
+                        cand.is_graded = True
+                        cand.percentage = round((cand.total_score / total_max) * Decimal('100.0'), 1)
+                        cand.is_passed = (cand.percentage >= Decimal('50.0'))
+                        if cand.percentage >= 85:
+                            cand.grade_label = 'ممتاز'
+                        elif cand.percentage >= 75:
+                            cand.grade_label = 'جيد جداً'
+                        elif cand.percentage >= 65:
+                            cand.grade_label = 'جيد'
+                        elif cand.percentage >= 50:
+                            cand.grade_label = 'مقبول'
+                        else:
+                            cand.grade_label = 'راسب'
+
+                    cand.save()
+
+                if validation_errors:
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                        return JsonResponse({'success': False, 'errors': validation_errors}, status=400)
+                    for err in validation_errors[:5]:
+                        messages.error(request, err)
+                    return redirect('training:placement_results_entry', exam_id=exam_id)
+
+                if is_approval or action == 'approve':
+                    order.status = PlacementExamStatus.APPROVED
+                    order.approved_at = timezone.now()
+                    if request.user.is_authenticated:
+                        order.approved_by = request.user
+                    order.save()
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'action': action, 'status': order.status if order else 'in_progress'})
+
+        messages.success(request, 'تم حفظ نتائج درجات الامتحان بنجاح.')
+        return redirect('training:placement_results_entry', exam_id=exam_id)
+
+    # معالجة طلب GET
+    selected_exam = None
+    if order:
+        selected_exam = _order_to_dict(order)
+    else:
         sample_exams = get_sample_placement_exams()
         for ex in sample_exams:
             if str(ex.get('id')) == str(exam_id) or str(ex.get('exam_number')) == str(exam_id) or str(ex.get('code')) == str(exam_id):
@@ -334,122 +610,100 @@ def placement_results_entry_view(request, exam_id):
     officer_ranks = {'ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'}
 
     all_trainees = []
+    tot_max = float(selected_exam.get('total_max_grade') or 100)
+
     for idx, t in enumerate(raw_trainees):
+        mil = str(t.get('military_number', '')).strip()
         rank = t.get('rank', '').strip()
         is_officer = any(o in rank for o in officer_ranks)
         category = 'officer' if is_officer else 'nco'
-        
-        mod = idx % 4
-        if mod == 0:
-            prev_status = 'valid'
-            prev_status_label = 'صالحة (أقل من 6 أشهر)'
-            prev_status_badge = 'bg-success-subtle text-success border border-success-subtle'
-            prev_date = '2026-09-10'
-            prev_source = f"{selected_exam.get('target_course', 'دورة متقدمة')} - 18"
-            prev_has_breakdown = True
-            prev_theory = 55.0
-            prev_practical = 37.0
-            prev_total = 92.0
+
+        # البحث التلقائي في النتائج السابقة للممتحن من قاعدة البيانات الفعلية
+        prev_res = get_candidate_previous_result(
+            mil,
+            current_order=order,
+            receipt_date=selected_exam.get('receipt_date')
+        )
+
+        c_theory = t.get('theory_score')
+        c_practical = t.get('practical_score')
+        c_total = t.get('total_score')
+        action = t.get('action', 'exam')
+        is_graded = bool(c_total is not None)
+
+        if c_total is None and prev_res['status'] == 'valid':
+            # نقل النتيجة السابقة تلقائياً لصفحة الرصد مع إمكانية تعديلها بعد تأكيد الانعقاد
+            prev_theory = prev_res['theory']
+            prev_practical = prev_res['practical']
+            prev_total = prev_res['total']
             action = 'retain'
-            current_theory = 55.0
-            current_practical = 37.0
-            current_total = 92.0
-            current_percentage = 92.0
-            current_grade_label = 'ممتاز (أ)'
-            current_grade_badge = 'badge-grade-a'
+            c_theory = prev_theory
+            c_practical = prev_practical
+            c_total = prev_total
             is_graded = True
-            notes = ''
-        elif mod == 1:
-            prev_status = 'valid'
-            prev_status_label = 'صالحة (أقل من 6 أشهر)'
-            prev_status_badge = 'bg-success-subtle text-success border border-success-subtle'
-            prev_date = '2026-08-15'
-            prev_source = f"{selected_exam.get('target_course', 'دورة تأهيلية')} - 12"
-            prev_has_breakdown = False
-            prev_theory = None
-            prev_practical = None
-            prev_total = 76.0
-            action = 'retake'
-            current_theory = 52.0
-            current_practical = 34.0
-            current_total = 86.0
-            current_percentage = 86.0
-            current_grade_label = 'ممتاز (أ)'
-            current_grade_badge = 'badge-grade-a'
-            is_graded = True
-            notes = ''
-        elif mod == 2:
-            prev_status = 'expired'
-            prev_status_label = 'انتهت صلاحية النتيجة'
-            prev_status_badge = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'
-            prev_date = '2026-01-20'
-            prev_source = f"{selected_exam.get('target_course', 'دورة فنية')} - 09"
-            prev_has_breakdown = True
-            prev_theory = 50.0
-            prev_practical = 34.0
-            prev_total = 84.0
-            action = 'mandatory'
-            current_theory = None
-            current_practical = None
-            current_total = None
-            current_percentage = None
-            current_grade_label = None
-            current_grade_badge = None
-            is_graded = False
-            notes = ''
-        else:
-            prev_status = 'none'
-            prev_status_label = 'لا توجد نتيجة سابقة'
-            prev_status_badge = 'bg-secondary-subtle text-secondary border border-secondary-subtle'
-            prev_date = None
-            prev_source = None
-            prev_has_breakdown = False
-            prev_theory = None
-            prev_practical = None
-            prev_total = None
-            action = 'mandatory'
-            current_theory = 48.0 if (idx == 3 and len(raw_trainees) > 3) else None
-            current_practical = 32.0 if (idx == 3 and len(raw_trainees) > 3) else None
-            current_total = 80.0 if (idx == 3 and len(raw_trainees) > 3) else None
-            current_percentage = 80.0 if (idx == 3 and len(raw_trainees) > 3) else None
-            current_grade_label = 'جيد جداً (ب)' if (idx == 3 and len(raw_trainees) > 3) else None
-            current_grade_badge = 'badge-grade-b' if (idx == 3 and len(raw_trainees) > 3) else None
-            is_graded = bool(idx == 3 and len(raw_trainees) > 3)
-            notes = ''
+
+        percentage = None
+        grade_label = None
+        grade_badge = None
+        if c_total is not None:
+            percentage = round((float(c_total) / tot_max) * 100.0, 1)
+            if percentage >= 85:
+                grade_label = 'ممتاز (أ)'
+                grade_badge = 'badge-grade-a'
+            elif percentage >= 75:
+                grade_label = 'جيد جداً (ب)'
+                grade_badge = 'badge-grade-b'
+            elif percentage >= 65:
+                grade_label = 'جيد (ج)'
+                grade_badge = 'badge-grade-c'
+            elif percentage >= 50:
+                grade_label = 'مقبول (د)'
+                grade_badge = 'badge-grade-d'
+            else:
+                grade_label = 'راسب'
+                grade_badge = 'badge-grade-f'
 
         all_trainees.append({
             'id': idx + 1,
-            'military_number': t.get('military_number', f"1000{idx}"),
+            'military_number': mil,
             'name': t.get('name', ''),
             'rank': rank,
             'unit': t.get('unit', ''),
             'force': t.get('force', ''),
             'category': category,
-            'prev_status': prev_status,
-            'prev_status_label': prev_status_label,
-            'prev_status_badge': prev_status_badge,
-            'prev_date': prev_date,
-            'prev_source': prev_source,
-            'prev_has_breakdown': prev_has_breakdown,
-            'prev_theory': prev_theory,
-            'prev_practical': prev_practical,
-            'prev_total': prev_total,
+            'prev_status': prev_res['status'],
+            'prev_status_label': prev_res['label'],
+            'prev_status_badge': prev_res['badge'],
+            'prev_date': prev_res.get('date'),
+            'prev_source': prev_res.get('source'),
+            'prev_has_breakdown': prev_res.get('has_breakdown', False),
+            'prev_theory': prev_res.get('theory'),
+            'prev_practical': prev_res.get('practical'),
+            'prev_total': prev_res.get('total'),
             'action': action,
-            'current_theory': current_theory,
-            'current_practical': current_practical,
-            'current_total': current_total,
-            'current_percentage': current_percentage,
-            'current_grade_label': current_grade_label,
-            'current_grade_badge': current_grade_badge,
+            'current_theory': c_theory,
+            'current_practical': c_practical,
+            'current_total': c_total,
+            'current_percentage': percentage,
+            'current_grade_label': grade_label,
+            'current_grade_badge': grade_badge,
             'is_graded': is_graded,
-            'notes': notes,
+            'notes': t.get('notes', ''),
         })
 
     officers = [t for t in all_trainees if t['category'] == 'officer']
     ncos = [t for t in all_trainees if t['category'] == 'nco']
 
+    is_confirmed = bool(order.is_confirmed) if order else bool(selected_exam.get('is_confirmed'))
+    is_approved = (order.status == PlacementExamStatus.APPROVED) if order else (selected_exam.get('status') == 'approved')
+    can_edit_scores = is_confirmed and not is_approved
+
     context = {
         'exam': selected_exam,
+        'order': order,
+        'is_confirmed': is_confirmed,
+        'is_approved': is_approved,
+        'can_edit_scores': can_edit_scores,
         'officers': officers,
         'ncos': ncos,
         'all_trainees': all_trainees,
@@ -464,6 +718,7 @@ def placement_results_entry_view(request, exam_id):
 def placement_results_sheet_view(request, exam_id):
     """كشف النتيجة الرسمي لامتحان تحديد المستوى وفق النموذج الأصلي المعتمد بحجم A4 والتجزئة التلقائية"""
     selected_exam = None
+    order = None
     if str(exam_id).isdigit():
         order = PlacementExamOrder.objects.filter(id=int(exam_id)).first()
         if order:
@@ -481,22 +736,21 @@ def placement_results_sheet_view(request, exam_id):
             'id': exam_id,
             'exam_number': '002-26',
             'code': '002-26',
-            'subject': 'اللغة الإنجليزية العسكرية',
-            'title': 'امتحان تحديد المستوى في اللغة الإنجليزية العسكرية',
-            'target_course': 'دورة القيادة والأركان المشتركة',
-            'host_entity': 'جناح التدريب والتعليم الميداني',
+            'subject': 'حاسوب',
+            'title': 'امتحان تحديد المستوى (حاسوب)',
+            'target_course': 'دورة تأهيلية',
+            'host_entity': 'قيادة سلاح المدرعات',
             'exam_date': '2026-11-28',
             'official_request_date': '2026-11-05',
-            'supervising_teacher': 'العقيد / خالد بن سلطان العتيبي',
+            'supervising_teacher': 'المقدم / قاسم ابوه',
             'assessment_type': 'theory_and_practical',
             'total_max_grade': 100,
-            'theory_max_grade': 60,
-            'practical_max_grade': 40,
+            'theory_max_grade': 50,
+            'practical_max_grade': 50,
             'status': 'completed',
             'status_label': 'مكتمل ومعتمد',
         }
 
-    # استمداد بيانات المسؤول المعتمد والتوقيع من CertificateSettings
     cert_settings = CertificateSettings.objects.first()
     if cert_settings:
         official_rank = (cert_settings.left_signer_rank or 'عقيد مهندس').strip()
@@ -541,24 +795,33 @@ def placement_results_sheet_view(request, exam_id):
     for idx, t in enumerate(raw_trainees):
         rank = (t.get('rank') or '').strip()
         name = (t.get('name') or '').strip()
-        mod = idx % 4
-        if mod == 0:
-            c_total = 92.0
-        elif mod == 1:
-            c_total = 86.0
-        elif mod == 2:
-            c_total = 84.0
-        else:
-            c_total = 80.0
-
         notes = (t.get('notes') or '').strip()
+
+        # قراءة الدرجة الفعلية من قاعدة البيانات دون استبدالها ببيانات وهمية
+        c_total = t.get('total_score')
+        if c_total is None:
+            prev = get_candidate_previous_result(t.get('military_number'))
+            if prev['status'] == 'valid' and prev['total'] is not None:
+                c_total = prev['total']
+            else:
+                c_total = 0.0
+
+        c_total = float(c_total)
+        c_theory = t.get('theory_score')
+        c_practical = t.get('practical_score')
 
         if is_theory_only:
             c_theory = c_total
             c_practical = '-'
         else:
-            c_theory = round(c_total * 0.6, 1)
-            c_practical = round(c_total * 0.4, 1)
+            if c_theory is None:
+                c_theory = round(c_total * 0.6, 1)
+            else:
+                c_theory = float(c_theory)
+            if c_practical is None:
+                c_practical = round(c_total * 0.4, 1)
+            else:
+                c_practical = float(c_practical)
 
         all_trainees.append({
             'military_number': t.get('military_number', f"1000{idx}"),
@@ -620,3 +883,315 @@ def placement_results_sheet_view(request, exam_id):
         'institute_name': institute_name,
     }
     return render(request, 'training/placement_results_sheet.html', context)
+
+
+# =========================================================================
+# واجهات البرمجة الخلفية الفعلية (Backend API Endpoints for Placement Exams)
+# =========================================================================
+
+@login_required
+@require_POST
+def placement_exam_save_api(request):
+    """
+    حفظ أو تحديث طلب امتحان تحديد المستوى في قاعدة البيانات الفعلية (PlacementExamOrder & PlacementExamCandidate)
+    مع ربط بيانات الممتحنين ببيانات الدارسين (Trainee) وفحص النتائج السابقة تلقائياً.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        data = request.POST
+
+    order_id = data.get('id') or data.get('db_id')
+    signal_number = (data.get('signal_number') or '').strip()
+    source_entity = (data.get('source_entity') or '').strip()
+    host_entity = (data.get('host_entity') or source_entity).strip()
+    destination_country = (data.get('destination_country') or '').strip()
+    purpose = (data.get('purpose') or '').strip()
+    sub_purpose = (data.get('sub_purpose') or '').strip()
+    classification = (data.get('classification') or 'officers').strip()
+    receipt_date_str = (data.get('receipt_date') or '').strip()
+    exam_date_str = (data.get('exam_date') or '').strip()
+    exam_time_str = (data.get('exam_time') or '09:00').strip()
+    supervisor_str = (data.get('supervisor') or data.get('supervising_teacher') or '').strip()
+    theory_max = Decimal(str(data.get('theory_max_grade') or '50.0'))
+    practical_max = Decimal(str(data.get('practical_max_grade') or '50.0'))
+    total_max = Decimal(str(data.get('total_max_grade') or '100.0'))
+    trainees_data = data.get('trainees') or []
+
+    if not signal_number:
+        return JsonResponse({'success': False, 'error': 'رقم الإشارة أو المكاتبة الرسمية مطلوب.'}, status=400)
+    if not source_entity:
+        return JsonResponse({'success': False, 'error': 'الجهة الطالبة للامتحان مطلوبة.'}, status=400)
+    if not purpose:
+        return JsonResponse({'success': False, 'error': 'الغرض من الامتحان مطلوب.'}, status=400)
+    if not receipt_date_str:
+        return JsonResponse({'success': False, 'error': 'تاريخ استلام الطلب مطلوب.'}, status=400)
+    if not exam_date_str:
+        return JsonResponse({'success': False, 'error': 'تاريخ انعقاد الامتحان مطلوب.'}, status=400)
+
+    try:
+        receipt_date = datetime.strptime(receipt_date_str, '%Y-%m-%d').date()
+        exam_date = datetime.strptime(exam_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'تنسيق التاريخ غير صحيح (YYYY-MM-DD).'}, status=400)
+
+    # القيد الصارم: لا يمكن تحديد موعد امتحان قبل تاريخ انشاء / استلام الطلب
+    if exam_date < receipt_date:
+        return JsonResponse({'success': False, 'error': f'تاريخ انعقاد الامتحان ({exam_date_str}) لا يمكن أن يكون قبل تاريخ استلام أو إنشاء الطلب ({receipt_date_str}).'}, status=400)
+
+    if not trainees_data:
+        return JsonResponse({'success': False, 'error': 'يجب اختيار وإضافة دارس واحد على الأقل للمشاركة في الامتحان.'}, status=400)
+
+    institute = getattr(request, 'institute', None) or Institute.objects.first()
+    year = exam_date.year
+
+    with transaction.atomic():
+        order = None
+        if order_id and str(order_id).isdigit():
+            order = PlacementExamOrder.objects.filter(id=int(order_id)).first()
+
+        if not order:
+            max_num = PlacementExamOrder.objects.filter(institute=institute, year=year).aggregate(Max('internal_order_number'))['internal_order_number__max'] or 0
+            internal_num = max_num + 1
+            order_code = f"{str(internal_num).zfill(3)}/{year}"
+
+            order = PlacementExamOrder(
+                institute=institute,
+                year=year,
+                internal_order_number=internal_num,
+                order_code=order_code,
+                created_by=request.user,
+            )
+
+        order.signal_number = signal_number
+        order.source_entity = source_entity
+        order.host_entity = host_entity
+        order.destination_country = destination_country
+        order.purpose = purpose
+        order.sub_purpose = sub_purpose
+        order.classification = classification
+        order.receipt_date = receipt_date
+        order.exam_date = exam_date
+        order.exam_time = exam_time_str
+        order.theory_max_score = theory_max
+        order.practical_max_score = practical_max
+        order.total_max_score = total_max
+        order.supervisor_name_snapshot = supervisor_str
+
+        if supervisor_str:
+            clean_name = supervisor_str.split('/')[-1].strip()
+            inst = Instructor.objects.filter(name__icontains=clean_name).first()
+            if inst:
+                order.supervisor = inst
+
+        order.save()
+
+        # ربط الممتحنين بالدارسين في النظام
+        current_mils = set()
+        for tr in trainees_data:
+            mil = str(tr.get('military_number', '')).strip()
+            name = (tr.get('name') or '').strip()
+            rank = (tr.get('rank') or '').strip()
+            force = (tr.get('force') or '').strip()
+            unit = (tr.get('unit') or '').strip()
+            if not mil:
+                continue
+
+            current_mils.add(mil)
+
+            # ضمان وجود الدارس في جدول الدارسين (Trainee)
+            is_off = any(o in rank for o in ['ملازم', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'])
+            trainee_cat = 'officer' if is_off else 'nco'
+            trainee, _ = Trainee.objects.get_or_create(
+                military_number=mil,
+                defaults={
+                    'name': name or f'دارس {mil}',
+                    'force': force,
+                    'unit': unit,
+                    'category': trainee_cat,
+                    'institute': institute,
+                }
+            )
+
+            candidate, created = PlacementExamCandidate.objects.update_or_create(
+                order=order,
+                military_number_snapshot=mil,
+                defaults={
+                    'trainee': trainee,
+                    'name_snapshot': name or trainee.name,
+                    'rank_snapshot': rank or trainee.rank,
+                    'force_snapshot': force or trainee.force,
+                    'unit_snapshot': unit or trainee.unit,
+                }
+            )
+
+            # البحث التلقائي ونقل النتيجة السابقة إن كانت صالحة (< 180 يوماً)
+            if candidate.total_score is None:
+                prev_info = get_candidate_previous_result(mil, current_order=order, receipt_date=receipt_date)
+                if prev_info['status'] == 'valid':
+                    candidate.is_transferred = True
+                    candidate.transferred_original_score = Decimal(str(prev_info['total']))
+                    if prev_info.get('date'):
+                        try:
+                            candidate.transferred_original_date = datetime.strptime(prev_info['date'], '%Y-%m-%d').date()
+                        except ValueError:
+                            pass
+                    if prev_info.get('candidate_id'):
+                        candidate.transfer_source_candidate_id = prev_info['candidate_id']
+                    if prev_info.get('theory') is not None:
+                        candidate.theory_score = Decimal(str(prev_info['theory']))
+                    if prev_info.get('practical') is not None:
+                        candidate.practical_score = Decimal(str(prev_info['practical']))
+                    candidate.total_score = Decimal(str(prev_info['total']))
+                    candidate.action_type = CandidateActionType.RETAIN
+                    candidate.is_graded = True
+                    candidate.save()
+
+        order.candidates.exclude(military_number_snapshot__in=current_mils).delete()
+
+    return JsonResponse({
+        'success': True,
+        'order_id': order.id,
+        'order_code': order.order_code,
+        'order': _order_to_dict(order),
+        'message': f'تم حفظ طلب الامتحان {order.order_code} بنجاح في قاعدة البيانات.'
+    })
+
+
+@login_required
+@require_http_methods(['POST', 'DELETE'])
+def placement_exam_delete_api(request, exam_id):
+    """حذف طلب امتحان تحديد مستوى من قاعدة البيانات"""
+    order = get_object_or_404(PlacementExamOrder, pk=exam_id)
+    if order.status == PlacementExamStatus.APPROVED:
+        return JsonResponse({'success': False, 'error': 'لا يمكن حذف طلب امتحان معتمد نهائياً.'}, status=400)
+    code = order.order_code
+    order.delete()
+    return JsonResponse({'success': True, 'message': f'تم حذف طلب الامتحان {code} بنجاح.'})
+
+
+@login_required
+@require_POST
+def placement_exam_confirm_api(request, exam_id):
+    """تأكيد انعقاد امتحان تحديد المستوى في قاعدة البيانات وإتاحة رصد الدرجات"""
+    order = get_object_or_404(PlacementExamOrder, pk=exam_id)
+    order.is_confirmed = True
+    order.status = PlacementExamStatus.CONFIRMED
+    order.confirmed_at = timezone.now()
+    order.confirmed_by = request.user
+    order.save()
+    return JsonResponse({
+        'success': True,
+        'order': _order_to_dict(order),
+        'message': f'تم تأكيد انعقاد الامتحان {order.order_code} بنجاح، وأصبح الرصد متاحاً.'
+    })
+
+
+@login_required
+@require_POST
+def placement_trainee_quick_add_api(request):
+    """إضافة دارس جديد في النظام وربطه بقاعدة البيانات الفعلية للدارسين"""
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        data = request.POST
+
+    mil = str(data.get('military_number', '')).strip()
+    name = str(data.get('name') or data.get('full_name') or '').strip()
+    category = str(data.get('category', 'officer')).strip()
+    rank = str(data.get('rank', '')).strip()
+    force = str(data.get('force', '')).strip()
+    unit = str(data.get('unit', '')).strip()
+    batch_val = data.get('batch')
+    phone = str(data.get('phone', '')).strip()
+    residence_state = str(data.get('residence_state', '')).strip()
+    residence_city = str(data.get('residence_city', '')).strip()
+    residence_neighborhood = str(data.get('residence_neighborhood', '')).strip()
+    residence_block = str(data.get('residence_block', '')).strip()
+    residence_house_number = str(data.get('residence_house_number', '')).strip()
+
+    if not mil or not name:
+        return JsonResponse({'success': False, 'error': 'الرقم العسكري واسم الدارس مطلوبان.'}, status=400)
+
+    try:
+        batch_num = int(batch_val) if batch_val not in [None, '', 'null'] else None
+    except (ValueError, TypeError):
+        batch_num = None
+
+    institute = getattr(request, 'institute', None) or Institute.objects.first()
+    if not category:
+        is_off = any(o in rank for o in ['ملازم', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'])
+        category = 'officer' if is_off else 'nco'
+
+    trainee_defaults = {
+        'name': name,
+        'category': category,
+        'force': force,
+        'unit': unit,
+        'batch': batch_num,
+        'phone': phone,
+        'residence_state': residence_state,
+        'residence_city': residence_city,
+        'residence_neighborhood': residence_neighborhood,
+        'residence_block': residence_block,
+        'residence_house_number': residence_house_number,
+        'institute': institute,
+    }
+
+    trainee, created = Trainee.objects.update_or_create(
+        military_number=mil,
+        defaults=trainee_defaults
+    )
+
+    # حفظ وتحديث بيانات أقرب الأقربين الـ 4 إن وُجدت
+    relatives_data = data.get('relatives', [])
+    if isinstance(relatives_data, list):
+        for i, rel in enumerate(relatives_data[:4], start=1):
+            if isinstance(rel, dict):
+                r_name = str(rel.get('name', '')).strip()
+                r_kinship = str(rel.get('kinship', '')).strip()
+                r_phone = str(rel.get('phone', '')).strip()
+                r_address = str(rel.get('address', '')).strip()
+                if any([r_name, r_kinship, r_phone, r_address]):
+                    TraineeRelative.objects.update_or_create(
+                        trainee=trainee,
+                        order=i,
+                        defaults={
+                            'name': r_name,
+                            'kinship': r_kinship,
+                            'phone': r_phone,
+                            'address': r_address,
+                        }
+                    )
+
+    prev_info = get_candidate_previous_result(mil)
+
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'trainee': {
+            'military_number': str(trainee.military_number),
+            'name': trainee.name,
+            'rank': rank or ('ملازم' if category == 'officer' else 'رقيب'),
+            'force': trainee.force,
+            'unit': trainee.unit,
+            'category': trainee.category,
+            'batch': trainee.batch,
+            'phone': trainee.phone,
+            'residence_state': trainee.residence_state,
+            'residence_city': trainee.residence_city,
+        },
+        'previous_result': prev_info,
+        'message': f'تم تسجيل بيانات الدارس {name} في قاعدة البيانات بنجاح.'
+    })
+
+
+@login_required
+def placement_lookup_previous_api(request):
+    """البحث في النتائج السابقة لدارس معين"""
+    mil = request.GET.get('military_number', '').strip() or request.POST.get('military_number', '').strip()
+    order_id = request.GET.get('order_id', '').strip() or request.POST.get('order_id', '').strip()
+    receipt_date = request.GET.get('receipt_date', '').strip()
+    order = PlacementExamOrder.objects.filter(id=int(order_id)).first() if order_id.isdigit() else None
+    res = get_candidate_previous_result(mil, current_order=order, receipt_date=receipt_date)
+    return JsonResponse({'success': True, 'result': res})

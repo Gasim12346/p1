@@ -1147,7 +1147,7 @@
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white text-muted"><i class="bi bi-calendar-date"></i></span>
-                                <input type="date" class="form-control font-monospace" id="requestReceiptDateInput" required>
+                                <input type="date" class="form-control font-monospace" id="requestReceiptDateInput" onchange="handleRequestReceiptDateChange()" required>
                             </div>
                         </div>
 
@@ -1653,67 +1653,267 @@
 <!-- Sub-Modal 2: نافذة نموذجية لإضافة دارس جديد في بوابة الدارسين (محاكاة)       -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="mockAddTraineePortalModal" tabindex="-1" aria-labelledby="mockAddTraineePortalModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-dark text-white py-3 px-4">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-vcard fs-5 text-warning"></i>
-                    <h5 class="modal-title fw-bold mb-0" id="mockAddTraineePortalModalLabel">بوابة الدارسين: تسجيل دارس جديد</h5>
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                        <i class="bi bi-person-plus-fill fs-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="mockAddTraineePortalModalLabel">إدخال وحفظ بيانات دارس جديد</h5>
+                        <small class="opacity-90">تسجيل البيانات الأساسية، الدفعة، تفاصيل السكن، وأقرب الأقربين (4 أقارب)</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" onclick="closeMockAddTraineeModal()" aria-label="إغلاق"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="alert alert-info py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
-                    <i class="bi bi-info-circle-fill fs-5"></i>
+            <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+                <!-- تنبيه توضيحي -->
+                <div class="alert alert-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 border border-info border-opacity-25">
+                    <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
                     <div>
-                        <strong>نافذة نموذجية:</strong> يتم تسجيل بيانات الدارس هنا لمحاكاة بوابة الدارسين دون ربط فعلي بقاعدة البيانات. سيتم إدراج الدارس تلقائياً في نموذج الامتحان فور الحفظ مع الحفاظ التام على بياناتك المدخلة.
+                        يتم حفظ بيانات الدارس في قاعدة البيانات بنظام شؤون الدارسين وربطها تلقائياً مع نموذج الامتحان والمشاركين دون فقدان أي بيانات.
                     </div>
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small text-dark required" for="mockTraineeName">الاسم الرباعي الكامل</label>
-                        <input type="text" class="form-control" id="mockTraineeName" placeholder="أدخل اسم الدارس الجديد...">
+
+                <!-- القسم 1: البيانات الأساسية -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <span class="badge bg-primary rounded-circle p-2"><i class="bi bi-person-vcard fs-6"></i></span>
+                        <h6 class="fw-bold text-dark mb-0">1. البيانات الأساسية للدارس</h6>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small text-dark required" for="mockTraineeMilNumber">الرقم العسكري (النمرة)</label>
-                        <input type="text" class="form-control font-monospace" id="mockTraineeMilNumber" placeholder="مثال: 11482910">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeMilNumber">النمرة (أرقام فقط) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg font-monospace" id="mockTraineeMilNumber" placeholder="أدخل النمرة (مثال: 10425)" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeCategory">التصنيف <span class="text-danger">*</span></label>
+                            <select id="mockTraineeCategory" class="form-select form-select-lg" onchange="handleMockTraineeCategoryChange()" required>
+                                <option value="officer" selected>ضباط</option>
+                                <option value="nco">ضباط صف</option>
+                                <option value="civilian">مدنيين</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeRank">الرتبة / الدرجة <span class="text-danger">*</span></label>
+                            <select id="mockTraineeRank" class="form-select form-select-lg" required>
+                                <!-- تعبأ ديناميكياً حسب التصنيف -->
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeBatch">الدفعة (رقمي)</label>
+                            <input type="number" class="form-control form-control-lg font-monospace" id="mockTraineeBatch" placeholder="مثال: 45" min="1" step="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeName">الاسم الكامل <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="mockTraineeName" placeholder="أدخل الاسم الكامل للدارس..." required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeForce">السلاح / القوة</label>
+                            <select class="form-select form-select-lg" id="mockTraineeForce" onchange="handleMockTraineeForceChange()">
+                                <option value="القوات البرية السودانية" selected>القوات البرية السودانية</option>
+                                <option value="القوات الجوية السودانية">القوات الجوية السودانية</option>
+                                <option value="القوات البحرية السودانية">القوات البحرية السودانية</option>
+                                <option value="قوات الدفاع الجوي السوداني">قوات الدفاع الجوي السوداني</option>
+                                <option value="قوات الدعم اللوجستي">قوات الدعم اللوجستي</option>
+                                <option value="إدارة مدنية">إدارة مدنية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeUnit">الوحدة / التشكيل</label>
+                            <select class="form-select form-select-lg" id="mockTraineeUnit">
+                                <!-- تعبأ ديناميكياً -->
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-dark required" for="mockTraineeRank">الرتبة</label>
-                        <select class="form-select" id="mockTraineeRank">
-                            <option value="ملازم">ملازم</option>
-                            <option value="ملازم أول">ملازم أول</option>
-                            <option value="نقيب" selected>نقيب</option>
-                            <option value="رائد">رائد</option>
-                            <option value="مقدم">مقدم</option>
-                            <option value="عقيد">عقيد</option>
-                            <option value="عميد">عميد</option>
-                            <option value="مساعد">مساعد</option>
-                            <option value="مساعد أول">مساعد أول</option>
-                            <option value="رقيب">رقيب</option>
-                        </select>
+                </div>
+
+                <!-- القسم 2: بيانات السكن ورقم الهاتف -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <span class="badge bg-success rounded-circle p-2"><i class="bi bi-geo-alt-fill fs-6"></i></span>
+                        <h6 class="fw-bold text-dark mb-0">2. بيانات السكن ورقم الهاتف</h6>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-dark required" for="mockTraineeForce">القوة العسكرية</label>
-                        <select class="form-select" id="mockTraineeForce" onchange="handleMockTraineeForceChange()">
-                            <option value="القوات البرية السودانية" selected>القوات البرية السودانية</option>
-                            <option value="القوات الجوية السودانية">القوات الجوية السودانية</option>
-                            <option value="القوات البحرية السودانية">القوات البحرية السودانية</option>
-                            <option value="قوات الدفاع الجوي السوداني">قوات الدفاع الجوي السوداني</option>
-                        </select>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mockTraineePhone">رقم الهاتف</label>
+                            <input type="tel" class="form-control form-control-lg font-monospace" id="mockTraineePhone" placeholder="مثال: 0912345678 (10 أرقام)" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mock_state_select">
+                                <i class="bi bi-map text-primary me-1"></i> الولاية
+                            </label>
+                            <input type="hidden" id="mock_final_residence_state" value="">
+                            <select id="mock_state_select" class="form-select form-select-lg" onchange="handleMockStateChange()">
+                                <option value="">-- اختر الولاية من القائمة --</option>
+                                <option value="الخرطوم">ولاية الخرطوم</option>
+                                <option value="الجزيرة">ولاية الجزيرة</option>
+                                <option value="البحر الأحمر">ولاية البحر الأحمر</option>
+                                <option value="كسلا">ولاية كسلا</option>
+                                <option value="القضارف">ولاية القضارف</option>
+                                <option value="سنار">ولاية سنار</option>
+                                <option value="النيل الأبيض">ولاية النيل الأبيض</option>
+                                <option value="النيل الأزرق">ولاية النيل الأزرق</option>
+                                <option value="نهر النيل">ولاية نهر النيل</option>
+                                <option value="الشمالية">الولاية الشمالية</option>
+                                <option value="شمال كردفان">ولاية شمال كردفان</option>
+                                <option value="جنوب كردفان">ولاية جنوب كردفان</option>
+                                <option value="غرب كردفان">ولاية غرب كردفان</option>
+                                <option value="شمال دارفور">ولاية شمال دارفور</option>
+                                <option value="جنوب دارفور">ولاية جنوب دارفور</option>
+                                <option value="غرب دارفور">ولاية غرب دارفور</option>
+                                <option value="وسط دارفور">ولاية وسط دارفور</option>
+                                <option value="شرق دارفور">ولاية شرق دارفور</option>
+                                <option value="__custom__">✍️ ولاية أخرى (كتابة يدوية)</option>
+                            </select>
+                            <input type="text" id="mock_custom_state" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم الولاية يدوياً" oninput="syncMockState()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mock_city_select">
+                                <i class="bi bi-buildings text-primary me-1"></i> المدينة
+                            </label>
+                            <input type="hidden" id="mock_final_residence_city" value="">
+                            <select id="mock_city_select" class="form-select form-select-lg bg-light" onchange="handleMockCityChange()" disabled>
+                                <option value="">-- اختر الولاية أولاً لعرض مدنها --</option>
+                            </select>
+                            <input type="text" id="mock_custom_city" class="form-control form-control-lg mt-1" style="display: none;" placeholder="اكتب اسم المدينة يدوياً" oninput="syncMockCity()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeNeighborhood">الحي</label>
+                            <input type="text" class="form-control form-control-lg" id="mockTraineeNeighborhood" placeholder="اسم الحي (مثال: الثورة)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeBlock">المربع / الحارة</label>
+                            <input type="text" class="form-control form-control-lg" id="mockTraineeBlock" placeholder="المربع أو الحارة (مثال: الحارة 15)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark" for="mockTraineeHouseNumber">رقم المنزل</label>
+                            <input type="text" class="form-control form-control-lg" id="mockTraineeHouseNumber" placeholder="رقم المنزل (مثال: 42)">
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-dark required" for="mockTraineeUnit">الوحدة / التشكيل</label>
-                        <select class="form-select" id="mockTraineeUnit">
-                            <!-- تعبأ ديناميكياً -->
-                        </select>
+                </div>
+
+                <!-- القسم 3: أقرب الأقربين (4 أقارب) -->
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-people-fill fs-6"></i></span>
+                            <h6 class="fw-bold text-dark mb-0">3. أقرب الأقربين (4 أقارب للتواصل وحالات الطوارئ)</h6>
+                        </div>
+                        <span class="badge bg-light text-muted border">4 أقارب</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- القريب 1 -->
+                        <div class="col-12">
+                            <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                <div class="fw-bold text-primary mb-2 small"><i class="bi bi-1-circle-fill me-1"></i> القريب الأول (الأساسي)</div>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                        <input type="text" class="form-control" id="mockRel1Name" placeholder="اسم القريب الأول">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                        <input type="text" class="form-control" id="mockRel1Kinship" placeholder="صلة القرابة (مثال: والد، أخ)">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                        <input type="tel" class="form-control font-monospace" id="mockRel1Phone" placeholder="10 أرقام" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                        <input type="text" class="form-control" id="mockRel1Address" placeholder="مكان السكن / العنوان">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القريب 2 -->
+                        <div class="col-12">
+                            <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                <div class="fw-bold text-primary mb-2 small"><i class="bi bi-2-circle-fill me-1"></i> القريب الثاني</div>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                        <input type="text" class="form-control" id="mockRel2Name" placeholder="اسم القريب الثاني">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                        <input type="text" class="form-control" id="mockRel2Kinship" placeholder="صلة القرابة (مثال: والدة، زوجة)">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                        <input type="tel" class="form-control font-monospace" id="mockRel2Phone" placeholder="10 أرقام" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                        <input type="text" class="form-control" id="mockRel2Address" placeholder="مكان السكن / العنوان">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القريب 3 -->
+                        <div class="col-12">
+                            <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                <div class="fw-bold text-primary mb-2 small"><i class="bi bi-3-circle-fill me-1"></i> القريب الثالث</div>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                        <input type="text" class="form-control" id="mockRel3Name" placeholder="اسم القريب الثالث">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                        <input type="text" class="form-control" id="mockRel3Kinship" placeholder="صلة القرابة (مثال: عم، خال)">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                        <input type="tel" class="form-control font-monospace" id="mockRel3Phone" placeholder="10 أرقام" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                        <input type="text" class="form-control" id="mockRel3Address" placeholder="مكان السكن / العنوان">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القريب 4 -->
+                        <div class="col-12">
+                            <div class="card border rounded-3 bg-light bg-opacity-50 p-3">
+                                <div class="fw-bold text-primary mb-2 small"><i class="bi bi-4-circle-fill me-1"></i> القريب الرابع</div>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">اسم القريب</label>
+                                        <input type="text" class="form-control" id="mockRel4Name" placeholder="اسم القريب الرابع">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">صلة القرابة</label>
+                                        <input type="text" class="form-control" id="mockRel4Kinship" placeholder="صلة القرابة">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">رقم الهاتف</label>
+                                        <input type="tel" class="form-control font-monospace" id="mockRel4Phone" placeholder="10 أرقام" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">مكان السكن / العنوان</label>
+                                        <input type="text" class="form-control" id="mockRel4Address" placeholder="مكان السكن / العنوان">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer py-2 px-4 bg-light d-flex justify-content-between">
-                <button type="button" class="btn btn-light border px-3" onclick="closeMockAddTraineeModal()">إلغاء والعودة للنموذج</button>
-                <button type="button" class="btn btn-success fw-bold px-4" onclick="submitMockAddTrainee()">
-                    <i class="bi bi-check2-circle me-1"></i> حفظ والعودة للامتحان
+            <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4 d-flex align-items-center justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4" onclick="closeMockAddTraineeModal()">
+                    <i class="bi bi-x-circle me-1"></i> إلغاء والعودة للنموذج
+                </button>
+                <button type="button" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2" onclick="submitMockAddTrainee()">
+                    <i class="bi bi-save2-fill"></i>
+                    <span>حفظ بيانات الدارس وإضافته للامتحان</span>
                 </button>
             </div>
         </div>
@@ -2020,6 +2220,83 @@
     </div>
 </div>
 
+<!-- Modal: السجل التاريخي لدورات وشهادات الدارس -->
+<div class="modal fade" id="traineeHistoryModal" tabindex="-1" aria-labelledby="traineeHistoryModalLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white py-3 px-4 rounded-top-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle bg-warning text-dark p-2 d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-mortarboard-fill fs-5"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="modalTraineeHeader">السجل التاريخي للدارس في النظام</h5>
+                        <small class="text-white-50" id="modalTraineeSubheader">عرض كافة الدورات والامتحانات والبيانات المعتمدة الخاصة بهذا الدارس</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div class="bg-light p-3 rounded-3 border mb-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-6 col-md-3">
+                            <span class="text-muted small d-block">الرتبة والاسم:</span>
+                            <strong class="text-dark fs-6" id="modalTraineeName">---</strong>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <span class="text-muted small d-block">النمرة العسكرية:</span>
+                            <span class="badge bg-dark bg-opacity-10 text-dark font-monospace fs-6 px-2 py-1 border" id="modalTraineeNumber">---</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="text-muted small d-block">الوحدة والقوة:</span>
+                            <strong class="text-dark" id="modalTraineeUnitForce">---</strong>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <span class="text-muted small d-block">التصنيف:</span>
+                            <span class="badge bg-primary px-3 py-1 rounded-pill" id="modalTraineeCategory">---</span>
+                        </div>
+                        <div class="col-12 col-md-2 text-md-end">
+                            <span class="text-muted small d-block">إجمالي الدورات:</span>
+                            <span class="badge bg-success rounded-pill px-3 py-1 fs-6" id="modalCoursesCount">0 دورة</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="bg-light text-muted sticky-top">
+                            <tr>
+                                <th style="min-width: 200px;">اسم الدورة وتصنيفها</th>
+                                <th style="min-width: 130px;">رقم الدفعة</th>
+                                <th style="min-width: 160px;">فترة الانعقاد</th>
+                                <th style="min-width: 100px; text-align: center;">المجموع</th>
+                                <th style="min-width: 90px; text-align: center;">النسبة</th>
+                                <th style="min-width: 100px; text-align: center;">التقدير</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalCoursesTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    جاري جلب دورات وشهادات الدارس...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light py-3 px-4 rounded-bottom-4 d-flex justify-content-between align-items-center">
+                <a href="#" id="modalFullTranscriptBtn" class="btn btn-outline-primary rounded-3 px-3 fw-bold" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> فتح السجل التاريخي الكامل للدارس
+                </a>
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- تضمين بيانات الامتحانات الأولية وسجل الدارسين والمعلمين بأمان عبر json_script -->
 {{ exams|json_script:"initial-exams-data" }}
 {{ registered_trainees|json_script:"system-registered-trainees-data" }}
@@ -2087,12 +2364,18 @@
 
                 <!-- البحث في سجل الدارسين -->
                 <div class="card border-0 shadow-xs rounded-3 p-3 mb-3 bg-white">
-                    <label class="form-label fw-bold small text-dark mb-1" for="detailsTraineeSearchInput">
-                        <i class="bi bi-search text-primary me-1"></i>البحث بالاسم أو الرقم العسكري في سجل الدارسين
-                    </label>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label fw-bold small text-dark mb-0" for="detailsTraineeSearchInput">
+                            <i class="bi bi-search text-primary me-1"></i>البحث في قاعدة بيانات الدارسين المسجلين
+                        </label>
+                        <button type="button" class="btn btn-sm btn-outline-success fw-bold px-2 py-1 d-inline-flex align-items-center gap-1 shadow-none" onclick="openMockAddTraineeModalFromDetails()" title="تسجيل دارس جديد بقاعدة البيانات">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>تسجيل دارس جديد</span>
+                        </button>
+                    </div>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="detailsTraineeSearchInput" placeholder="اكتب للبحث بالاسم أو الرقم العسكري..." oninput="filterDetailsTraineeOptions()">
+                        <input type="text" class="form-control" id="detailsTraineeSearchInput" placeholder="اكتب للبحث بالاسم أو الرقم العسكري أو الرتبة أو الوحدة..." oninput="filterDetailsTraineeOptions()">
                         <button type="button" class="btn btn-outline-secondary" onclick="clearDetailsTraineeSearch()" title="مسح">
                             <i class="bi bi-x-lg"></i>
                         </button>
@@ -2630,28 +2913,58 @@
         'جمهورية فرنسا'
     ];
 
-    // الدليل النموذجي للدارسين السودانيين
-    let SYSTEM_TRAINEES_REGISTRY = [
-        { military_number: '482910', name: 'عثمان البشير فضل المولى', rank: 'نقيب', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)' },
-        { military_number: '519203', name: 'طارق أحمد البدوي', rank: 'ملازم أول', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)' },
-        { military_number: '620194', name: 'محمد عبد الله إدريس', rank: 'مساعد', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)' },
-        { military_number: '410928', name: 'عبد الرحمن تاج السر عثمان', rank: 'رائد', force: 'القوات البرية السودانية', unit: 'إدارة الملحقيات العسكرية (الخرطوم)' },
-        { military_number: '439201', name: 'ياسر مصطفى ود النمير', rank: 'نقيب', force: 'القوات الجوية السودانية', unit: 'قاعدة وادي سيدنا الجوية (الخرطوم)' },
-        { military_number: '551829', name: 'الصادق يوسف الأمين', rank: 'ملازم أول', force: 'القوات البحرية السودانية', unit: 'قاعدة بورتسودان البحرية الرئيسية' },
-        { military_number: '682910', name: 'الفاتح عبد الرحيم حمد', rank: 'مساعد أول', force: 'قوات الدفاع الجوي السوداني', unit: 'قيادة الدفاع الجوي (الخرطوم)' },
-        { military_number: '493821', name: 'معتز إبراهيم الكباشي', rank: 'نقيب', force: 'القوات البرية السودانية', unit: 'سلاح المهندسين (أم درمان)' },
-        { military_number: '573920', name: 'عمار النور الضو', rank: 'ملازم', force: 'القوات الجوية السودانية', unit: 'قاعدة الشهيد مختار الجوية (الأبيض)' },
-        { military_number: '639201', name: 'الطيب أحمد بابكر', rank: 'رقيب', force: 'القوات البرية السودانية', unit: 'قيادة الفرقة السابعة مشاة' }
-    ];
+    // تحميل بيانات الدارسين المسجلين بقاعدة البيانات الفعلية للنظام
+    let SYSTEM_TRAINEES_REGISTRY = [];
+    try {
+        const traineesScript = document.getElementById('system-registered-trainees-data');
+        if (traineesScript && traineesScript.textContent.trim()) {
+            const parsed = JSON.parse(traineesScript.textContent);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                SYSTEM_TRAINEES_REGISTRY = parsed;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not parse system-registered-trainees-data:', e);
+    }
+    if (!SYSTEM_TRAINEES_REGISTRY || SYSTEM_TRAINEES_REGISTRY.length === 0) {
+        SYSTEM_TRAINEES_REGISTRY = [
+            { military_number: '482910', name: 'عثمان البشير فضل المولى', rank: 'نقيب', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)', category: 'officer' },
+            { military_number: '519203', name: 'طارق أحمد البدوي', rank: 'ملازم أول', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)', category: 'officer' },
+            { military_number: '620194', name: 'محمد عبد الله إدريس', rank: 'مساعد', force: 'القوات البرية السودانية', unit: 'سلاح المدرعات (الشجرة)', category: 'nco' },
+            { military_number: '410928', name: 'عبد الرحمن تاج السر عثمان', rank: 'رائد', force: 'القوات البرية السودانية', unit: 'إدارة الملحقيات العسكرية (الخرطوم)', category: 'officer' },
+            { military_number: '439201', name: 'ياسر مصطفى ود النمير', rank: 'نقيب', force: 'القوات الجوية السودانية', unit: 'قاعدة وادي سيدنا الجوية (الخرطوم)', category: 'officer' },
+            { military_number: '551829', name: 'الصادق يوسف الأمين', rank: 'ملازم أول', force: 'القوات البحرية السودانية', unit: 'قاعدة بورتسودان البحرية الرئيسية', category: 'officer' },
+            { military_number: '682910', name: 'الفاتح عبد الرحيم حمد', rank: 'مساعد أول', force: 'قوات الدفاع الجوي السوداني', unit: 'قيادة الدفاع الجوي (الخرطوم)', category: 'nco' },
+            { military_number: '493821', name: 'معتز إبراهيم الكباشي', rank: 'نقيب', force: 'القوات البرية السودانية', unit: 'سلاح المهندسين (أم درمان)', category: 'officer' },
+            { military_number: '573920', name: 'عمار النور الضو', rank: 'ملازم', force: 'القوات الجوية السودانية', unit: 'قاعدة الشهيد مختار الجوية (الأبيض)', category: 'officer' },
+            { military_number: '639201', name: 'الطيب أحمد بابكر', rank: 'رقيب', force: 'القوات البرية السودانية', unit: 'قيادة الفرقة السابعة مشاة', category: 'nco' }
+        ];
+    }
 
     // المعلمون النشطون المعتمدون بالنظام (سياق سوداني)
-    let SYSTEM_INSTRUCTORS_REGISTRY = [
-        { military_number: '112233', rank: 'مقدم', name: 'قاسم ابوه', force: 'القوات البحرية السودانية', unit: 'قاعدة بورتسودان البحرية' },
-        { military_number: '123456', rank: 'رائد', name: 'لبنى عبد الرحمن', force: 'القوات البرية السودانية', unit: 'إدارة نظم المعلومات والاتصالات' },
-        { military_number: '110022', rank: 'عقيد ركن', name: 'عثمان بشير فضل المولى', force: 'القوات البرية السودانية', unit: 'كلية القادة والأركان المشتركة' },
-        { military_number: '110044', rank: 'عميد', name: 'عبد العزيز ود النمير', force: 'القوات الجوية السودانية', unit: 'قاعدة وادي سيدنا الجوية' },
-        { military_number: '110066', rank: 'مقدم', name: 'يوسف الهادي البدوي', force: 'القوات البرية السودانية', unit: 'معهد تدريب المشاة (جبيت)' }
-    ];
+    let SYSTEM_INSTRUCTORS_REGISTRY = [];
+    try {
+        const instScript = document.getElementById('system-registered-instructors-data');
+        if (instScript && instScript.textContent.trim()) {
+            const parsedInst = JSON.parse(instScript.textContent);
+            if (Array.isArray(parsedInst) && parsedInst.length > 0) {
+                SYSTEM_INSTRUCTORS_REGISTRY = parsedInst;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not parse system-registered-instructors-data:', e);
+    }
+    if (!SYSTEM_INSTRUCTORS_REGISTRY || SYSTEM_INSTRUCTORS_REGISTRY.length === 0) {
+        SYSTEM_INSTRUCTORS_REGISTRY = [
+            { military_number: '112233', rank: 'مقدم', name: 'قاسم ابوه', force: 'القوات البحرية السودانية', unit: 'قاعدة بورتسودان البحرية' },
+            { military_number: '123456', rank: 'رائد', name: 'لبنى عبد الرحمن', force: 'القوات البرية السودانية', unit: 'إدارة نظم المعلومات والاتصالات' },
+            { military_number: '110022', rank: 'عقيد ركن', name: 'عثمان بشير فضل المولى', force: 'القوات البرية السودانية', unit: 'كلية القادة والأركان المشتركة' },
+            { military_number: '110044', rank: 'عميد', name: 'عبد العزيز ود النمير', force: 'القوات الجوية السودانية', unit: 'قاعدة وادي سيدنا الجوية' },
+            { military_number: '110066', rank: 'مقدم', name: 'يوسف الهادي البدوي', force: 'القوات البرية السودانية', unit: 'معهد تدريب المشاة (جبيت)' }
+        ];
+    }
+
+    let MOCK_ADD_SOURCE = 'setup'; // 'setup' | 'details'
 
     // عينتان تجريبيتان افتراضيتان فقط بسياق عسكري سوداني واقعي
     const DEFAULT_SUDANESE_SAMPLE_EXAMS = [
@@ -3210,28 +3523,33 @@
         }
     }
 
+    function getCsrfToken() {
+        const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        return cookie ? cookie.split('=')[1] : '{{ csrf_token }}';
+    }
+
     function initExamsDataset() {
-        const stored = getStoredCustomExams();
+        // قراءة السجلات الفعلية الممررة بأمان من قاعدة البيانات
+        let serverExams = [];
+        try {
+            const el = document.getElementById('initial-exams-data');
+            if (el && el.textContent) {
+                serverExams = JSON.parse(el.textContent);
+            }
+        } catch(e) {
+            console.error('Error parsing initial-exams-data:', e);
+        }
+
         let loaded = [];
-
-        const sampleIds = new Set(['sample-sd-001', 'sample-sd-002']);
-
-        if (stored && stored.length > 0) {
-            const userCreatedExams = stored.filter(e => {
-                const idStr = String(e.id);
-                return !['1', '2', '3', '4', '5', '6'].includes(idStr) && !sampleIds.has(idStr);
-            });
-
-            const storedSample1 = stored.find(e => String(e.id) === 'sample-sd-001');
-            const storedSample2 = stored.find(e => String(e.id) === 'sample-sd-002');
-
-            loaded = [
-                storedSample1 || DEFAULT_SUDANESE_SAMPLE_EXAMS[0],
-                storedSample2 || DEFAULT_SUDANESE_SAMPLE_EXAMS[1],
-                ...userCreatedExams
-            ];
+        if (serverExams && serverExams.length > 0) {
+            loaded = serverExams;
         } else {
-            loaded = [...DEFAULT_SUDANESE_SAMPLE_EXAMS];
+            const stored = getStoredCustomExams();
+            if (stored && stored.length > 0) {
+                loaded = stored;
+            } else {
+                loaded = [...DEFAULT_SUDANESE_SAMPLE_EXAMS];
+            }
         }
 
         // تنظيف ومطابقة الصيغ
@@ -3838,6 +4156,17 @@
             return;
         }
 
+        // حذف الطلب من قاعدة البيانات الفعلية إن كان مسجلاً بالخادم
+        if (String(examId).match(/^\d+$/)) {
+            fetch(`/special-exams/placement/${examId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            }).catch(e => console.warn('Delete backend error:', e));
+        }
+
         ALL_EXAMS = ALL_EXAMS.filter(e => String(e.id) !== String(examId));
         saveCustomExamsToStorage();
         renderAllExamsViews();
@@ -3900,10 +4229,14 @@
 
         // تاريخ الاستلام الافتراضي بتاريخ اليوم الحالي وقابل للتعديل
         const receiptInput = document.getElementById('requestReceiptDateInput');
-        if (receiptInput) receiptInput.value = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (receiptInput) receiptInput.value = todayStr;
 
         const dateInput = document.getElementById('requestExamDateInput');
-        if (dateInput) dateInput.value = '';
+        if (dateInput) {
+            dateInput.value = '';
+            dateInput.min = todayStr;
+        }
 
         const timeInput = document.getElementById('requestExamTimeInput');
         if (timeInput) timeInput.value = '';
@@ -4046,9 +4379,25 @@
         }
     }
 
+    function handleRequestReceiptDateChange() {
+        const receiptInput = document.getElementById('requestReceiptDateInput');
+        const examDateInput = document.getElementById('requestExamDateInput');
+        if (!receiptInput || !examDateInput) return;
+
+        const receiptVal = receiptInput.value.trim();
+        if (receiptVal) {
+            examDateInput.min = receiptVal;
+            if (examDateInput.value && examDateInput.value < receiptVal) {
+                examDateInput.value = receiptVal;
+                handleRequestExamDateChange();
+            }
+        }
+    }
+
     function handleRequestExamDateChange() {
         const dateInput = document.getElementById('requestExamDateInput');
         const dayBadge = document.getElementById('requestExamDayNameBadge');
+        const receiptInput = document.getElementById('requestReceiptDateInput');
         if (!dateInput || !dayBadge) return;
 
         const val = dateInput.value;
@@ -4056,6 +4405,15 @@
             dayBadge.textContent = '--';
             dayBadge.className = 'badge bg-light text-muted border px-2 py-0-5 font-monospace';
             return;
+        }
+
+        if (receiptInput && receiptInput.value && val < receiptInput.value) {
+            dateInput.classList.add('is-invalid');
+            alert(`تنبيه: لا يمكن تحديد موعد انعقاد الامتحان (${val}) قبل تاريخ استلام الطلب (${receiptInput.value}).`);
+            dateInput.value = receiptInput.value;
+            return handleRequestExamDateChange();
+        } else {
+            dateInput.classList.remove('is-invalid');
         }
 
         const dayName = getArabicDayName(val);
@@ -4118,6 +4476,28 @@
             if (!firstInvalid) firstInvalid = purposeSelect;
         } else {
             markFieldValid(purposeSelect);
+        }
+
+        const receiptInput = document.getElementById('requestReceiptDateInput');
+        const examDateInput = document.getElementById('requestExamDateInput');
+        const receiptVal = receiptInput ? receiptInput.value.trim() : '';
+        const examDateVal = examDateInput ? examDateInput.value.trim() : '';
+
+        if (!receiptVal) {
+            errors.push('تاريخ استلام الطلب: حقل إلزامي، يرجى تحديد تاريخ الاستلام.');
+            markFieldInvalid(receiptInput);
+            if (!firstInvalid) firstInvalid = receiptInput;
+        } else {
+            markFieldValid(receiptInput);
+        }
+
+        // قيد تاريخ الانعقاد: لا يمكن تحديد موعد امتحان قبل تاريخ انشاء / استلام الطلب
+        if (examDateVal && receiptVal && examDateVal < receiptVal) {
+            errors.push(`موعد انعقاد الامتحان: لا يمكن تحديد موعد انعقاد الامتحان (${examDateVal}) قبل تاريخ استلام أو إنشاء الطلب (${receiptVal}).`);
+            markFieldInvalid(examDateInput);
+            if (!firstInvalid) firstInvalid = examDateInput;
+        } else if (examDateInput) {
+            markFieldValid(examDateInput);
         }
 
         // الحقول الاختيارية: الجهة المتجه لها والبند الفرعي لا تُعد أخطاء عند تركها فارغة
@@ -4468,12 +4848,20 @@
         });
     }
 
-    function getTraineeClassification(rank) {
+    function getTraineeClassification(rank, category) {
+        if (category === 'officer' || category === 'nco' || category === 'civilian') {
+            return category;
+        }
         const r = String(rank || '');
         const officerRanks = ['ملازم', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'];
         for (const off of officerRanks) {
             if (r.includes(off)) return 'officer';
         }
+        const ncoRanks = ['جندي', 'وكيل عريف', 'عريف', 'رقيب', 'مساعد'];
+        for (const n of ncoRanks) {
+            if (r.includes(n)) return 'nco';
+        }
+        if (r.includes('موظف') || r.includes('مدني')) return 'civilian';
         return 'nco';
     }
 
@@ -4482,7 +4870,7 @@
         const sorted = [...SYSTEM_TRAINEES_REGISTRY].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
 
         return sorted.filter(t => {
-            const cat = getTraineeClassification(t.rank);
+            const cat = getTraineeClassification(t.rank, t.category);
             if (CURRENT_TRAINEE_FILTER_CATEGORY === 'officers' && cat !== 'officer') return false;
             if (CURRENT_TRAINEE_FILTER_CATEGORY === 'ncos' && cat !== 'nco') return false;
 
@@ -4716,15 +5104,187 @@
         renderSetupTraineesTable();
     }
 
+    const MOCK_SUDAN_STATES_CITIES = {
+        'الخرطوم': ['الخرطوم', 'أم درمان', 'بحري', 'شرق النيل', 'جبل أولياء'],
+        'الجزيرة': ['ود مدني', 'المناقل', 'الحصاحيصا', 'الكاملين', 'رفاعة', 'طابت', 'أم القرى', '24 القرشي', 'المسلمية'],
+        'البحر الأحمر': ['بورتسودان', 'سواكن', 'سنكات', 'طوكر', 'جبيت', 'حلايب', 'درديب'],
+        'كسلا': ['كسلا', 'حلفا الجديدة', 'خشم القربة', 'أروما', 'همشكوريب', 'ود الحليو', 'تلكوك'],
+        'القضارف': ['القضارف', 'الفاو', 'القلابات', 'الحواتة', 'دوكة', 'الرهد', 'الفشقة'],
+        'سنار': ['سنجة', 'سنار', 'الدندر', 'السوكي', 'أبو حجار', 'مايرنو', 'الدالي والمزموم'],
+        'النيل الأبيض': ['ربك', 'كوستي', 'الدويم', 'القطينة', 'تندلتي', 'الجبلين', 'أم رميتة', 'قلي'],
+        'النيل الأزرق': ['الدمازين', 'الروصيرص', 'باو', 'الكرمك', 'قيسان', 'التضامن'],
+        'نهر النيل': ['الدامر', 'عطبرة', 'شندي', 'بربر', 'المتمة', 'أبو حمد', 'البحيرة'],
+        'الشمالية': ['دنقلا', 'مروي', 'الدبة', 'وادي حلفا', 'كرمة', 'القولد', 'البرقيق'],
+        'شمال كردفان': ['الأبيض', 'أم روابة', 'بارا', 'الرهد', 'سودري', 'جبرة الشيخ', 'غرب بارا'],
+        'جنوب كردفان': ['كادقلي', 'الدلنج', 'تلودي', 'هبيلا', 'الليري', 'رشاد', 'أبو جبيهة', 'العباسية'],
+        'غرب كردفان': ['الفولة', 'النهود', 'بابنوسة', 'المجلد', 'غبيش', 'أبو زبد', 'ود بندة'],
+        'شمال دارفور': ['الفاشر', 'كتم', 'مليط', 'كبكابية', 'أم كدادة', 'طويلة', 'سرف عمرة'],
+        'جنوب دارفور': ['نيالا', 'كاس', 'برام', 'تلس', 'عد الفرسان', 'رهيد البردي', 'قريضة'],
+        'غرب دارفور': ['الجنينة', 'كلبس', 'سربا', 'بيضة', 'كرينك', 'هبيلا'],
+        'وسط دارفور': ['زالنجي', 'وادي صالح', 'نيرتتي', 'قارسلا', 'مكجر', 'بندسي', 'أزوم'],
+        'شرق دارفور': ['الضعين', 'عديلة', 'عسلاية', 'بحر العرب', 'أبو كارنكا', 'الفردوس']
+    };
+
+    function handleMockTraineeCategoryChange() {
+        const catSelect = document.getElementById('mockTraineeCategory');
+        const rankSelect = document.getElementById('mockTraineeRank');
+        if (!catSelect || !rankSelect) return;
+
+        const cat = catSelect.value;
+        let ranks = [];
+        if (cat === 'officer') {
+            ranks = ['ملازم', 'ملازم أول', 'نقيب', 'رائد', 'مقدم', 'عقيد', 'عميد', 'لواء', 'فريق'];
+        } else if (cat === 'nco') {
+            ranks = ['جندي', 'وكيل عريف', 'عريف', 'رقيب', 'رقيب أول', 'مساعد', 'مساعد أول'];
+        } else {
+            ranks = ['موظف مدني', 'أخصائي', 'باحث', 'مهندس', 'فني', 'إداري'];
+        }
+
+        rankSelect.innerHTML = ranks.map((r, idx) => `<option value="${r}" ${idx === 0 ? 'selected' : ''}>${r}</option>`).join('');
+    }
+
+    function handleMockStateChange() {
+        const stateSelect = document.getElementById('mock_state_select');
+        const customStateInput = document.getElementById('mock_custom_state');
+        const finalStateInput = document.getElementById('mock_final_residence_state');
+        const citySelect = document.getElementById('mock_city_select');
+        const customCityInput = document.getElementById('mock_custom_city');
+        const finalCityInput = document.getElementById('mock_final_residence_city');
+
+        if (!stateSelect) return;
+        const stateVal = stateSelect.value;
+
+        if (stateVal === '__custom__') {
+            if (customStateInput) {
+                customStateInput.style.display = 'block';
+                customStateInput.focus();
+                if (finalStateInput) finalStateInput.value = customStateInput.value.trim();
+            }
+            if (citySelect) {
+                citySelect.innerHTML = '<option value="">-- اختر المدينة --</option><option value="__custom__">✍️ كتابة اسم المدينة يدوياً</option>';
+                citySelect.disabled = false;
+                citySelect.classList.remove('bg-light');
+                citySelect.value = '__custom__';
+            }
+            handleMockCityChange();
+        } else if (!stateVal) {
+            if (customStateInput) customStateInput.style.display = 'none';
+            if (finalStateInput) finalStateInput.value = '';
+            if (citySelect) {
+                citySelect.innerHTML = '<option value="">-- اختر الولاية أولاً لعرض مدنها --</option>';
+                citySelect.disabled = true;
+                citySelect.classList.add('bg-light');
+            }
+            if (customCityInput) customCityInput.style.display = 'none';
+            if (finalCityInput) finalCityInput.value = '';
+        } else {
+            if (customStateInput) customStateInput.style.display = 'none';
+            if (finalStateInput) finalStateInput.value = stateVal;
+            if (citySelect) {
+                citySelect.disabled = false;
+                citySelect.classList.remove('bg-light');
+                citySelect.innerHTML = '<option value="">-- اختر المدينة --</option>';
+                const cities = MOCK_SUDAN_STATES_CITIES[stateVal] || [];
+                cities.forEach(city => {
+                    const opt = document.createElement('option');
+                    opt.value = city;
+                    opt.textContent = city;
+                    citySelect.appendChild(opt);
+                });
+                const customOpt = document.createElement('option');
+                customOpt.value = '__custom__';
+                customOpt.textContent = '✍️ مدينة أخرى (كتابة يدوية)';
+                citySelect.appendChild(customOpt);
+            }
+            if (customCityInput) customCityInput.style.display = 'none';
+            if (finalCityInput) finalCityInput.value = '';
+        }
+    }
+
+    function handleMockCityChange() {
+        const citySelect = document.getElementById('mock_city_select');
+        const customCityInput = document.getElementById('mock_custom_city');
+        const finalCityInput = document.getElementById('mock_final_residence_city');
+        if (!citySelect) return;
+
+        const cityVal = citySelect.value;
+        if (cityVal === '__custom__') {
+            if (customCityInput) {
+                customCityInput.style.display = 'block';
+                customCityInput.focus();
+                if (finalCityInput) finalCityInput.value = customCityInput.value.trim();
+            }
+        } else {
+            if (customCityInput) customCityInput.style.display = 'none';
+            if (finalCityInput) finalCityInput.value = cityVal;
+        }
+    }
+
+    function syncMockState() {
+        const customStateInput = document.getElementById('mock_custom_state');
+        const finalStateInput = document.getElementById('mock_final_residence_state');
+        if (customStateInput && finalStateInput) {
+            finalStateInput.value = customStateInput.value.trim();
+        }
+    }
+
+    function syncMockCity() {
+        const customCityInput = document.getElementById('mock_custom_city');
+        const finalCityInput = document.getElementById('mock_final_residence_city');
+        if (customCityInput && finalCityInput) {
+            finalCityInput.value = customCityInput.value.trim();
+        }
+    }
+
     function openMockAddTraineeModalFromSetup() {
+        MOCK_ADD_SOURCE = 'setup';
         const setupModal = bootstrap.Modal.getInstance(document.getElementById('examSetupModal'));
         if (setupModal) setupModal.hide();
 
-        document.getElementById('mockTraineeName').value = '';
-        document.getElementById('mockTraineeMilNumber').value = '';
-        document.getElementById('mockTraineeRank').value = 'نقيب';
-        document.getElementById('mockTraineeForce').value = 'القوات البرية السودانية';
+        const orderClass = (TEMP_CURRENT_REQUEST && TEMP_CURRENT_REQUEST.classification) ? TEMP_CURRENT_REQUEST.classification : 'officer';
+        _prepareMockAddTraineeModal(orderClass);
+    }
+
+    function openMockAddTraineeModalFromDetails() {
+        MOCK_ADD_SOURCE = 'details';
+        const detailsModal = bootstrap.Modal.getInstance(document.getElementById('detailsAddTraineeModal'));
+        if (detailsModal) detailsModal.hide();
+
+        const exam = ALL_EXAMS.find(e => String(e.id) === String(CURRENT_DETAILS_EXAM_ID));
+        const examClass = exam ? (exam.classification || 'officer') : 'officer';
+        _prepareMockAddTraineeModal(examClass);
+    }
+
+    function _prepareMockAddTraineeModal(classification) {
+        const fieldsToClear = [
+            'mockTraineeMilNumber', 'mockTraineeName', 'mockTraineeBatch', 'mockTraineePhone',
+            'mockTraineeNeighborhood', 'mockTraineeBlock', 'mockTraineeHouseNumber',
+            'mock_final_residence_state', 'mock_final_residence_city',
+            'mock_custom_state', 'mock_custom_city',
+            'mockRel1Name', 'mockRel1Kinship', 'mockRel1Phone', 'mockRel1Address',
+            'mockRel2Name', 'mockRel2Kinship', 'mockRel2Phone', 'mockRel2Address',
+            'mockRel3Name', 'mockRel3Kinship', 'mockRel3Phone', 'mockRel3Address',
+            'mockRel4Name', 'mockRel4Kinship', 'mockRel4Phone', 'mockRel4Address'
+        ];
+        fieldsToClear.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
+        // ضبط التصنيف الافتراضي
+        const catSelect = document.getElementById('mockTraineeCategory');
+        if (catSelect) {
+            catSelect.value = (classification === 'ncos' ? 'nco' : (classification === 'civilians' ? 'civilian' : 'officer'));
+        }
+        handleMockTraineeCategoryChange();
+
+        const forceSelect = document.getElementById('mockTraineeForce');
+        if (forceSelect) forceSelect.value = 'القوات البرية السودانية';
         handleMockTraineeForceChange();
+
+        const stateSelect = document.getElementById('mock_state_select');
+        if (stateSelect) stateSelect.value = '';
+        handleMockStateChange();
 
         const mockModal = new bootstrap.Modal(document.getElementById('mockAddTraineePortalModal'));
         mockModal.show();
@@ -4734,57 +5294,164 @@
         const mockModal = bootstrap.Modal.getInstance(document.getElementById('mockAddTraineePortalModal'));
         if (mockModal) mockModal.hide();
 
-        const setupModal = new bootstrap.Modal(document.getElementById('examSetupModal'));
-        setupModal.show();
+        if (MOCK_ADD_SOURCE === 'details') {
+            const detailsModal = new bootstrap.Modal(document.getElementById('detailsAddTraineeModal'));
+            detailsModal.show();
+            renderDetailsTraineeCandidates();
+        } else {
+            const setupModal = new bootstrap.Modal(document.getElementById('examSetupModal'));
+            setupModal.show();
+        }
     }
 
-    // حفظ دارس جديد في النظام مع التحقق من تكرار الرقم العسكري
+    // حفظ دارس جديد في النظام مع ربطه بقاعدة البيانات الفعلية
     function submitMockAddTrainee() {
-        const name = (document.getElementById('mockTraineeName').value || '').trim();
-        const mil = (document.getElementById('mockTraineeMilNumber').value || '').trim();
-        const rank = document.getElementById('mockTraineeRank').value;
-        const force = document.getElementById('mockTraineeForce').value;
-        const unit = document.getElementById('mockTraineeUnit').value;
+        const mil = (document.getElementById('mockTraineeMilNumber')?.value || '').trim();
+        const name = (document.getElementById('mockTraineeName')?.value || '').trim();
+        const category = document.getElementById('mockTraineeCategory')?.value || 'officer';
+        const rank = document.getElementById('mockTraineeRank')?.value || '';
+        const batch = document.getElementById('mockTraineeBatch')?.value || '';
+        const force = document.getElementById('mockTraineeForce')?.value || '';
+        const unit = document.getElementById('mockTraineeUnit')?.value || '';
+        const phone = (document.getElementById('mockTraineePhone')?.value || '').trim();
+        const state = document.getElementById('mock_final_residence_state')?.value || document.getElementById('mock_state_select')?.value || '';
+        const city = document.getElementById('mock_final_residence_city')?.value || document.getElementById('mock_city_select')?.value || '';
+        const neighborhood = (document.getElementById('mockTraineeNeighborhood')?.value || '').trim();
+        const block = (document.getElementById('mockTraineeBlock')?.value || '').trim();
+        const houseNumber = (document.getElementById('mockTraineeHouseNumber')?.value || '').trim();
 
-        if (!name || !mil) {
-            alert('يرجى إدخال اسم الدارس والرقم العسكري.');
+        if (!mil || !name) {
+            alert('يرجى إدخال النمرة (الرقم العسكري) والاسم الكامل للدارس.');
             return;
         }
 
         if (!/^[0-9]+$/.test(mil)) {
-            alert('الرقم العسكري يجب أن يحتوي على أرقام فقط (مع الحفاظ على الأصفار في البداية).');
+            alert('النمرة يجب أن تحتوي على أرقام فقط.');
             return;
         }
 
-        if (TEMP_SETUP_PARTICIPANTS.has(String(mil))) {
-            alert(`الدارس مسجل مسبقاً في قائمة الممتحنين لهذا الطلب بالرقم العسكري: ${mil}`);
+        if (phone && !/^\d{10}$/.test(phone)) {
+            alert('رقم الهاتف يجب أن يتكون من 10 أرقام فقط.');
             return;
+        }
+
+        if (MOCK_ADD_SOURCE === 'setup' && TEMP_SETUP_PARTICIPANTS.has(String(mil))) {
+            alert(`الدارس مسجل مسبقاً في قائمة الممتحنين لهذا الطلب بالرقم: ${mil}`);
+            return;
+        }
+
+        if (MOCK_ADD_SOURCE === 'details') {
+            const exam = ALL_EXAMS.find(e => String(e.id) === String(CURRENT_DETAILS_EXAM_ID));
+            if (exam && (exam.trainees || []).some(t => String(t.military_number) === String(mil))) {
+                alert(`الدارس مسجل مسبقاً في قائمة الممتحنين لهذا الامتحان بالرقم: ${mil}`);
+                return;
+            }
+        }
+
+        const relatives = [];
+        for (let i = 1; i <= 4; i++) {
+            const rName = (document.getElementById(`mockRel${i}Name`)?.value || '').trim();
+            const rKin = (document.getElementById(`mockRel${i}Kinship`)?.value || '').trim();
+            const rPhone = (document.getElementById(`mockRel${i}Phone`)?.value || '').trim();
+            const rAddr = (document.getElementById(`mockRel${i}Address`)?.value || '').trim();
+            if (rName || rKin || rPhone || rAddr) {
+                relatives.push({
+                    order: i,
+                    name: rName,
+                    kinship: rKin,
+                    phone: rPhone,
+                    address: rAddr
+                });
+            }
         }
 
         const newTrainee = {
-            name: name,
             military_number: mil,
+            name: name,
+            category: category,
             rank: rank,
+            batch: batch,
             force: force,
-            unit: unit
+            unit: unit,
+            phone: phone,
+            residence_state: state,
+            residence_city: city,
+            residence_neighborhood: neighborhood,
+            residence_block: block,
+            residence_house_number: houseNumber,
+            relatives: relatives
         };
 
+        // إرسال طلب الحفظ الفعلي إلى قاعدة البيانات (Trainee model & TraineeRelative)
+        fetch('/special-exams/placement/trainee-quick-add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(newTrainee)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.trainee) {
+                const tr = data.trainee;
+                const existingIdx = SYSTEM_TRAINEES_REGISTRY.findIndex(t => String(t.military_number) === String(tr.military_number));
+                if (existingIdx !== -1) {
+                    SYSTEM_TRAINEES_REGISTRY[existingIdx] = tr;
+                } else {
+                    SYSTEM_TRAINEES_REGISTRY.unshift(tr);
+                }
+            }
+        })
+        .catch(err => console.warn('Warning: offline or background trainee save:', err));
+
         const existingInRegistry = SYSTEM_TRAINEES_REGISTRY.find(t => String(t.military_number) === String(mil));
-        if (!existingInRegistry) {
+        if (existingInRegistry) {
+            Object.assign(existingInRegistry, newTrainee);
+        } else {
             SYSTEM_TRAINEES_REGISTRY.unshift(newTrainee);
         }
-
-        // تحديده تلقائياً في الذاكرة دون إضافته مباشرة لقائمة المشاركين
-        CURRENT_CHECKED_TRAINEE_MILS.add(String(mil));
 
         const mockModal = bootstrap.Modal.getInstance(document.getElementById('mockAddTraineePortalModal'));
         if (mockModal) mockModal.hide();
 
-        const setupModal = new bootstrap.Modal(document.getElementById('examSetupModal'));
-        setupModal.show();
+        if (MOCK_ADD_SOURCE === 'details') {
+            const exam = ALL_EXAMS.find(e => String(e.id) === String(CURRENT_DETAILS_EXAM_ID));
+            if (exam) {
+                const candidateTrainee = {
+                    id: Date.now(),
+                    military_number: String(mil),
+                    name: name,
+                    rank: rank || (category === 'officer' ? 'ملازم' : 'رقيب'),
+                    original_rank: rank || (category === 'officer' ? 'ملازم' : 'رقيب'),
+                    force: force,
+                    unit: unit,
+                    attendance_status: 'unrecorded',
+                    attendance_label: 'غير مرصود'
+                };
+                if (!exam.trainees) exam.trainees = [];
+                exam.trainees.push(candidateTrainee);
+                exam.trainees_count = exam.trainees.length;
+                saveCustomExamsToStorage();
 
-        renderSetupTraineesTable();
-        updateBulkAddButtonState();
+                if (exam.db_id || (exam.id && String(exam.id).match(/^\d+$/))) {
+                    syncExamTraineesToDatabase(exam);
+                }
+                renderAllExamsViews();
+                showExamDetailsScreen(exam.id);
+            }
+        } else {
+            // إضافته مباشرة لقائمة المشاركين بالامتحان في شاشة الإعداد لضمان عدم نسيانه
+            TEMP_SETUP_PARTICIPANTS.set(String(mil), newTrainee);
+            CURRENT_CHECKED_TRAINEE_MILS.add(String(mil));
+
+            const setupModal = new bootstrap.Modal(document.getElementById('examSetupModal'));
+            setupModal.show();
+
+            renderSetupSelectedTrainees();
+            renderSetupTraineesTable();
+            updateBulkAddButtonState();
+        }
     }
 
     function backToRequestModal() {
@@ -4834,7 +5501,21 @@
         }
 
         if (TEMP_SETUP_PARTICIPANTS.size === 0) {
-            errors.push('الدارسون المشاركون: يجب اختيار وإضافة دارس واحد على الأقل للمشاركة في الامتحان.');
+            // فحص ذكي: إذا قام المستخدم بتحديد دارسين من الجدول ونسي الضغط على زر (إضافة المحددين)
+            if (CURRENT_CHECKED_TRAINEE_MILS && CURRENT_CHECKED_TRAINEE_MILS.size > 0) {
+                CURRENT_CHECKED_TRAINEE_MILS.forEach(mil => {
+                    const tr = ALL_AVAILABLE_TRAINEES.find(t => String(t.military_number) === String(mil)) ||
+                               SYSTEM_TRAINEES_REGISTRY.find(t => String(t.military_number) === String(mil));
+                    if (tr) {
+                        TEMP_SETUP_PARTICIPANTS.set(String(tr.military_number), Object.assign({}, tr));
+                    }
+                });
+                renderSetupSelectedTrainees();
+            }
+        }
+
+        if (TEMP_SETUP_PARTICIPANTS.size === 0) {
+            errors.push('الدارسون المشاركون: لم يتم إضافة أي دارس للمشاركة في الامتحان. يرجى تحديد الدارسين من جدول الدارسين المتاحين بالضغط على مربعات الاختيار ثم الضغط على زر (إضافة المحددين إلى قائمة الامتحان).');
         }
 
         // التحقق الإلزامي من تحديد رتبة صريحة لكل مرشح في الامتحان
@@ -4912,6 +5593,57 @@
             official_request_image_data: TEMP_CURRENT_REQUEST.official_request_image_data || null,
             created_at: new Date().toISOString().split('T')[0]
         };
+
+        // إرسال البيانات فورياً لقاعدة البيانات الفعلية
+        const backendPayload = {
+            id: CURRENT_EDIT_EXAM_ID,
+            db_id: CURRENT_EDIT_EXAM_ID,
+            signal_number: TEMP_CURRENT_REQUEST.signal_number,
+            source_entity: TEMP_CURRENT_REQUEST.source_entity,
+            host_entity: TEMP_CURRENT_REQUEST.host_entity || TEMP_CURRENT_REQUEST.source_entity,
+            destination_country: TEMP_CURRENT_REQUEST.destination_country || '',
+            purpose: TEMP_CURRENT_REQUEST.purpose,
+            sub_purpose: TEMP_CURRENT_REQUEST.sub_purpose || '',
+            classification: TEMP_CURRENT_REQUEST.classification || 'officers',
+            receipt_date: TEMP_CURRENT_REQUEST.receipt_date,
+            exam_date: TEMP_CURRENT_REQUEST.exam_date || '',
+            exam_time: TEMP_CURRENT_REQUEST.exam_time || '09:00',
+            supervisor: supervisorVal,
+            theory_max_grade: theory,
+            practical_max_grade: practical,
+            total_max_grade: total,
+            trainees: participantsList
+        };
+
+        fetch('/special-exams/placement/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(backendPayload)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success && resData.order) {
+                const savedOrder = resData.order;
+                if (CURRENT_EDIT_EXAM_ID) {
+                    const idx = ALL_EXAMS.findIndex(e => String(e.id) === String(CURRENT_EDIT_EXAM_ID) || String(e.db_id) === String(CURRENT_EDIT_EXAM_ID));
+                    if (idx !== -1) {
+                        ALL_EXAMS[idx] = savedOrder;
+                    } else {
+                        ALL_EXAMS.unshift(savedOrder);
+                    }
+                } else {
+                    ALL_EXAMS.unshift(savedOrder);
+                }
+                saveCustomExamsToStorage();
+                renderAllExamsViews();
+            }
+        })
+        .catch(err => {
+            console.warn('Backend save notice:', err);
+        });
 
         if (CURRENT_EDIT_EXAM_ID) {
             const idx = ALL_EXAMS.findIndex(e => String(e.id) === String(CURRENT_EDIT_EXAM_ID));
@@ -5223,6 +5955,27 @@
         exam.status = 'confirmed';
         exam.status_label = 'تم تأكيد انعقاد الامتحان';
 
+        // مزامنة تأكيد الانعقاد في قاعدة البيانات الفعلية
+        if (exam.id && String(exam.id).match(/^\d+$/)) {
+            fetch(`/special-exams/placement/${exam.id}/confirm/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(res => res.json())
+            .then(resData => {
+                if (resData.success && resData.order) {
+                    const idx = ALL_EXAMS.findIndex(e => String(e.id) === String(exam.id));
+                    if (idx !== -1) ALL_EXAMS[idx] = resData.order;
+                    saveCustomExamsToStorage();
+                    renderAllExamsViews();
+                }
+            })
+            .catch(err => console.warn('Confirm holding backend notice:', err));
+        }
+
         saveCustomExamsToStorage();
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('confirmExamHoldingModal'));
@@ -5452,7 +6205,14 @@
                                 <td class="font-monospace fw-bold text-primary">${milStr}</td>
                                 <td class="fw-bold text-dark">${name}</td>
                                 <td><span class="badge bg-light text-dark border font-monospace px-2 py-1">${rank}</span></td>
-                                <td class="text-center">${badgeHTML}</td>
+                                <td class="text-center">
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        ${badgeHTML}
+                                        <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 rounded-2" onclick="openTraineeHistoryModal('${milStr}')" title="عرض السجل الأكاديمي والتفصيلي للدارس">
+                                            <i class="bi bi-person-lines-fill me-1"></i><span class="small">الملف</span>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         `;
                     } else {
@@ -5473,9 +6233,9 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
-                                        <a href="/training/trainees/?search=${encodeURIComponent(milStr)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info px-2 py-1 rounded-2" title="عرض تفاصيل وسجل الدارس في نافذة جديدة">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i><span class="small">التفاصيل</span>
-                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 rounded-2" onclick="openTraineeHistoryModal('${milStr}')" title="عرض السجل الأكاديمي والتفصيلي للدارس">
+                                            <i class="bi bi-person-lines-fill me-1"></i><span class="small">الملف</span>
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 rounded-2" onclick="promptDeleteTraineeFromExam('${milStr}')" title="حذف الممتحن من الامتحان">
                                             <i class="bi bi-trash3"></i>
                                         </button>
@@ -5533,6 +6293,8 @@
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+
 
     function printExamDetailsScreen() {
         const wrapper = document.getElementById('examDetailsScreenWrapper');
@@ -5738,15 +6500,18 @@
             const milStr = String(t.military_number);
             if (existingMils.has(milStr)) return false; // استبعاد المسجلين بالفعل
 
-            const cat = getTraineeClassification(t.rank);
+            const cat = getTraineeClassification(t.rank, t.category);
             if (exam.classification === 'ncos' && cat !== 'nco') return false;
+            if (exam.classification === 'civilians' && cat !== 'civilian') return false;
             if (exam.classification !== 'ncos' && exam.classification !== 'civilians' && cat !== 'officer') return false;
 
             if (q) {
                 const milMatch = milStr.toLowerCase().includes(q);
                 const nameMatch = (t.name || '').toLowerCase().includes(q);
                 const rankMatch = (t.rank || '').toLowerCase().includes(q);
-                return milMatch || nameMatch || rankMatch;
+                const forceMatch = (t.force || '').toLowerCase().includes(q);
+                const unitMatch = (t.unit || '').toLowerCase().includes(q);
+                return milMatch || nameMatch || rankMatch || forceMatch || unitMatch;
             }
             return true;
         }).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
@@ -5825,6 +6590,54 @@
         }
     }
 
+    // مزامنة فورية لقائمة الممتحنين للامتحان في قاعدة البيانات الفعلية
+    function syncExamTraineesToDatabase(exam) {
+        const examId = exam.db_id || exam.id;
+        if (!examId || !String(examId).match(/^\d+$/)) return;
+
+        const payload = {
+            id: examId,
+            db_id: examId,
+            signal_number: exam.signal_number || '',
+            source_entity: exam.source_entity || '',
+            host_entity: exam.host_entity || exam.source_entity || '',
+            destination_country: exam.destination_country || '',
+            purpose: exam.purpose || '',
+            sub_purpose: exam.sub_purpose || '',
+            classification: exam.classification || 'officers',
+            receipt_date: exam.receipt_date || '',
+            exam_date: exam.exam_date || '',
+            exam_time: exam.exam_time || '09:00',
+            supervisor: exam.supervising_teacher || exam.supervisor || '',
+            theory_max_grade: exam.subjects && exam.subjects[0] ? exam.subjects[0].theory_max_grade : 50,
+            practical_max_grade: exam.subjects && exam.subjects[0] ? exam.subjects[0].practical_max_grade : 50,
+            total_max_grade: 100,
+            trainees: (exam.trainees || []).map(t => ({
+                military_number: String(t.military_number),
+                name: t.name,
+                rank: t.rank,
+                force: t.force || '',
+                unit: t.unit || ''
+            }))
+        };
+
+        fetch('/special-exams/placement/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Sync candidates warning:', data.error);
+            }
+        })
+        .catch(err => console.warn('Sync candidates network error:', err));
+    }
+
     function executeAddTraineeToExam() {
         const exam = ALL_EXAMS.find(e => String(e.id) === String(CURRENT_DETAILS_EXAM_ID));
         if (!exam) return;
@@ -5874,6 +6687,10 @@
 
         saveCustomExamsToStorage();
 
+        if (exam.db_id || (exam.id && String(exam.id).match(/^\d+$/))) {
+            syncExamTraineesToDatabase(exam);
+        }
+
         const modalEl = document.getElementById('detailsAddTraineeModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
@@ -5899,7 +6716,10 @@
 
         tr.rank = newRank;
         saveCustomExamsToStorage();
-        // التعديل محصور على سجل الامتحان الحالي فقط، ولا يمس سجل الدارسين العام
+
+        if (exam.db_id || (exam.id && String(exam.id).match(/^\d+$/))) {
+            syncExamTraineesToDatabase(exam);
+        }
     }
 
     function promptDeleteTraineeFromExam(milStr) {
@@ -5945,6 +6765,10 @@
 
         saveCustomExamsToStorage();
 
+        if (exam.db_id || (exam.id && String(exam.id).match(/^\d+$/))) {
+            syncExamTraineesToDatabase(exam);
+        }
+
         const modalEl = document.getElementById('confirmDeleteTraineeModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
@@ -5971,6 +6795,80 @@
         renderAllExamsViews();
         switchViewMode(CURRENT_VIEW);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+
+    // فتح نافذة تفاصيل وسجل الدارس الأكاديمي المرتبط بقاعدة البيانات
+    function openTraineeHistoryModal(militaryNumber) {
+        const modalEl = document.getElementById('traineeHistoryModal');
+        if (!modalEl) return;
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        const tbody = document.getElementById('modalCoursesTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    جاري جلب سجل جميع دورات وامتحانات الدارس...
+                </td>
+            </tr>
+        `;
+
+        fetch(`/trainees/${militaryNumber}/transcript/?format=json`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">تعذر جلب بيانات الدارس.</td></tr>`;
+                return;
+            }
+
+            document.getElementById('modalTraineeHeader').textContent = `السجل التدريبي: ${data.rank} / ${data.name}`;
+            document.getElementById('modalTraineeName').textContent = `${data.rank} / ${data.name}`;
+            document.getElementById('modalTraineeNumber').textContent = data.military_number;
+            document.getElementById('modalTraineeUnitForce').textContent = `${data.unit} (${data.force})`;
+            document.getElementById('modalTraineeCategory').textContent = data.category_display;
+            document.getElementById('modalCoursesCount').textContent = `${data.total_courses} دورة`;
+            document.getElementById('modalFullTranscriptBtn').href = data.full_transcript_url;
+
+            if (!data.courses || data.courses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">لم يتم رصد أي دورات مكتملة لهذا الدارس بعد.</td></tr>`;
+                return;
+            }
+
+            let rowsHtml = '';
+            data.courses.forEach(c => {
+                const gradeBadgeClass = c.percentage >= 85 ? 'badge-grade-a' :
+                                       c.percentage >= 75 ? 'badge-grade-b' :
+                                       c.percentage >= 65 ? 'badge-grade-c' : 'badge-grade-d';
+
+                const gradeTextColor = c.percentage >= 85 ? 'text-success' :
+                                       c.percentage >= 75 ? 'text-primary' :
+                                       c.percentage >= 65 ? 'text-warning' : 'text-danger';
+
+                rowsHtml += `
+                    <tr>
+                        <td>
+                            <strong class="text-dark d-block fs-6">${c.course_name}</strong>
+                            <span class="badge bg-light text-dark border">${c.category_name}</span>
+                        </td>
+                        <td><span class="fw-bold text-primary">${c.session_code}</span></td>
+                        <td><small class="text-muted d-block">${c.start_date} إلى ${c.end_date}</small></td>
+                        <td class="text-center"><strong>${c.total_score}</strong> <small class="text-muted font-monospace">/ ${c.total_possible}</small></td>
+                        <td class="text-center"><span class="badge ${gradeBadgeClass} fs-6 px-3 py-1 font-monospace">${c.percentage}%</span></td>
+                        <td class="text-center"><strong class="${gradeTextColor}">${c.grade_label || '---'}</strong></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = rowsHtml;
+        })
+        .catch(err => {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">حدث خطأ في الاتصال بالخادم.</td></tr>`;
+        });
     }
 
     function openEditExamFromScreen() {

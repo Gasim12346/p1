@@ -254,11 +254,21 @@ def trainee_transcript_view(request, military_number):
                 'movement_order_url': reverse('training:movement_order', args=[en.id]),
                 'cert_advanced_url': reverse('training:certificate_detailed', args=[en.id]),
             })
+        cand_rank = ''
+        try:
+            from apps.placement_exams.models import PlacementExamCandidate
+            cand_rank = PlacementExamCandidate.objects.filter(
+                military_number_snapshot=str(trainee.military_number)
+            ).exclude(rank_snapshot='').values_list('rank_snapshot', flat=True).last() or ''
+        except Exception:
+            pass
+        rank_display = courses_data[0]['current_rank'] if courses_data else (trainee.rank or cand_rank or ('ملازم' if trainee.category == 'officer' else 'رقيب'))
+
         return JsonResponse({
             'success': True,
             'name': trainee.name,
             'military_number': trainee.military_number,
-            'rank': courses_data[0]['current_rank'] if courses_data else '',
+            'rank': rank_display,
             'unit': trainee.unit,
             'force': trainee.force,
             'category_display': trainee.get_category_display(),

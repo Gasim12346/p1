@@ -283,6 +283,8 @@ class PlacementExamOrder(models.Model):
 
     def clean(self):
         super().clean()
+        if self.exam_date and self.receipt_date and self.exam_date < self.receipt_date:
+            raise ValidationError({'exam_date': 'لا يمكن تحديد موعد انعقاد الامتحان قبل تاريخ استلام أو إنشاء الطلب.'})
         if self.assessment_type == AssessmentType.THEORY_ONLY:
             self.practical_max_score = Decimal('0.0')
             self.total_max_score = self.theory_max_score

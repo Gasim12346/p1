@@ -178,7 +178,7 @@ def get_report_data(params, institute=None):
     تجميع وفلترة بيانات التقرير بحسب المعايير المحددة في الطلب وعزل بيانات المعهد إن وجد
     """
     report_type = str(params.get('report_type') or 'trainees').strip()
-    if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors', 'course_subjects']:
+    if report_type not in ['trainees', 'sessions', 'units_forces', 'dropped_trainees', 'instructors', 'course_subjects', 'placement_exams']:
         report_type = 'trainees'
 
     # معالجة نطاق التواريخ
@@ -1143,6 +1143,211 @@ def get_report_data(params, institute=None):
             'use_all_dates': use_all_dates,
             'session_status': session_status,
             'subjects_summary': sessions_subjects_summary,
+        })
+
+    # ========================================================
+    # 7. تقرير امتحانات تحديد المستوى (placement_exams)
+    # ========================================================
+    elif report_type == 'placement_exams':
+        from apps.placement_exams.models import PlacementExamOrder, PlacementExamCandidate, PlacementExamStatus, CandidateClassification
+
+        placement_qs = PlacementExamOrder.objects.select_related('supervisor', 'institute').prefetch_related('candidates')
+        if institute:
+            placement_qs = placement_qs.filter(institute=institute)
+
+        placement_desc_items = []
+        if use_all_dates:
+            placement_desc_items.append("الفترة: كامل السجلات (كل الأوقات)")
+        else:
+            if start_date and end_date:
+                placement_qs = placement_qs.filter(exam_date__range=(start_date, end_date))
+            placement_desc_items.append(f"الفترة من: {start_date_val} إلى: {end_date_val}")
+
+        # غرض الامتحان
+        placement_purpose = str(params.get('placement_purpose') or '').strip()
+        if placement_purpose:
+            placement_qs = placement_qs.filter(purpose=placement_purpose)
+            placement_desc_items.append(f"الغرض: {placement_purpose}")
+
+        # الجهة الطالبة / المصدر
+        placement_source = str(params.get('placement_source_entity') or '').strip()
+        if placement_source:
+            placement_qs = placement_qs.filter(source_entity=placement_source)
+            placement_desc_items.append(f"الجهة الطالبة: {placement_source}")
+
+        # سنة الطلب
+        placement_year = str(params.get('placement_year') or '').strip()
+        if placement_year and placement_year.isdigit():
+            placement_qs = placement_qs.filter(year=int(placement_year))
+            placement_desc_items.append(f"السنة: {placement_year}")
+
+        # فئة الممتحنين
+        placement_target_cat = str(params.get('placement_target_cat') or '').strip()
+        if placement_target_cat and placement_target_cat != 'all':
+            placement_qs = placement_qs.filter(classification=placement_target_cat)
+            class_map = {
+                CandidateClassification.OFFICERS: 'ضباط',
+                CandidateClassification.NCOS: 'ضباط صف',
+                CandidateClassification.CIVILIANS: 'مدنيين',
+                CandidateClassification.MIXED: 'مشترك'
+            }
+            placement_desc_items.append(f"الفئة: {class_map.get(placement_target_cat, placement_target_cat)}")
+
+        # حالة الامتحان
+        placement_status = str(params.get('placement_status') or '').strip()
+        if placement_status and placement_status != 'all':
+            placement_qs = placement_qs.filter(status=placement_status)
+            status_map_labels = {
+                PlacementExamStatus.APPROVED: 'معتمد نهائياً',
+                PlacementExamStatus.PENDING_APPROVAL: 'بانتظار الاعتماد',
+                PlacementExamStatus.CONFIRMED: 'تم تأكيد الانعقاد',
+                PlacementExamStatus.IN_PROGRESS: 'قيد التنفيذ'
+            }
+            placement_desc_items.append(f"الحالة: {status_map_labels.get(placement_status, placement_status)}")
+
+        # حالة النتيجة أو الاعتماد
+        placement_result_status = str(params.get('placement_result_status') or '').strip()
+        if placement_result_status == 'passed':
+            placement_qs = placement_qs.filter(candidates__is_passed=True).distinct()
+            placement_desc_items.append("النتيجة: الناجحون فقط")
+        elif placement_result_status == 'failed':
+            placement_qs = placement_qs.filter(candidates__is_passed=False, candidates__attendance_status='present').distinct()
+            placement_desc_items.append("النتيجة: الراسبون فقط")
+        elif placement_result_status == 'absent':
+            placement_qs = placement_qs.filter(candidates__attendance_status='absent').distinct()
+            placement_desc_items.append("النتيجة: الغائبون فقط")
+        elif placement_result_status == 'approved_only':
+            placement_qs = placement_qs.filter(status=PlacementExamStatus.APPROVED)
+            placement_desc_items.append("الاعتماد: معتمد فقط")
+
+        # بحث نصي
+        if q:
+            placement_qs = placement_qs.filter(
+                Q(order_code__icontains=q) |
+                Q(signal_number__icontains=q) |
+                Q(source_entity__icontains=q) |
+                Q(host_entity__icontains=q) |
+                Q(purpose__icontains=q) |
+                Q(sub_purpose__icontains=q) |
+                Q(candidates__candidate_name__icontains=q) |
+                Q(candidates__military_number__icontains=q)
+            ).distinct()
+            placement_desc_items.append(f"بحث نصي: \"{q}\"")
+
+        placement_filters_summary = " | ".join(placement_desc_items) if placement_desc_items else "كافة سجلات امتحانات تحديد المستوى"
+
+        orders = list(placement_qs.order_by('-exam_date', '-id'))
+        records = []
+
+        total_candidates_count = 0
+        total_passed_count = 0
+        total_failed_count = 0
+        total_absent_count = 0
+
+        status_class_map = {
+            PlacementExamStatus.APPROVED: 'success',
+            PlacementExamStatus.PENDING_APPROVAL: 'info',
+            PlacementExamStatus.CONFIRMED: 'primary',
+            PlacementExamStatus.IN_PROGRESS: 'warning',
+        }
+        status_label_map = {
+            PlacementExamStatus.APPROVED: 'معتمد نهائياً',
+            PlacementExamStatus.PENDING_APPROVAL: 'بانتظار الاعتماد',
+            PlacementExamStatus.CONFIRMED: 'تم تأكيد الانعقاد',
+            PlacementExamStatus.IN_PROGRESS: 'قيد التنفيذ',
+        }
+
+        for order in orders:
+            all_cands = list(order.candidates.all())
+            c_count = len(all_cands)
+            passed_cands = [c for c in all_cands if c.is_passed]
+            p_count = len(passed_cands)
+            attended_cands = [c for c in all_cands if c.attendance_status == 'present']
+            att_count = len(attended_cands)
+            failed_cands = [c for c in attended_cands if not c.is_passed]
+            f_count = len(failed_cands)
+            absent_cands = [c for c in all_cands if c.attendance_status == 'absent']
+            ab_count = len(absent_cands)
+
+            total_candidates_count += c_count
+            total_passed_count += p_count
+            total_failed_count += f_count
+            total_absent_count += ab_count
+
+            pass_pct = round((p_count / att_count * 100), 1) if att_count > 0 else (100.0 if p_count > 0 else 0.0)
+
+            sup_name = order.supervisor.name if order.supervisor else (order.supervisor_name_snapshot or 'لم يحدد')
+            if order.supervisor and order.supervisor.rank:
+                sup_name = f"{order.supervisor.rank} / {sup_name}"
+
+            records.append({
+                'id': order.id,
+                'order_code': order.order_code or f"#{order.id}",
+                'signal_number': order.signal_number or '---',
+                'source_entity': order.source_entity,
+                'purpose': f"{order.purpose} ({order.sub_purpose})" if order.sub_purpose else order.purpose,
+                'classification': order.get_classification_display(),
+                'exam_date': order.exam_date.strftime('%Y-%m-%d') if order.exam_date else '---',
+                'candidates_count': c_count,
+                'passed_count': p_count,
+                'failed_count': f_count,
+                'absent_count': ab_count,
+                'pass_rate': f"{pass_pct:.1f}%" if att_count > 0 else '---',
+                'pass_rate_num': pass_pct,
+                'status_label': status_label_map.get(order.status, order.status),
+                'status_class': status_class_map.get(order.status, 'secondary'),
+                'supervisor': sup_name,
+                'is_approved': order.status == PlacementExamStatus.APPROVED,
+                'is_confirmed': order.status in [PlacementExamStatus.CONFIRMED, PlacementExamStatus.PENDING_APPROVAL, PlacementExamStatus.APPROVED],
+            })
+
+        approved_exams_count = sum(1 for r in records if r['is_approved'])
+        active_exams_count = len(records) - approved_exams_count
+        evaluated_candidates = total_passed_count + total_failed_count
+        overall_pass_rate = round((total_passed_count / evaluated_candidates * 100), 1) if evaluated_candidates > 0 else 0.0
+
+        stats = {
+            'total_exams': len(records),
+            'approved_exams': approved_exams_count,
+            'active_exams': active_exams_count,
+            'total_candidates': total_candidates_count,
+            'total_passed': total_passed_count,
+            'total_failed': total_failed_count,
+            'total_absent': total_absent_count,
+            'overall_pass_rate': overall_pass_rate,
+            'officers': sum(1 for o in orders if o.classification == CandidateClassification.OFFICERS),
+            'ncos': sum(1 for o in orders if o.classification == CandidateClassification.NCOS),
+            'civilians': sum(1 for o in orders if o.classification == CandidateClassification.CIVILIANS),
+            'mixed': sum(1 for o in orders if o.classification == CandidateClassification.MIXED),
+        }
+
+        columns = [
+            {'key': 'index', 'title': '#', 'align': 'center', 'width': 6},
+            {'key': 'order_code', 'title': 'كود الطلب', 'align': 'center', 'width': 14},
+            {'key': 'signal_number', 'title': 'رقم الإشارة', 'align': 'center', 'width': 16},
+            {'key': 'source_entity', 'title': 'الجهة الطالبة / الراسلة', 'align': 'right', 'width': 26},
+            {'key': 'purpose', 'title': 'غرض الامتحان', 'align': 'right', 'width': 22},
+            {'key': 'classification', 'title': 'الفئة', 'align': 'center', 'width': 12},
+            {'key': 'exam_date', 'title': 'تاريخ الانعقاد', 'align': 'center', 'width': 14},
+            {'key': 'candidates_count', 'title': 'الممتحنون', 'align': 'center', 'width': 11},
+            {'key': 'passed_count', 'title': 'الناجحون', 'align': 'center', 'width': 11},
+            {'key': 'pass_rate', 'title': 'نسبة النجاح', 'align': 'center', 'width': 13},
+            {'key': 'status_label', 'title': 'حالة الطلب والاعتماد', 'align': 'center', 'width': 18},
+            {'key': 'supervisor', 'title': 'المعلم المشرف', 'align': 'right', 'width': 22},
+        ]
+
+        return _format_report_result({
+            'report_type': report_type,
+            'report_title': 'تقرير امتحانات تحديد المستوى',
+            'records': records,
+            'stats': stats,
+            'columns': columns,
+            'filters_summary': placement_filters_summary,
+            'start_date': start_date_val,
+            'end_date': end_date_val,
+            'use_all_dates': use_all_dates,
+            'session_status': session_status,
+            'subjects_summary': [],
         })
 
 

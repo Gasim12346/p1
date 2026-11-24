@@ -169,7 +169,11 @@
                 <h3>{{ cert_settings.header_line_1 }}</h3>
                 <h5>{{ cert_settings.header_line_2 }}</h5>
                 <div class="mt-2 fw-bold text-decoration-underline" style="font-size: 13pt;">
-                    التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج
+                    {% if is_placement_report %}
+                        تقرير طلبات وامتحانات تحديد المستوى المعتمدة والإحصائية
+                    {% else %}
+                        التقرير الإحصائي والتحليلي العام لمؤشرات التدريب والنتائج
+                    {% endif %}
                 </div>
                 {% if report_sub_header %}
                 <div class="mt-1 fw-bold" style="font-size: 11.5pt; color: #1e3a8a;">
@@ -202,6 +206,83 @@
             <strong>نطاق الفلترة المطبق:</strong> {{ filters_summary }}
         </div>
         {% endif %}
+
+        {% if is_placement_report %}
+        <!-- 1. Placement Exams KPIs -->
+        <div class="section-header">
+            <span>أولاً: ملخص مؤشرات امتحانات تحديد المستوى (KPIs)</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الطلبات</th>
+                    <th>معتمد نهائياً</th>
+                    <th>قيد التنفيذ / مؤكد</th>
+                    <th>إجمالي الممتحنين</th>
+                    <th>الناجحون</th>
+                    <th>الراسبون</th>
+                    <th>الغائبون</th>
+                    <th>نسبة النجاح العامة</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold">{{ report_data.stats.total_exams }}</td>
+                    <td class="fw-bold" style="color: #15803d;">{{ report_data.stats.approved_exams }}</td>
+                    <td class="fw-bold" style="color: #b45309;">{{ report_data.stats.active_exams }}</td>
+                    <td class="fw-bold">{{ report_data.stats.total_candidates }}</td>
+                    <td class="fw-bold" style="color: #15803d;">{{ report_data.stats.total_passed }}</td>
+                    <td class="fw-bold" style="color: #dc2626;">{{ report_data.stats.total_failed }}</td>
+                    <td>{{ report_data.stats.total_absent }}</td>
+                    <td class="fw-bold" style="color: #1e3a8a;">{{ report_data.stats.overall_pass_rate }}%</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 2. Placement Exams Detailed Table -->
+        <div class="section-header">
+            <span>ثانياً: بيان أوامر وسجلات امتحانات تحديد المستوى (عدد السجلات: {{ report_data.records|length }})</span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th style="width: 4%;">#</th>
+                    <th style="width: 12%;">كود الطلب</th>
+                    <th style="width: 12%;">رقم الإشارة</th>
+                    <th style="width: 20%;">الجهة الطالبة / الراسلة</th>
+                    <th style="width: 15%;">غرض الامتحان</th>
+                    <th style="width: 8%;">الفئة</th>
+                    <th style="width: 10%;">تاريخ الانعقاد</th>
+                    <th style="width: 6%;">الممتحنون</th>
+                    <th style="width: 6%;">الناجحون</th>
+                    <th style="width: 7%;">نسبة النجاح</th>
+                    <th style="width: 10%;">حالة الطلب</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report_data.records %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold font-monospace">{{ row.order_code }}</td>
+                    <td>{{ row.signal_number }}</td>
+                    <td class="text-start ps-2">{{ row.source_entity }}</td>
+                    <td class="text-start ps-2">{{ row.purpose }}</td>
+                    <td>{{ row.classification }}</td>
+                    <td>{{ row.exam_date }}</td>
+                    <td class="fw-bold">{{ row.candidates_count }}</td>
+                    <td class="fw-bold" style="color: #15803d;">{{ row.passed_count }}</td>
+                    <td class="fw-bold">{{ row.pass_rate }}</td>
+                    <td>{{ row.status_label }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="py-4 text-muted">لا توجد سجلات امتحانات تطابق معايير الفلترة المحددة.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
 
         <!-- 1. Executive Summary KPIs -->
         <div class="section-header">
@@ -362,6 +443,8 @@
                     </tbody>
                 </table>
             {% endfor %}
+        {% endif %}
+
         {% endif %}
 
         <!-- Signatures Block -->
